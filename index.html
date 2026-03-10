@@ -48,7 +48,7 @@
         #auth-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 64px); text-align: center; gap: 20px; }
         #auth-screen.show { display: flex; }
         .auth-card { background: #fff; border-radius: 18px; padding: 48px; box-shadow: 0 8px 40px rgba(52,152,219,0.15); max-width: 440px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 18px; }
-        .auth-icon { font-size: 72px; animation: float 3s ease-in-out infinite; }
+        .auth-icon { font-size: 42px; animation: float 3s ease-in-out infinite; }
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .auth-title { font-size: 26px; font-weight: 700; color: #2c3e50; }
         .auth-sub { color: #7f8c8d; font-size: 14px; line-height: 1.7; }
@@ -273,7 +273,7 @@
         <p class="auth-sub">Sign in with your school Google account to access comprehensive student analytics, subject rankings, and performance reports.</p>
         <button class="btn btn-primary" onclick="signInWithGoogle()" style="padding:13px 32px;font-size:15px;width:100%;">🔐 Sign in with Google</button>
     </div>
-    <button class="btn btn-primary"><a href="./student.html">Students portal</a></button>
+    <button class="btn btn-primary" style="list-style:none;" ><a href="./student.html">Students portal</a></button>
 
 </div>
 
