@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Junior School — Analytics & Rankings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #ecf0f1; color: #2c3e50; font-family: 'Poppins', sans-serif; min-height: 100vh; }
+
+        .topbar {
+            position: sticky; top: 0; z-index: 100;
+            background: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
+            box-shadow: 0 4px 12px rgba(52,152,219,0.35);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 32px; height: 64px;
+        }
+        .topbar-brand { display: flex; align-items: center; gap: 14px; }
+        .topbar-logo { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid rgba(255,255,255,0.3); }
+        .brand-name { font-size: 17px; font-weight: 700; color: #fff; }
+        .brand-sub { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: -2px; }
+        .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+        .btn { padding: 8px 20px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; }
+        .btn-white { background: #fff; color: #2980b9; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
+        .btn-white:hover { background: #f0f8ff; transform: translateY(-1px); }
+        .btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.5); }
+        .btn-outline:hover { background: rgba(255,255,255,0.1); }
+        .btn-primary { background: linear-gradient(135deg, #2980b9, #3498db); color: #fff; box-shadow: 0 4px 12px rgba(52,152,219,0.4); }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(52,152,219,0.5); }
+        .btn-success { background: linear-gradient(135deg, #27ae60, #2ecc71); color: #fff; box-shadow: 0 4px 12px rgba(39,174,96,0.4); }
+        .btn-success:hover { transform: translateY(-1px); }
+        .btn-purple { background: linear-gradient(135deg, #8e44ad, #9b59b6); color: #fff; box-shadow: 0 4px 12px rgba(155,89,182,0.4); }
+        .btn-purple:hover { transform: translateY(-1px); }
+
+        .user-pill { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 24px; padding: 6px 14px 6px 6px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #fff; }
+        .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; }
+
+        #loader { position: fixed; inset: 0; background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); z-index: 999; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
+        .loader-ring { width: 52px; height: 52px; border: 4px solid #dde3ec; border-top-color: #3498db; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .loader-text { font-size: 14px; color: #7f8c8d; font-weight: 500; }
+
+        .main { max-width: 1600px; margin: 0 auto; padding: 28px 32px; }
+
+        #auth-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 64px); text-align: center; gap: 20px; }
+        #auth-screen.show { display: flex; }
+        .auth-card { background: #fff; border-radius: 18px; padding: 48px; box-shadow: 0 8px 40px rgba(52,152,219,0.15); max-width: 440px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 18px; }
+        .auth-icon { font-size: 72px; animation: float 3s ease-in-out infinite; }
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .auth-title { font-size: 26px; font-weight: 700; color: #2c3e50; }
+        .auth-sub { color: #7f8c8d; font-size: 14px; line-height: 1.7; }
+
+        #dashboard { display: none; }
+        #dashboard.show { display: block; }
+
+        .grade-filter-info { background: linear-gradient(135deg, #ebf5fb, #eafaf1); border: 1px solid #aed6f1; border-radius: 10px; padding: 11px 18px; margin-bottom: 22px; font-size: 13px; color: #2980b9; font-weight: 600; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 8px rgba(52,152,219,0.08); }
+
+        .filter-bar { background: #fff; border: 1px solid #dde3ec; border-radius: 14px; padding: 20px 24px; display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.06); }
+        .filter-group { display: flex; flex-direction: column; gap: 5px; min-width: 160px; }
+        .filter-group label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #7f8c8d; font-weight: 700; }
+        .filter-group select, .filter-group input { background: #f8fafc; border: 1.5px solid #dde3ec; border-radius: 8px; color: #2c3e50; padding: 9px 13px; font-family: 'Poppins', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s, box-shadow 0.2s; }
+        .filter-group select:focus, .filter-group input:focus { border-color: #3498db; box-shadow: 0 0 0 3px rgba(52,152,219,0.12); }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(185px, 1fr)); gap: 14px; margin-bottom: 24px; }
+        .stat-card { background: #fff; border-radius: 14px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); border-top: 4px solid var(--cc, #3498db); transition: transform 0.2s, box-shadow 0.2s; }
+        .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 28px rgba(0,0,0,0.1); }
+        .stat-icon { font-size: 26px; margin-bottom: 10px; }
+        .stat-value { font-size: 30px; font-weight: 700; line-height: 1; color: var(--cc, #3498db); }
+        .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: #7f8c8d; margin-top: 5px; font-weight: 600; }
+
+        .tabs { display: flex; gap: 4px; background: #fff; border: 1px solid #dde3ec; border-radius: 12px; padding: 4px; margin-bottom: 24px; flex-wrap: wrap; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .tab { padding: 10px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: #7f8c8d; transition: all 0.2s; white-space: nowrap; border: none; background: transparent; font-family: 'Poppins', sans-serif; }
+        .tab:hover { color: #2980b9; background: #ebf5fb; }
+        .tab.active { background: linear-gradient(135deg, #2980b9, #3498db); color: #fff; box-shadow: 0 4px 12px rgba(52,152,219,0.3); }
+
+        .panel { background: #fff; border: 1px solid #dde3ec; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .panel-header { padding: 18px 24px; border-bottom: 1px solid #edf2f7; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; background: linear-gradient(135deg, #f7fbff 0%, #fff 100%); }
+        .panel-title { font-size: 16px; font-weight: 700; color: #2c3e50; }
+        .panel-sub { font-size: 12px; color: #7f8c8d; margin-top: 2px; }
+        .panel-badge { background: #ebf5fb; border: 1px solid #aed6f1; border-radius: 20px; padding: 4px 14px; font-size: 12px; color: #2980b9; font-weight: 600; }
+
+        .rank-table { width: 100%; border-collapse: collapse; }
+        .rank-table th { padding: 11px 16px; text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1.5px; color: #fff; font-weight: 700; background: linear-gradient(135deg, #2980b9 0%, #3498db 100%); border-bottom: 2px solid #2471a3; white-space: nowrap; }
+        .rank-table th.sortable { cursor: pointer; user-select: none; }
+        .rank-table th.sortable:hover { background: linear-gradient(135deg, #1f6fa0, #2980b9); }
+        .rank-table td { padding: 11px 16px; font-size: 13px; border-bottom: 1px solid #f0f4f8; transition: background 0.15s; }
+        .rank-table tr:last-child td { border-bottom: none; }
+        .rank-table tr:hover td { background: #f7fbff; }
+        .rank-table tr:nth-child(even) td { background: #fafcff; }
+        .rank-table tr:nth-child(even):hover td { background: #f0f8ff; }
+
+        .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 8px; font-size: 14px; font-weight: 700; }
+        .rank-1 { background: rgba(243,156,18,0.15); color: #d4a017; border: 1px solid rgba(243,156,18,0.4); }
+        .rank-2 { background: rgba(127,140,141,0.15); color: #7f8c8d; border: 1px solid rgba(127,140,141,0.4); }
+        .rank-3 { background: rgba(230,126,34,0.15); color: #e67e22; border: 1px solid rgba(230,126,34,0.4); }
+        .rank-other { background: #f0f4f8; color: #7f8c8d; border: 1px solid #dde3ec; font-size: 12px; }
+
+        .score-bar-wrap { display: flex; align-items: center; gap: 10px; }
+        .score-bar { flex: 1; height: 8px; background: #e8f4fd; border-radius: 4px; overflow: hidden; min-width: 60px; }
+        .score-fill { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+        .score-val { font-size: 13px; font-weight: 700; min-width: 44px; text-align: right; }
+
+        .grade-pill { display: inline-block; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 700; letter-spacing: 0.5px; }
+        .grade-EE1 { background: #eafaf1; color: #1e8449; border: 1px solid #a9dfbf; }
+        .grade-EE2 { background: #d5f5e3; color: #239b56; border: 1px solid #82e0aa; }
+        .grade-ME1 { background: #ebf5fb; color: #1a5276; border: 1px solid #aed6f1; }
+        .grade-ME2 { background: #d6eaf8; color: #2471a3; border: 1px solid #7fb3d3; }
+        .grade-AE1 { background: #fef9e7; color: #b7950b; border: 1px solid #f9e79f; }
+        .grade-AE2 { background: #fdf2e9; color: #b9770e; border: 1px solid #f8c471; }
+        .grade-BE1 { background: #fdedec; color: #c0392b; border: 1px solid #f1948a; }
+        .grade-BE2 { background: #f9ebea; color: #a93226; border: 1px solid #e6b0aa; }
+        .grade-NA  { background: #f0f4f8; color: #7f8c8d; border: 1px solid #dde3ec; }
+
+        .gender-m { background: #ebf5fb; color: #2471a3; padding: 2px 9px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+        .gender-f { background: #fdf2f8; color: #c0392b; padding: 2px 9px; border-radius: 8px; font-size: 11px; font-weight: 600; }
+
+        .subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 18px; padding: 22px; }
+        .subject-card { background: #fff; border: 1px solid #dde3ec; border-radius: 12px; padding: 18px; border-top: 4px solid var(--sc, #3498db); box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+        .subject-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(52,152,219,0.12); }
+        .subject-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+        .subject-name { font-size: 14px; font-weight: 700; color: #2c3e50; }
+        .subject-code { font-size: 11px; color: #7f8c8d; margin-top: 2px; }
+        .subject-avg-big { font-size: 36px; font-weight: 700; line-height: 1; color: var(--sc, #3498db); }
+        .subject-stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+        .subject-mini-stat { background: #f8fafc; border: 1px solid #e8edf3; border-radius: 8px; padding: 8px; text-align: center; }
+        .subject-mini-stat .val { font-size: 16px; font-weight: 700; color: #2c3e50; }
+        .subject-mini-stat .lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.8px; color: #7f8c8d; margin-top: 2px; }
+
+        .dist-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+        .dist-label { font-size: 10px; color: #7f8c8d; width: 32px; text-align: right; font-weight: 600; }
+        .dist-bar { flex: 1; height: 8px; background: #f0f4f8; border-radius: 4px; overflow: hidden; }
+        .dist-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(0.34,1.56,0.64,1); }
+        .dist-count { font-size: 10px; color: #7f8c8d; min-width: 26px; font-weight: 600; }
+
+        .dist-section { padding: 24px; }
+        .dist-bar-chart { display: flex; gap: 8px; align-items: flex-end; height: 220px; padding-bottom: 36px; }
+        .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%; }
+        .bar-visual { width: 100%; border-radius: 6px 6px 0 0; min-height: 4px; transition: height 0.8s cubic-bezier(0.34,1.56,0.64,1); cursor: pointer; box-shadow: 0 -2px 6px rgba(0,0,0,0.06); }
+        .bar-visual:hover { filter: brightness(0.9); }
+        .bar-label { font-size: 10px; color: #7f8c8d; text-align: center; font-weight: 600; }
+        .bar-count { font-size: 11px; font-weight: 700; color: #2c3e50; text-align: center; }
+
+        .insights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; padding: 22px; }
+        .insight-card { background: #fff; border-radius: 12px; padding: 18px; border-left: 4px solid var(--ic, #3498db); box-shadow: 0 2px 8px rgba(0,0,0,0.06); transition: transform 0.2s; }
+        .insight-card:hover { transform: translateY(-2px); }
+        .insight-icon { font-size: 26px; margin-bottom: 8px; }
+        .insight-title { font-size: 13px; font-weight: 700; color: #2c3e50; margin-bottom: 6px; }
+        .insight-body { font-size: 12px; color: #7f8c8d; line-height: 1.7; }
+        .insight-highlight { color: var(--ic, #3498db); font-weight: 700; }
+
+        .pagination { display: flex; align-items: center; justify-content: space-between; padding: 14px 22px; border-top: 1px solid #f0f4f8; flex-wrap: wrap; gap: 10px; background: #fafcff; }
+        .pagination-info { font-size: 12px; color: #7f8c8d; font-weight: 500; }
+        .page-btns { display: flex; gap: 5px; }
+        .page-btn { width: 32px; height: 32px; border-radius: 6px; border: 1.5px solid #dde3ec; background: #fff; color: #2c3e50; font-size: 13px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; font-family: 'Poppins', sans-serif; }
+        .page-btn:hover { border-color: #3498db; color: #3498db; background: #ebf5fb; }
+        .page-btn.active { background: linear-gradient(135deg, #2980b9, #3498db); color: #fff; border-color: #2980b9; font-weight: 700; box-shadow: 0 2px 8px rgba(52,152,219,0.3); }
+        .page-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+        /* ── PROGRESS REPORT STYLES ── */
+        .progress-search-bar { padding: 22px 24px; border-bottom: 1px solid #edf2f7; background: #f7fbff; }
+        .progress-search-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+        .student-autocomplete { position: relative; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: #fff; border: 1.5px solid #3498db; border-top: none; border-radius: 0 0 8px 8px; max-height: 240px; overflow-y: auto; z-index: 100; box-shadow: 0 8px 24px rgba(52,152,219,0.15); }
+        .autocomplete-item { padding: 10px 14px; font-size: 13px; cursor: pointer; border-bottom: 1px solid #f0f4f8; transition: background 0.15s; }
+        .autocomplete-item:hover { background: #ebf5fb; color: #2980b9; }
+        .autocomplete-item:last-child { border-bottom: none; }
+        .autocomplete-item .item-grade { font-size: 11px; color: #7f8c8d; margin-left: 8px; }
+
+        .student-profile-card { margin: 22px 24px; background: linear-gradient(135deg, #2980b9 0%, #3498db 100%); border-radius: 14px; padding: 22px 28px; color: #fff; display: flex; align-items: center; gap: 24px; flex-wrap: wrap; box-shadow: 0 4px 16px rgba(52,152,219,0.3); }
+        .student-avatar-big { width: 64px; height: 64px; border-radius: 50%; background: rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: 700; border: 3px solid rgba(255,255,255,0.4); flex-shrink: 0; }
+        .student-profile-info h2 { font-size: 20px; font-weight: 700; }
+        .student-profile-meta { display: flex; gap: 20px; margin-top: 6px; font-size: 12px; opacity: 0.85; flex-wrap: wrap; }
+        .student-profile-meta span { display: flex; align-items: center; gap: 4px; }
+        .student-profile-stats { margin-left: auto; display: flex; gap: 20px; flex-wrap: wrap; }
+        .profile-stat { text-align: center; background: rgba(255,255,255,0.15); border-radius: 10px; padding: 12px 18px; }
+        .profile-stat .pval { font-size: 22px; font-weight: 700; }
+        .profile-stat .plbl { font-size: 10px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; }
+
+        .progress-subject-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; padding: 22px; }
+        .progress-subject-card { background: #fff; border: 1px solid #dde3ec; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s, box-shadow 0.2s; }
+        .progress-subject-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(52,152,219,0.12); }
+        .progress-subject-header { padding: 14px 16px; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+        .progress-subject-title { font-size: 13px; font-weight: 700; }
+        .progress-subject-code { font-size: 11px; opacity: 0.8; }
+        .progress-subject-score { font-size: 28px; font-weight: 700; }
+        .progress-exam-rows { padding: 12px 16px; }
+        .progress-exam-row { display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f0f4f8; }
+        .progress-exam-row:last-child { border-bottom: none; }
+        .exam-type-label { font-size: 11px; font-weight: 700; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.8px; min-width: 90px; }
+        .exam-score-bar { flex: 1; height: 10px; background: #f0f4f8; border-radius: 5px; overflow: hidden; }
+        .exam-score-fill { height: 100%; border-radius: 5px; transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1); }
+        .exam-score-val { font-size: 13px; font-weight: 700; min-width: 48px; text-align: right; }
+        .exam-grade-pill { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; min-width: 36px; text-align: center; }
+
+        .progress-summary-table { margin: 0 24px 22px; border: 1px solid #dde3ec; border-radius: 12px; overflow: hidden; }
+        .progress-summary-table table { width: 100%; border-collapse: collapse; }
+        .progress-summary-table th { padding: 10px 14px; background: linear-gradient(135deg, #2980b9, #3498db); color: #fff; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; text-align: left; }
+        .progress-summary-table td { padding: 10px 14px; font-size: 12px; border-bottom: 1px solid #f0f4f8; }
+        .progress-summary-table tr:last-child td { border-bottom: none; }
+        .progress-summary-table tr:nth-child(even) td { background: #fafcff; }
+        .progress-summary-table tr:hover td { background: #f7fbff; }
+
+        .no-student-placeholder { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 80px 20px; color: #7f8c8d; text-align: center; }
+        .no-student-placeholder .ns-icon { font-size: 64px; margin-bottom: 16px; opacity: 0.4; }
+        .no-student-placeholder .ns-title { font-size: 18px; font-weight: 600; color: #2c3e50; margin-bottom: 8px; }
+        .no-student-placeholder .ns-sub { font-size: 13px; max-width: 340px; }
+
+        /* exam type tabs in progress */
+        .exam-tabs { display: flex; gap: 6px; padding: 16px 24px 0; flex-wrap: wrap; }
+        .exam-tab { padding: 7px 16px; border-radius: 20px; border: 1.5px solid #dde3ec; background: #fff; color: #7f8c8d; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: 'Poppins', sans-serif; }
+        .exam-tab:hover { border-color: #3498db; color: #3498db; }
+        .exam-tab.active { background: linear-gradient(135deg, #2980b9, #3498db); color: #fff; border-color: #2980b9; box-shadow: 0 2px 8px rgba(52,152,219,0.3); }
+
+        #notif-wrap { position: fixed; top: 76px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+        .notif { background: #fff; border-radius: 12px; padding: 14px 18px; display: flex; gap: 12px; align-items: flex-start; animation: notifIn 0.4s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 8px 32px rgba(52,152,219,0.15); border-left: 4px solid var(--nc, #3498db); }
+        @keyframes notifIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .notif-text { font-size: 13px; color: #2c3e50; line-height: 1.5; font-weight: 500; }
+
+        .table-scroll { overflow-x: auto; }
+        .empty-state { text-align: center; padding: 70px 20px; color: #7f8c8d; }
+        .empty-icon { font-size: 52px; margin-bottom: 14px; }
+        .empty-title { font-size: 17px; font-weight: 600; color: #2c3e50; margin-bottom: 6px; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f0f4f8; }
+        ::-webkit-scrollbar-thumb { background: #c5d3e0; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #a0b3c5; }
+
+        .hidden { display: none !important; }
+        @media (max-width: 768px) { .main { padding: 16px; } .topbar { padding: 0 16px; } }
+    </style>
+</head>
+<body>
+
+<header class="topbar">
+    <div class="topbar-brand">
+        <div class="topbar-logo">🏫</div>
+        <div>
+            <div class="brand-name">Junior School — Analytics &amp; Rankings</div>
+            <div class="brand-sub">Kanyadet Primary &amp; Junior School · 🎓 Track student performance with ease</div>
+        </div>
+    </div>
+    <div class="topbar-right">
+        <div id="user-pill" class="user-pill hidden">
+            <div class="user-avatar" id="user-initial">?</div>
+            <span id="user-name-display">User</span>
+        </div>
+        <button id="sign-in-btn" class="btn btn-white">🔐 Sign in with Google</button>
+        <button id="sign-out-btn" class="btn btn-outline hidden">🚪 Sign Out</button>
+    </div>
+</header>
+
+<div id="loader" style="display:flex;"><div class="loader-ring"></div><div class="loader-text">Connecting to school system...</div></div>
+<div id="notif-wrap"></div>
+
+<!-- AUTH -->
+<div id="auth-screen" class="main" style="display:none;">
+    <div class="auth-card">
+        <div class="auth-icon">📊</div>
+        <div class="auth-title">Analytics &amp; Rankings</div>
+        <p class="auth-sub">Sign in with your school Google account to access comprehensive student analytics, subject rankings, and performance reports.</p>
+        <button class="btn btn-primary" onclick="signInWithGoogle()" style="padding:13px 32px;font-size:15px;width:100%;">🔐 Sign in with Google</button>
+    </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" class="main" style="display:none;">
+
+    <div class="grade-filter-info">📚 <span>Displaying students from Grade 7, Grade 8, and Grade 9 only</span></div>
+
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>📚 Filter by Grade</label>
+            <select id="grade-filter"><option value="">All Grades</option></select>
+        </div>
+        <div class="filter-group">
+            <label>🧑 Gender</label>
+            <select id="gender-filter"><option value="">All</option><option value="Male">Male</option><option value="Female">Female</option></select>
+        </div>
+        <div class="filter-group" style="min-width:220px;">
+            <label>🔍 Search Students</label>
+            <input type="text" id="search-input" placeholder="Name, UPI, Assessment No...">
+        </div>
+        <div class="filter-group">
+            <label>📄 Items Per Page</label>
+            <select id="rows-per-page">
+                <option value="20">20 per page</option>
+                <option value="50">50 per page</option>
+                <option value="100">100 per page</option>
+                <option value="9999">All</option>
+            </select>
+        </div>
+        <button class="btn btn-primary" onclick="applyFilters()" style="align-self:flex-end;">Apply Filters</button>
+        <button class="btn" style="align-self:flex-end;background:#f0f4f8;color:#7f8c8d;border:1.5px solid #dde3ec;" onclick="resetFilters()">Reset</button>
+    </div>
+
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <div class="tabs" id="main-tabs">
+        <button class="tab active" onclick="switchTab('rankings')">🏆 Overall Rankings</button>
+        <button class="tab" onclick="switchTab('subjects')">📐 Subject Analytics</button>
+        <button class="tab" onclick="switchTab('distribution')">📊 Grade Distribution</button>
+        <button class="tab" onclick="switchTab('insights')">💡 Insights</button>
+        <button class="tab" onclick="switchTab('gender')">⚤ Gender Analysis</button>
+        <button class="tab" onclick="switchTab('detailed')">📋 Detailed Records</button>
+        <button class="tab" onclick="switchTab('progress')" style="border:1.5px solid #9b59b6;">📈 Student Progress</button>
+    </div>
+
+    <!-- RANKINGS -->
+    <div id="tab-rankings" class="panel">
+        <div class="panel-header">
+            <div><div class="panel-title">🏆 Overall Student Rankings</div><div class="panel-sub">Ranked by average score across all 9 learning areas</div></div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <span class="panel-badge" id="rank-count-badge">0 students</span>
+                <button class="btn btn-success" onclick="exportRankingPDF()">📥 Export PDF</button>
+            </div>
+        </div>
+        <div class="table-scroll">
+            <table class="rank-table">
+                <thead><tr>
+                    <th>Rank</th>
+                    <th class="sortable" onclick="sortTable('name')">Student Name ↕</th>
+                    <th>Grade</th><th>Gender</th>
+                    <th class="sortable" onclick="sortTable('avg')">Avg Score ↕</th>
+                    <th>Total Points</th><th>Subjects</th><th>Level</th>
+                    <th>Strongest Subject</th><th>Weakest Subject</th>
+                </tr></thead>
+                <tbody id="rankings-tbody"></tbody>
+            </table>
+        </div>
+        <div class="pagination" id="rank-pagination"></div>
+    </div>
+
+    <!-- SUBJECTS -->
+    <div id="tab-subjects" class="panel" style="display:none;">
+        <div class="panel-header">
+            <div><div class="panel-title">📐 Subject Performance Analytics</div><div class="panel-sub">Detailed breakdown per learning area — averages, pass rates, and grade distributions</div></div>
+            <span class="panel-badge" id="subjects-badge">9 subjects</span>
+        </div>
+        <div class="subject-grid" id="subject-grid"></div>
+    </div>
+
+    <!-- DISTRIBUTION -->
+    <div id="tab-distribution" class="panel" style="display:none;">
+        <div class="panel-header">
+            <div><div class="panel-title">📊 Grade Level Distribution</div><div class="panel-sub">Performance level and score range bar charts</div></div>
+            <select id="dist-subject-filter" style="background:#f8fafc;border:1.5px solid #dde3ec;border-radius:8px;padding:9px 13px;font-family:'Poppins',sans-serif;font-size:13px;color:#2c3e50;outline:none;cursor:pointer;font-weight:600;" onchange="renderDistribution()">
+                <option value="overall">Overall Average</option>
+            </select>
+        </div>
+        <div class="dist-section" id="distribution-content"></div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <div id="tab-insights" class="panel" style="display:none;">
+        <div class="panel-header">
+            <div><div class="panel-title">💡 Analytics Insights</div><div class="panel-sub">Auto-generated observations and recommendations</div></div>
+            <span class="panel-badge">Auto-generated</span>
+        </div>
+        <div class="insights-grid" id="insights-grid"></div>
+    </div>
+
+    <!-- GENDER -->
+    <div id="tab-gender" class="panel" style="display:none;">
+        <div class="panel-header">
+            <div><div class="panel-title">⚤ Gender Performance Analysis</div><div class="panel-sub">Male vs. Female comparison across all learning areas</div></div>
+        </div>
+        <div id="gender-content"></div>
+    </div>
+
+    <!-- DETAILED -->
+    <div id="tab-detailed" class="panel" style="display:none;">
+        <div class="panel-header">
+            <div><div class="panel-title">📋 Detailed Student Records</div><div class="panel-sub">Full score table across all learning areas with colour-coded performance</div></div>
+            <span class="panel-badge" id="detailed-badge">0 records</span>
+        </div>
+        <div class="table-scroll"><table class="rank-table"><thead id="detailed-thead"></thead><tbody id="detailed-tbody"></tbody></table></div>
+        <div class="pagination" id="detailed-pagination"></div>
+    </div>
+
+    <!-- STUDENT PROGRESS REPORT -->
+    <div id="tab-progress" class="panel" style="display:none;">
+        <div class="panel-header">
+            <div><div class="panel-title">📈 Student Progress Report</div><div class="panel-sub">Per-student breakdown by learning area and exam type — exportable as PDF</div></div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <span class="panel-badge" id="progress-badge">Select a student</span>
+                <button class="btn btn-purple" id="export-progress-btn" onclick="exportProgressPDF()" style="display:none;">📥 Export Progress PDF</button>
+            </div>
+        </div>
+
+        <!-- Student search -->
+        <div class="progress-search-bar">
+            <div class="progress-search-row">
+                <div class="filter-group student-autocomplete" style="min-width:300px;" id="progress-search-wrap">
+                    <label>🔍 Search &amp; Select Student</label>
+                    <input type="text" id="progress-search" placeholder="Type student name..." autocomplete="off" oninput="onProgressSearch()" onfocus="onProgressSearch()">
+                    <div class="autocomplete-list" id="autocomplete-list" style="display:none;"></div>
+                </div>
+                <div class="filter-group" style="min-width:180px;">
+                    <label>📚 Filter by Grade</label>
+                    <select id="progress-grade-filter" onchange="onProgressSearch()">
+                        <option value="">All Grades</option>
+                    </select>
+                </div>
+                <button class="btn" style="align-self:flex-end;background:#f0f4f8;color:#7f8c8d;border:1.5px solid #dde3ec;" onclick="clearProgressStudent()">Clear</button>
+            </div>
+        </div>
+
+        <!-- Exam type filter tabs -->
+        <div class="exam-tabs" id="exam-type-tabs" style="display:none;">
+            <span style="font-size:12px;color:#7f8c8d;font-weight:700;align-self:center;margin-right:4px;">Exam Type:</span>
+        </div>
+
+        <!-- Student profile + report content -->
+        <div id="progress-content">
+            <div class="no-student-placeholder">
+                <div class="ns-icon">🎓</div>
+                <div class="ns-title">No student selected</div>
+                <div class="ns-sub">Search for a student above to view their detailed progress report across all learning areas and exam types.</div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getDatabase, ref, onValue } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    window._fb = { initializeApp, getDatabase, ref, onValue, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
+    window.dispatchEvent(new Event('fb-ready'));
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIG
+// ══════════════════════════════════════════════════════════════
+const FIREBASE_CONFIG = {
+    apiKey: "AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE",
+    authDomain: "kanyadet-school-admin.firebaseapp.com",
+    databaseURL: "https://kanyadet-school-admin-default-rtdb.firebaseio.com",
+    projectId: "kanyadet-school-admin",
+    storageBucket: "kanyadet-school-admin.firebasestorage.app",
+    messagingSenderId: "409708360032",
+    appId: "1:409708360032:web:a21d63e8cb5fa1ecabee05"
+};
+const SANITIZED_ID = 'default-app-id'.replace(/\./g,'_');
+const ALLOWED_GRADES = ['Grade 7','Grade 8','Grade 9'];
+
+const SUBJECTS = [
+    {name:'English',code:'901'},{name:'Kiswahili',code:'902'},
+    {name:'Mathematics',code:'903'},{name:'Integrated Science',code:'905'},
+    {name:'Agriculture',code:'906'},{name:'Social studies',code:'907'},
+    {name:'CRE',code:'908'},{name:'Creative Arts & Sports',code:'911'},
+    {name:'Pre-Technical Studies',code:'912'},
+];
+const SUBJECT_COLORS = ['#3498db','#27ae60','#e74c3c','#f39c12','#9b59b6','#1abc9c','#e67e22','#2ecc71','#e91e63'];
+
+const GRADE_SCALE = [
+    {min:90,max:100,pts:8.0,code:'EE1',label:'Exceeding Expectation EE1'},
+    {min:75,max:89, pts:7.0,code:'EE2',label:'Exceeding Expectation EE2'},
+    {min:58,max:74, pts:6.0,code:'ME1',label:'Meeting Expectation ME1'},
+    {min:41,max:57, pts:5.0,code:'ME2',label:'Meeting Expectation ME2'},
+    {min:31,max:40, pts:4.0,code:'AE1',label:'Approaching Expectation AE1'},
+    {min:21,max:30, pts:3.0,code:'AE2',label:'Approaching Expectation AE2'},
+    {min:11,max:20, pts:2.0,code:'BE1',label:'Below Expectation BE1'},
+    {min:0, max:10, pts:1.0,code:'BE2',label:'Below Expectation BE2'},
+];
+const GRADE_COLORS = {EE1:'#27ae60',EE2:'#2ecc71',ME1:'#2980b9',ME2:'#3498db',AE1:'#f39c12',AE2:'#e67e22',BE1:'#e74c3c',BE2:'#c0392b',NA:'#95a5a6'};
+
+// Keys in Firebase that represent exam types (e.g. "English EX01", "English MID", "English END")
+// We auto-detect these from the data. A field is an exam-type score if it matches SUBJECT_NAME + space + exam suffix
+// e.g. "Mathematics EX01", "Mathematics EX02", "Mathematics MID TERM", "Mathematics END TERM"
+
+// ══════════════════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════════════════
+let allStudents=[],filteredStudents=[],db,auth,fb;
+let currentSort={field:'avg',dir:'desc'};
+let rankPage=1,rankPerPage=20,detailPage=1,detailPerPage=20;
+let currentTab='rankings';
+
+// Progress tab state
+let selectedStudent=null;
+let activeExamType='ALL';
+let allExamTypes=[];       // auto-detected from data
+let examTypeMap={};        // { "EX01": ["English EX01","Mathematics EX01",...], ... }
+
+// ══════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════
+window.addEventListener('fb-ready',()=>{
+    fb=window._fb;
+    const app=fb.initializeApp(FIREBASE_CONFIG);
+    db=fb.getDatabase(app); auth=fb.getAuth(app);
+    fb.onAuthStateChanged(auth,u=>{
+        if(u) onSignedIn(u);
+        else onSignedOut();
+    });
+});
+
+function onSignedIn(user){
+    document.getElementById('auth-screen').style.display='none';
+    document.getElementById('dashboard').style.display='none'; // keep hidden until data loads
+    document.getElementById('sign-in-btn').classList.add('hidden');
+    document.getElementById('sign-out-btn').classList.remove('hidden');
+    document.getElementById('user-pill').classList.remove('hidden');
+    document.getElementById('user-name-display').textContent=user.displayName||user.email;
+    document.getElementById('user-initial').textContent=(user.displayName||user.email||'?')[0].toUpperCase();
+    document.querySelector('.loader-text').textContent='Loading student data...';
+    showLoader(); fetchData();
+}
+function onSignedOut(){
+    document.getElementById('auth-screen').style.display='flex';
+    document.getElementById('dashboard').style.display='none';
+    document.getElementById('sign-in-btn').classList.remove('hidden');
+    document.getElementById('sign-out-btn').classList.add('hidden');
+    document.getElementById('user-pill').classList.add('hidden');
+    hideLoader();
+}
+
+window.signInWithGoogle=async()=>{
+    try{await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());}
+    catch(e){notify('Sign-in failed: '+e.message,'error');}
+};
+document.getElementById('sign-in-btn').addEventListener('click',signInWithGoogle);
+document.getElementById('sign-out-btn').addEventListener('click',async()=>{
+    await fb.signOut(auth); allStudents=[];filteredStudents=[];
+});
+
+// ══════════════════════════════════════════════════════════════
+// DATA
+// ══════════════════════════════════════════════════════════════
+function fetchData(){
+    const r=fb.ref(db,`Results/${SANITIZED_ID}/students`);
+    fb.onValue(r,snap=>{
+        const raw=snap.val()||{};
+        allStudents=[];
+        for(const key in raw){
+            const s={id:key,...raw[key]};
+            const m=(s['Grade']||'').match(/^Grade\s+\d+/);
+            if(m&&ALLOWED_GRADES.includes(m[0])){s._grade=m[0];allStudents.push(s);}
+        }
+        allStudents.forEach(computeStats);
+        detectExamTypes();
+        populateGradeFilter(); populateDistSubjectFilter(); populateProgressGradeFilter();
+        applyFilters(); hideLoader();
+        document.getElementById('dashboard').style.display='block';
+        notify(`✅ Loaded ${allStudents.length} student records successfully`,'success');
+    },err=>{notify('Error loading data: '+err.message,'error');hideLoader();onSignedOut();});
+}
+
+function computeStats(s){
+    const sc=[];let tS=null,tV=-1,wS=null,wV=999;
+    SUBJECTS.forEach(subj=>{
+        const v=parseFloat(s[subj.name]);
+        if(!isNaN(v)){sc.push({name:subj.name,score:v});if(v>tV){tV=v;tS=subj.name;}if(v<wV){wV=v;wS=subj.name;}}
+    });
+    s._scores=sc;s._avg=sc.length?sc.reduce((a,b)=>a+b.score,0)/sc.length:0;
+    s._assessed=sc.length;s._topSubject=tS;s._weakSubject=wS;
+    s._gradeInfo=getGradeInfo(s._avg);
+    s._totalPts=sc.reduce((a,b)=>a+getGradeInfo(b.score).pts,0);
+    s._maxPts=sc.length*8.0;
+}
+
+function getGradeInfo(score){
+    const n=parseFloat(score);
+    if(isNaN(n))return{pts:0,code:'NA',label:'Not Assessed'};
+    for(const g of GRADE_SCALE)if(n>=g.min&&n<=g.max)return g;
+    return{pts:0,code:'NA',label:'Invalid'};
+}
+
+// Auto-detect exam types from all field keys in the data
+// A field is considered an exam-type score for a subject if its key starts with a subject name
+// e.g. "English EX01", "Mathematics MID TERM", "Kiswahili END TERM", "Mathematics EX02"
+function detectExamTypes(){
+    const examTypesSet=new Set();
+    examTypeMap={};
+    const subjectNames=SUBJECTS.map(s=>s.name);
+
+    allStudents.forEach(student=>{
+        Object.keys(student).forEach(key=>{
+            if(key.startsWith('_')||key==='id') return;
+            // Check if this key is like "SubjectName ExamLabel"
+            for(const sn of subjectNames){
+                if(key.startsWith(sn+' ')){
+                    const examLabel=key.slice(sn.length+1).trim(); // e.g. "EX01", "MID TERM", "END TERM"
+                    if(examLabel.length>0){
+                        examTypesSet.add(examLabel);
+                        if(!examTypeMap[examLabel]) examTypeMap[examLabel]=[];
+                        if(!examTypeMap[examLabel].includes(key)) examTypeMap[examLabel].push(key);
+                    }
+                    break;
+                }
+            }
+        });
+    });
+
+    allExamTypes=['ALL',...Array.from(examTypesSet).sort()];
+}
+
+// ══════════════════════════════════════════════════════════════
+// FILTERS
+// ══════════════════════════════════════════════════════════════
+function populateGradeFilter(){
+    const sel=document.getElementById('grade-filter');
+    const grades=[...new Set(allStudents.map(s=>s._grade))].sort();
+    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+}
+function populateDistSubjectFilter(){
+    const sel=document.getElementById('dist-subject-filter');
+    sel.innerHTML='<option value="overall">Overall Average</option>'+SUBJECTS.map(s=>`<option value="${s.name}">${s.name}</option>`).join('');
+}
+function populateProgressGradeFilter(){
+    const sel=document.getElementById('progress-grade-filter');
+    const grades=[...new Set(allStudents.map(s=>s._grade))].sort();
+    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+}
+
+window.applyFilters=function(){
+    const grade=document.getElementById('grade-filter').value;
+    const gender=document.getElementById('gender-filter').value;
+    const search=document.getElementById('search-input').value.toLowerCase().trim();
+    const rpp=parseInt(document.getElementById('rows-per-page').value);
+    rankPerPage=rpp;detailPerPage=rpp;
+    filteredStudents=allStudents.filter(s=>{
+        if(grade&&s._grade!==grade)return false;
+        if(gender&&s['Gender']!==gender)return false;
+        if(search){const hay=[s['Official Student Name'],s['UPI'],s['Assessment No'],s._grade].map(x=>String(x||'').toLowerCase()).join(' ');if(!hay.includes(search))return false;}
+        return true;
+    });
+    [...filteredStudents].sort((a,b)=>b._avg-a._avg).forEach((s,i)=>s._rank=i+1);
+    rankPage=1;detailPage=1;renderAll();
+};
+window.resetFilters=function(){
+    document.getElementById('grade-filter').value='';document.getElementById('gender-filter').value='';
+    document.getElementById('search-input').value='';document.getElementById('rows-per-page').value='20';
+    applyFilters();
+};
+['search-input','grade-filter','gender-filter','rows-per-page'].forEach(id=>{
+    document.getElementById(id).addEventListener(id==='search-input'?'input':'change',applyFilters);
+});
+
+// ══════════════════════════════════════════════════════════════
+// RENDER ALL
+// ══════════════════════════════════════════════════════════════
+function renderAll(){
+    renderStats();
+    if(currentTab==='rankings')renderRankings();
+    else if(currentTab==='subjects')renderSubjectAnalytics();
+    else if(currentTab==='distribution')renderDistribution();
+    else if(currentTab==='insights')renderInsights();
+    else if(currentTab==='gender')renderGenderAnalysis();
+    else if(currentTab==='detailed')renderDetailed();
+    else if(currentTab==='progress')renderProgressTab();
+}
+
+// ══════════════════════════════════════════════════════════════
+// STATS CARDS
+// ══════════════════════════════════════════════════════════════
+function renderStats(){
+    const st=filteredStudents;
+    if(!st.length){document.getElementById('stats-grid').innerHTML='';return;}
+    const avgs=st.map(s=>s._avg);
+    const oA=avgs.reduce((a,b)=>a+b,0)/avgs.length;
+    const cards=[
+        {icon:'👥',value:st.length,label:'Total Students',color:'#3498db'},
+        {icon:'📊',value:oA.toFixed(1)+'%',label:'Class Average',color:'#2980b9'},
+        {icon:'🏆',value:Math.max(...avgs).toFixed(1)+'%',label:'Highest Score',color:'#f39c12'},
+        {icon:'🌟',value:st.filter(s=>s._gradeInfo.code.startsWith('EE')).length,label:'Exceeding Expectation',color:'#27ae60'},
+        {icon:'⚠️',value:st.filter(s=>s._gradeInfo.code.startsWith('BE')).length,label:'Below Expectation',color:'#e74c3c'},
+        {icon:'✅',value:(st.filter(s=>s._avg>=41).length/st.length*100).toFixed(1)+'%',label:'Pass Rate (≥41%)',color:'#8e44ad'},
+        {icon:'📐',value:(st.reduce((a,b)=>a+b._totalPts,0)/st.length).toFixed(2),label:'Avg Total Points',color:'#16a085'},
+        {icon:'📚',value:[...new Set(st.map(s=>s._grade))].length,label:'Active Grades',color:'#e67e22'},
+    ];
+    document.getElementById('stats-grid').innerHTML=cards.map(c=>`
+        <div class="stat-card" style="--cc:${c.color}">
+            <div class="stat-icon">${c.icon}</div>
+            <div class="stat-value">${c.value}</div>
+            <div class="stat-label">${c.label}</div>
+        </div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// RANKINGS
+// ══════════════════════════════════════════════════════════════
+function renderRankings(){
+    const sorted=[...filteredStudents].sort((a,b)=>{
+        if(currentSort.field==='avg')return currentSort.dir==='desc'?b._avg-a._avg:a._avg-b._avg;
+        if(currentSort.field==='name'){const na=a['Official Student Name']||'',nb=b['Official Student Name']||'';return currentSort.dir==='asc'?na.localeCompare(nb):nb.localeCompare(na);}
+        return 0;
+    });
+    document.getElementById('rank-count-badge').textContent=`${sorted.length} students`;
+    const total=sorted.length,start=(rankPage-1)*rankPerPage;
+    const page=sorted.slice(start,start+rankPerPage);
+    const mxA=Math.max(...sorted.map(s=>s._avg),1);
+    const tbody=document.getElementById('rankings-tbody');
+    if(!page.length){tbody.innerHTML=`<tr><td colspan="10"><div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No students found</div></div></td></tr>`;document.getElementById('rank-pagination').innerHTML='';return;}
+    tbody.innerHTML=page.map((s,i)=>{
+        const gr=start+i+1,rc=gr===1?'rank-1':gr===2?'rank-2':gr===3?'rank-3':'rank-other';
+        const pct=s._avg/mxA*100,fc=s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c';
+        const gd=(s['Gender']||'').toLowerCase();
+        const gb=gd.startsWith('m')?`<span class="gender-m">Male</span>`:gd.startsWith('f')?`<span class="gender-f">Female</span>`:`<span style="color:#bdc3c7;">—</span>`;
+        return `<tr>
+            <td><span class="rank-badge ${rc}">${gr}</span></td>
+            <td style="font-weight:700;cursor:pointer;color:#2980b9;" onclick="jumpToProgress('${esc(s.id)}')" title="View Progress Report">${esc(s['Official Student Name']||'N/A')} <span style="font-size:10px;opacity:0.6;">📈</span></td>
+            <td><span style="background:#ebf5fb;color:#2980b9;padding:2px 9px;border-radius:8px;font-size:11px;font-weight:700;">${esc(s._grade)}</span></td>
+            <td>${gb}</td>
+            <td><div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${fc};"></div></div><span class="score-val" style="color:${fc};">${s._avg.toFixed(1)}%</span></div></td>
+            <td style="font-size:12px;font-weight:700;">${s._totalPts.toFixed(1)}/${s._maxPts.toFixed(1)}</td>
+            <td style="color:#7f8c8d;font-size:12px;">${s._assessed}/9</td>
+            <td><span class="grade-pill grade-${s._gradeInfo.code}">${s._gradeInfo.code}</span></td>
+            <td style="font-size:12px;color:#27ae60;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(s._topSubject||'—')}</td>
+            <td style="font-size:12px;color:#e74c3c;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${esc(s._weakSubject||'—')}</td>
+        </tr>`;
+    }).join('');
+    document.getElementById('rank-pagination').innerHTML=renderPagination(total,rankPerPage,rankPage,p=>{rankPage=p;renderRankings();});
+}
+window.sortTable=function(field){
+    if(currentSort.field===field)currentSort.dir=currentSort.dir==='asc'?'desc':'asc';
+    else{currentSort.field=field;currentSort.dir=field==='avg'?'desc':'asc';}
+    rankPage=1;renderRankings();
+};
+
+// jump from ranking table to progress tab for a student
+window.jumpToProgress=function(studentId){
+    const s=allStudents.find(x=>x.id===studentId);
+    if(!s)return;
+    switchTab('progress');
+    selectProgressStudent(s);
+    document.getElementById('progress-search').value=s['Official Student Name']||'';
+};
+
+// ══════════════════════════════════════════════════════════════
+// SUBJECT ANALYTICS
+// ══════════════════════════════════════════════════════════════
+function renderSubjectAnalytics(){
+    const grid=document.getElementById('subject-grid');
+    if(!filteredStudents.length){grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📐</div><div class="empty-title">No data available</div></div>`;return;}
+    grid.innerHTML=SUBJECTS.map((subj,idx)=>{
+        const scores=filteredStudents.map(s=>parseFloat(s[subj.name])).filter(v=>!isNaN(v));
+        const color=SUBJECT_COLORS[idx%SUBJECT_COLORS.length];
+        if(!scores.length)return`<div class="subject-card" style="--sc:${color}"><div class="subject-name">${subj.name}</div><div style="color:#7f8c8d;font-size:12px;margin-top:8px;">No data</div></div>`;
+        const avg=scores.reduce((a,b)=>a+b,0)/scores.length;
+        const max=Math.max(...scores),min=Math.min(...scores),pass=scores.filter(s=>s>=41).length;
+        const v=scores.reduce((a,b)=>a+Math.pow(b-avg,2),0)/scores.length;
+        const dist={};GRADE_SCALE.forEach(g=>dist[g.code]=0);
+        scores.forEach(sc=>{const gi=getGradeInfo(sc);dist[gi.code]=(dist[gi.code]||0)+1;});
+        const distHTML=Object.entries(dist).filter(([,v])=>v>0).map(([code,cnt])=>`
+            <div class="dist-row"><span class="dist-label">${code}</span><div class="dist-bar"><div class="dist-fill" style="width:${cnt/scores.length*100}%;background:${GRADE_COLORS[code]||'#95a5a6'};"></div></div><span class="dist-count">${cnt}</span></div>`).join('');
+        return`<div class="subject-card" style="--sc:${color}">
+            <div class="subject-card-header"><div><div class="subject-name">${subj.name}</div><div class="subject-code">Code: ${subj.code} · ${scores.length} assessed</div></div><div class="subject-avg-big">${avg.toFixed(1)}</div></div>
+            <div class="subject-stats-row">
+                <div class="subject-mini-stat"><div class="val">${max.toFixed(0)}</div><div class="lbl">Highest</div></div>
+                <div class="subject-mini-stat"><div class="val">${min.toFixed(0)}</div><div class="lbl">Lowest</div></div>
+                <div class="subject-mini-stat"><div class="val">${Math.sqrt(v).toFixed(1)}</div><div class="lbl">Std Dev</div></div>
+                <div class="subject-mini-stat"><div class="val">${(pass/scores.length*100).toFixed(1)}%</div><div class="lbl">Pass Rate</div></div>
+                <div class="subject-mini-stat"><div class="val">${pass}</div><div class="lbl">Passed</div></div>
+                <div class="subject-mini-stat"><div class="val">${scores.length-pass}</div><div class="lbl">Failed</div></div>
+            </div>
+            <div style="margin-top:8px;">${distHTML}</div>
+        </div>`;
+    }).join('');
+    document.getElementById('subjects-badge').textContent=SUBJECTS.length+' subjects';
+}
+
+// ══════════════════════════════════════════════════════════════
+// DISTRIBUTION
+// ══════════════════════════════════════════════════════════════
+window.renderDistribution=function(){
+    const subj=document.getElementById('dist-subject-filter').value;
+    const content=document.getElementById('distribution-content');
+    if(!filteredStudents.length){content.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">No data</div></div>`;return;}
+    const scores=subj==='overall'?filteredStudents.map(s=>s._avg):filteredStudents.map(s=>parseFloat(s[subj])).filter(v=>!isNaN(v));
+    if(!scores.length){content.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-title">No data for this subject</div></div>`;return;}
+    const dist={};GRADE_SCALE.forEach(g=>dist[g.code]={count:0,label:g.label});
+    scores.forEach(sc=>{const gi=getGradeInfo(sc);if(dist[gi.code])dist[gi.code].count++;});
+    const mxD=Math.max(...Object.values(dist).map(d=>d.count),1);
+    const barsHTML=Object.entries(dist).map(([code,d])=>{
+        if(!d.count)return'';
+        const h=Math.max(d.count/mxD*175,4),pct=(d.count/scores.length*100).toFixed(1);
+        return`<div class="bar-col"><div class="bar-count">${d.count}<br><span style="font-size:9px;color:#7f8c8d;">${pct}%</span></div><div class="bar-visual" style="height:${h}px;background:${GRADE_COLORS[code]||'#95a5a6'};"></div><div class="bar-label">${code}</div></div>`;
+    }).filter(Boolean).join('');
+    const ranges=[{l:'0-10',mn:0,mx:10},{l:'11-20',mn:11,mx:20},{l:'21-30',mn:21,mx:30},{l:'31-40',mn:31,mx:40},{l:'41-50',mn:41,mx:50},{l:'51-60',mn:51,mx:60},{l:'61-70',mn:61,mx:70},{l:'71-80',mn:71,mx:80},{l:'81-90',mn:81,mx:90},{l:'91-100',mn:91,mx:100}];
+    const mxR=Math.max(...ranges.map(r=>scores.filter(s=>s>=r.mn&&s<=r.mx).length),1);
+    const rangesHTML=ranges.map(r=>{
+        const cnt=scores.filter(s=>s>=r.mn&&s<=r.mx).length,h=Math.max(cnt/mxR*150,2),col=r.mn>=75?'#27ae60':r.mn>=58?'#3498db':r.mn>=41?'#f39c12':'#e74c3c';
+        return`<div class="bar-col"><div class="bar-count">${cnt}<br><span style="font-size:9px;color:#7f8c8d;">${(cnt?cnt/scores.length*100:0).toFixed(1)}%</span></div><div class="bar-visual" style="height:${h}px;background:${col};"></div><div class="bar-label">${r.l}</div></div>`;
+    }).join('');
+    const avg=scores.reduce((a,b)=>a+b,0)/scores.length,pass=scores.filter(s=>s>=41).length;
+    content.innerHTML=`
+        <div style="margin-bottom:28px;"><div style="font-size:12px;color:#7f8c8d;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;font-weight:700;">Performance Level Distribution</div><div class="dist-bar-chart">${barsHTML}</div></div>
+        <div style="border-top:1px solid #f0f4f8;padding-top:24px;margin-bottom:8px;"><div style="font-size:12px;color:#7f8c8d;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;font-weight:700;">Score Range Distribution (0–100)</div><div class="dist-bar-chart">${rangesHTML}</div></div>
+        <div style="border-top:1px solid #f0f4f8;padding-top:18px;display:flex;gap:28px;flex-wrap:wrap;">
+            <div><span style="color:#7f8c8d;font-size:12px;">Total assessed:</span> <strong>${scores.length}</strong></div>
+            <div><span style="color:#7f8c8d;font-size:12px;">Average:</span> <strong style="color:#3498db;">${avg.toFixed(2)}%</strong></div>
+            <div><span style="color:#7f8c8d;font-size:12px;">Pass (≥41):</span> <strong style="color:#27ae60;">${pass} (${(pass/scores.length*100).toFixed(1)}%)</strong></div>
+            <div><span style="color:#7f8c8d;font-size:12px;">Fail (&lt;41):</span> <strong style="color:#e74c3c;">${scores.length-pass} (${((scores.length-pass)/scores.length*100).toFixed(1)}%)</strong></div>
+        </div>`;
+};
+
+// ══════════════════════════════════════════════════════════════
+// INSIGHTS
+// ══════════════════════════════════════════════════════════════
+function renderInsights(){
+    const el=document.getElementById('insights-grid');
+    if(!filteredStudents.length){el.innerHTML='';return;}
+    const st=filteredStudents,insights=[];
+    const sA=SUBJECTS.map(subj=>{const sc=st.map(s=>parseFloat(s[subj.name])).filter(v=>!isNaN(v));return{name:subj.name,avg:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0,assessed:sc.length};}).filter(s=>s.assessed>0).sort((a,b)=>b.avg-a.avg);
+    if(sA.length){
+        insights.push({icon:'🌟',title:'Strongest Subject',color:'#27ae60',body:`<span class="insight-highlight">${sA[0].name}</span> leads with class average <span class="insight-highlight">${sA[0].avg.toFixed(1)}%</span> (${sA[0].assessed} assessed).`});
+        insights.push({icon:'⚠️',title:'Weakest Subject',color:'#e74c3c',body:`<span class="insight-highlight">${sA[sA.length-1].name}</span> has the lowest average at <span class="insight-highlight">${sA[sA.length-1].avg.toFixed(1)}%</span>. Needs attention.`});
+    }
+    const top=st.reduce((a,b)=>a._avg>b._avg?a:b,st[0]);
+    insights.push({icon:'🏆',title:'Top Performer',color:'#f39c12',body:`<span class="insight-highlight">${esc(top['Official Student Name']||'N/A')}</span> (${esc(top._grade)}) leads with <span class="insight-highlight">${top._avg.toFixed(1)}%</span> — ${top._gradeInfo.label}.`});
+    const pr=(st.filter(s=>s._avg>=41).length/st.length*100).toFixed(1);
+    insights.push({icon:'✅',title:'Overall Pass Rate',color:parseFloat(pr)>=70?'#27ae60':parseFloat(pr)>=50?'#f39c12':'#e74c3c',body:`<span class="insight-highlight">${pr}%</span> meeting expectations or above. ${st.filter(s=>s._avg<41).length} students need support.`});
+    const eeC=st.filter(s=>s._gradeInfo.code.startsWith('EE')).length;
+    insights.push({icon:'🌈',title:'Exceeding Expectation',color:'#8e44ad',body:`<span class="insight-highlight">${eeC}</span> student${eeC!==1?'s':''} (${(eeC/st.length*100).toFixed(1)}%) scoring above 75%.`});
+    const males=st.filter(s=>(s['Gender']||'').toLowerCase().startsWith('m')),females=st.filter(s=>(s['Gender']||'').toLowerCase().startsWith('f'));
+    if(males.length>0&&females.length>0){const mA=males.reduce((a,b)=>a+b._avg,0)/males.length,fA=females.reduce((a,b)=>a+b._avg,0)/females.length;insights.push({icon:'⚤',title:'Gender Gap',color:'#16a085',body:`<span class="insight-highlight">${mA>fA?'Male':'Female'}</span> students lead by <span class="insight-highlight">${Math.abs(mA-fA).toFixed(1)}%</span>. M: ${mA.toFixed(1)}%, F: ${fA.toFixed(1)}%.`});}
+    const gg={};st.forEach(s=>{if(!gg[s._grade])gg[s._grade]=[];gg[s._grade].push(s);});let wG=null,wBE=0;
+    Object.entries(gg).forEach(([g,arr])=>{const be=arr.filter(s=>s._gradeInfo.code.startsWith('BE')).length;if(be>wBE){wBE=be;wG=g;}});
+    if(wG&&wBE>0)insights.push({icon:'📌',title:'Grade Needing Most Support',color:'#e67e22',body:`<span class="insight-highlight">${wG}</span> has <span class="insight-highlight">${wBE}</span> student${wBE!==1?'s':''} below expectation.`});
+    const ms=SUBJECTS.map(subj=>({name:subj.name,missing:st.filter(s=>isNaN(parseFloat(s[subj.name]))).length})).sort((a,b)=>b.missing-a.missing);
+    if(ms[0]&&ms[0].missing>0)insights.push({icon:'📋',title:'Incomplete Data',color:'#95a5a6',body:`<span class="insight-highlight">${ms[0].name}</span> has <span class="insight-highlight">${ms[0].missing}</span> missing scores.`});
+    insights.push({icon:'📐',title:'Average Total Points',color:'#2980b9',body:`Class average: <span class="insight-highlight">${(st.reduce((a,b)=>a+b._totalPts,0)/st.length).toFixed(2)}</span> / ${9*8} points.`});
+    el.innerHTML=insights.map(i=>`<div class="insight-card" style="--ic:${i.color}"><div class="insight-icon">${i.icon}</div><div class="insight-title">${i.title}</div><div class="insight-body">${i.body}</div></div>`).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// GENDER
+// ══════════════════════════════════════════════════════════════
+function renderGenderAnalysis(){
+    const el=document.getElementById('gender-content');
+    const males=filteredStudents.filter(s=>(s['Gender']||'').toLowerCase().startsWith('m'));
+    const females=filteredStudents.filter(s=>(s['Gender']||'').toLowerCase().startsWith('f'));
+    if(!males.length&&!females.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">⚤</div><div class="empty-title">No gender data</div></div>`;return;}
+    const gS=arr=>{if(!arr.length)return null;const avgs=arr.map(s=>s._avg),avg=avgs.reduce((a,b)=>a+b,0)/avgs.length;return{count:arr.length,avg:avg.toFixed(1),max:Math.max(...avgs).toFixed(1),pr:(arr.filter(s=>s._avg>=41).length/arr.length*100).toFixed(1),ee:arr.filter(s=>s._gradeInfo.code.startsWith('EE')).length};};
+    const ms=gS(males),fs=gS(females);
+    const sc=SUBJECTS.map(subj=>{const msc=males.map(s=>parseFloat(s[subj.name])).filter(v=>!isNaN(v)),fsc=females.map(s=>parseFloat(s[subj.name])).filter(v=>!isNaN(v));const mA=msc.length?msc.reduce((a,b)=>a+b,0)/msc.length:0,fA=fsc.length?fsc.reduce((a,b)=>a+b,0)/fsc.length:0;return{name:subj.name,mAvg:mA,fAvg:fA,diff:(mA-fA).toFixed(1)};});
+    const mxSA=Math.max(...sc.flatMap(s=>[s.mAvg,s.fAvg]),1);
+    el.innerHTML=`<div style="padding:22px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:24px;">
+            ${ms?`<div style="background:#fff;border:1px solid #dde3ec;border-top:4px solid #3498db;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                <div style="color:#3498db;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px;">👨 Male Students (${ms.count})</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                    <div class="subject-mini-stat"><div class="val" style="color:#3498db;">${ms.avg}%</div><div class="lbl">Average</div></div>
+                    <div class="subject-mini-stat"><div class="val">${ms.max}%</div><div class="lbl">Highest</div></div>
+                    <div class="subject-mini-stat"><div class="val">${ms.pr}%</div><div class="lbl">Pass Rate</div></div>
+                    <div class="subject-mini-stat"><div class="val">${ms.ee}</div><div class="lbl">EE Count</div></div>
+                </div></div>`:''}
+            ${fs?`<div style="background:#fff;border:1px solid #dde3ec;border-top:4px solid #e74c3c;border-radius:12px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,0.05);">
+                <div style="color:#e74c3c;font-size:11px;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:10px;">👩 Female Students (${fs.count})</div>
+                <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;">
+                    <div class="subject-mini-stat"><div class="val" style="color:#e74c3c;">${fs.avg}%</div><div class="lbl">Average</div></div>
+                    <div class="subject-mini-stat"><div class="val">${fs.max}%</div><div class="lbl">Highest</div></div>
+                    <div class="subject-mini-stat"><div class="val">${fs.pr}%</div><div class="lbl">Pass Rate</div></div>
+                    <div class="subject-mini-stat"><div class="val">${fs.ee}</div><div class="lbl">EE Count</div></div>
+                </div></div>`:''}
+        </div>
+        <div style="font-size:12px;color:#7f8c8d;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px;font-weight:700;">Subject-by-Subject Gender Comparison</div>
+        <div class="table-scroll"><table class="rank-table"><thead><tr><th>Subject</th><th>Male Avg</th><th></th><th>Female Avg</th><th></th><th>Difference</th><th>Leader</th></tr></thead>
+        <tbody>${sc.map(s=>{const mP=s.mAvg/mxSA*100,fP=s.fAvg/mxSA*100,dn=parseFloat(s.diff),leader=dn>0.5?'👨 Male':dn<-0.5?'👩 Female':'🤝 Tied',dc=Math.abs(dn)<1?'#7f8c8d':dn>0?'#3498db':'#e74c3c';
+            return`<tr><td style="font-weight:700;">${esc(s.name)}</td><td><div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${mP}%;background:#3498db;"></div></div><span class="score-val" style="color:#3498db;">${s.mAvg.toFixed(1)}</span></div></td><td></td><td><div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${fP}%;background:#e74c3c;"></div></div><span class="score-val" style="color:#e74c3c;">${s.fAvg.toFixed(1)}</span></div></td><td></td><td style="font-weight:700;color:${dc};">${dn>0?'+':''}${s.diff}</td><td style="font-size:12px;">${leader}</td></tr>`;
+        }).join('')}</tbody></table></div></div>`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// DETAILED
+// ══════════════════════════════════════════════════════════════
+function renderDetailed(){
+    const st=filteredStudents;
+    document.getElementById('detailed-badge').textContent=`${st.length} records`;
+    const sorted=[...st].sort((a,b)=>(a._rank||0)-(b._rank||0));
+    const total=sorted.length,start=(detailPage-1)*detailPerPage,page=sorted.slice(start,start+detailPerPage);
+    document.getElementById('detailed-thead').innerHTML=`<tr><th>Rank</th><th>Student Name</th><th>Grade</th><th>Gender</th><th>Assess. No</th><th>UPI</th>${SUBJECTS.map(s=>`<th style="white-space:nowrap;font-size:9px;">${s.name.split(' ')[0]}</th>`).join('')}<th>Avg %</th><th>Total Pts</th><th>Level</th></tr>`;
+    if(!page.length){document.getElementById('detailed-tbody').innerHTML=`<tr><td colspan="20"><div class="empty-state"><div class="empty-icon">📋</div><div class="empty-title">No records</div></div></td></tr>`;document.getElementById('detailed-pagination').innerHTML='';return;}
+    document.getElementById('detailed-tbody').innerHTML=page.map(s=>{
+        const rc=s._rank===1?'rank-1':s._rank===2?'rank-2':s._rank===3?'rank-3':'rank-other';
+        return`<tr>
+            <td><span class="rank-badge ${rc}">${s._rank}</span></td>
+            <td style="font-weight:700;white-space:nowrap;cursor:pointer;color:#2980b9;" onclick="jumpToProgress('${esc(s.id)}')" title="View Progress">${esc(s['Official Student Name']||'N/A')} <span style="font-size:10px;opacity:0.6;">📈</span></td>
+            <td><span style="background:#ebf5fb;color:#2980b9;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;">${esc(s._grade||'N/A')}</span></td>
+            <td>${(s['Gender']||'').toLowerCase().startsWith('m')?'<span class="gender-m">M</span>':(s['Gender']||'').toLowerCase().startsWith('f')?'<span class="gender-f">F</span>':'—'}</td>
+            <td style="font-size:11px;color:#7f8c8d;">${esc(s['Assessment No']||'N/A')}</td>
+            <td style="font-size:11px;color:#7f8c8d;">${esc(s['UPI']||'N/A')}</td>
+            ${SUBJECTS.map(subj=>{const sc=parseFloat(s[subj.name]);if(isNaN(sc))return`<td style="color:#bdc3c7;font-size:11px;text-align:center;">—</td>`;const col=sc>=75?'#27ae60':sc>=58?'#3498db':sc>=41?'#f39c12':'#e74c3c';return`<td style="font-size:12px;font-weight:700;color:${col};text-align:center;">${sc.toFixed(0)}</td>`;}).join('')}
+            <td style="font-weight:700;color:${s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c'};">${s._avg.toFixed(1)}</td>
+            <td style="font-size:12px;font-weight:600;">${s._totalPts.toFixed(1)}</td>
+            <td><span class="grade-pill grade-${s._gradeInfo.code}">${s._gradeInfo.code}</span></td>
+        </tr>`;
+    }).join('');
+    document.getElementById('detailed-pagination').innerHTML=renderPagination(total,detailPerPage,detailPage,p=>{detailPage=p;renderDetailed();});
+}
+
+// ══════════════════════════════════════════════════════════════
+// STUDENT PROGRESS REPORT TAB
+// ══════════════════════════════════════════════════════════════
+function renderProgressTab(){
+    if(selectedStudent) renderProgressReport();
+    // else placeholder already in HTML
+}
+
+// Search autocomplete
+window.onProgressSearch=function(){
+    const q=document.getElementById('progress-search').value.toLowerCase().trim();
+    const gradeF=document.getElementById('progress-grade-filter').value;
+    const list=document.getElementById('autocomplete-list');
+    const pool=allStudents.filter(s=>{
+        if(gradeF&&s._grade!==gradeF)return false;
+        if(q){const hay=(s['Official Student Name']||'').toLowerCase();return hay.includes(q);}
+        return true;
+    }).slice(0,30);
+    if(!pool.length){list.style.display='none';return;}
+    list.innerHTML=pool.map(s=>`
+        <div class="autocomplete-item" onclick="selectProgressStudent(allStudents.find(x=>x.id==='${esc(s.id)}'))">
+            ${esc(s['Official Student Name']||'N/A')}
+            <span class="item-grade">${esc(s._grade)} · ${s['Gender']||'N/A'} · #${s['Assessment No']||s.id}</span>
+        </div>`).join('');
+    list.style.display='block';
+};
+
+// Hide autocomplete on outside click
+document.addEventListener('click',e=>{
+    if(!document.getElementById('progress-search-wrap').contains(e.target)){
+        document.getElementById('autocomplete-list').style.display='none';
+    }
+});
+
+function selectProgressStudent(s){
+    if(!s)return;
+    selectedStudent=s;
+    activeExamType='ALL';
+    document.getElementById('autocomplete-list').style.display='none';
+    document.getElementById('progress-search').value=s['Official Student Name']||'';
+    renderProgressReport();
+}
+
+window.clearProgressStudent=function(){
+    selectedStudent=null;
+    document.getElementById('progress-search').value='';
+    document.getElementById('autocomplete-list').style.display='none';
+    document.getElementById('exam-type-tabs').style.display='none';
+    document.getElementById('export-progress-btn').style.display='none';
+    document.getElementById('progress-badge').textContent='Select a student';
+    document.getElementById('progress-content').innerHTML=`
+        <div class="no-student-placeholder">
+            <div class="ns-icon">🎓</div>
+            <div class="ns-title">No student selected</div>
+            <div class="ns-sub">Search for a student above to view their detailed progress report.</div>
+        </div>`;
+};
+
+function renderProgressReport(){
+    if(!selectedStudent)return;
+    const s=selectedStudent;
+    document.getElementById('progress-badge').textContent=s['Official Student Name']||'N/A';
+    document.getElementById('export-progress-btn').style.display='inline-block';
+
+    // Build exam type tabs from this student's keys
+    const studentExamTypes=new Set(['ALL']);
+    Object.keys(s).forEach(key=>{
+        if(key.startsWith('_')||key==='id')return;
+        for(const subj of SUBJECTS){
+            if(key.startsWith(subj.name+' ')){
+                const label=key.slice(subj.name.length+1).trim();
+                if(label)studentExamTypes.add(label);
+                break;
+            }
+        }
+    });
+    const examTypesList=['ALL',...Array.from(studentExamTypes).filter(x=>x!=='ALL').sort()];
+
+    // Render exam type tabs
+    const tabsEl=document.getElementById('exam-type-tabs');
+    if(examTypesList.length>1){
+        tabsEl.style.display='flex';
+        tabsEl.innerHTML=`<span style="font-size:12px;color:#7f8c8d;font-weight:700;align-self:center;margin-right:4px;">Exam Type:</span>`
+            +examTypesList.map(et=>`<button class="exam-tab ${et===activeExamType?'active':''}" onclick="setExamType('${esc(et)}')">${et==='ALL'?'📋 All Exams':et}</button>`).join('');
+    } else {
+        tabsEl.style.display='none';
+    }
+
+    // Student profile card
+    const gi=s._gradeInfo;
+    const fc=s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c';
+    const profileHTML=`
+        <div class="student-profile-card">
+            <div class="student-avatar-big">${(s['Official Student Name']||'?')[0].toUpperCase()}</div>
+            <div class="student-profile-info">
+                <h2>${esc(s['Official Student Name']||'N/A')}</h2>
+                <div class="student-profile-meta">
+                    <span>📚 ${esc(s._grade||'N/A')}</span>
+                    <span>🆔 UPI: ${esc(s['UPI']||'N/A')}</span>
+                    <span>📋 No: ${esc(s['Assessment No']||'N/A')}</span>
+                    <span>🧑 ${esc(s['Gender']||'N/A')}</span>
+                    <span>📅 Term: ${esc(s['Term']||'N/A')}</span>
+                    ${s['Class']?`<span>🏫 Class: ${esc(s['Class'])}</span>`:''}
+                </div>
+            </div>
+            <div class="student-profile-stats">
+                <div class="profile-stat"><div class="pval">${s._avg.toFixed(1)}%</div><div class="plbl">Avg Score</div></div>
+                <div class="profile-stat"><div class="pval">${s._totalPts.toFixed(1)}</div><div class="plbl">Total Pts</div></div>
+                <div class="profile-stat"><div class="pval">${s._assessed}</div><div class="plbl">Subjects</div></div>
+                <div class="profile-stat"><div class="pval">${gi.code}</div><div class="plbl">Level</div></div>
+                ${s._rank?`<div class="profile-stat"><div class="pval">#${s._rank}</div><div class="plbl">Rank</div></div>`:''}
+            </div>
+        </div>`;
+
+    // Build subject cards with exam type breakdown
+    const subjectCards=SUBJECTS.map((subj,idx)=>{
+        const color=SUBJECT_COLORS[idx%SUBJECT_COLORS.length];
+        const overallScore=parseFloat(s[subj.name]);
+        const gi2=getGradeInfo(overallScore);
+        const fc2=isNaN(overallScore)?'#95a5a6':overallScore>=75?'#27ae60':overallScore>=58?'#3498db':overallScore>=41?'#f39c12':'#e74c3c';
+
+        // Find all exam-type scores for this subject
+        const examRows=[];
+        Object.keys(s).forEach(key=>{
+            if(key.startsWith(subj.name+' ')){
+                const label=key.slice(subj.name.length+1).trim();
+                const val=parseFloat(s[key]);
+                if(label&&!isNaN(val)){
+                    // filter by active exam type
+                    if(activeExamType==='ALL'||label===activeExamType){
+                        examRows.push({label,val,gi:getGradeInfo(val)});
+                    }
+                }
+            }
+        });
+        examRows.sort((a,b)=>a.label.localeCompare(b.label));
+
+        const examRowsHTML=examRows.length?examRows.map(er=>{
+            const ec=er.val>=75?'#27ae60':er.val>=58?'#3498db':er.val>=41?'#f39c12':'#e74c3c';
+            return`<div class="progress-exam-row">
+                <span class="exam-type-label">${esc(er.label)}</span>
+                <div class="exam-score-bar"><div class="exam-score-fill" style="width:${er.val}%;background:${ec};"></div></div>
+                <span class="exam-score-val" style="color:${ec};">${er.val.toFixed(1)}</span>
+                <span class="exam-grade-pill grade-${er.gi.code}" style="background:${GRADE_COLORS[er.gi.code]||'#95a5a6'}22;color:${GRADE_COLORS[er.gi.code]||'#95a5a6'};border:1px solid ${GRADE_COLORS[er.gi.code]||'#95a5a6'}44;">${er.gi.code}</span>
+            </div>`;
+        }).join('')
+        :`<div style="text-align:center;color:#bdc3c7;font-size:12px;padding:10px 0;">${activeExamType==='ALL'?'No exam-type data available':'No data for this exam type'}</div>`;
+
+        return`<div class="progress-subject-card">
+            <div class="progress-subject-header" style="background:linear-gradient(135deg,${color}dd,${color});">
+                <div>
+                    <div class="progress-subject-title">${subj.name}</div>
+                    <div class="progress-subject-code">Code: ${subj.code}</div>
+                </div>
+                <div>
+                    <div class="progress-subject-score">${isNaN(overallScore)?'—':overallScore.toFixed(0)}</div>
+                    <div style="font-size:10px;opacity:0.85;text-align:right;">${gi2.code}</div>
+                </div>
+            </div>
+            <div class="progress-exam-rows">${examRowsHTML}</div>
+        </div>`;
+    }).join('');
+
+    // Summary table
+    const summaryRows=SUBJECTS.map((subj,idx)=>{
+        const color=SUBJECT_COLORS[idx%SUBJECT_COLORS.length];
+        const overallScore=parseFloat(s[subj.name]);
+        const gi2=getGradeInfo(overallScore);
+        const examBreakdown=[];
+        Object.keys(s).forEach(key=>{
+            if(key.startsWith(subj.name+' ')){
+                const label=key.slice(subj.name.length+1).trim();
+                const val=parseFloat(s[key]);
+                if(label&&!isNaN(val))examBreakdown.push({label,val});
+            }
+        });
+        examBreakdown.sort((a,b)=>a.label.localeCompare(b.label));
+        const fc3=isNaN(overallScore)?'#95a5a6':overallScore>=75?'#27ae60':overallScore>=58?'#3498db':overallScore>=41?'#f39c12':'#e74c3c';
+        return`<tr>
+            <td style="font-weight:700;border-left:3px solid ${color};">${subj.name}</td>
+            <td style="text-align:center;">${subj.code}</td>
+            <td style="text-align:center;font-weight:700;color:${fc3};">${isNaN(overallScore)?'—':overallScore.toFixed(1)}</td>
+            <td style="text-align:center;">${isNaN(overallScore)?'—':`<span class="grade-pill grade-${gi2.code}">${gi2.code}</span>`}</td>
+            <td style="text-align:center;color:#7f8c8d;font-size:11px;">${isNaN(overallScore)?'—':gi2.pts.toFixed(1)}</td>
+            ${examBreakdown.map(e=>`<td style="text-align:center;font-weight:600;color:${e.val>=75?'#27ae60':e.val>=58?'#3498db':e.val>=41?'#f39c12':'#e74c3c'};font-size:12px;">${e.val.toFixed(1)}</td>`).join('')}
+            ${examRows?'':''}
+        </tr>`;
+    }).join('');
+
+    // Collect all exam labels for summary table headers
+    const summaryExamLabels=new Set();
+    SUBJECTS.forEach(subj=>{
+        Object.keys(s).forEach(key=>{
+            if(key.startsWith(subj.name+' ')){
+                const label=key.slice(subj.name.length+1).trim();
+                if(label&&!isNaN(parseFloat(s[key])))summaryExamLabels.add(label);
+            }
+        });
+    });
+    const sortedExamLabels=[...summaryExamLabels].sort();
+
+    const summaryTableRows=SUBJECTS.map((subj,idx)=>{
+        const color=SUBJECT_COLORS[idx%SUBJECT_COLORS.length];
+        const overallScore=parseFloat(s[subj.name]);
+        const gi2=getGradeInfo(overallScore);
+        const fc3=isNaN(overallScore)?'#95a5a6':overallScore>=75?'#27ae60':overallScore>=58?'#3498db':overallScore>=41?'#f39c12':'#e74c3c';
+        return`<tr>
+            <td style="font-weight:700;border-left:3px solid ${color};">${subj.name}</td>
+            <td style="text-align:center;font-size:11px;color:#7f8c8d;">${subj.code}</td>
+            ${sortedExamLabels.map(label=>{
+                const key=subj.name+' '+label;
+                const val=parseFloat(s[key]);
+                if(isNaN(val))return`<td style="text-align:center;color:#bdc3c7;font-size:11px;">—</td>`;
+                const c2=val>=75?'#27ae60':val>=58?'#3498db':val>=41?'#f39c12':'#e74c3c';
+                return`<td style="text-align:center;font-weight:700;color:${c2};font-size:12px;">${val.toFixed(1)}</td>`;
+            }).join('')}
+            <td style="text-align:center;font-weight:700;color:${fc3};">${isNaN(overallScore)?'—':overallScore.toFixed(1)}</td>
+            <td style="text-align:center;">${isNaN(overallScore)?'—':`<span class="grade-pill grade-${gi2.code}">${gi2.code}</span>`}</td>
+            <td style="text-align:center;font-size:11px;color:#7f8c8d;">${isNaN(overallScore)?'—':gi2.pts.toFixed(1)}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('progress-content').innerHTML=`
+        ${profileHTML}
+        ${sortedExamLabels.length>0?`
+        <div class="progress-summary-table">
+            <table>
+                <thead><tr>
+                    <th>Learning Area</th><th>Code</th>
+                    ${sortedExamLabels.map(l=>`<th style="text-align:center;">${l}</th>`).join('')}
+                    <th style="text-align:center;">Overall</th>
+                    <th style="text-align:center;">Level</th>
+                    <th style="text-align:center;">Points</th>
+                </tr></thead>
+                <tbody>${summaryTableRows}</tbody>
+            </table>
+        </div>`:''}
+        <div class="progress-subject-grid">${subjectCards}</div>`;
+}
+
+window.setExamType=function(et){
+    activeExamType=et;
+    renderProgressReport();
+};
+
+// ══════════════════════════════════════════════════════════════
+// EXPORT PROGRESS PDF
+// ══════════════════════════════════════════════════════════════
+window.exportProgressPDF=async function(){
+    if(!selectedStudent){notify('Select a student first','warning');return;}
+    if(!window.jspdf){notify('PDF library not ready','error');return;}
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF('portrait');
+    const pw=doc.internal.pageSize.width,ph=doc.internal.pageSize.height;
+    const s=selectedStudent;
+
+    // Header
+    doc.setFillColor(41,128,185);doc.rect(0,0,pw,30,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');
+    doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,11,{align:'center'});
+    doc.setFontSize(11);doc.setFont(undefined,'normal');
+    doc.text('STUDENT PROGRESS REPORT',pw/2,19,{align:'center'});
+    doc.setFontSize(8);doc.setTextColor(200,235,255);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}  |  Term: ${s['Term']||'N/A'}`,pw/2,26,{align:'center'});
+
+    // Student info box
+    doc.setTextColor(0,0,0);doc.setFillColor(240,248,255);doc.rect(14,34,pw-28,30,'F');
+    doc.setDrawColor(41,128,185);doc.rect(14,34,pw-28,30);
+    doc.setFontSize(10);doc.setFont(undefined,'bold');
+    doc.text('STUDENT INFORMATION',18,42);
+    doc.setFontSize(8.5);doc.setFont(undefined,'normal');
+    doc.text(`Name: ${s['Official Student Name']||'N/A'}`,18,50);
+    doc.text(`UPI: ${s['UPI']||'N/A'}`,18,57);
+    doc.text(`Grade: ${s._grade||'N/A'}`,pw/2,50);
+    doc.text(`Assessment No: ${s['Assessment No']||'N/A'}`,pw/2,57);
+    doc.text(`Gender: ${s['Gender']||'N/A'}`,pw*0.75,50);
+    doc.text(`Class: ${s['Class']||'N/A'}`,pw*0.75,57);
+
+    // Overall summary box
+    doc.setFillColor(234,250,241);doc.rect(14,68,pw-28,20,'F');
+    doc.setDrawColor(39,174,96);doc.rect(14,68,pw-28,20);
+    doc.setFontSize(8.5);doc.setFont(undefined,'bold');
+    doc.text(`Overall Average: ${s._avg.toFixed(1)}%`,18,76);
+    doc.text(`Total Points: ${s._totalPts.toFixed(1)} / ${s._maxPts.toFixed(1)}`,pw/2-10,76);
+    doc.text(`Level: ${s._gradeInfo.code} — ${s._gradeInfo.label}`,18,83);
+    doc.text(`Subjects Assessed: ${s._assessed} / 9   |   Rank: #${s._rank||'N/A'}`,pw/2-10,83);
+
+    // Collect all exam labels
+    const examLabels=new Set();
+    SUBJECTS.forEach(subj=>{
+        Object.keys(s).forEach(key=>{
+            if(key.startsWith(subj.name+' ')){
+                const label=key.slice(subj.name.length+1).trim();
+                if(label&&!isNaN(parseFloat(s[key])))examLabels.add(label);
+            }
+        });
+    });
+    const sortedLabels=[...examLabels].sort();
+
+    // Performance table
+    const headers=[['Learning Area','Code',...sortedLabels,'Overall','Level','Pts']];
+    const body=SUBJECTS.map(subj=>{
+        const ov=parseFloat(s[subj.name]);
+        const gi2=getGradeInfo(ov);
+        return[
+            subj.name,subj.code,
+            ...sortedLabels.map(label=>{const v=parseFloat(s[subj.name+' '+label]);return isNaN(v)?'—':v.toFixed(1);}),
+            isNaN(ov)?'—':ov.toFixed(1),
+            gi2.code,
+            isNaN(ov)?'—':gi2.pts.toFixed(1)
+        ];
+    });
+
+    doc.autoTable({
+        head:headers,body,startY:93,
+        styles:{fontSize:8,cellPadding:2.5},
+        headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center'},
+        alternateRowStyles:{fillColor:[240,248,255]},
+        columnStyles:{
+            0:{cellWidth:40},
+            1:{cellWidth:12,halign:'center'},
+            ...Object.fromEntries(sortedLabels.map((_,i)=>[i+2,{cellWidth:Math.min(20,Math.floor((pw-80)/(sortedLabels.length||1))),halign:'center'}])),
+            [sortedLabels.length+2]:{cellWidth:16,halign:'center',fontStyle:'bold'},
+            [sortedLabels.length+3]:{cellWidth:14,halign:'center'},
+            [sortedLabels.length+4]:{cellWidth:10,halign:'center'},
+        },
+        didDrawPage:d=>{
+            doc.setFontSize(7);doc.setTextColor(150,150,150);
+            doc.text(`Page ${d.pageNumber} | ${s['Official Student Name']||'N/A'} Progress Report | Kanyadet Junior School`,pw/2,ph-8,{align:'center'});
+        }
+    });
+
+    // Teacher remarks section
+    let yy=doc.lastAutoTable.finalY+8;
+    if(yy>ph-40){doc.addPage();yy=20;}
+    doc.setFontSize(10);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
+    doc.text("CLASS TEACHER'S REMARKS",14,yy);
+    doc.setFont(undefined,'normal');doc.setFontSize(8.5);doc.setDrawColor(200,200,200);
+    doc.line(14,yy+6,pw-14,yy+6);doc.line(14,yy+13,pw-14,yy+13);doc.line(14,yy+20,pw-14,yy+20);
+
+    // Signatures
+    yy=ph-22;
+    doc.setFont(undefined,'bold');doc.setFontSize(8.5);doc.setTextColor(0,0,0);
+    doc.text('Class Teacher:',14,yy);doc.line(14,yy+5,70,yy+5);
+    doc.setFontSize(7);doc.setFont(undefined,'normal');doc.text('Signature & Date',14,yy+10);
+    doc.setFont(undefined,'bold');doc.setFontSize(8.5);
+    doc.text('Head Teacher:',pw/2+10,yy);doc.line(pw/2+10,yy+5,pw-14,yy+5);
+    doc.setFontSize(7);doc.setFont(undefined,'normal');doc.text('Signature & Stamp',pw/2+10,yy+10);
+
+    const fname=`Progress_${(s['Official Student Name']||'student').replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fname);
+    notify(`📥 Progress report exported for ${s['Official Student Name']||'student'}!`,'success');
+};
+
+// ══════════════════════════════════════════════════════════════
+// EXPORT RANKINGS PDF
+// ══════════════════════════════════════════════════════════════
+window.exportRankingPDF=async function(){
+    if(!window.jspdf){notify('PDF library not ready','error');return;}
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF('landscape');
+    const pw=doc.internal.pageSize.width;
+    doc.setFillColor(41,128,185);doc.rect(0,0,pw,28,'F');
+    doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');
+    doc.text('KANYADET PRIMARY & JUNIOR SCHOOL — STUDENT RANKINGS',pw/2,12,{align:'center'});
+    doc.setFontSize(9);doc.setFont(undefined,'normal');doc.setTextColor(220,240,255);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}  |  Total: ${filteredStudents.length} students  |  Grade: ${document.getElementById('grade-filter').value||'All'}`,pw/2,21,{align:'center'});
+    const sorted=[...filteredStudents].sort((a,b)=>b._avg-a._avg);
+    doc.autoTable({
+        head:[['Rank','Student Name','Grade','Gender','Avg Score','Total Pts','Subjects','Level','Strongest Subject','Weakest Subject']],
+        body:sorted.map((s,i)=>[String(i+1),s['Official Student Name']||'N/A',s._grade||'N/A',s['Gender']||'N/A',s._avg.toFixed(1)+'%',s._totalPts.toFixed(1)+'/'+s._maxPts.toFixed(1),String(s._assessed)+'/9',s._gradeInfo.code,s._topSubject||'—',s._weakSubject||'—']),
+        startY:33,styles:{fontSize:8,cellPadding:2.5},
+        headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[240,248,255]},
+        didDrawPage:d=>{doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text(`Page ${d.pageNumber} | Kanyadet Junior School`,pw/2,doc.internal.pageSize.height-8,{align:'center'});}
+    });
+    doc.save(`Student_Rankings_${new Date().toISOString().split('T')[0]}.pdf`);
+    notify('📥 Rankings PDF exported!','success');
+};
+
+// ══════════════════════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════════════════════
+window.switchTab=function(tab){
+    currentTab=tab;
+    const tabMap=['rankings','subjects','distribution','insights','gender','detailed','progress'];
+    document.querySelectorAll('#main-tabs .tab').forEach((t,i)=>t.classList.toggle('active',tabMap[i]===tab));
+    tabMap.forEach(name=>{
+        const el=document.getElementById('tab-'+name);
+        if(el)el.style.display=name===tab?'block':'none';
+    });
+    if(tab==='rankings')renderRankings();
+    else if(tab==='subjects')renderSubjectAnalytics();
+    else if(tab==='distribution')renderDistribution();
+    else if(tab==='insights')renderInsights();
+    else if(tab==='gender')renderGenderAnalysis();
+    else if(tab==='detailed')renderDetailed();
+    else if(tab==='progress')renderProgressTab();
+};
+
+// ══════════════════════════════════════════════════════════════
+// PAGINATION
+// ══════════════════════════════════════════════════════════════
+function renderPagination(total,perPage,current,onPage){
+    const pages=Math.ceil(total/perPage);if(pages<=1)return'';
+    const s=(current-1)*perPage,e=Math.min(s+perPage,total);
+    let html=`<div class="pagination-info">Showing ${s+1}–${e} of ${total} students</div><div class="page-btns">`;
+    html+=`<button class="page-btn" onclick="(${onPage.toString()})(1)" ${current===1?'disabled':''}>«</button>`;
+    html+=`<button class="page-btn" onclick="(${onPage.toString()})(${current-1})" ${current===1?'disabled':''}>‹</button>`;
+    for(let p=Math.max(1,current-2);p<=Math.min(pages,current+2);p++)html+=`<button class="page-btn ${p===current?'active':''}" onclick="(${onPage.toString()})(${p})">${p}</button>`;
+    html+=`<button class="page-btn" onclick="(${onPage.toString()})(${current+1})" ${current===pages?'disabled':''}>›</button>`;
+    html+=`<button class="page-btn" onclick="(${onPage.toString()})(${pages})" ${current===pages?'disabled':''}>»</button>`;
+    return html+'</div>';
+}
+
+// ══════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════
+function esc(str){return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function showLoader(){document.getElementById('loader').style.display='flex';}
+function hideLoader(){document.getElementById('loader').style.display='none';}
+function notify(msg,type='info'){
+    const wrap=document.getElementById('notif-wrap');
+    const colors={success:'#27ae60',error:'#e74c3c',info:'#3498db',warning:'#f39c12'};
+    const el=document.createElement('div');el.className='notif';el.style.setProperty('--nc',colors[type]||colors.info);
+    el.innerHTML=`<div style="width:8px;height:8px;border-radius:50%;background:${colors[type]||colors.info};margin-top:4px;flex-shrink:0;"></div><div class="notif-text">${msg}</div>`;
+    wrap.prepend(el);
+    setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(400px)';el.style.transition='all 0.4s';setTimeout(()=>el.remove(),400);},4000);
+}
+
+// Loader is shown by default in HTML. Firebase onAuthStateChanged will
+// call onSignedIn (→ keep loader, fetch data) or onSignedOut (→ hide loader, show auth).
+
+</script>
+</body>
+</html>

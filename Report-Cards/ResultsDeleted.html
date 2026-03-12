@@ -1,0 +1,1747 @@
+<!--Missing undo button and features from All-Deleted-Students.html  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deleted Results</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-app-compat.js"></script>
+	 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-auth-compat.js"></script>
+	 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-firestore-compat.js"></script>
+	 <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-firestore-compat.js"></script>
+	 <script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<link rel="stylesheet" href="https://kanyadet-school-admin.web.app/css/swalOnly.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: #f8fafc;
+        }
+        [data-filter-field] {
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        [data-filter-field]:hover {
+            background-color: #f1f5f9;
+            transform: translateX(4px);
+        }
+        .pagination-btn {
+            padding: 8px 16px;
+            margin: 0 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background-color: #ffffff;
+            color: #374151;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .pagination-btn:hover {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+        .pagination-btn:disabled {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+        .pagination-btn.active {
+            background-color: #3b82f6;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .student-image {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        .modal-student-image {
+            width: 80px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        tr.cursor-pointer:not(.no-hover) td:not(.action-buttons) {
+            transition: background-color 0.2s, transform 0.2s;
+        }
+        tr.cursor-pointer:not(.no-hover):hover td:not(.action-buttons) {
+            background-color: #dbeafe !important;
+            transform: scale(1.01);
+        }
+        .action-buttons {
+            background-color: transparent !important;
+            transform: none !important;
+        }
+        .chart-container {
+            max-height: 200px;
+            margin-bottom: 1rem;
+        }
+        .grade-toggle-btn, .export-btn {
+            padding: 4px 8px;
+            margin: 0 4px;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            background-color: #ffffff;
+            color: #374151;
+            cursor: pointer;
+            transition: background-color 0.2s, color 0.2s;
+        }
+        .grade-toggle-btn.active, .export-btn:hover {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+        .grade-toggle-btn:hover, .export-btn:hover {
+            background-color: #dbeafe;
+        }
+    </style>
+  
+</head>
+<body class="bg-gray-100">
+     <div id="main_container" style="display:none;"></div> 
+
+    <div id="loader" class="fixed inset-0 flex items-center justify-center z-500 bg-white/40 backdrop-blur-md">
+        <div class="relative h-16 w-16">
+            <div class="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+            <div class="absolute inset-0 rounded-full border-4 border-t-blue-500 border-r-red-500 border-b-yellow-500 border-l-green-500 animate-spin"></div>
+        </div>
+    </div>
+
+    <div class="w-full mx-auto p-4 md:p-8">
+        <header class="flex justify-between items-center mb-6">
+           <div class="flex flex-col md:flex-row items-center md:items-start gap-4 md:gap-6 p-4">
+  <!-- Logo -->
+  <img src="../images/logo.png" alt="School Logo" class="w-20 h-20 md:w-28 md:h-28 object-contain">
+
+  <!-- Text Section -->
+  <div class="text-center md:text-left">
+    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
+    Deleted Students Results
+    </h1>
+    <p class="text-gray-500 text-sm md:text-base">
+      Manage and analyze deleted student results efficiently.
+    </p>
+  </div>
+</div>
+
+            <div class="flex flex-wrap items-center space-x-4">
+                <span id="user-id-display" class="text-sm text-gray-600"></span>
+                <button id="sign-out-btn" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-all duration-300 shadow-sm">
+                    Sign Out
+                </button>
+            </div>
+        </header>
+
+        <div id="sign-in-section" class="hidden">
+            <div class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-lg text-center">
+                <h2 class="text-2xl font-semibold mb-4">Please Sign In</h2>
+                <div class="space-y-4">
+                    <button id="sign-in-google-btn" class="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Sign in with Google
+                    </button>
+                    <button id="sign-in-fingerprint-btn" class="w-full py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-800 transition-colors">
+                        Sign in with Fingerprint
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <main id="data-section" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+
+
+<!-- Toggle Button (just the icon button) -->
+<button id="toggleBtn" class="fixed bottom-6 right-6 flex items-center justify-center w-16 h-16 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+    </svg>
+</button>
+
+<!-- Modal wrapper (empty, JS will fill content) -->
+<div id="linkModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900 bg-opacity-70 hidden">
+    <div id="modalContent" class="bg-white rounded-2xl p-6 md:p-8 shadow-2xl max-w-lg w-full transform">
+        <!-- JS will inject modal content here -->
+    </div>
+</div>
+
+
+
+                <section id="excel-upload-section" class="bg-white p-6 rounded-lg shadow-md hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700">Upload Excel File</h2>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                        <label for="file-input" class="cursor-pointer text-blue-600 hover:text-blue-800">
+                            <span>Drag & drop or click to upload</span>
+                            <input id="file-input" type="file" class="hidden" accept=".xlsx, .xls">
+                        </label>
+                    </div>
+                    <span class="text-sm text-gray-500 text-center">First column (A1) in your excel file must be "Assessment No"</span>
+
+                    <p id="status-message" class="mt-4 text-center hidden"></p>
+                </section>
+
+                <section id="manual-entry-section" class="bg-white p-6 rounded-lg shadow-md hidden">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-700">Add Student Manually</h2>
+                    <form id="manual-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <input type="text" name="assessmentNo" placeholder="Assessment No (Required)" required class="p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" name="studentName" placeholder="Official Student Name" class="p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" name="studentClass" placeholder="Class" class="p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="text" name="studentGrade" placeholder="Grade" class="p-2 border border-gray-300 rounded-md w-full focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div id="custom-fields-container"></div>
+                        <div class="flex justify-between items-center">
+                            <button type="button" id="add-field-btn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition">Add Custom Field</button>
+                            <button type="submit" class="px-6 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition">Add Student</button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+
+            <section id="stats-section" class="mb-8">
+            </section>
+
+            <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Student Records</h2>
+
+
+
+
+                    
+                    <div class="flex flex-row items-center justify-between mt-4 mx-4">
+                        <div class="flex items-center space-x-2">
+                            <label for="students-per-page" class="text-sm text-gray-600">Students per page:</label>
+                            <select id="students-per-page" class="p-2 border border-gray-300 rounded-md">
+                                <option value="10">10</option>
+                                <option value="100">100</option>
+                                <option value="200">200</option>
+                                <option value="300">300</option>
+                                <option value="400">400</option>
+                                <option value="500">500</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4 w-full md:w-auto">
+                        <input id="search-input" type="text" placeholder="Search anything..." class="p-2 border border-gray-300 rounded-md w-full md:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="grade-filter-select" class="p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Grades</option>
+                        </select>
+                        <button id="print-all-btn" class="hidden px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition">Print All</button>
+                        <button id="print-grade-btn" class="hidden px-4 py-2 bg-yellow-500 text-white rounded-md hover:bg-yellow-600 transition">Print Grade</button>
+                    </div>
+                    <button id="delete-grade-btn" class="hidden p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all duration-300">
+   <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+    </svg>
+    <!-- <span>Delete Grade</span> -->
+</button>
+                </div>
+                <div id="data-display" class="overflow-x-auto">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="message-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <p id="modal-text" class="text-center text-gray-700 mb-4"></p>
+            <button id="close-modal-btn" class="w-full py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition">OK</button>
+        </div>
+    </div>
+
+    <div id="print-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h3 class="text-lg font-semibold mb-4 text-center">Choose Export Format</h3>
+            <div class="flex justify-around">
+                <button id="print-excel-btn" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Excel</button>
+                <button id="print-pdf-btn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">PDF</button>
+                <button id="print-word-btn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Word</button>
+            </div>
+            <button id="close-print-modal-btn" class="mt-6 w-full py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+        </div>
+    </div>
+
+    <div id="pdf-modal-backdrop" class="fixed inset-0 bg-gray-800 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-4xl h-[80vh] flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <div class="flex items-center space-x-4">
+                    <img id="pdf-modal-student-image" class="modal-student-image" src="" alt="Student Image">
+                    <h3 id="pdf-modal-student-name" class="text-lg font-semibold text-gray-700"></h3>
+                    <h2 class="text-lg font-semibold text-gray-700">Birth Certificate</h2>
+                </div>
+                <button id="close-pdf-modal-btn" class="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <iframe id="pdf-iframe" class="flex-1 w-full rounded-lg" src=""></iframe>
+        </div>
+    </div>
+     <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
+    <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthmain.js"></script>
+          <script src="./image-popup.js" ></script>
+         <script src="https://kanyadet-school-admin.web.app/Print-Individual-Results/js/Toggle.js" ></script>
+
+
+
+      <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, remove, update,get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const sanitizedAppId = appId.replace(/\./g, '_');
+        const customFirebaseConfig = {
+            apiKey: "AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE",
+            authDomain: "kanyadet-school-admin.firebaseapp.com",
+            projectId: "kanyadet-school-admin",
+            databaseURL: "https://kanyadet-school-admin-default-rtdb.firebaseio.com",
+            storageBucket: "kanyadet-school-admin.firebasestorage.app",
+            messagingSenderId: "409708360032",
+            appId: "1:409708360032:web:a21d63e8cb5fa1ecabee05",
+            measurementId: "G-Y4C0ZRRL52"
+        };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : customFirebaseConfig;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId = null;
+        let studentsData = [];
+        let currentPage = 1;
+        let studentsPerPage = 10;
+
+        const deleteGradeBtn = document.getElementById('delete-grade-btn');
+        const studentsPerPageSelect = document.getElementById('students-per-page');
+        const fileInput = document.getElementById('file-input');
+        const manualForm = document.getElementById('manual-form');
+        const addFieldBtn = document.getElementById('add-field-btn');
+        const customFieldsContainer = document.getElementById('custom-fields-container');
+        const dataDisplay = document.getElementById('data-display');
+        const statusMessage = document.getElementById('status-message');
+        const modal = document.getElementById('message-modal');
+        const modalText = document.getElementById('modal-text');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const loader = document.getElementById('loader');
+        const signInSection = document.getElementById('sign-in-section');
+        const dataSection = document.getElementById('data-section');
+        const signInGoogleBtn = document.getElementById('sign-in-google-btn');
+        const signInFingerprintBtn = document.getElementById('sign-in-fingerprint-btn');
+        const signOutBtn = document.getElementById('sign-out-btn');
+        const excelUploadSection = document.getElementById('excel-upload-section');
+        const manualEntrySection = document.getElementById('manual-entry-section');
+        const printAllBtn = document.getElementById('print-all-btn');
+        const gradeFilterSelect = document.getElementById('grade-filter-select');
+        const printGradeBtn = document.getElementById('print-grade-btn');
+        const printModal = document.getElementById('print-modal');
+        const closePrintModalBtn = document.getElementById('close-print-modal-btn');
+        const printExcelBtn = document.getElementById('print-excel-btn');
+        const printWordBtn = document.getElementById('print-word-btn');
+        const printPdfBtn = document.getElementById('print-pdf-btn');
+        const searchInput = document.getElementById('search-input');
+        const statsSection = document.getElementById('stats-section');
+        const pdfModalBackdrop = document.getElementById('pdf-modal-backdrop');
+        const pdfIframe = document.getElementById('pdf-iframe');
+        const closePdfModalBtn = document.getElementById('close-pdf-modal-btn');
+        const pdfModalStudentImage = document.getElementById('pdf-modal-student-image');
+        const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
+
+        const showModal = (message) => {
+            modalText.textContent = message;
+            modal.classList.remove('hidden');
+        };
+
+        studentsPerPageSelect.addEventListener('change', (e) => {
+            studentsPerPage = parseInt(e.target.value);
+            currentPage = 1;
+            const selectedGrade = gradeFilterSelect.value;
+            const searchTerm = searchInput.value;
+
+            if (selectedGrade) {
+                const filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
+                renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
+            } else if (searchTerm) {
+                const searchTermLower = searchTerm.toLowerCase();
+                const filteredStudents = studentsData.filter(student => 
+                    Object.values(student).some(value => 
+                        String(value).toLowerCase().includes(searchTermLower)
+                    )
+                );
+                renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+            } else {
+                renderStudents(studentsData);
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        printAllBtn.addEventListener('click', () => {
+            gradeFilterSelect.value = '';
+            printModal.classList.remove('hidden');
+        });
+
+        printGradeBtn.addEventListener('click', () => {
+            printModal.classList.remove('hidden');
+        });
+
+        closePrintModalBtn.addEventListener('click', () => {
+            printModal.classList.add('hidden');
+        });
+
+        closePdfModalBtn.addEventListener('click', () => {
+            pdfModalBackdrop.classList.add('hidden');
+            pdfModalBackdrop.classList.remove('flex');
+            pdfIframe.src = '';
+            pdfModalStudentImage.src = '';
+            pdfModalStudentName.textContent = '';
+        });
+
+        const signInWithGoogle = async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Error during Google sign-in:", error);
+                showModal(`Failed to sign in with Google: ${error.message}`);
+            }
+        };
+
+        const signInWithFingerprint = async () => {
+            if (!window.PublicKeyCredential) {
+                showModal("Fingerprint authentication not supported on this device or browser.");
+                return;
+            }
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                let credential;
+                try {
+                    credential = await navigator.credentials.get({
+                        publicKey: {
+                            challenge: challenge,
+                            rpId: window.location.hostname,
+                            userVerification: 'required',
+                        }
+                    });
+                } catch (e) {
+                    credential = await navigator.credentials.create({
+                        publicKey: {
+                            challenge: challenge,
+                            rp: {
+                                name: "Student Data Uploader",
+                                id: window.location.hostname,
+                            },
+                            user: {
+                                id: new Uint8Array(16),
+                                name: "webauthn-user",
+                                displayName: "WebAuthn User",
+                            },
+                            pubKeyCredParams: [{
+                                type: "public-key",
+                                alg: -7
+                            }],
+                            timeout: 60000,
+                            attestation: "direct"
+                        }
+                    });
+                }
+                showModal("Successfully authenticated with fingerprint!");
+                const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                await signInWithCustomToken(auth, credentialId);
+            } catch (error) {
+                console.error("Error during fingerprint sign-in:", error);
+                showModal(`Fingerprint authentication failed: ${error.message}`);
+            }
+        };
+
+        const signOutUser = async () => {
+            try {
+                await signOut(auth);
+                showModal("You have been signed out.");
+            } catch (error) {
+                console.error("Error during sign-out:", error);
+                showModal("Failed to sign out. Check console for details.");
+            }
+        };
+
+        if (signInGoogleBtn) {
+            signInGoogleBtn.addEventListener('click', signInWithGoogle);
+        }
+        if (signInFingerprintBtn) {
+            signInFingerprintBtn.addEventListener('click', signInWithFingerprint);
+        }
+        signOutBtn.addEventListener('click', signOutUser);
+
+        const setupFirebase = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getDatabase(app);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Authenticated with user ID:", userId);
+                        const email = user.email;
+                        let username = email.split("@")[0];
+                        username = username.replace(/[^a-zA-Z]/g, "");
+                        let spacedName = username.replace(/([a-z])([A-Z])/g, '$1 $2');
+                        spacedName = spacedName.replace(/\b\w/g, char => char.toUpperCase());
+                        userIdDisplay.textContent = `${spacedName}`;
+
+                        if (user.photoURL) {
+                            const userImg = document.createElement("img");
+                            userImg.src = user.photoURL;
+                            userImg.alt = "User profile picture";
+                            userImg.style.width = "50px";
+                            userImg.style.height = "50px";
+                            userImg.style.borderRadius = "50%";
+                            userIdDisplay.insertAdjacentElement("beforebegin", userImg);
+                        }
+
+                        signInSection.classList.add('hidden');
+                        dataSection.classList.remove('hidden');
+
+                        const studentsRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/`);
+                        onValue(studentsRef, (snapshot) => {
+                            const students = [];
+                            const data = snapshot.val();
+                            if (data) {
+                                for (let key in data) {
+                                    students.push({ id: key, ...data[key] });
+                                }
+                            }
+                            students.sort((a, b) => {
+                                const assessmentNoA = parseFloat(a['Assessment No']) || Infinity;
+                                const assessmentNoB = parseFloat(b['Assessment No']) || Infinity;
+                                return assessmentNoA - assessmentNoB;
+                            });
+                            studentsData = students;
+                            currentPage = 1;
+                            populateFilters(students);
+                            renderStudents(students);
+                            loader.classList.add('hidden');
+                        }, (error) => {
+                            console.error("Error fetching students:", error);
+                            showModal(`Error fetching data: ${error.message}`);
+                            loader.classList.add('hidden');
+                        });
+                    } else {
+                        userId = null;
+                        userIdDisplay.textContent = `User ID: Not Signed In`;
+                        signInSection.classList.remove('hidden');
+                        dataSection.classList.add('hidden');
+                        loader.classList.add('hidden');
+                        dataDisplay.innerHTML = '';
+                    }
+                });
+            } catch (e) {
+                console.error("Error setting up Firebase: ", e);
+                showModal(`Failed to initialize application. Check console for details.`);
+                loader.classList.add('hidden');
+            }
+        };
+
+        const populateFilters = (students) => {
+            const grades = new Set();
+            students.forEach(student => {
+                if (student.Grade) {
+                    grades.add(student.Grade);
+                }
+            });
+            
+            gradeFilterSelect.innerHTML = '<option value="">All Grades</option>';
+            const sortedGrades = Array.from(grades).sort();
+            sortedGrades.forEach(gradeName => {
+                const option = document.createElement('option');
+                option.value = gradeName;
+                option.textContent = gradeName;
+                gradeFilterSelect.appendChild(option);
+            });
+            
+            if (students.length > 0) {
+                printAllBtn.classList.remove('hidden');
+            } else {
+                printAllBtn.classList.add('hidden');
+            }
+        };
+
+      // Update the gradeFilterSelect event listener to show the delete button
+gradeFilterSelect.addEventListener('change', () => {
+    const selectedGrade = gradeFilterSelect.value;
+    searchInput.value = '';
+    currentPage = 1;
+    if (selectedGrade) {
+        const filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
+        renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
+        printGradeBtn.classList.remove('hidden');
+        deleteGradeBtn.classList.remove('hidden'); // Show the delete button
+    } else {
+        renderStudents(studentsData);
+        printGradeBtn.classList.add('hidden');
+        deleteGradeBtn.classList.add('hidden'); // Hide the delete button
+    }
+});
+
+        const readFileAsArrayBuffer = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsArrayBuffer(file);
+            });
+        };
+
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            statusMessage.textContent = 'Processing file...';
+            statusMessage.classList.remove('hidden');
+            loader.classList.remove('hidden');
+
+            try {
+                const data = await readFileAsArrayBuffer(file);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                if (jsonRows.length < 2) {
+                    throw new Error("File must contain a header row and at least one data row.");
+                }
+
+                const headers = jsonRows[0].map(h => String(h).trim());
+                const studentData = jsonRows.slice(1);
+
+                if (!headers.includes("Assessment No")) {
+                    throw new Error("Excel file must have a column titled 'Assessment No'.");
+                }
+                const assessmentNoIndex = headers.indexOf("Assessment No");
+
+                const studentsRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/`);
+                for (const row of studentData) {
+                    const assessmentNo = row[assessmentNoIndex];
+                    if (!assessmentNo) {
+                        console.warn("Skipping row with missing 'Assessment No'.");
+                        continue;
+                    }
+                    const studentDocKey = String(assessmentNo);
+                    const studentObj = {};
+                    headers.forEach((header, index) => {
+                        studentObj[header] = row[index];
+                    });
+                    await set(ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${studentDocKey}`), studentObj);
+                }
+
+                statusMessage.textContent = 'Data uploaded successfully!';
+                statusMessage.classList.remove('text-red-500');
+                statusMessage.classList.add('text-green-500');
+            } catch (e) {
+                console.error("Error processing file:", e);
+                statusMessage.textContent = `Error: ${e.message}`;
+                statusMessage.classList.remove('text-green-500');
+                statusMessage.classList.add('text-red-500');
+            } finally {
+                fileInput.value = '';
+                loader.classList.add('hidden');
+            }
+        });
+
+        addFieldBtn.addEventListener('click', () => {
+            const fieldGroup = document.createElement('div');
+            fieldGroup.className = "flex items-center space-x-2 mt-2";
+            fieldGroup.innerHTML = `
+                <input type="text" placeholder="Custom Field Title" class="field-title flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <input type="text" placeholder="Value" class="field-value flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <button type="button" class="remove-field-btn p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            `;
+            customFieldsContainer.appendChild(fieldGroup);
+
+            fieldGroup.querySelector('.remove-field-btn').addEventListener('click', () => {
+                fieldGroup.remove();
+            });
+        });
+
+        manualForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(manualForm);
+            const studentData = {};
+            let hasAssessmentNo = false;
+
+            for (let [key, value] of formData.entries()) {
+                if (key === 'assessmentNo') {
+                    studentData['Assessment No'] = value;
+                    hasAssessmentNo = true;
+                } else if (key === 'studentName') {
+                    studentData['Official Student Name'] = value;
+                } else if (key === 'studentClass') {
+                    studentData['Class'] = value;
+                } else if (key === 'studentGrade') {
+                    studentData['Grade'] = value;
+                }
+            }
+
+            const customFields = customFieldsContainer.querySelectorAll('.flex');
+            customFields.forEach(group => {
+                const titleInput = group.querySelector('.field-title');
+                const valueInput = group.querySelector('.field-value');
+                if (titleInput && titleInput.value) {
+                    studentData[titleInput.value.trim()] = valueInput ? valueInput.value.trim() : '';
+                }
+            });
+
+            if (!hasAssessmentNo || !studentData['Assessment No']) {
+                showModal('The "Assessment No" field is required.');
+                return;
+            }
+
+            try {
+                const studentDocKey = String(studentData['Assessment No']);
+                const studentsRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${studentDocKey}`);
+                await set(studentsRef, studentData);
+                showModal('Student data added successfully!');
+                manualForm.reset();
+                customFieldsContainer.innerHTML = '';
+            } catch (e) {
+                console.error("Error adding student:", e);
+                showModal(`Error adding student: ${e.message}`);
+            }
+        });
+
+        const exportGradeGenderData = (gradeGenderData) => {
+            const headers = ['Grade', 'Male', 'Female', 'Other'];
+            const csvRows = [headers.join(',')];
+            Object.entries(gradeGenderData).forEach(([grade, genders]) => {
+                const row = [
+                    grade,
+                    genders.Male || 0,
+                    genders.Female || 0,
+                    genders.Other || 0
+                ];
+                csvRows.push(row.join(','));
+            });
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'grade_gender_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const exportFilterGenderData = (filterGenderData, filterField, filterValue) => {
+            const headers = ['Gender', 'Count'];
+            const csvRows = [headers.join(',')];
+            Object.entries(filterGenderData).forEach(([gender, count]) => {
+                csvRows.push([gender, count].join(','));
+            });
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `filter_${filterField}_${filterValue}_gender_data.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const updateAnalyticsDashboard = (students, activeFilter = null) => {
+            if (!studentsData) {
+                statsSection.innerHTML = '';
+                return;
+            }
+
+            const totalStudentsInDB = studentsData.length; // Dynamic count
+            if (totalStudentsInDB === 0) {
+                statsSection.innerHTML = '<p class="text-center text-gray-500">Upload data to see analytics.</p>';
+                return;
+            }
+
+            const createDistribution = (field) => {
+                const distribution = {};
+                let count = 0;
+                studentsData.forEach(student => {
+                    const value = student[field] || 'N/A';
+                    distribution[value] = (distribution[value] || 0) + 1;
+                    if (student[field]) count++;
+                });
+                return count > 0 ? distribution : null;
+            };
+
+            const gradeDistribution = createDistribution('Grade');
+            const classDistribution = createDistribution('Class');
+            const genderDistribution = createDistribution('Gender');
+
+            // Calculate grade-wise gender counts
+            const gradeGenderData = {};
+            studentsData.forEach(student => {
+                const grade = student.Grade || 'N/A';
+                const gender = student.Gender ? student.Gender.toLowerCase() : 'other';
+                if (!gradeGenderData[grade]) {
+                    gradeGenderData[grade] = { Male: 0, Female: 0, Other: 0 };
+                }
+                gradeGenderData[grade][gender.charAt(0).toUpperCase() + gender.slice(1)]++;
+            });
+
+            // Calculate gender counts for complete records
+            let completeRecords = 0;
+            const completeGenderData = { Male: 0, Female: 0, Other: 0 };
+            studentsData.forEach(s => {
+                if (s['Official Student Name'] && s['Grade']) {
+                    completeRecords++;
+                    const gender = s.Gender ? s.Gender.toLowerCase() : 'other';
+                    completeGenderData[gender.charAt(0).toUpperCase() + gender.slice(1)]++;
+                }
+            });
+            const completenessPercentage = Math.round((completeRecords / totalStudentsInDB) * 100);
+
+            // Calculate gender counts for filtered students
+            const filterGenderData = { Male: 0, Female: 0, Other: 0 };
+            if (activeFilter) {
+                students.forEach(student => {
+                    const gender = student.Gender ? student.Gender.toLowerCase() : 'other';
+                    filterGenderData[gender.charAt(0).toUpperCase() + gender.slice(1)]++;
+                });
+            }
+
+            const generateDistributionHTML = (title, distribution, fieldName, colorClass) => {
+                if (!distribution) return '';
+                const totalItems = Object.values(distribution).reduce((sum, count) => sum + count, 0);
+                return `
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <h3 class="font-semibold mb-3 text-gray-700">${title}</h3>
+                        <div class="space-y-3">
+                            ${Object.entries(distribution).sort((a, b) => b[1] - a[1]).map(([value, count]) => {
+                                const percentage = totalItems > 0 ? (count / totalItems) * 100 : 0;
+                                return `
+                                <div class="p-2 rounded-md transition-all" data-filter-field="${fieldName}" data-filter-value="${value}">
+                                    <div class="flex justify-between items-center mb-1 text-sm">
+                                        <span class="font-medium text-gray-600">${value}</span>
+                                        <span class="font-bold text-gray-800">${count}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div class="${colorClass} h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            };
+
+            // Total Students Chart and Summary
+            const totalStudentsChartData = {
+                labels: Object.keys(gradeGenderData),
+                datasets: [
+                    {
+                        label: 'Male',
+                        data: Object.values(gradeGenderData).map(g => g.Male || 0),
+                        backgroundColor: '#3b82f6'
+                    },
+                    {
+                        label: 'Female',
+                        data: Object.values(gradeGenderData).map(g => g.Female || 0),
+                        backgroundColor: '#ec4899'
+                    },
+                    {
+                        label: 'Other',
+                        data: Object.values(gradeGenderData).map(g => g.Other || 0),
+                        backgroundColor: '#6b7280'
+                    }
+                ]
+            };
+
+            let totalStudentsChartHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-md">
+                    <h3 class="font-semibold text-blue-800 mb-2">Total Students Deleted: ${totalStudentsInDB}</h3>
+                    <div class="chart-container">
+                        <canvas id="total-students-chart"></canvas>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        ${Object.entries(gradeGenderData).map(([grade, genders]) => `
+                            <p>${grade}: Male: ${genders.Male || 0}, Female: ${genders.Female || 0}, Other: ${genders.Other || 0}</p>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Unique Grades Chart and Summary
+            let selectedGrade = null;
+            const getUniqueGradesChartData = (grade = null) => {
+                if (grade) {
+                    return {
+                        labels: ['Male', 'Female', 'Other'],
+                        datasets: [{
+                            label: `Gender in ${grade}`,
+                            data: [
+                                gradeGenderData[grade]?.Male || 0,
+                                gradeGenderData[grade]?.Female || 0,
+                                gradeGenderData[grade]?.Other || 0
+                            ],
+                            backgroundColor: ['#3b82f6', '#ec4899', '#6b7280']
+                        }]
+                    };
+                }
+                return {
+                    labels: Object.keys(gradeDistribution || {}),
+                    datasets: [
+                        {
+                            label: 'Male',
+                            data: Object.values(gradeGenderData).map(g => g.Male || 0),
+                            backgroundColor: '#3b82f6'
+                        },
+                        {
+                            label: 'Female',
+                            data: Object.values(gradeGenderData).map(g => g.Female || 0),
+                            backgroundColor: '#ec4899'
+                        },
+                        {
+                            label: 'Other',
+                            data: Object.values(gradeGenderData).map(g => g.Other || 0),
+                            backgroundColor: '#6b7280'
+                        }
+                    ]
+                };
+            };
+
+            const uniqueGradesSummary = Object.entries(gradeGenderData).map(([grade, genders]) => {
+                const total = (genders.Male || 0) + (genders.Female || 0) + (genders.Other || 0);
+                const maxGender = Object.entries(genders).reduce((max, [gender, count]) => count > (max[1] || 0) ? [gender, count] : max, ['', 0])[0];
+                return `<p>${grade}: ${total} students, Highest: ${maxGender || 'None'} (${genders[maxGender] || 0})</p>`;
+            }).join('');
+
+            let uniqueGradesChartHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-md">
+                    <h3 class="font-semibold text-green-800 mb-2">Total Grades with Deletion: ${gradeDistribution ? Object.keys(gradeDistribution).length : 0}</h3>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <button class="grade-toggle-btn active" data-grade="all">All Grades</button>
+                        ${Object.keys(gradeDistribution || {}).map(grade => `
+                            <button class="grade-toggle-btn" data-grade="${grade}">${grade}</button>
+                        `).join('')}
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="unique-grades-chart"></canvas>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-2">
+                        ${uniqueGradesSummary}
+                    </div>
+                    <button id="export-grade-data-btn" class="export-btn">Download Grade Data</button>
+                </div>
+            `;
+
+            // Data Completeness Chart and Summary
+            const dataCompletenessChartData = {
+                labels: ['Male', 'Female', 'Other'],
+                datasets: [{
+                    label: 'Complete Records by Gender',
+                    data: [
+                        completeGenderData.Male || 0,
+                        completeGenderData.Female || 0,
+                        completeGenderData.Other || 0
+                    ],
+                    backgroundColor: ['#3b82f6', '#ec4899', '#6b7280']
+                }]
+            };
+
+            let dataCompletenessChartHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-md">
+                    <h3 class="font-semibold text-orange-800 mb-2">Sucessful : ${completenessPercentage}%</h3>
+                    <div class="chart-container">
+                        <canvas id="data-completeness-chart"></canvas>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p>Complete Records - Male: ${completeGenderData.Male || 0}, Female: ${completeGenderData.Female || 0}, Other: ${completeGenderData.Other || 0}</p>
+                    </div>
+                </div>
+            `;
+
+            // Active Filter Chart and Summary
+            let activeFilterChartHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-2xl fixed top-[5px] right-[5px]  ">
+
+                    <h3 class="font-semibold text-red-800 mb-2">${activeFilter ? `${activeFilter.field}: ${activeFilter.value}` : 'Active Filter: None'}</h3>
+                    ${activeFilter ? `
+                        <div class="chart-container">
+                            <canvas id="active-filter-chart"></canvas>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">
+                            <p>Filter ${activeFilter.field}: ${activeFilter.value} - Male: ${filterGenderData.Male || 0}, Female: ${filterGenderData.Female || 0}, Other: ${filterGenderData.Other || 0}</p>
+                        </div>
+                        <button id="export-filter-data-btn" class="export-btn">Download Filter Data</button>
+                    ` : `
+                        <p class="text-sm text-gray-600">No active filter applied.</p>
+                    `}
+                    ${activeFilter ? `
+                        <div class="flex justify-between items-center mt-2">
+                            <p class="text-sm text-red-700">Showing <strong>${students.length}</strong> matching students</p>
+                            <button id="clear-filter-btn" title="Clear Filter" class="text-sm bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            statsSection.innerHTML = `
+                <div class="flex flex-wrap gap-4 mb-6">
+                    ${totalStudentsChartHTML}
+                    ${uniqueGradesChartHTML}
+                    ${dataCompletenessChartHTML}
+                    ${activeFilterChartHTML}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    ${generateDistributionHTML('Grade Distribution', gradeDistribution, 'Grade', 'bg-blue-500')}
+                    ${generateDistributionHTML('Class Distribution', classDistribution, 'Class', 'bg-green-500')}
+                    ${generateDistributionHTML('Gender Distribution', genderDistribution, 'Gender', 'bg-purple-500')}
+                </div>
+            `;
+
+            // Render Total Students Chart
+            const totalStudentsChartCanvas = document.getElementById('total-students-chart');
+            if (totalStudentsChartCanvas) {
+                new Chart(totalStudentsChartCanvas, {
+                    type: 'bar',
+                    data: totalStudentsChartData,
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            x: { stacked: true },
+                            y: { stacked: true, beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            // Render Unique Grades Chart
+            const uniqueGradesChartCanvas = document.getElementById('unique-grades-chart');
+            let uniqueGradesChart;
+            if (uniqueGradesChartCanvas) {
+                uniqueGradesChart = new Chart(uniqueGradesChartCanvas, {
+                    type: 'bar',
+                    data: getUniqueGradesChartData(),
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            x: { stacked: true },
+                            y: { stacked: true, beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            // Render Data Completeness Chart
+            const dataCompletenessChartCanvas = document.getElementById('data-completeness-chart');
+            if (dataCompletenessChartCanvas) {
+                new Chart(dataCompletenessChartCanvas, {
+                    type: 'bar',
+                    data: dataCompletenessChartData,
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+
+            // Render Active Filter Chart
+            if (activeFilter) {
+                const activeFilterChartCanvas = document.getElementById('active-filter-chart');
+                if (activeFilterChartCanvas) {
+                    new Chart(activeFilterChartCanvas, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Male', 'Female', 'Other'],
+                            datasets: [{
+                                label: `Gender in ${activeFilter.field}: ${activeFilter.value}`,
+                                data: [
+                                    filterGenderData.Male || 0,
+                                    filterGenderData.Female || 0,
+                                    filterGenderData.Other || 0
+                                ],
+                                backgroundColor: ['#3b82f6', '#ec4899', '#6b7280']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { position: 'top' } },
+                            scales: { y: { beginAtZero: true } }
+                        }
+                    });
+                }
+            }
+
+            // Grade Toggle Buttons
+            document.querySelectorAll('.grade-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.grade-toggle-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedGrade = btn.dataset.grade === 'all' ? null : btn.dataset.grade;
+                    uniqueGradesChart.data = getUniqueGradesChartData(selectedGrade);
+                    uniqueGradesChart.update();
+                });
+            });
+
+            // Export Grade Data Button
+            const exportGradeBtn = document.getElementById('export-grade-data-btn');
+            if (exportGradeBtn) {
+                exportGradeBtn.addEventListener('click', () => exportGradeGenderData(gradeGenderData));
+            }
+
+            // Export Filter Data Button
+            const exportFilterBtn = document.getElementById('export-filter-data-btn');
+            if (exportFilterBtn) {
+                exportFilterBtn.addEventListener('click', () => exportFilterGenderData(filterGenderData, activeFilter.field, activeFilter.value));
+            }
+        };
+
+        statsSection.addEventListener('click', (event) => {
+            const filterElement = event.target.closest('[data-filter-field]');
+            const clearButton = event.target.closest('#clear-filter-btn');
+
+            if (filterElement) {
+                const field = filterElement.dataset.filterField;
+                const value = filterElement.dataset.filterValue;
+
+                const filteredStudents = studentsData.filter(student => (student[field] || 'N/A') === value);
+                currentPage = 1;
+
+                let maleCount = 0, femaleCount = 0;
+                if (field === 'Grade') {
+                    filteredStudents.forEach(student => {
+                        if (student.Gender && student.Gender.toLowerCase() === 'male') maleCount++;
+                        if (student.Gender && student.Gender.toLowerCase() === 'female') femaleCount++;
+                    });
+                }
+
+                renderStudents(filteredStudents, { 
+                    field, 
+                    value, 
+                    total: filteredStudents.length,
+                    maleCount,
+                    femaleCount
+                });
+
+                if (field === 'Grade') {
+                    gradeFilterSelect.value = value;
+                } else {
+                    gradeFilterSelect.value = '';
+                }
+                searchInput.value = '';
+            }
+
+            if (clearButton) {
+                currentPage = 1;
+                renderStudents(studentsData);
+                gradeFilterSelect.value = '';
+                searchInput.value = '';
+            }
+        });
+
+        const searchStudents = (searchTerm) => {
+            if (!searchTerm) {
+                currentPage = 1;
+                renderStudents(studentsData);
+                return;
+            }
+
+            const searchTermLower = searchTerm.toLowerCase();
+            const filteredStudents = studentsData.filter(student => {
+                return Object.entries(student).some(([key, value]) => {
+                    if (key === 'id') return false;
+                    return String(value).toLowerCase().includes(searchTermLower);
+                });
+            });
+
+            currentPage = 1;
+            renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+        };
+
+        searchInput.addEventListener('input', (e) => {
+            searchStudents(e.target.value);
+            gradeFilterSelect.value = '';
+        });
+
+        const renderPagination = (totalStudents, students, activeFilter = null) => {
+            const totalPages = Math.ceil(totalStudents / studentsPerPage);
+            const paginationContainer = document.createElement('div');
+            paginationContainer.id = 'pagination-controls';
+            paginationContainer.className = 'flex justify-center items-center mt-4 space-x-2';
+
+            const startIndex = (currentPage - 1) * studentsPerPage + 1;
+            const endIndex = Math.min(currentPage * studentsPerPage, totalStudents);
+            const showingText = document.createElement('p');
+            showingText.className = 'text-sm text-gray-600 mr-4';
+            showingText.textContent = totalStudents > 0 ? `Showing ${startIndex}-${endIndex} of ${totalStudents} students` : 'No students to display';
+            paginationContainer.appendChild(showingText);
+
+            const prevButton = document.createElement('button');
+            prevButton.textContent = 'Previous';
+            prevButton.className = 'pagination-btn';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
+                        ? studentsData.filter(student => student.Grade === activeFilter.value)
+                        : activeFilter && activeFilter.field === 'Search'
+                        ? studentsData.filter(student => 
+                            Object.values(student).some(value => 
+                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
+                            )
+                        )
+                        : students;
+                    renderStudents(filteredStudents, activeFilter);
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
+                        ? studentsData.filter(student => student.Grade === activeFilter.value)
+                        : activeFilter && activeFilter.field === 'Search'
+                        ? studentsData.filter(student => 
+                            Object.values(student).some(value => 
+                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
+                            )
+                        )
+                        : students;
+                    renderStudents(filteredStudents, activeFilter);
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Next';
+            nextButton.className = 'pagination-btn';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
+                        ? studentsData.filter(student => student.Grade === activeFilter.value)
+                        : activeFilter && activeFilter.field === 'Search'
+                        ? studentsData.filter(student => 
+                            Object.values(student).some(value => 
+                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
+                            )
+                        )
+                        : students;
+                    renderStudents(filteredStudents, activeFilter);
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+
+            return paginationContainer;
+        };
+
+        const getOrderedHeaders = (students) => {
+            const allKeys = new Set();
+            students.forEach(student => {
+                Object.keys(student).forEach(key => allKeys.add(key));
+            });
+            const priorityHeaders = ['Grade', 'Assessment No', 'Official Student Name', 'UPI', 'Gender'];
+            const otherHeaders = Array.from(allKeys)
+                .filter(key => key !== 'id' && !priorityHeaders.includes(key))
+                .sort();
+            return ['Image', ...priorityHeaders, ...otherHeaders];
+        };
+
+     
+window.openLocalPDF = function(assessmentNo, studentName) {
+    const pdfPath = `https://kanyadet-school-admin.web.app/New-Students-Database/birth_certificates/${assessmentNo}.pdf`; // Replace with your server URL
+    const imagePath = studentName 
+        ? `https://kanyadet-school-admin.web.app/New-Students-Database/student_images/${encodeURIComponent(studentName)}.jpg` 
+        : 'https://kanyadet-school-admin.web.app/New-Students-Database/student_images/default.jpg'; // Replace with your server URL
+    const googleDocsUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(pdfPath)}&embedded=true`;
+
+    try {
+        // Validate DOM elements
+        if (!pdfIframe || !pdfModalStudentImage || !pdfModalStudentName || !pdfModalBackdrop) {
+            throw new Error('Required DOM elements are missing');
+        }
+
+        // Set iframe source to Google Docs Viewer
+        pdfIframe.src = googleDocsUrl;
+        console.log('Iframe src set for all devices:', googleDocsUrl);
+
+        // Set student image and name
+        pdfModalStudentImage.src = imagePath;
+        pdfModalStudentName.textContent = studentName || 'Unknown Student';
+
+        // Show modal
+        pdfModalBackdrop.classList.remove('hidden');
+        pdfModalBackdrop.classList.add('flex');
+
+        // Add outside click handler for modal
+        const closeModalOnOutsideClick = function(event) {
+            if (event.target === pdfModalBackdrop) {
+                pdfModalBackdrop.classList.add('hidden');
+                pdfModalBackdrop.classList.remove('flex');
+                pdfIframe.src = ''; // Clear iframe source
+                pdfModalBackdrop.removeEventListener('click', closeModalOnOutsideClick);
+            }
+        };
+        
+        pdfModalBackdrop.addEventListener('click', closeModalOnOutsideClick);
+
+    } catch (e) {
+        console.error("Error opening PDF:", e);
+        showModal(`Failed to open birth certificate: ${e.message}. Ensure the file exists at ${pdfPath}`);
+    }
+};
+
+
+
+        const renderStudents = (students, activeFilter = null) => {
+            dataDisplay.innerHTML = '';
+            updateAnalyticsDashboard(students, activeFilter);
+
+            if (students.length === 0 && studentsData.length > 0) {
+                dataDisplay.innerHTML = '<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-500 italic">No student data found for this selection.</p></div>';
+                const paginationContainer = renderPagination(students.length, students, activeFilter);
+                dataDisplay.appendChild(paginationContainer);
+                return;
+            } else if (studentsData.length === 0) {
+                dataDisplay.innerHTML = '<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-500 italic">No student data has been uploaded yet.</p></div>';
+                return;
+            }
+
+            const startIndex = (currentPage - 1) * studentsPerPage;
+            const endIndex = startIndex + studentsPerPage;
+            const paginatedStudents = students.slice(startIndex, endIndex);
+
+            const headers = getOrderedHeaders(students);
+
+            const table = document.createElement('table');
+            table.id = 'student-table';
+            table.className = "min-w-full bg-white rounded-lg shadow-md overflow-hidden";
+            let tableHTML = `<thead class="bg-gray-100"><tr>`;
+            headers.forEach(header => {
+                tableHTML += `<th class="py-3 px-4 text-left font-semibold text-gray-700">${header}</th>`;
+            });
+            tableHTML += `<th class="py-3 px-4 text-left font-semibold text-gray-700">Actions</th></tr></thead>`;
+            tableHTML += `<tbody class="divide-y divide-gray-200">`;
+
+            paginatedStudents.forEach(student => {
+                tableHTML += `
+                    <tr id="row-${student.id}" class="cursor-pointer" data-id="${student.id}" onclick="if(!event.target.closest('.action-buttons') && !event.target.classList.contains('student-image')) openLocalPDF('${student['Assessment No']}', '${student['Official Student Name'] || ''}')">
+                `;
+                headers.forEach(header => {
+                    if (header === 'Image') {
+                        const imageName = student['Official Student Name'] ? encodeURIComponent(student['Official Student Name']) : '';
+                        const imagePath = imageName ? `./student_images/${imageName}.jpg` : './student_images/default.jpg';
+                        tableHTML += `
+                            <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-600" data-header="Image">
+                                <img src="${imagePath}" alt="${student['Official Student Name'] || 'Student Image'}" class="student-image" onerror="this.src='./student_images/default.jpg';this.alt='Default Image'">
+                            </td>`;
+                    } else {
+                        const value = student[header] !== undefined ? student[header] : '-';
+                        tableHTML += `<td class="py-3 px-4 whitespace-nowrap text-sm text-gray-600" data-header="${header}">${value}</td>`;
+                    }
+                });
+                tableHTML += `
+                    <td class="py-2 px-4 whitespace-nowrap flex items-center space-x-2 action-buttons">
+                        <button onclick="editStudent('${student.id}')" class="edit-btn p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-300">Edit</button>
+                        <button onclick="deleteStudent('${student.id}')" class="delete-btn p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-300">Delete</button>
+                        <button onclick="undoStudent('${student.id}')" class="undo-btn p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-300">Undo</button>
+
+                    </td>
+                `;
+                tableHTML += `</tr>`;
+            });
+
+            tableHTML += `</tbody>`;
+            table.innerHTML = tableHTML;
+            dataDisplay.appendChild(table);
+
+            const paginationContainer = renderPagination(students.length, students, activeFilter);
+            dataDisplay.appendChild(paginationContainer);
+        };
+
+        
+        window.editStudent = (id) => {
+            const row = document.getElementById(`row-${id}`);
+            if (!row) return;
+
+            row.classList.add('no-hover');
+
+            const currentValues = {};
+            const cells = row.querySelectorAll('td[data-header]');
+            cells.forEach(cell => {
+                const header = cell.getAttribute('data-header');
+                if (header !== 'Image') {
+                    const value = cell.textContent;
+                    currentValues[header] = value;
+                    cell.innerHTML = `<input type="text" class="w-full bg-gray-200 border rounded-md p-1 focus:outline-none focus:ring-2 focus:ring-red-500" value="${value === '-' ? '' : value}" data-field-name="${header}">`;
+                }
+            });
+            row.dataset.currentValues = JSON.stringify(currentValues);
+
+            const actionButtons = row.querySelector('.action-buttons');
+            actionButtons.innerHTML = `
+                <button onclick="saveStudent('${id}')" class="p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-300">Save</button>
+                <button onclick="cancelEdit('${id}')" class="p-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors duration-300">Cancel</button>
+            `;
+            row.removeAttribute('onclick');
+        };
+
+        window.saveStudent = async (id) => {
+            const row = document.getElementById(`row-${id}`);
+            if (!row) {
+                showModal('Error: Student row not found.');
+                return;
+            }
+
+            const updatedData = {};
+            const inputFields = row.querySelectorAll('input[type="text"]');
+            inputFields.forEach(input => {
+                const fieldName = input.dataset.fieldName;
+                updatedData[fieldName] = input.value.trim();
+            });
+
+            if (!updatedData['Assessment No']) {
+                showModal('The "Assessment No" field cannot be empty.');
+                return;
+            }
+
+            try {
+                const studentRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${id}`);
+                await update(studentRef, updatedData);
+                showModal('Student record updated successfully!');
+
+                const studentIndex = studentsData.findIndex(student => student.id === id);
+                if (studentIndex !== -1) {
+                    studentsData[studentIndex] = { id, ...updatedData };
+                }
+
+                const selectedGrade = gradeFilterSelect.value;
+                const searchTerm = searchInput.value;
+                let filteredStudents = studentsData;
+                if (selectedGrade) {
+                    filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
+                    renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
+                } else if (searchTerm) {
+                    const searchTermLower = searchTerm.toLowerCase();
+                    filteredStudents = studentsData.filter(student => 
+                        Object.values(student).some(value => 
+                            String(value).toLowerCase().includes(searchTermLower)
+                        )
+                    );
+                    renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+                } else {
+                    renderStudents(studentsData);
+                }
+            } catch (e) {
+                console.error("Error updating student:", e);
+                showModal(`Error updating record: ${e.message}. Check Firebase rules and network.`);
+            }
+        };
+
+        window.cancelEdit = (id) => {
+            const row = document.getElementById(`row-${id}`);
+            if (!row) return;
+
+            row.classList.remove('no-hover');
+
+            const originalValues = JSON.parse(row.dataset.currentValues || '{}');
+            const cells = row.querySelectorAll('td[data-header]');
+            cells.forEach(cell => {
+                const header = cell.getAttribute('data-header');
+                if (header === 'Image') {
+                    const imageName = originalValues['Official Student Name'] ? encodeURIComponent(originalValues['Official Student Name']) : '';
+                    const imagePath = imageName ? `./student_images/${imageName}.jpg` : './student_images/default.jpg';
+                    cell.innerHTML = `<img src="${imagePath}" alt="${originalValues['Official Student Name'] || 'Student Image'}" class="student-image" onerror="this.src='./student_images/default.jpg';this.alt='Default Image'">`;
+                } else {
+                    cell.textContent = originalValues[header] || '-';
+                }
+            });
+
+            const actionButtons = row.querySelector('.action-buttons');
+            actionButtons.innerHTML = `
+                <button onclick="editStudent('${id}')" class="edit-btn p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-300">Edit</button>
+                <button onclick="deleteStudent('${id}')" class="delete-btn p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-300">Delete</button>
+                <button onclick="undoStudent('${id}')" class="undo-btn p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-300">Undo</button>
+
+            `;
+            row.setAttribute('onclick', `if(!event.target.closest('.action-buttons') && !event.target.classList.contains('student-image')) openLocalPDF('${originalValues['Assessment No']}', '${originalValues['Official Student Name'] || ''}')`);
+        };
+
+     
+window.deleteStudent = async (id) => {
+    if (!confirm('Are you sure you want to delete this student record? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const studentRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${id}`);
+        const deletedStudentRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${id}`);
+
+        const snapshot = await get(studentRef);
+        if (snapshot.exists()) {
+            const studentData = snapshot.val();
+            const userEmail = auth.currentUser ? auth.currentUser.email : 'unknown';
+            await set(deletedStudentRef, {
+                ...studentData,
+                deletedAt: new Date().toISOString(),
+                deletedBy: userEmail // Add the user's email to the deleted record
+            });
+        }
+
+        await remove(studentRef);
+        showModal('Student record deleted successfully and moved to DeletedResults.');
+        // Remove totalStudents-- and replace fetchAndRenderStudents with renderStudents
+        renderStudents(studentsData);
+    } catch (e) {
+        console.error("Error deleting student:", e);
+        showModal(`Error deleting record: ${e.message}. Check Firebase rules and network.`);
+    }
+};
+
+
+
+     window.undoStudent = async (id) => {
+    if (!confirm('Are you sure you want to undo the deletion of this student record? This will restore it to the main database.')) {
+        return;
+    }
+    try {
+        const deletedStudentRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${id}`);
+        const studentRef = ref(db, `Results/${sanitizedAppId}/students/${id}`);
+
+        // Use 'get' for a one-time read (returns a promise with DataSnapshot)
+        const snapshot = await get(deletedStudentRef);
+
+        // Check if data exists
+        if (!snapshot.exists()) {
+            showModal('Error: Student data not found in deleted records.');
+            return;
+        }
+
+        const studentData = snapshot.val();
+
+        // Restore to main database
+        await set(studentRef, studentData);
+
+        // Remove from deleted records
+        await remove(deletedStudentRef);
+
+        showModal('Student record restored successfully.');
+
+        // Update local data and re-render
+        studentsData = studentsData.filter(student => student.id !== id);
+        currentPage = Math.min(currentPage, Math.ceil(studentsData.length / studentsPerPage)) || 1;
+        const selectedGrade = gradeFilterSelect.value;
+        const searchTerm = searchInput.value;
+        let filteredStudents = studentsData;
+        if (selectedGrade) {
+            filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
+            renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
+        } else if (searchTerm) {
+            const searchTermLower = searchTerm.toLowerCase();
+            filteredStudents = studentsData.filter(student => 
+                Object.values(student).some(value => 
+                    String(value).toLowerCase().includes(searchTermLower)
+                )
+            );
+            renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+        } else {
+            renderStudents(studentsData);
+        }
+    } catch (e) {
+        console.error("Error undoing student deletion:", e);
+        showModal(`Error restoring record: ${e.message}. Check Firebase rules and network.`);
+    }
+};
+        
+
+
+
+deleteGradeBtn.addEventListener('click', async () => {
+    const selectedGrade = gradeFilterSelect.value;
+    if (!selectedGrade) {
+        showModal("Please select a grade to delete.");
+        return;
+    }
+
+    if (confirm(`Are you sure you want to delete all students in ${selectedGrade}? This action cannot be undone.`)) {
+        showModal(`Deleting all students in ${selectedGrade}...`);
+        const studentsInGrade = studentsData.filter(student => student.Grade === selectedGrade);
+        const deletionPromises = studentsInGrade.map(student => {
+            return remove(ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${student.id}`));
+        });
+
+        try {
+            await Promise.all(deletionPromises);
+            showModal(`Successfully deleted all students from ${selectedGrade}.`);
+        } catch (error) {
+            console.error("Error deleting grade:", error);
+            showModal(`Error deleting grade: ${error.message}`);
+        }
+    }
+});
+
+        const exportToExcel = () => {
+            const selectedGrade = gradeFilterSelect.value;
+            const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
+
+            if (dataToExport.length === 0) {
+                showModal('No data to export.');
+                return;
+            }
+
+            const headers = getOrderedHeaders(dataToExport).filter(header => header !== 'Image');
+            const formattedData = dataToExport.map(student => {
+                const row = {};
+                headers.forEach(header => {
+                    row[header] = student[header] !== undefined ? student[header] : '';
+                });
+                return row;
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(formattedData, { header: headers });
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+            XLSX.writeFile(workbook, `student_data_${selectedGrade || 'all'}.xlsx`);
+            printModal.classList.add('hidden');
+        };
+
+        const exportToPdf = async () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const selectedGrade = gradeFilterSelect.value;
+            const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
+            const title = `Student Data (${selectedGrade || 'All Grades'})`;
+            doc.text(title, 14, 16);
+
+            if (dataToExport.length === 0) {
+                showModal('No data to export.');
+                return;
+            }
+
+            const headers = getOrderedHeaders(dataToExport).filter(header => header !== 'Image');
+            const body = dataToExport.map(student => 
+                headers.map(header => String(student[header] || '-'))
+            );
+
+            doc.autoTable({
+                head: [headers],
+                body: body,
+                startY: 25,
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [200, 200, 200], textColor: [0, 0, 0] },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+            });
+
+            doc.save(`student_data_${selectedGrade || 'all'}.pdf`);
+            printModal.classList.add('hidden');
+        };
+
+        const exportToWord = () => {
+            const { Document, Packer, Paragraph, Table, TableCell, TableRow } = window.docx;
+
+            const selectedGrade = gradeFilterSelect.value;
+            const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
+
+            if (dataToExport.length === 0) {
+                showModal('No data to export.');
+                return;
+            }
+
+            const headers = getOrderedHeaders(dataToExport).filter(header => header !== 'Image');
+            const headerRow = new TableRow({
+                children: headers.map(header => new TableCell({ 
+                    children: [new Paragraph({ text: header, bold: true })] 
+                })),
+            });
+
+            const dataRows = dataToExport.map(student => {
+                return new TableRow({
+                    children: headers.map(header => new TableCell({ 
+                        children: [new Paragraph(String(student[header] || '-'))] 
+                    })),
+                });
+            });
+
+            const table = new Table({
+                rows: [headerRow, ...dataRows],
+            });
+
+            const doc = new Document({
+                sections: [{
+                    children: [
+                        new Paragraph({ 
+                            text: `Student Data (${selectedGrade || 'All Grades'})`, 
+                            heading: 'Heading1',
+                            alignment: 'center'
+                        }),
+                        new Paragraph({ text: '' }),
+                        table,
+                    ],
+                }],
+            });
+
+            Packer.toBlob(doc).then(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `student_data_${selectedGrade || 'all'}.docx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            printModal.classList.add('hidden');
+        };
+
+        printExcelBtn.addEventListener('click', exportToExcel);
+        printPdfBtn.addEventListener('click', exportToPdf);
+        printWordBtn.addEventListener('click', exportToWord);
+
+        window.onload = setupFirebase;
+    </script>
+</body>
+</html>
