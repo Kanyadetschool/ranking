@@ -266,48 +266,76 @@
 <div id="notif-wrap"></div>
 
 <!-- AUTH -->
+<!-- AUTH -->
 <div id="auth-screen" class="main" style="display:none;">
-        <div class="auth-card">
-                <!-- <div class="auth-icon">📊</div> -->
-                        <div class="auth-title">Analytics &amp; Rankings</div>
-                                <p class="auth-sub">Sign in with your school Google account to access comprehensive student analytics, subject rankings, and performance reports.</p>
-                                        <button class="btn btn-primary" onclick="signInWithGoogle()" style="padding:13px 32px;font-size:15px;width:100%;">🔐 Sign in with Google</button>
-                                            </div>
-                                              <div style="display: flex; gap: 12px; flex-wrap: wrap; padding: 1rem 0;">
+    <div class="auth-card">
+        <div class="auth-title">Analytics &amp; Rankings</div>
+        <p class="auth-sub">Sign in with your school Google account to access comprehensive student analytics, subject rankings, and performance reports.</p>
+        <button class="btn btn-primary" onclick="signInWithGoogle()" style="padding:13px 32px;font-size:15px;width:100%;">🔐 Sign in with Google</button>
 
-  <a href="./Report-Cards/Reports.html"
-     style="display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 20px; border-radius: 8px;
-            background: #f24510; color: #ffffff;
-            font-family: sans-serif; font-size: 14px; font-weight: 500;
-            text-decoration: none; border: none; cursor: pointer;
-            transition: backSchool 0.2s;">
-    📄 Report Cards -Junior School
-  </a>
+        <!-- TOGGLE BUTTON -->
+        <button onclick="toggleQuickLinks()" id="quick-links-toggle"
+                style="margin-top:8px;background:transparent;border:1.5px solid #dde3ec;border-radius:8px;
+                       padding:9px 18px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;
+                       color:#7f8c8d;cursor:pointer;width:100%;transition:all 0.2s;display:flex;
+                       align-items:center;justify-content:center;gap:8px;">
+            <span id="toggle-arrow" style="transition:transform 0.3s;">▼</span>
+            Quick Links
+        </button>
+    </div>
 
-   <a href="./Report-Cards/Primary-Report-Cards.html"
-     style="display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 20px; border-radius: 8px;
-            background: #f24510; color: #ffffff;
-            font-family: sans-serif; font-size: 14px; font-weight: 500;
-            text-decoration: none; border: none; cursor: pointer;
-            transition: backSchool 0.2s;">
-    📄 Report Cards -Primary School
-  </a>
-
-  <a href="./Report-Cards/Individual-student-portal.html"
-     style="display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 20px; border-radius: 8px;
-            background: #f51109; color: #ffffff;
-            font-family: sans-serif; font-size: 14px; font-weight: 500;
-            text-decoration: none; border: none; cursor: pointer;
-            transition: background 0.2s;">
-    🎓 Students Portal
-  </a>
-
+    <!-- COLLAPSIBLE LINKS -->
+    <div id="quick-links-panel"
+         style="overflow:hidden;max-height:0;transition:max-height 0.4s ease,opacity 0.3s ease;
+                opacity:0;display:flex;gap:12px;flex-wrap:wrap;padding:0 0;">
+        <a href="./Report-Cards/Reports.html"
+           target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;
+                  background:#f24510;color:#fff;font-family:sans-serif;font-size:14px;
+                  font-weight:500;text-decoration:none;cursor:pointer;transition:background 0.2s;">
+            📄 Report Cards - Junior School
+        </a>
+        <a href="./Report-Cards/Primary-Report-Cards.html"
+           target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;
+                  background:#f24510;color:#fff;font-family:sans-serif;font-size:14px;
+                  font-weight:500;text-decoration:none;cursor:pointer;transition:background 0.2s;">
+            📄 Report Cards - Primary School
+        </a>
+        <a href="./Report-Cards/Individual-student-portal.html"
+           target="_blank" rel="noopener"
+           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;
+                  background:#f51109;color:#fff;font-family:sans-serif;font-size:14px;
+                  font-weight:500;text-decoration:none;cursor:pointer;transition:background 0.2s;">
+            🎓 Students Portal
+        </a>
+    </div>
 </div>
-                                                    </div>
 
+<script>
+function toggleQuickLinks() {
+    const panel  = document.getElementById('quick-links-panel');
+    const arrow  = document.getElementById('toggle-arrow');
+    const btn    = document.getElementById('quick-links-toggle');
+    const isOpen = panel.style.maxHeight !== '0px' && panel.style.maxHeight !== '';
+
+    if (isOpen) {
+        // Collapse
+        panel.style.maxHeight = '0px';
+        panel.style.opacity   = '0';
+        panel.style.padding   = '0';
+        arrow.style.transform = 'rotate(0deg)';
+        btn.style.color       = '#7f8c8d';
+    } else {
+        // Expand
+        panel.style.maxHeight = '200px';
+        panel.style.opacity   = '1';
+        panel.style.padding   = '1rem 0';
+        arrow.style.transform = 'rotate(180deg)';
+        btn.style.color       = '#2980b9';
+    }
+}
+</script>
 <!-- DASHBOARD -->
 <div id="dashboard" class="main" style="display:none;">
 
