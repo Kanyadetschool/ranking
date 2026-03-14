@@ -267,17 +267,36 @@
 
 <!-- AUTH -->
 <div id="auth-screen" class="main" style="display:none;">
-    <div class="auth-card">
-        <!-- <div class="auth-icon">📊</div> -->
-        <div class="auth-title">Analytics &amp; Rankings</div>
-        <p class="auth-sub">Sign in with your school Google account to access comprehensive student analytics, subject rankings, and performance reports.</p>
-        <button class="btn btn-primary" onclick="signInWithGoogle()" style="padding:13px 32px;font-size:15px;width:100%;">🔐 Sign in with Google</button>
-    </div>
-    <button class="btn btn-primary" style="list-style:none; color:white ;" ><a href="./Report-Cards/Reports.html">Report Cards</a></button>
+        <div class="auth-card">
+                <!-- <div class="auth-icon">📊</div> -->
+                        <div class="auth-title">Analytics &amp; Rankings</div>
+                                <p class="auth-sub">Sign in with your school Google account to access comprehensive student analytics, subject rankings, and performance reports.</p>
+                                        <button class="btn btn-primary" onclick="signInWithGoogle()" style="padding:13px 32px;font-size:15px;width:100%;">🔐 Sign in with Google</button>
+                                            </div>
+                                              <div style="display: flex; gap: 12px; flex-wrap: wrap; padding: 1rem 0;">
 
-    <button class="btn btn-primary" style="list-style:none;color:white" ><a href="./Report-Cards/Individual-student-portal.html">Students portal</a></button>
+  <a href="./Report-Cards/Reports.html"
+     style="display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 8px;
+            background: #2563eb; color: #ffffff;
+            font-family: sans-serif; font-size: 14px; font-weight: 500;
+            text-decoration: none; border: none; cursor: pointer;
+            transition: background 0.2s;">
+    📄 Report Cards
+  </a>
+
+  <a href="./Report-Cards/Individual-student-portal.html"
+     style="display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: 8px;
+            background: #2563eb; color: #ffffff;
+            font-family: sans-serif; font-size: 14px; font-weight: 500;
+            text-decoration: none; border: none; cursor: pointer;
+            transition: background 0.2s;">
+    🎓 Students Portal
+  </a>
 
 </div>
+                                                    </div>
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="main" style="display:none;">
