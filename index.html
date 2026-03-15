@@ -1854,20 +1854,17 @@ const SANITIZED_ID = 'default-app-id'.replace(/\./g,'_');
 const ALLOWED_GRADES = [];
 
 const KNEC_CODES = {
-    'Mathematics':                    { code:'900/101', knec:'MAT 7' },
-    'English':                        { code:'900/201', knec:'ENG 7' },
-    'Kiswahili':                      { code:'900/301', knec:'KIS 7' },
-    'Integrated Science':             { code:'900/401', knec:'SCI 7' },
-    'Creative Arts & Social studies': { code:'900/501', knec:'CAS 7' },
-    'Social Studies':                 { code:'900/501', knec:'SST 7' },
-    'Creative Arts':                  { code:'900/601', knec:'ART 7' },
-    'Business Studies':               { code:'900/701', knec:'BUS 7' },
-    'Agriculture':                    { code:'900/801', knec:'AGR 7' },
-    'Home Science':                   { code:'900/901', knec:'HOM 7' },
-    'Physical Education':             { code:'900/102', knec:'PHE 7' },
-    'Religious Education':            { code:'900/103', knec:'CRE 7' },
-    'Islamic Religious Education':    { code:'900/104', knec:'IRE 7' },
-    'Hindu Religious Education':      { code:'900/105', knec:'HRE 7' },
+    'Mathematics':                    { code:'903', knec:'MAT' },
+    'English':                        { code:'901', knec:'ENG' },
+    'Kiswahili':                      { code:'902', knec:'KIS' },
+    'Integrated Science':             { code:'905', knec:'SCI' },
+    'Creative Arts & Sports':         { code:'911', knec:'CAS' },
+    'Social Studies':                 { code:'907', knec:'SST' },
+    'Creative Arts':                  { code:'911', knec:'ART' },
+    'Agriculture':                    { code:'906', knec:'AGR' },
+    'Pre-Technical':                  { code:'906', knec:'PHE' },
+    'Religious Education':            { code:'908', knec:'CRE' },
+
 };
 function getKnecCode(subjName){
     if(KNEC_CODES[subjName]) return KNEC_CODES[subjName].code;
