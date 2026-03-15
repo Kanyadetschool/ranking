@@ -22,7 +22,7 @@ let searchQuery = '';
 // Configuration for grade filtering
 const GRADE_FILTER_CONFIG = {
     enabled: true,  // Set to false to show all grades
-    allowedGrades: ['Grade 4', 'Grade 5', 'Grade 6']  // Modify this array as needed
+    allowedGrades: ['Grade 1','Grade 2','Grade 3','Grade 4', 'Grade 5', 'Grade 6']  // Modify this array as needed
 };
 
 // Report card configuration
