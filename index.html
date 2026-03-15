@@ -1,126 +1,299 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Analytics & Rankings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        /* ══════════════════════════════════════
-           CSS VARIABLES - LIGHT & DARK THEMES
-           ══════════════════════════════════════ */
+        /* ════════════════════════════════════════════════════════
+           🌌 OBSIDIAN AURORA — World-Class Dark Theme
+           Inspired by deep space, aurora borealis, liquid glass
+           ════════════════════════════════════════════════════════ */
         :root {
-            --bg-body: #ecf0f1;
-            --bg-card: #ffffff;
-            --bg-card2: #f8fafc;
-            --bg-input: #f8fafc;
-            --bg-table-alt: #fafcff;
-            --bg-table-hover: #f7fbff;
-            --bg-header-grad: linear-gradient(135deg, #f7fbff 0%, #fff 100%);
-            --bg-panel: #ffffff;
-            --text-primary: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --text-muted: #95a5a6;
-            --border-color: #dde3ec;
-            --border-light: #f0f4f8;
-            --border-input: #dde3ec;
-            --topbar-grad: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
-            --topbar-shadow: rgba(52,152,219,0.35);
-            --tab-bg: #ffffff;
-            --tab-hover: #ebf5fb;
-            --tab-hover-text: #2980b9;
-            --stat-bg: #ffffff;
-            --rank-badge-other: #f0f4f8;
-            --rank-badge-other-text: #7f8c8d;
-            --rank-badge-other-border: #dde3ec;
-            --score-bar-bg: #e8f4fd;
-            --loader-bg: rgba(255,255,255,0.92);
-            --pagination-bg: #fafcff;
-            --pill-grade-bg: #ebf5fb;
-            --pill-grade-text: #2980b9;
-            --pill-grade-border: #aed6f1;
-            --filter-bar-bg: #ffffff;
-            --dist-bar-bg: #f0f4f8;
-            --mini-stat-bg: #f8fafc;
-            --mini-stat-border: #e8edf3;
-            --table-head-grad: linear-gradient(135deg, #2980b9 0%, #3498db 100%);
-            --no-student-icon: 0.4;
-            --shadow-card: 0 2px 12px rgba(0,0,0,0.06);
-            --shadow-card-hover: 0 8px 28px rgba(0,0,0,0.1);
-            --notif-bg: #ffffff;
-            --auth-card-shadow: 0 8px 40px rgba(52,152,219,0.15);
-            --heatmap-empty: #eef2f7;
+            /* ── Accent Spectrum ── */
+            --a-cyan:   #00d4ff;
+            --a-blue:   #2980b9;
+            --a-blue2:  #3498db;
+            --a-purple: #8b5cf6;
+            --a-violet: #6d28d9;
+            --a-teal:   #14b8a6;
+            --a-green:  #10b981;
+            --a-amber:  #f59e0b;
+            --a-orange: #f97316;
+            --a-red:    #ef4444;
+            --a-pink:   #ec4899;
+
+            /* ── Shared tokens ── */
+            --radius-xl: 20px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --radius-sm: 9px;
+            --transition: all .28s cubic-bezier(.4,0,.2,1);
+            --transition-spring: all .4s cubic-bezier(.34,1.56,.64,1);
         }
 
+        /* ══ DARK — Obsidian Aurora ══ */
         [data-theme="dark"] {
-            --bg-body: #0f1117;
-            --bg-card: #1a1d27;
-            --bg-card2: #1e2130;
-            --bg-input: #252836;
-            --bg-table-alt: #1e2130;
-            --bg-table-hover: #252836;
-            --bg-header-grad: linear-gradient(135deg, #1a1d27 0%, #1e2130 100%);
-            --bg-panel: #1a1d27;
-            --text-primary: #e2e8f0;
-            --text-secondary: #94a3b8;
-            --text-muted: #64748b;
-            --border-color: #2d3148;
-            --border-light: #252836;
-            --border-input: #2d3148;
-            --topbar-grad: linear-gradient(135deg, #1a2744 0%, #1e3a5f 100%);
-            --topbar-shadow: rgba(0,0,0,0.4);
-            --tab-bg: #1a1d27;
-            --tab-hover: #252836;
-            --tab-hover-text: #60a5fa;
-            --stat-bg: #1a1d27;
-            --rank-badge-other: #252836;
-            --rank-badge-other-text: #94a3b8;
-            --rank-badge-other-border: #2d3148;
-            --score-bar-bg: #252836;
-            --loader-bg: rgba(15,17,23,0.92);
-            --pagination-bg: #1a1d27;
-            --pill-grade-bg: #1e2d40;
-            --pill-grade-text: #60a5fa;
-            --pill-grade-border: #2d4a6d;
-            --filter-bar-bg: #1a1d27;
-            --dist-bar-bg: #252836;
-            --mini-stat-bg: #252836;
-            --mini-stat-border: #2d3148;
-            --table-head-grad: linear-gradient(135deg, #1a2744 0%, #1e3a5f 100%);
-            --no-student-icon: 0.2;
-            --shadow-card: 0 2px 12px rgba(0,0,0,0.3);
-            --shadow-card-hover: 0 8px 28px rgba(0,0,0,0.5);
-            --notif-bg: #1a1d27;
-            --auth-card-shadow: 0 8px 40px rgba(0,0,0,0.4);
-            --heatmap-empty: #252836;
+            /* Backgrounds — layered obsidian */
+            --bg-body:          #060b14;
+            --bg-card:          rgba(10,18,30,.92);
+            --bg-card2:         rgba(8,15,26,.88);
+            --bg-input:         rgba(14,24,40,.95);
+            --bg-table-alt:     rgba(10,20,34,.6);
+            --bg-table-hover:   rgba(0,212,255,.04);
+            --bg-header-grad:   linear-gradient(135deg,rgba(10,18,30,.95) 0%,rgba(8,15,26,.98) 100%);
+            --bg-panel:         rgba(10,18,30,.92);
+            /* Text */
+            --text-primary:     #e2f0ff;
+            --text-secondary:   #7eb8d4;
+            --text-muted:       #3a6880;
+            /* Borders — aurora glow */
+            --border-color:     rgba(0,212,255,.12);
+            --border-light:     rgba(0,212,255,.06);
+            --border-input:     rgba(0,212,255,.18);
+            --border-strong:    rgba(0,212,255,.3);
+            /* Topbar */
+            --topbar-grad:      rgba(4,10,20,.88);
+            --topbar-shadow:    0 1px 0 rgba(0,212,255,.08), 0 4px 24px rgba(0,0,0,.6);
+            /* Tabs */
+            --tab-bg:           rgba(10,18,30,.92);
+            --tab-hover:        rgba(0,212,255,.06);
+            --tab-hover-text:   #00d4ff;
+            /* Stat cards */
+            --stat-bg:          rgba(10,18,30,.92);
+            --rank-badge-other: rgba(0,212,255,.07);
+            --rank-badge-other-text: #7eb8d4;
+            --rank-badge-other-border: rgba(0,212,255,.14);
+            /* Misc */
+            --score-bar-bg:     rgba(0,212,255,.08);
+            --loader-bg:        #060b14;
+            --pagination-bg:    rgba(10,18,30,.92);
+            --pill-grade-bg:    rgba(0,212,255,.08);
+            --pill-grade-text:  #00d4ff;
+            --pill-grade-border:rgba(0,212,255,.22);
+            --filter-bar-bg:    rgba(10,18,30,.92);
+            --dist-bar-bg:      rgba(0,212,255,.07);
+            --mini-stat-bg:     rgba(0,212,255,.05);
+            --mini-stat-border: rgba(0,212,255,.1);
+            --table-head-grad:  linear-gradient(135deg,rgba(0,60,100,.5) 0%,rgba(0,40,80,.5) 100%);
+            --no-student-icon:  0.15;
+            --shadow-card:      0 4px 24px rgba(0,0,0,.6), 0 0 0 1px rgba(0,212,255,.06);
+            --shadow-card-hover:0 12px 48px rgba(0,0,0,.8), 0 0 0 1px rgba(0,212,255,.18), 0 0 32px rgba(0,212,255,.06);
+            --notif-bg:         rgba(10,18,30,.96);
+            --auth-card-shadow: 0 24px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(0,212,255,.12), 0 0 60px rgba(0,212,255,.05);
+            --heatmap-empty:    rgba(0,212,255,.05);
+            /* Aurora glow variables */
+            --glow-cyan:   0 0 20px rgba(0,212,255,.15);
+            --glow-blue:   0 0 20px rgba(41,128,185,.2);
+            --glow-purple: 0 0 20px rgba(139,92,246,.15);
+            /* Glass effect */
+            --glass-bg:    rgba(10,18,30,.75);
+            --glass-border:rgba(0,212,255,.12);
+        }
+
+        /* ══ LIGHT ══ */
+        [data-theme="light"] {
+            --bg-body:          #f0f6fb;
+            --bg-card:          #ffffff;
+            --bg-card2:         #f0f6fb;
+            --bg-input:         #f4f8fc;
+            --bg-table-alt:     #f8fbff;
+            --bg-table-hover:   #eef5fb;
+            --bg-header-grad:   linear-gradient(135deg,#f7fbff 0%,#fff 100%);
+            --bg-panel:         #ffffff;
+            --text-primary:     #0d2035;
+            --text-secondary:   #3a6080;
+            --text-muted:       #7aabc5;
+            --border-color:     rgba(41,128,185,.18);
+            --border-light:     rgba(41,128,185,.1);
+            --border-input:     rgba(41,128,185,.22);
+            --border-strong:    rgba(41,128,185,.4);
+            --topbar-grad:      rgba(240,246,251,.92);
+            --topbar-shadow:    0 1px 0 rgba(41,128,185,.12), 0 4px 16px rgba(41,128,185,.08);
+            --tab-bg:           #ffffff;
+            --tab-hover:        rgba(41,128,185,.07);
+            --tab-hover-text:   #2980b9;
+            --stat-bg:          #ffffff;
+            --rank-badge-other: #f0f6fb;
+            --rank-badge-other-text: #3a6080;
+            --rank-badge-other-border: rgba(41,128,185,.18);
+            --score-bar-bg:     rgba(41,128,185,.1);
+            --loader-bg:        #f0f6fb;
+            --pagination-bg:    #f8fbff;
+            --pill-grade-bg:    rgba(41,128,185,.08);
+            --pill-grade-text:  #1a5276;
+            --pill-grade-border:rgba(41,128,185,.22);
+            --filter-bar-bg:    #ffffff;
+            --dist-bar-bg:      rgba(41,128,185,.08);
+            --mini-stat-bg:     #f4f8fc;
+            --mini-stat-border: rgba(41,128,185,.14);
+            --table-head-grad:  linear-gradient(135deg,rgba(41,128,185,.1) 0%,rgba(41,128,185,.06) 100%);
+            --no-student-icon:  0.35;
+            --shadow-card:      0 2px 14px rgba(41,128,185,.08);
+            --shadow-card-hover:0 8px 28px rgba(41,128,185,.14);
+            --notif-bg:         #ffffff;
+            --auth-card-shadow: 0 8px 40px rgba(41,128,185,.12);
+            --heatmap-empty:    #e8f2fb;
+            --glow-cyan:        none;
+            --glow-blue:        none;
+            --glow-purple:      none;
+            --glass-bg:         rgba(255,255,255,.8);
+            --glass-border:     rgba(41,128,185,.18);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { background: var(--bg-body); color: var(--text-primary); font-family: 'Poppins', sans-serif; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Plus Jakarta Sans','Poppins',sans-serif;
+            background: var(--bg-body);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background .4s, color .4s;
+        }
 
-        /* ══ TOPBAR ══ */
+        /* ════ OBSIDIAN AURORA — Layered deep-space background ════ */
+        body::before {
+            content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+            background:
+                /* Top-left aurora — cyan */
+                radial-gradient(ellipse 80% 60% at -10% -5%,  rgba(0,212,255,.09)  0%, transparent 55%),
+                /* Bottom-right aurora — purple */
+                radial-gradient(ellipse 70% 55% at 110% 105%, rgba(139,92,246,.08)  0%, transparent 55%),
+                /* Mid — blue nebula */
+                radial-gradient(ellipse 55% 45% at 50% 50%,   rgba(41,128,185,.05)  0%, transparent 65%),
+                /* Top-right — teal accent */
+                radial-gradient(ellipse 40% 35% at 100% 0%,   rgba(20,184,166,.05)  0%, transparent 50%),
+                /* Bottom-left — amber warmth */
+                radial-gradient(ellipse 35% 30% at 0% 100%,   rgba(245,158,11,.04)  0%, transparent 50%);
+            transition: opacity .4s;
+            animation: auroraDrift 18s ease-in-out infinite alternate;
+        }
+        @keyframes auroraDrift {
+            0%   { opacity:1;    filter:hue-rotate(0deg); }
+            33%  { opacity:.85;  filter:hue-rotate(8deg); }
+            66%  { opacity:.95;  filter:hue-rotate(-5deg); }
+            100% { opacity:1;    filter:hue-rotate(4deg); }
+        }
+        [data-theme="light"] body::before {
+            animation: none;
+            background:
+                radial-gradient(ellipse 80% 60% at -10% -5%,  rgba(41,128,185,.07) 0%, transparent 55%),
+                radial-gradient(ellipse 55% 45% at 110% 105%, rgba(41,128,185,.05) 0%, transparent 55%);
+            opacity: .6;
+        }
+
+        /* ── Scanline texture overlay (subtle, dark only) ── */
+        body::after {
+            content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+            background-image: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,212,255,.008) 2px,
+                rgba(0,212,255,.008) 4px
+            );
+            opacity:1;
+        }
+        [data-theme="light"] body::after { display:none; }
+
+        /* ── Floating particles ── */
+        #analytics-particles { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
+        [data-theme="light"] #analytics-particles { opacity:.2; }
+        .a-particle {
+            position:absolute; border-radius:50%;
+            animation: aDrift linear infinite;
+        }
+        @keyframes aDrift {
+            0%   { transform:translateY(105vh) translateX(0) scale(1);    opacity:0; }
+            5%   { opacity:var(--op,.3); }
+            85%  { opacity:calc(var(--op,.3)*.4); }
+            100% { transform:translateY(-40px) translateX(calc(var(--dx,0)*1px)) scale(.5); opacity:0; }
+        }
+
+        /* everything sits above bg layers */
+        .topbar, .main, #loader, #notif-wrap, .scroll-to-top,
+        #auth-screen, #dashboard, .sched-modal-overlay,
+        .notif-panel, #heatmap-tooltip { position:relative; z-index:1; }
+
+        /* ════ GLASS MORPHISM — card base ════ */
+        [data-theme="dark"] .panel,
+        [data-theme="dark"] .auth-card,
+        [data-theme="dark"] .stat-card,
+        [data-theme="dark"] .filter-bar,
+        [data-theme="dark"] .tabs {
+            backdrop-filter: blur(12px) saturate(160%);
+            -webkit-backdrop-filter: blur(12px) saturate(160%);
+        }
+
+        /* ══ TOPBAR — Aurora glass ══ */
         .topbar {
-            position: sticky; top: 0; z-index: 100;
+            position: sticky; top: 0; z-index: 200;
             background: var(--topbar-grad);
-            box-shadow: 0 4px 12px var(--topbar-shadow);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
+            border-bottom: 1px solid var(--border-color);
+            box-shadow: var(--topbar-shadow);
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 24px; height: 64px; flex-wrap: nowrap; gap: 8px;
+            transition: var(--transition);
         }
+        [data-theme="dark"] .topbar {
+            background: rgba(4,9,18,.82);
+            border-bottom-color: rgba(0,212,255,.1);
+        }
+        [data-theme="light"] .topbar {
+            background: rgba(240,246,251,.88);
+            border-bottom-color: rgba(41,128,185,.12);
+        }
+        [data-theme="light"] .brand-name { color: #0d2035; }
+        [data-theme="light"] .brand-sub  { color: #3a6080; }
+        [data-theme="dark"]  .brand-name { color: #e2f0ff; }
+        [data-theme="dark"]  .brand-sub  { color: rgba(0,212,255,.55); font-size:10px; letter-spacing:.04em; }
         .topbar-brand { display: flex; align-items: center; gap: 14px; min-width: 0; flex: 1; }
         .topbar-logo { width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 1px solid rgba(255,255,255,0.3); flex-shrink: 0; }
         .brand-name { font-size: 15px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .brand-sub { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: -2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
 
-        /* ══ DARK MODE TOGGLE ══ */
-        .dark-toggle {
-            width: 40px; height: 40px; border-radius: 10px;
-            background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-            cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s; flex-shrink: 0;
+        /* ══ THEME TOGGLE — aurora glass pill ══ */
+        .theme-toggle {
+            width: 54px; height: 28px; border-radius: 14px;
+            background: rgba(0,212,255,.08);
+            border: 1.5px solid rgba(0,212,255,.2);
+            cursor: pointer; position: relative;
+            display: flex; align-items: center; padding: 3px;
+            transition: var(--transition-spring); flex-shrink: 0;
+            box-shadow: 0 0 12px rgba(0,212,255,.1), inset 0 0 8px rgba(0,212,255,.05);
         }
-        .dark-toggle:hover { background: rgba(255,255,255,0.25); transform: scale(1.05); }
+        [data-theme="light"] .theme-toggle {
+            background: rgba(41,128,185,.1);
+            border-color: rgba(41,128,185,.22);
+            box-shadow: none;
+        }
+        .theme-toggle::after {
+            content:''; width: 20px; height: 20px; border-radius: 50%;
+            background: linear-gradient(135deg, #00d4ff, #2980b9);
+            transition: transform .38s cubic-bezier(.34,1.56,.64,1);
+            transform: translateX(0);
+            box-shadow: 0 0 10px rgba(0,212,255,.5), 0 2px 6px rgba(0,0,0,.4);
+        }
+        [data-theme="light"] .theme-toggle::after {
+            background: linear-gradient(135deg,#2980b9,#1a5276);
+            transform: translateX(26px);
+            box-shadow: 0 2px 6px rgba(0,0,0,.2);
+        }
+        .theme-icon {
+            position: absolute; font-size: 11px; line-height:1;
+            transition: opacity .25s; pointer-events: none;
+        }
+        .theme-icon.moon { left: 7px; opacity: 1; }
+        .theme-icon.sun  { right: 6px; opacity: .3; }
+        [data-theme="light"] .theme-icon.moon { opacity: .3; }
+        [data-theme="light"] .theme-icon.sun  { opacity: 1; }
+        .theme-toggle:hover { transform: scale(1.08); border-color: rgba(0,212,255,.4); box-shadow: 0 0 20px rgba(0,212,255,.2); }
 
         /* ══ BUTTONS ══ */
         .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
@@ -138,11 +311,66 @@
         .user-pill { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); border-radius: 24px; padding: 6px 14px 6px 6px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #fff; white-space: nowrap; }
         .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.3); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
 
-        /* ══ LOADER ══ */
-        #loader { position: fixed; inset: 0; background: var(--loader-bg); backdrop-filter: blur(4px); z-index: 999; display: none; align-items: center; justify-content: center; flex-direction: column; gap: 16px; }
-        .loader-ring { width: 52px; height: 52px; border: 4px solid var(--border-color); border-top-color: #3498db; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        /* ══ LOADER — Obsidian Aurora ══ */
+        #loader {
+            position:fixed; inset:0; z-index:9999;
+            background:var(--bg-body);
+            display:none; flex-direction:column; align-items:center; justify-content:center; gap:20px;
+        }
+        [data-theme="dark"] #loader::before {
+            content:''; position:absolute; inset:0;
+            background:
+                radial-gradient(ellipse 60% 50% at 50% 40%, rgba(0,212,255,.07) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 35% at 30% 70%, rgba(139,92,246,.05) 0%, transparent 50%);
+        }
+        .loader-logo {
+            font-size:52px; position:relative; z-index:1;
+            animation:ldPulse 2s cubic-bezier(.4,0,.6,1) infinite;
+            filter: drop-shadow(0 0 20px rgba(0,212,255,.4));
+        }
+        @keyframes ldPulse {
+            0%,100%{ opacity:1; transform:scale(1);    filter:drop-shadow(0 0 20px rgba(0,212,255,.4)); }
+            50%    { opacity:.7; transform:scale(.88); filter:drop-shadow(0 0 8px  rgba(0,212,255,.15)); }
+        }
+        .loader-ring-wrap {
+            position:relative; width:80px; height:80px; z-index:1;
+        }
+        .loader-ring-outer, .loader-ring-inner {
+            position:absolute; border-radius:50%; border:2px solid transparent;
+        }
+        .loader-ring-outer {
+            inset:0;
+            border-top-color: #00d4ff;
+            border-right-color: rgba(0,212,255,.3);
+            animation: spin .9s linear infinite;
+            box-shadow: 0 0 16px rgba(0,212,255,.3);
+        }
+        .loader-ring-inner {
+            inset:12px;
+            border-bottom-color: #8b5cf6;
+            border-left-color: rgba(139,92,246,.3);
+            animation: spin 1.3s linear infinite reverse;
+        }
+        .loader-bar {
+            width:180px; height:2px;
+            background:rgba(0,212,255,.1);
+            border-radius:2px; overflow:hidden; position:relative; z-index:1;
+        }
+        .loader-fill {
+            height:100%;
+            background:linear-gradient(90deg, transparent, #00d4ff, #8b5cf6, transparent);
+            border-radius:2px;
+            animation:ldLoad 1.6s ease-in-out infinite;
+        }
+        @keyframes ldLoad { 0%{transform:translateX(-100%)} 100%{transform:translateX(300%)} }
+        .loader-text {
+            font-size:12px; color:rgba(0,212,255,.5); font-weight:600;
+            letter-spacing:.14em; text-transform:uppercase; position:relative; z-index:1;
+        }
+        [data-theme="light"] .loader-text { color:var(--text-secondary); text-transform:none; letter-spacing:normal; }
+        [data-theme="light"] .loader-ring-outer { border-top-color:#2980b9; border-right-color:rgba(41,128,185,.3); box-shadow:none; }
+        [data-theme="light"] .loader-ring-inner { border-bottom-color:#8e44ad; border-left-color:rgba(142,68,173,.3); }
         @keyframes spin { to { transform: rotate(360deg); } }
-        .loader-text { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
 
         /* ══ MAIN ══ */
         .main { max-width: 1800px; margin: 0 auto; padding: 28px 32px; }
@@ -150,10 +378,13 @@
         /* ══ AUTH ══ */
         #auth-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 64px); text-align: center; gap: 20px; }
         #auth-screen.show { display: flex; }
-        .auth-card { background: var(--bg-card); border-radius: 18px; padding: 48px; box-shadow: var(--auth-card-shadow); max-width: 440px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 18px; border: 1px solid var(--border-color); }
+        .auth-card { background: var(--bg-card); border-radius: 18px; padding: 48px; box-shadow: var(--auth-card-shadow); max-width: 440px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 18px; border: 1px solid var(--border-color); transition: var(--transition); }
+        [data-theme="dark"] .auth-card { background: rgba(21,38,56,.95); border-color: rgba(41,128,185,.28); box-shadow: 0 8px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(41,128,185,.1); }
+        [data-theme="light"] .auth-card { background: #fff; }
         .auth-icon { font-size: 42px; animation: float 3s ease-in-out infinite; }
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .auth-title { font-size: 26px; font-weight: 700; color: var(--text-primary); }
+        .auth-title { font-size: 26px; font-weight: 800; color: var(--text-primary); }
+        [data-theme="dark"] .auth-title { background: linear-gradient(135deg, #e2f0ff 0%, #00d4ff 50%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .auth-sub { color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
 
         #dashboard { display: none; }
@@ -175,6 +406,7 @@
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(175px, 1fr)); gap: 14px; margin-bottom: 24px; }
         .stat-card { background: var(--stat-bg); border-radius: 14px; padding: 20px; box-shadow: var(--shadow-card); border-top: 4px solid var(--cc, #3498db); transition: transform 0.2s, box-shadow 0.2s; border: 1px solid var(--border-color); border-top-width: 4px; }
         .stat-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-card-hover); }
+        [data-theme="dark"] .stat-card:hover { border-color: rgba(41,128,185,.5); box-shadow: 0 8px 28px rgba(41,128,185,.15); }
         .stat-icon { font-size: 26px; margin-bottom: 10px; }
         .stat-value { font-size: 28px; font-weight: 700; line-height: 1; color: var(--cc, #3498db); }
         .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-secondary); margin-top: 5px; font-weight: 600; }
@@ -183,10 +415,12 @@
         .tabs { display: flex; gap: 4px; background: var(--tab-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 4px; margin-bottom: 24px; flex-wrap: wrap; box-shadow: var(--shadow-card); }
         .tab { padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; border: none; background: transparent; font-family: 'Poppins', sans-serif; }
         .tab:hover { color: var(--tab-hover-text); background: var(--tab-hover); }
-        .tab.active { background: linear-gradient(135deg, #2980b9, #3498db); color: #fff; box-shadow: 0 4px 12px rgba(52,152,219,0.3); }
+        .tab.active { background: linear-gradient(135deg, #2980b9, #1a5276); color: #fff; box-shadow: 0 4px 14px rgba(41,128,185,.35); }
+        [data-theme="light"] .tab.active { background: linear-gradient(135deg, #2980b9, #3498db); }
 
         /* ══ PANEL ══ */
-        .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 14px; overflow: visible; box-shadow: var(--shadow-card); }
+        .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 14px; overflow: visible; box-shadow: var(--shadow-card); transition: var(--transition); }
+        [data-theme="dark"] .panel { box-shadow: 0 4px 20px rgba(0,0,0,.35), 0 0 0 1px rgba(41,128,185,.08); }
         #tab-heatmap { overflow: visible; }
         .panel-header { padding: 18px 24px; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; background: var(--bg-header-grad); }
         .panel-title { font-size: 16px; font-weight: 700; color: var(--text-primary); }
@@ -355,7 +589,8 @@
 
         /* ══ NOTIFICATIONS ══ */
         #notif-wrap { position: fixed; top: 76px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
-        .notif { background: var(--notif-bg); border-radius: 12px; padding: 14px 18px; display: flex; gap: 12px; align-items: flex-start; animation: notifIn 0.4s cubic-bezier(0.34,1.56,0.64,1); box-shadow: 0 8px 32px rgba(0,0,0,0.2); border-left: 4px solid var(--nc, #3498db); border: 1px solid var(--border-color); border-left-width: 4px; }
+        .notif { background: var(--notif-bg); border-radius: 12px; padding: 14px 18px; display: flex; gap: 12px; align-items: flex-start; animation: notifIn 0.4s cubic-bezier(0.34,1.56,0.64,1); box-shadow: var(--shadow-card); border-left: 4px solid var(--nc, #3498db); border: 1px solid var(--border-color); border-left-width: 4px; }
+        [data-theme="light"] .notif { box-shadow: 0 4px 20px rgba(41,128,185,.12); }
         @keyframes notifIn { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         .notif-text { font-size: 13px; color: var(--text-primary); line-height: 1.5; font-weight: 500; }
 
@@ -391,6 +626,195 @@
         ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
         .hidden { display: none !important; }
+
+
+        /* ════ OBSIDIAN AURORA — Card & Panel Polish ════ */
+        [data-theme="dark"] .stat-card {
+            background: rgba(10,18,30,.88);
+            border-color: rgba(0,212,255,.08);
+            transition: transform .2s, box-shadow .2s, border-color .2s;
+        }
+        [data-theme="dark"] .stat-card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(0,212,255,.25);
+            box-shadow: 0 12px 40px rgba(0,0,0,.7), 0 0 0 1px rgba(0,212,255,.2), 0 0 24px rgba(0,212,255,.08);
+        }
+        [data-theme="dark"] .panel {
+            background: rgba(10,18,30,.88);
+            border-color: rgba(0,212,255,.08);
+            box-shadow: 0 4px 24px rgba(0,0,0,.5), 0 0 0 1px rgba(0,212,255,.05);
+        }
+        [data-theme="dark"] .panel-header {
+            background: linear-gradient(135deg,rgba(0,212,255,.04) 0%,transparent 60%);
+            border-bottom-color: rgba(0,212,255,.08);
+        }
+        [data-theme="dark"] .tabs {
+            background: rgba(10,18,30,.88);
+            border-color: rgba(0,212,255,.08);
+        }
+        [data-theme="dark"] .tab.active {
+            background: linear-gradient(135deg,rgba(0,212,255,.18),rgba(41,128,185,.25));
+            color: #00d4ff;
+            border: 1px solid rgba(0,212,255,.3);
+            box-shadow: 0 0 16px rgba(0,212,255,.15), inset 0 0 8px rgba(0,212,255,.05);
+        }
+        [data-theme="dark"] .tab:hover {
+            color: #00d4ff;
+            background: rgba(0,212,255,.06);
+            border-color: rgba(0,212,255,.15);
+        }
+        [data-theme="dark"] .filter-bar {
+            background: rgba(10,18,30,.88);
+            border-color: rgba(0,212,255,.08);
+        }
+        [data-theme="dark"] .filter-group select,
+        [data-theme="dark"] .filter-group input {
+            background: rgba(0,212,255,.04);
+            border-color: rgba(0,212,255,.12);
+            color: #e2f0ff;
+        }
+        [data-theme="dark"] .filter-group select:focus,
+        [data-theme="dark"] .filter-group input:focus {
+            border-color: rgba(0,212,255,.4);
+            box-shadow: 0 0 0 3px rgba(0,212,255,.08);
+        }
+        [data-theme="dark"] .filter-group select option { background: #0c1929; }
+        /* Table head aurora */
+        [data-theme="dark"] .rank-table th {
+            background: linear-gradient(135deg,rgba(0,60,100,.6),rgba(0,30,60,.7));
+            border-bottom: 1px solid rgba(0,212,255,.15);
+        }
+        [data-theme="dark"] .rank-table tr:hover td {
+            background: rgba(0,212,255,.03);
+        }
+        /* Score bars glow */
+        [data-theme="dark"] .score-fill { box-shadow: 0 0 8px currentColor; }
+        /* Stat values cyan tint */
+        [data-theme="dark"] .stat-value { text-shadow: 0 0 12px currentColor; }
+        /* Scroll to top aurora */
+        [data-theme="dark"] .scroll-to-top {
+            background: linear-gradient(135deg,rgba(0,212,255,.18),rgba(41,128,185,.25));
+            border: 1px solid rgba(0,212,255,.3);
+            box-shadow: 0 0 20px rgba(0,212,255,.2);
+            color: #00d4ff;
+        }
+        [data-theme="dark"] .scroll-to-top:hover {
+            box-shadow: 0 0 32px rgba(0,212,255,.35);
+            transform: scale(1.12);
+        }
+        /* Notif aurora */
+        [data-theme="dark"] .notif {
+            background: rgba(8,15,28,.95);
+            border-color: rgba(0,212,255,.15);
+            border-left-color: var(--nc,#00d4ff);
+            box-shadow: 0 8px 32px rgba(0,0,0,.5), 0 0 16px rgba(0,212,255,.06);
+        }
+        /* Auth card deep glass */
+        [data-theme="dark"] .auth-card {
+            background: rgba(8,15,28,.88);
+            border-color: rgba(0,212,255,.14);
+            box-shadow: 0 24px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(0,212,255,.1), 0 0 60px rgba(0,212,255,.04);
+        }
+        /* Pagination aurora */
+        [data-theme="dark"] .page-btn { background:rgba(0,212,255,.04); border-color:rgba(0,212,255,.1); color:#7eb8d4; }
+        [data-theme="dark"] .page-btn:hover { border-color:rgba(0,212,255,.3); color:#00d4ff; background:rgba(0,212,255,.08); }
+        [data-theme="dark"] .page-btn.active {
+            background:linear-gradient(135deg,rgba(0,212,255,.2),rgba(41,128,185,.25));
+            border-color:rgba(0,212,255,.4); color:#00d4ff;
+            box-shadow: 0 0 12px rgba(0,212,255,.2);
+        }
+        /* Grade pills aurora */
+        [data-theme="dark"] .grade-EE1 { background:rgba(16,185,129,.15); color:#34d399; border-color:rgba(16,185,129,.3); }
+        [data-theme="dark"] .grade-EE2 { background:rgba(20,184,166,.12); color:#2dd4bf; border-color:rgba(20,184,166,.28); }
+        [data-theme="dark"] .grade-ME1 { background:rgba(0,212,255,.1);   color:#00d4ff; border-color:rgba(0,212,255,.25); }
+        [data-theme="dark"] .grade-ME2 { background:rgba(41,128,185,.12); color:#5dade2; border-color:rgba(41,128,185,.28); }
+        [data-theme="dark"] .grade-AE1 { background:rgba(245,158,11,.1);  color:#fbbf24; border-color:rgba(245,158,11,.25); }
+        [data-theme="dark"] .grade-AE2 { background:rgba(249,115,22,.1);  color:#fb923c; border-color:rgba(249,115,22,.25); }
+        [data-theme="dark"] .grade-BE1 { background:rgba(239,68,68,.1);   color:#f87171; border-color:rgba(239,68,68,.25); }
+        [data-theme="dark"] .grade-BE2 { background:rgba(139,92,246,.1);  color:#c4b5fd; border-color:rgba(139,92,246,.25); }
+        [data-theme="dark"] .grade-NA  { background:rgba(0,212,255,.04);  color:#3a6880; border-color:rgba(0,212,255,.08); }
+        /* Btn primary aurora */
+        [data-theme="dark"] .btn-primary {
+            background: linear-gradient(135deg,rgba(0,180,220,.8),rgba(41,128,185,.9));
+            box-shadow: 0 4px 16px rgba(0,212,255,.2);
+        }
+        [data-theme="dark"] .btn-primary:hover { box-shadow: 0 6px 24px rgba(0,212,255,.35); }
+        [data-theme="dark"] .btn-success { box-shadow: 0 4px 16px rgba(16,185,129,.2); }
+        [data-theme="dark"] .btn-purple  { box-shadow: 0 4px 16px rgba(139,92,246,.2); }
+        /* Compare view toggle aurora */
+        [data-theme="dark"] .compare-view-btn.active { color:#00d4ff; }
+        /* Heatmap cells glow */
+        [data-theme="dark"] .heatmap-cell:hover { box-shadow: 0 0 16px currentColor; }
+        /* Auth screen glow bg */
+        [data-theme="dark"] #auth-screen::before {
+            content:''; position:fixed; inset:0; pointer-events:none;
+            background: radial-gradient(ellipse 60% 50% at 50% 40%, rgba(0,212,255,.06) 0%, transparent 60%);
+        }
+        /* Insight cards aurora left border */
+        [data-theme="dark"] .insight-card {
+            background: rgba(10,18,30,.88);
+            border-color: rgba(0,212,255,.07);
+        }
+        [data-theme="dark"] .insight-card:hover {
+            border-color: rgba(0,212,255,.22);
+            box-shadow: 0 8px 32px rgba(0,0,0,.5), 0 0 16px rgba(0,212,255,.06);
+        }
+        /* Subject cards aurora */
+        [data-theme="dark"] .subject-card {
+            background: rgba(10,18,30,.88);
+            border-color: rgba(0,212,255,.07);
+        }
+        [data-theme="dark"] .subject-card:hover { border-color:rgba(0,212,255,.22); }
+        /* Progress cards */
+        [data-theme="dark"] .progress-subject-card { background:rgba(10,18,30,.88); border-color:rgba(0,212,255,.07); }
+        /* Compare cards */
+        [data-theme="dark"] .compare-class-card { background:rgba(10,18,30,.88); border-color:rgba(0,212,255,.07); }
+        /* Mini stats aurora */
+        [data-theme="dark"] .subject-mini-stat { background:rgba(0,212,255,.04); border-color:rgba(0,212,255,.08); }
+        /* Trend cards */
+        [data-theme="dark"] .trend-card { background:rgba(10,18,30,.88); border-color:rgba(0,212,255,.07); }
+        /* AI cards */
+        [data-theme="dark"] .ai-report-card { background:rgba(10,18,30,.88); border-color:rgba(0,212,255,.07); }
+        [data-theme="dark"] .ai-bulk-card   { background:rgba(0,212,255,.03); border-color:rgba(0,212,255,.08); }
+        /* Sched items */
+        [data-theme="dark"] .sched-item { background:rgba(10,18,30,.88); border-color:rgba(0,212,255,.07); }
+        [data-theme="dark"] .sched-cal-day { background:rgba(0,212,255,.03); border-color:rgba(0,212,255,.06); }
+        [data-theme="dark"] .sched-cal-day:hover { background:rgba(0,212,255,.08); border-color:rgba(0,212,255,.2); }
+        [data-theme="dark"] .sched-cal-day.today { border-color:rgba(0,212,255,.5); box-shadow:0 0 12px rgba(0,212,255,.15); }
+        /* Photo cards */
+        [data-theme="dark"] .photo-card { background:rgba(10,18,30,.88); border-color:rgba(0,212,255,.07); }
+        [data-theme="dark"] .photo-card:hover { border-color:rgba(0,212,255,.22); box-shadow:0 8px 32px rgba(0,0,0,.5); }
+        /* Print preview */
+        [data-theme="dark"] .print-card-preview { background:rgba(10,18,30,.88); border-color:rgba(0,212,255,.07); }
+        /* Dashboard canvas */
+        [data-theme="dark"] .dash-canvas { background:rgba(0,212,255,.02); border-color:rgba(0,212,255,.1); }
+        [data-theme="dark"] .dash-widget { background:rgba(10,18,30,.88); border-color:rgba(0,212,255,.08); }
+        [data-theme="dark"] .dash-widget:hover { border-color:rgba(0,212,255,.22); box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 16px rgba(0,212,255,.06); }
+        [data-theme="dark"] .dash-palette-item { background:rgba(0,212,255,.04); border-color:rgba(0,212,255,.1); color:#7eb8d4; }
+        [data-theme="dark"] .dash-palette-item:hover { border-color:rgba(0,212,255,.3); color:#00d4ff; background:rgba(0,212,255,.08); }
+        /* Notif panel */
+        [data-theme="dark"] .notif-panel { background:rgba(8,15,28,.95); border-color:rgba(0,212,255,.14); box-shadow:0 16px 48px rgba(0,0,0,.7),0 0 24px rgba(0,212,255,.05); }
+        /* Sched modal */
+        [data-theme="dark"] .sched-modal { background:rgba(8,15,28,.96); border-color:rgba(0,212,255,.14); }
+        /* Welcome card aurora */
+        [data-theme="dark"] .grade-filter-info {
+            background: linear-gradient(135deg,rgba(0,212,255,.07),rgba(20,184,166,.05));
+            border-color: rgba(0,212,255,.15); color:#00d4ff;
+        }
+        /* Student profile card gradient update */
+        [data-theme="dark"] .student-profile-card {
+            background: linear-gradient(135deg, rgba(0,60,100,.9) 0%, rgba(41,128,185,.8) 100%);
+            box-shadow: 0 4px 24px rgba(0,0,0,.5), 0 0 32px rgba(0,212,255,.1);
+            border: 1px solid rgba(0,212,255,.2);
+        }
+        /* Section panel badge */
+        [data-theme="dark"] .panel-badge {
+            background:rgba(0,212,255,.1); border-color:rgba(0,212,255,.22); color:#00d4ff;
+        }
+        /* Scrollbar aurora */
+        [data-theme="dark"]::-webkit-scrollbar-track { background:#060b14; }
+        [data-theme="dark"]::-webkit-scrollbar-thumb { background:rgba(0,212,255,.18); border-radius:3px; }
+        [data-theme="dark"]::-webkit-scrollbar-thumb:hover { background:rgba(0,212,255,.35); }
 
         /* ══ RESPONSIVE ══ */
         @media (max-width: 900px) {
@@ -652,7 +1076,10 @@
         </div>
     </div>
     <div class="topbar-right">
-        <button class="dark-toggle" id="dark-toggle" title="Toggle dark mode">🌙</button>
+        <button class="theme-toggle" id="dark-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
+            <span class="theme-icon moon">🌙</span>
+            <span class="theme-icon sun">☀️</span>
+        </button>
         <button class="dark-toggle" id="notif-bell-btn" onclick="toggleNotifPanel()" title="Notification settings" style="position:relative;">🔔<span id="notif-badge-dot" style="position:absolute;top:4px;right:4px;width:8px;height:8px;background:#e74c3c;border-radius:50%;display:none;border:2px solid transparent;"></span></button>
         <div class="notif-panel" id="notif-panel">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -680,8 +1107,21 @@
     </div>
 </header>
 
-<div id="loader" style="display:flex;"><div class="loader-ring"></div><div class="loader-text">Connecting to school system...</div></div>
+<div id="loader" style="display:flex;">
+  <div class="loader-ring-wrap">
+    <div class="loader-ring-outer"></div>
+    <div class="loader-ring-inner"></div>
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+      <div class="loader-logo" id="loader-logo" style="font-size:26px;">🎓</div>
+    </div>
+  </div>
+  <div class="loader-bar"><div class="loader-fill"></div></div>
+  <div class="loader-text">Connecting to school system…</div>
+</div>
 <div id="notif-wrap"></div>
+
+<!-- ANIMATED PARTICLES -->
+<div id="analytics-particles"></div>
 
 <!-- SCROLL TO TOP BUTTON -->
 <button class="scroll-to-top" id="scroll-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
@@ -1275,8 +1715,8 @@ function toggleQuickLinks() {
 <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
     import { getDatabase, ref, onValue, get } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-    window._fb = { initializeApp, getDatabase, ref, onValue, get, getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+    window._fb = { initializeApp, getDatabase, ref, onValue, get, getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged };
     // Use callback pattern — event dispatch races with script parsing
     if(typeof window._fbReadyCb === 'function'){
         window._fbReadyCb();
@@ -1288,21 +1728,107 @@ function toggleQuickLinks() {
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
 <script>
+
 // ══════════════════════════════════════════════════════════════
-// DARK MODE
+// IMAGE LOADING HELPERS (same pattern as student portal)
+// ══════════════════════════════════════════════════════════════
+function loadImg(src){
+    return new Promise(resolve=>{
+        const img=new Image();
+        img.crossOrigin='anonymous';
+        img.onload=()=>resolve({ok:true,img});
+        img.onerror=()=>resolve({ok:false,img:null});
+        setTimeout(()=>resolve({ok:false,img:null}),2500);
+        img.src=src;
+    });
+}
+
+async function loadStudentImg(name,grade){
+    // Extract base grade "Grade X" from strings like "Grade 7/2024/T1/..."
+    const g=(grade||'').match(/^Grade\s*\d+/i)?.[0]||(grade||'');
+    const cleanName=(name||'').trim();
+    // 1. Try exact name in grade folder (same path as student portal sibling)
+    const r=await loadImg(`./Report-Cards/student_images/${g}/${cleanName}.jpg`);
+    if(r.ok) return r;
+    // 2. Try URL-encoded (handles spaces/special chars in filenames)
+    const r2=await loadImg(`./Report-Cards/student_images/${g}/${encodeURIComponent(cleanName)}.jpg`);
+    if(r2.ok) return r2;
+    // 3. Fallback: shared default avatar
+    return loadImg('./Report-Cards/student_images/default.jpg');
+}
+
+function tryLoadLogo(){
+    const logoImg=new Image();
+    logoImg.src='./imgs/logo.png';
+    logoImg.onload=()=>{
+        // Replace topbar brand logo emoji with real logo
+        const wrap=document.getElementById('topbar-logo');
+        if(wrap) wrap.innerHTML=`<img src="./imgs/logo.png" alt="School Logo" style="width:100%;height:100%;object-fit:cover;border-radius:9px;">`;
+        // Also update loader logo
+        const ll=document.getElementById('loader-logo');
+        if(ll) ll.innerHTML=`<img src="./imgs/logo.png" alt="Logo" style="width:44px;height:44px;object-fit:cover;border-radius:10px;border:2px solid rgba(41,128,185,.4);">`;
+    };
+    // onerror: silently keep emoji fallback — no crash
+}
+
+// ══════════════════════════════════════════════════════════════
+// THEME — portal pattern (dark default, persisted)
 // ══════════════════════════════════════════════════════════════
 (function(){
-    const saved=localStorage.getItem('theme')||'light';
-    document.documentElement.setAttribute('data-theme',saved);
-    document.getElementById('dark-toggle').textContent=saved==='dark'?'☀️':'🌙';
+    // Default dark, same as portal
+    const saved = localStorage.getItem('kanyadet_analytics_theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
 })();
-document.getElementById('dark-toggle').addEventListener('click',()=>{
-    const cur=document.documentElement.getAttribute('data-theme')||'light';
-    const next=cur==='dark'?'light':'dark';
-    document.documentElement.setAttribute('data-theme',next);
-    localStorage.setItem('theme',next);
-    document.getElementById('dark-toggle').textContent=next==='dark'?'☀️':'🌙';
-});
+
+window.toggleTheme = function(){
+    const html = document.documentElement;
+    const isDark = html.getAttribute('data-theme') === 'dark';
+    const next = isDark ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('kanyadet_analytics_theme', next);
+    // Redraw trend chart canvases (they use theme-aware colours)
+    if(currentTab === 'trends' && filteredStudents.length) renderTrends();
+};
+
+// ── OBSIDIAN AURORA PARTICLES — multicolour constellation ────
+(function(){
+    const container = document.getElementById('analytics-particles');
+    if(!container) return;
+    const colors = [
+        'rgba(0,212,255,VAR)',    // cyan
+        'rgba(139,92,246,VAR)',   // purple
+        'rgba(20,184,166,VAR)',   // teal
+        'rgba(245,158,11,VAR)',   // amber
+        'rgba(236,72,153,VAR)',   // pink
+        'rgba(59,130,246,VAR)',   // blue
+        'rgba(255,255,255,VAR)',  // white
+    ];
+    const count = 32;
+    for(let i = 0; i < count; i++){
+        const p = document.createElement('div');
+        p.className = 'a-particle';
+        const size    = 1.5 + Math.random() * 3.5;
+        const opacity = .12 + Math.random() * .28;
+        const color   = colors[Math.floor(Math.random()*colors.length)].replace('VAR', opacity.toFixed(2));
+        // Some particles are stars (slightly larger, cross-shaped via box-shadow)
+        const isStar  = Math.random() < .15;
+        const extra   = isStar
+            ? `box-shadow:0 0 ${size*3}px ${color},0 0 ${size*6}px ${color};border-radius:50%;`
+            : 'border-radius:50%;';
+        p.style.cssText = [
+            `left:${Math.random()*100}%`,
+            `width:${size}px`,
+            `height:${size}px`,
+            `background:${color}`,
+            `animation-duration:${14+Math.random()*20}s`,
+            `animation-delay:-${Math.random()*26}s`,
+            `--dx:${(Math.random()-.5)*220}`,
+            `--op:${opacity}`,
+            extra
+        ].join(';');
+        container.appendChild(p);
+    }
+})();
 
 // ══════════════════════════════════════════════════════════════
 // SCROLL TO TOP
@@ -1397,10 +1923,22 @@ function _initFirebase(){
     fb=window._fb;
     const app=fb.initializeApp(FIREBASE_CONFIG);
     db=fb.getDatabase(app); auth=fb.getAuth(app);
+    // Check for redirect sign-in result first (handles redirect flow)
+    fb.getRedirectResult(auth).then(result=>{
+        if(result && result.user){
+            // Redirect sign-in succeeded — onAuthStateChanged will handle it
+        }
+    }).catch(err=>{
+        // Ignore redirect errors on pages that never triggered a redirect
+        if(err.code !== 'auth/no-auth-event' && err.code !== 'auth/null-user'){
+            console.warn('Redirect result error:', err.code);
+        }
+    });
     fb.onAuthStateChanged(auth,u=>{
         if(u) onSignedIn(u);
         else onSignedOut();
     });
+    tryLoadLogo();
 }
 // If the ES module already loaded before this script ran, fire immediately
 // Otherwise register a callback the module will call
@@ -1418,7 +1956,8 @@ function onSignedIn(user){
     document.getElementById('user-pill').classList.remove('hidden');
     document.getElementById('user-name-display').textContent=user.displayName||user.email;
     document.getElementById('user-initial').textContent=(user.displayName||user.email||'?')[0].toUpperCase();
-    document.querySelector('.loader-text').textContent='Loading student data...';
+    const loaderTxt=document.querySelector('.loader-text');
+    if(loaderTxt) loaderTxt.textContent='Loading student data…';
     showLoader(); fetchData();
 }
 function onSignedOut(){
@@ -1431,8 +1970,46 @@ function onSignedOut(){
 }
 
 window.signInWithGoogle=async()=>{
-    try{await fb.signInWithPopup(auth,new fb.GoogleAuthProvider());}
-    catch(e){notify('Sign-in failed: '+e.message,'error');}
+    const btn=document.getElementById('sign-in-btn');
+    const origText=btn.textContent;
+    btn.textContent='⏳ Signing in...';
+    btn.disabled=true;
+
+    const provider=new fb.GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+
+    try{
+        // Try popup first — works on most modern browsers
+        await fb.signInWithPopup(auth, provider);
+    } catch(popupErr){
+        // These codes mean popup was blocked or cancelled by browser/user
+        const blocked = [
+            'auth/popup-blocked',
+            'auth/popup-closed-by-user',
+            'auth/cancelled-popup-request',
+            'auth/internal-error'
+        ];
+        if(blocked.includes(popupErr.code)){
+            // Silently fall back to redirect (no noisy error message)
+            try{
+                await fb.signInWithRedirect(auth, provider);
+                // Page will reload — nothing after this runs
+                return;
+            } catch(redirErr){
+                notify('Sign-in error: '+redirErr.message,'error');
+            }
+        } else if(popupErr.code === 'auth/network-request-failed'){
+            notify('⚠️ Network error. Check your internet connection and try again.','error');
+        } else if(popupErr.code === 'auth/user-disabled'){
+            notify('⚠️ This account has been disabled. Contact admin.','error');
+        } else {
+            // Unknown error — show it
+            notify('Sign-in failed: '+popupErr.message,'error');
+        }
+    } finally{
+        btn.textContent=origText;
+        btn.disabled=false;
+    }
 };
 document.getElementById('sign-in-btn').addEventListener('click',signInWithGoogle);
 document.getElementById('sign-out-btn').addEventListener('click',async()=>{
@@ -2120,6 +2697,18 @@ function selectProgressStudent(s){
     document.getElementById('autocomplete-list').style.display='none';
     document.getElementById('progress-search').value=s['Official Student Name']||'';
     renderProgressReport();
+    // Async: load student photo into progress profile card after render
+    loadStudentImg(s['Official Student Name']||'',s._grade||s['Grade']||'').then(res=>{
+        if(!res.ok) return;
+        const av=document.getElementById('progress-student-photo');
+        if(!av) return;
+        av.innerHTML='';
+        const img=new Image();
+        img.style.cssText='width:100%;height:100%;object-fit:cover;border-radius:50%;';
+        img.alt=s['Official Student Name']||'';
+        img.src=res.img.src;
+        av.appendChild(img);
+    });
 }
 
 window.clearProgressStudent=function(){
@@ -2164,7 +2753,7 @@ function renderProgressReport(){
 
     const profileHTML=`
         <div class="student-profile-card">
-            <div class="student-avatar-big">${(s['Official Student Name']||'?')[0].toUpperCase()}</div>
+            <div class="student-avatar-big" id="progress-student-photo" style="overflow:hidden;">${(s['Official Student Name']||'?')[0].toUpperCase()}</div>
             <div class="student-profile-info">
                 <h2>${esc(s['Official Student Name']||'N/A')}</h2>
                 <div class="student-profile-meta">
@@ -2314,6 +2903,9 @@ window.exportProgressPDF=async function(){
     const allResults=(studentProfiles[aNo]||[s]).slice().sort((a,b)=>(a['Term']||'').localeCompare(b['Term']||''));
     const termsToShow=activeExamType==='ALL'?allResults:allResults.filter(r=>(r._termKey||r['Grade']||'')===activeExamType);
     doc.setFillColor(41,128,185);doc.rect(0,0,pw,30,'F');
+    // Logo
+    const _progLogo=await _loadLogoPDF();
+    _drawPDFLogo(doc,_progLogo,22,30);
     doc.setTextColor(255,255,255);doc.setFontSize(15);doc.setFont(undefined,'bold');
     doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,10,{align:'center'});
     doc.setFontSize(11);doc.setFont(undefined,'normal');
@@ -2363,6 +2955,40 @@ window.exportProgressPDF=async function(){
     notify(`📥 Progress report exported for ${s['Official Student Name']||'student'}!`,'success');
 };
 
+
+// ── SHARED LOGO LOADER FOR ALL PDF EXPORTS ──────────────────
+// Loads ./imgs/logo.png once and caches it as a dataURL
+// Returns { ok, dataUrl } — fails silently if file not found
+let _logoPDFCache = null;
+async function _loadLogoPDF(){
+    if(_logoPDFCache !== null) return _logoPDFCache;
+    const result = await loadImg('./imgs/logo.png');
+    if(!result.ok){ _logoPDFCache={ok:false,dataUrl:null}; return _logoPDFCache; }
+    // Convert to dataURL via canvas for jsPDF compatibility
+    try{
+        const canvas=document.createElement('canvas');
+        canvas.width=result.img.naturalWidth||result.img.width||200;
+        canvas.height=result.img.naturalHeight||result.img.height||200;
+        canvas.getContext('2d').drawImage(result.img,0,0);
+        _logoPDFCache={ok:true,dataUrl:canvas.toDataURL('image/png')};
+    }catch(e){
+        // CORS fallback — use img src directly
+        _logoPDFCache={ok:true,dataUrl:result.img.src};
+    }
+    return _logoPDFCache;
+}
+
+// Helper: draw logo into PDF header (top-left of blue banner)
+// logoH = height of blue banner, logoSize = logo square size
+function _drawPDFLogo(doc, logoData, logoSize, bannerH){
+    if(!logoData||!logoData.ok||!logoData.dataUrl) return;
+    try{
+        const margin=4;
+        const y=(bannerH-logoSize)/2;
+        doc.addImage(logoData.dataUrl,'PNG',margin,y,logoSize,logoSize);
+    }catch(e){}
+}
+
 // ══════════════════════════════════════════════════════════════
 // SHARED PDF HELPERS (unchanged from original)
 // ══════════════════════════════════════════════════════════════
@@ -2380,18 +3006,23 @@ function currentTermLabel(){
     const key=sel?sel.value:'';
     return key?(allTermLabels[key]||key):'All Terms (Latest)';
 }
-function pdfHeader(doc,title,sub=''){
+async function pdfHeader(doc,title,sub=''){
     const pw=doc.internal.pageSize.width;
     const sorted=[...filteredStudents].sort((a,b)=>b._avg-a._avg);
-    doc.setFillColor(41,128,185);doc.rect(0,0,pw,26,'F');
+    const bannerH=30;
+    doc.setFillColor(41,128,185);doc.rect(0,0,pw,bannerH,'F');
+    // Logo top-left of banner
+    const logoData=await _loadLogoPDF();
+    _drawPDFLogo(doc,logoData,22,bannerH);
+    // Text (centred, padded to not overlap logo)
     doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
-    doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,9,{align:'center'});
+    doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,10,{align:'center'});
     doc.setFontSize(10);doc.setFont(undefined,'normal');
-    doc.text(title,pw/2,16,{align:'center'});
+    doc.text(title,pw/2,18,{align:'center'});
     doc.setFontSize(7);doc.setTextColor(200,235,255);
     const gradeFilter=document.getElementById('grade-filter').value||'All Grades';
-    doc.text(`${sub}  |  ${new Date().toLocaleDateString()}  |  ${sorted.length} students  |  Grade: ${gradeFilter}  |  Term: ${currentTermLabel()}`,pw/2,22,{align:'center'});
-    return 30;
+    doc.text(`${sub}  |  ${new Date().toLocaleDateString()}  |  ${sorted.length} students  |  Grade: ${gradeFilter}  |  Term: ${currentTermLabel()}`,pw/2,25,{align:'center'});
+    return bannerH+4;
 }
 function pdfFooter(doc){
     const pw=doc.internal.pageSize.width,ph=doc.internal.pageSize.height;
@@ -2406,12 +3037,12 @@ function colourScoreCell(d,colIdx){
 
 // All PDF export functions are identical to original — included unchanged below
 
-window.exportSubjectsPDF=function(){
+window.exportSubjectsPDF=async function(){
     const doc=pdfInit('landscape'); if(!doc)return;
     const pw=doc.internal.pageSize.width,ph=doc.internal.pageSize.height;
     const sorted=[...filteredStudents].sort((a,b)=>b._avg-a._avg);
     const dynSubjects=activeSubjects(sorted);
-    pdfHeader(doc,'SUBJECT PERFORMANCE ANALYTICS',`${dynSubjects.length} learning areas with data`);
+    await pdfHeader(doc,'SUBJECT PERFORMANCE ANALYTICS',`${dynSubjects.length} learning areas with data`);
     const subjData=dynSubjects.map(subj=>{const sc=sorted.map(s=>readScore(s,subj.name)).filter(v=>v!==null);const avg=sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0;return{subj,sc,avg};}).sort((a,b)=>b.avg-a.avg);
     const rows=subjData.map(({subj,sc,avg})=>{if(!sc.length)return[subj.name,'0','-','-','-','-','-%','0','0','0','0','0','0','0','0'];const sd=Math.sqrt(sc.reduce((a,b)=>a+Math.pow(b-avg,2),0)/sc.length);const passN=sc.filter(v=>v>=41).length;const dist={EE1:0,EE2:0,ME1:0,ME2:0,AE1:0,AE2:0,BE1:0,BE2:0};sc.forEach(v=>{const gi=getGradeInfo(v);if(dist[gi.code]!==undefined)dist[gi.code]++;});return[subj.name,String(sc.length),avg.toFixed(1)+'%',Math.max(...sc).toFixed(1),Math.min(...sc).toFixed(1),sd.toFixed(1),(passN/sc.length*100).toFixed(1)+'%',String(sc.length-passN),String(dist.EE1),String(dist.EE2),String(dist.ME1),String(dist.ME2),String(dist.AE1),String(dist.AE2),String(dist.BE1),String(dist.BE2)];});
     doc.autoTable({margin:{top:10,right:10,bottom:10,left:10},head:[['Learning Area','KNEC Code','Count','Average','Highest','Lowest','Std Dev','Pass %','Failed','EE1\n(90-100)','EE2\n(75-89)','ME1\n(58-74)','ME2\n(41-57)','AE1\n(31-40)','AE2\n(21-30)','BE1\n(11-20)','BE2\n(0-10)']],body:rows.map(r=>[r[0],getKnecCode(r[0]),...r.slice(1)]),startY:32,styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-52-22-14)/14);return{0:{cellWidth:52,fontStyle:'bold'},1:{cellWidth:22,halign:'center',fontStyle:'bold'},2:{cellWidth:14,halign:'center'},3:{cellWidth:cw,halign:'center',fontStyle:'bold'},4:{cellWidth:cw,halign:'center'},5:{cellWidth:cw,halign:'center'},6:{cellWidth:cw,halign:'center'},7:{cellWidth:cw,halign:'center'},8:{cellWidth:cw,halign:'center'},...Object.fromEntries([9,10,11,12,13,14,15,16].map(i=>[i,{cellWidth:cw,halign:'center'}]))};})(),didParseCell:d=>{if(d.row.section!=='body')return;colourScoreCell(d,3);const gc=[[27,153,67],[39,174,96],[30,100,185],[52,125,210],[200,140,0],[220,110,0],[180,30,30],[140,20,20]];if(d.column.index>=9&&d.column.index<=16){const cnt=parseInt(d.cell.raw);if(cnt>0){d.cell.styles.textColor=gc[d.column.index-9];d.cell.styles.fontStyle='bold';}}},didDrawPage:()=>pdfFooter(doc)});
@@ -2419,12 +3050,12 @@ window.exportSubjectsPDF=function(){
     notify('📥 Subject Analytics PDF exported!','success');
 };
 
-window.exportDistributionPDF=function(){
+window.exportDistributionPDF=async function(){
     const doc=pdfInit('landscape'); if(!doc)return;
     const pw=doc.internal.pageSize.width,ph=doc.internal.pageSize.height;
     const sorted=[...filteredStudents].sort((a,b)=>b._avg-a._avg);
     const dynSubjects=activeSubjects(sorted);
-    pdfHeader(doc,'GRADE DISTRIBUTION',`${dynSubjects.length} learning areas - ordered by average score`);
+    await pdfHeader(doc,'GRADE DISTRIBUTION',`${dynSubjects.length} learning areas - ordered by average score`);
     const GRADE_CODES=GRADE_SCALE.map(g=>g.code);
     const subjData=dynSubjects.map(subj=>{const sc=sorted.map(s=>readScore(s,subj.name)).filter(v=>v!==null);return{name:subj.name,sc,avg:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0};}).sort((a,b)=>b.avg-a.avg);
     const allSc=sorted.map(s=>s._avg);
@@ -2442,12 +3073,12 @@ window.exportDistributionPDF=function(){
     notify('📥 Grade Distribution PDF exported!','success');
 };
 
-window.exportInsightsPDF=function(){
+window.exportInsightsPDF=async function(){
     const doc=pdfInit('portrait'); if(!doc)return;
     const pw=doc.internal.pageSize.width;
     const sorted=[...filteredStudents].sort((a,b)=>b._avg-a._avg);
     const dynSubjects=activeSubjects(sorted);
-    pdfHeader(doc,'ANALYTICS INSIGHTS & SUMMARY','Auto-generated observations from the data');
+    await pdfHeader(doc,'ANALYTICS INSIGHTS & SUMMARY','Auto-generated observations from the data');
     const oAvg=sorted.reduce((a,b)=>a+b._avg,0)/sorted.length;
     const passN=sorted.filter(s=>s._avg>=41).length;
     const eeN=sorted.filter(s=>s._gradeInfo.code.startsWith('EE')).length;
@@ -2467,12 +3098,12 @@ window.exportInsightsPDF=function(){
     notify('📥 Insights PDF exported!','success');
 };
 
-window.exportGenderPDF=function(){
+window.exportGenderPDF=async function(){
     const doc=pdfInit('landscape'); if(!doc)return;
     const pw=doc.internal.pageSize.width;
     const sorted=[...filteredStudents].sort((a,b)=>b._avg-a._avg);
     const dynSubjects=activeSubjects(sorted);
-    pdfHeader(doc,'GENDER PERFORMANCE ANALYSIS',`Male vs Female - ${dynSubjects.length} learning areas`);
+    await pdfHeader(doc,'GENDER PERFORMANCE ANALYSIS',`Male vs Female - ${dynSubjects.length} learning areas`);
     const males=sorted.filter(s=>(s['Gender']||'').toLowerCase().startsWith('m'));
     const females=sorted.filter(s=>(s['Gender']||'').toLowerCase().startsWith('f'));
     const mAvg=males.length?males.reduce((a,b)=>a+b._avg,0)/males.length:null;
@@ -2490,11 +3121,11 @@ window.exportGenderPDF=function(){
     notify('📥 Gender Analysis PDF exported!','success');
 };
 
-window.exportDetailedPDF=function(){
+window.exportDetailedPDF=async function(){
     const doc=pdfInit('landscape'); if(!doc)return;
     const sorted=[...filteredStudents].sort((a,b)=>b._avg-a._avg);
     const dynSubjects=activeSubjects(sorted);
-    pdfHeader(doc,'DETAILED STUDENT RECORDS',`${sorted.length} students - ${dynSubjects.length} learning areas - ranked by average score`);
+    await pdfHeader(doc,'DETAILED STUDENT RECORDS',`${sorted.length} students - ${dynSubjects.length} learning areas - ranked by average score`);
     const pw=doc.internal.pageSize.width;
     const subjectColW=Math.min(15,Math.floor((pw-118)/Math.max(dynSubjects.length,1)));
     doc.autoTable({margin:{top:10,right:10,bottom:10,left:10},head:[['#','Student Name','Grade','Gender','Assess. No','Term',...dynSubjects.map(s=>`${s.name.length>9?s.name.slice(0,8)+'..':s.name}\n${getKnecCode(s.name)}`),'Avg %','Pts','Level']],body:sorted.map((s,i)=>[String(i+1),s['Official Student Name']||'N/A',s._grade||'N/A',s['Gender']||'N/A',s._assessmentNo||s['Assessment No']||'N/A',s._termLabel||s['Term']||'N/A',...dynSubjects.map(subj=>{const v=readScore(s,subj.name);return v===null?'-':v.toFixed(1);}),s._avg.toFixed(1)+'%',s._totalPts.toFixed(1),s._gradeInfo.code]),startY:32,styles:{fontSize:6.5,cellPadding:1.8,overflow:'ellipsize'},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',fontSize:6,halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:9,halign:'center'},1:{cellWidth:32},2:{cellWidth:12},3:{cellWidth:11},4:{cellWidth:18},5:{cellWidth:18},...Object.fromEntries(dynSubjects.map((_,i)=>[i+6,{cellWidth:subjectColW,halign:'center'}])),[dynSubjects.length+6]:{cellWidth:13,halign:'center',fontStyle:'bold'},[dynSubjects.length+7]:{cellWidth:12,halign:'center'},[dynSubjects.length+8]:{cellWidth:10,halign:'center'}},didParseCell:d=>{if(d.row.section!=='body')return;const sI=6,eI=6+dynSubjects.length-1;if(d.column.index>=sI&&d.column.index<=eI){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scoreColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:()=>pdfFooter(doc)});
@@ -2517,14 +3148,18 @@ window.exportAllDataPDF=async function(){
     const dateStr=new Date().toLocaleDateString();
     const scColor=scoreColor;
 
-    function addHeader(doc,title,subtitle){
-        doc.setFillColor(41,128,185);doc.rect(0,0,pw,26,'F');
+    async function addHeader(doc,title,subtitle){
+        const bannerH=30;
+        doc.setFillColor(41,128,185);doc.rect(0,0,pw,bannerH,'F');
+        // Logo top-left
+        const logoData=await _loadLogoPDF();
+        _drawPDFLogo(doc,logoData,22,bannerH);
         doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
-        doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,9,{align:'center'});
+        doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,10,{align:'center'});
         doc.setFontSize(10);doc.setFont(undefined,'normal');
-        doc.text(title,pw/2,16,{align:'center'});
+        doc.text(title,pw/2,18,{align:'center'});
         doc.setFontSize(7);doc.setTextColor(200,235,255);
-        doc.text(`${subtitle}  |  Generated: ${dateStr}  |  ${sorted.length} students  |  Grade: ${gradeFilter}  |  Term: ${termFilter}`,pw/2,22,{align:'center'});
+        doc.text(`${subtitle}  |  Generated: ${dateStr}  |  ${sorted.length} students  |  Grade: ${gradeFilter}  |  Term: ${termFilter}`,pw/2,25,{align:'center'});
     }
     function addFooter(doc,pageNum){
         doc.setFontSize(7);doc.setTextColor(150,150,150);
@@ -2532,12 +3167,12 @@ window.exportAllDataPDF=async function(){
     }
 
     // Sheet 1
-    addHeader(doc,'COMPLETE STUDENT RANKINGS - ALL FIELDS','Rankings + All Subject Scores - Ordered Descending by Average');
+    await addHeader(doc,'COMPLETE STUDENT RANKINGS - ALL FIELDS','Rankings + All Subject Scores - Ordered Descending by Average');
     doc.autoTable({margin:{top:10,right:10,bottom:10,left:10},head:[['#','Student Name','Grade','Gender','Assessment No','UPI',...dynSubj.map(s=>`${s.name.length>8?s.name.slice(0,7)+'..':s.name}\n${getKnecCode(s.name)}`),'Avg %','Total Pts','Assessed','Level','Strongest','Weakest']],body:sorted.map((s,i)=>[String(i+1),s['Official Student Name']||'N/A',s._grade||'N/A',s['Gender']||'N/A',s._assessmentNo||s['Assessment No']||'N/A',s['UPI']||'N/A',...dynSubj.map(subj=>{const v=readScore(s,subj.name);return v===null?'-':v.toFixed(1);}),s._avg.toFixed(1)+'%',s._totalPts.toFixed(1)+'/'+s._maxPts.toFixed(1),s._assessed+'/'+dynSubj.length,s._gradeInfo.code,s._topSubject||'-',s._weakSubject||'-']),startY:30,styles:{fontSize:6.5,cellPadding:1.8,overflow:'ellipsize'},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',fontSize:6,halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:9,halign:'center'},1:{cellWidth:34},2:{cellWidth:13},3:{cellWidth:11},4:{cellWidth:20},5:{cellWidth:14},...Object.fromEntries(dynSubj.map((_,i)=>[i+6,{cellWidth:Math.min(14,Math.floor((pw-145)/Math.max(dynSubj.length,1))),halign:'center'}])),[dynSubj.length+6]:{cellWidth:12,halign:'center',fontStyle:'bold'},[dynSubj.length+7]:{cellWidth:14,halign:'center'},[dynSubj.length+8]:{cellWidth:10,halign:'center'},[dynSubj.length+9]:{cellWidth:10,halign:'center'},[dynSubj.length+10]:{cellWidth:16,overflow:'ellipsize'},[dynSubj.length+11]:{cellWidth:16,overflow:'ellipsize'}},didParseCell:d=>{if(d.row.section!=='body')return;const subjStart=6,subjEnd=6+dynSubj.length-1;if(d.column.index>=subjStart&&d.column.index<=subjEnd){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:d=>{addFooter(doc,d.pageNumber);}});
 
     // Remaining sheets (2-9) - all identical to original, just appended
     doc.addPage();
-    addHeader(doc,'SUBJECT PERFORMANCE ANALYSIS','Per-subject statistics across all students');
+    await addHeader(doc,'SUBJECT PERFORMANCE ANALYSIS','Per-subject statistics across all students');
     const subjStats=dynSubj.map(subj=>{const scores=sorted.map(s=>readScore(s,subj.name)).filter(v=>v!==null);if(!scores.length)return{name:subj.name,n:0,avg:'-',avgNum:0,hi:'-',lo:'-',sd:'-',pass:'-',passN:0,failN:0,ee:0,me:0,ae:0,be:0};const avg=scores.reduce((a,b)=>a+b,0)/scores.length;const hi=Math.max(...scores),lo=Math.min(...scores);const sd=Math.sqrt(scores.reduce((a,b)=>a+Math.pow(b-avg,2),0)/scores.length);const passN=scores.filter(v=>v>=41).length;return{name:subj.name,n:scores.length,avgNum:avg,avg:avg.toFixed(1),hi:hi.toFixed(1),lo:lo.toFixed(1),sd:sd.toFixed(1),pass:(passN/scores.length*100).toFixed(1)+'%',passN,failN:scores.length-passN,ee:scores.filter(v=>v>=75).length,me:scores.filter(v=>v>=41&&v<75).length,ae:scores.filter(v=>v>=31&&v<41).length,be:scores.filter(v=>v<31).length};});
     subjStats.sort((a,b)=>b.avgNum-a.avgNum);
     doc.autoTable({margin:{top:10,right:10,bottom:10,left:10},head:[['Learning Area (Desc Avg)','KNEC Code','Assessed','Average','Highest','Lowest','Std Dev','Pass Rate','Passed','Failed','EE (75+)','ME (41-74)','AE (31-40)','BE (0-30)']],body:subjStats.filter(s=>s.n>0).map(s=>[s.name,getKnecCode(s.name),String(s.n),s.avg,s.hi,s.lo,s.sd,s.pass,String(s.passN),String(s.failN),String(s.ee),String(s.me),String(s.ae),String(s.be)]),startY:30,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-52-14)/12);return{0:{cellWidth:52,fontStyle:'bold'},1:{cellWidth:14,halign:'center'},...Object.fromEntries([2,3,4,5,6,7,8,9,10,11,12,13].map(i=>[i,{halign:'center',cellWidth:cw}]))};})(),didParseCell:d=>{if(d.row.section!=='body')return;if(d.column.index===3){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:d=>{addFooter(doc,doc.internal.getNumberOfPages());}});
@@ -2832,12 +3467,12 @@ function renderComparePodium(el,classes){
         ${subjCompareHTML}`;
 }
 
-window.exportComparePDF=function(){
+window.exportComparePDF=async function(){
     const doc=pdfInit('landscape'); if(!doc)return;
     const pw=doc.internal.pageSize.width;
     const classes=buildClassData();
     const ranked=[...classes].sort((a,b)=>b.avg-a.avg);
-    pdfHeader(doc,'CLASS COMPARISON REPORT',`${ranked.length} grades compared`);
+    await pdfHeader(doc,'CLASS COMPARISON REPORT',`${ranked.length} grades compared`);
 
     const allSubjNames=[...new Set(classes.flatMap(c=>c.subjAvgs.map(s=>s.name)))];
     const rows=ranked.map((c,ri)=>[
@@ -3144,8 +3779,74 @@ function drawTrendLine(canvas,cfg){
     });
 }
 
-window.exportTrendsPDF=function(){
-    notify('📥 To save trend charts, use your browser Print → Save as PDF (Ctrl+P)','info');
+window.exportTrendsPDF=async function(){
+    if(!window.jspdf){notify('PDF library not ready','error');return;}
+    if(!filteredStudents.length){notify('No data to export','warning');return;}
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF('landscape');
+    const pw=doc.internal.pageSize.width,ph=doc.internal.pageSize.height;
+    const gradeFilter=document.getElementById('trend-grade-filter')?.value||'All Grades';
+    const bannerH=28;
+    doc.setFillColor(26,188,156);doc.rect(0,0,pw,bannerH,'F');
+    const _tLogo=await _loadLogoPDF();
+    _drawPDFLogo(doc,_tLogo,20,bannerH);
+    doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
+    doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,10,{align:'center'});
+    doc.setFontSize(10);doc.setFont(undefined,'normal');
+    doc.text('TERM-OVER-TERM TREND ANALYSIS',pw/2,18,{align:'center'});
+    doc.setFontSize(7);doc.setTextColor(200,255,240);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}  |  Grade: ${gradeFilter}  |  ${allTerms.length} terms`,pw/2,24,{align:'center'});
+    // Per-subject averages table
+    const termKeys=allTerms.filter(k=>{
+        const gf=document.getElementById('trend-grade-filter')?.value||'';
+        if(!gf)return true;
+        return Object.values(studentProfiles).some(rows=>rows.some(r=>r._termKey===k&&r._grade===gf));
+    });
+    const termLabels=termKeys.map(k=>allTermLabels[k]||k);
+    const activeSubjs=SUBJECTS.filter(subj=>
+        Object.values(studentProfiles).some(rows=>rows.some(r=>readScore(r,subj.name)!==null))
+    );
+    const gf=document.getElementById('trend-grade-filter')?.value||'';
+    const tableRows=activeSubjs.map(subj=>{
+        const termAvgs=termKeys.map(tk=>{
+            const rows=Object.values(studentProfiles)
+                .map(rows=>rows.find(r=>r._termKey===tk))
+                .filter(r=>r&&(!gf||r._grade===gf));
+            const sc=rows.map(r=>readScore(r,subj.name)).filter(v=>v!==null);
+            return sc.length?(sc.reduce((a,b)=>a+b,0)/sc.length).toFixed(1):'—';
+        });
+        const numericVals=termAvgs.map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+        const trend=numericVals.length>=2?(numericVals[numericVals.length-1]-numericVals[0]).toFixed(1):'—';
+        const best=numericVals.length?Math.max(...numericVals).toFixed(1):'—';
+        return[subj.name,...termAvgs,trend,best];
+    });
+    // Overall row
+    const overallAvgs=termKeys.map(tk=>{
+        const rows=Object.values(studentProfiles)
+            .map(rows=>rows.find(r=>r._termKey===tk))
+            .filter(r=>r&&(!gf||r._grade===gf));
+        const sc=rows.flatMap(r=>SUBJECTS.map(s=>readScore(r,s.name)).filter(v=>v!==null));
+        return sc.length?(sc.reduce((a,b)=>a+b,0)/sc.length).toFixed(1):'—';
+    });
+    const oNums=overallAvgs.map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+    tableRows.push(['OVERALL AVERAGE',...overallAvgs,oNums.length>=2?(oNums[oNums.length-1]-oNums[0]).toFixed(1):'—',oNums.length?Math.max(...oNums).toFixed(1):'—']);
+    const cw=Math.min(22,Math.floor((pw-20-55-20-16)/Math.max(termKeys.length,1)));
+    doc.autoTable({margin:{top:10,right:10,bottom:10,left:10},
+        head:[['Learning Area',...termLabels,'Trend','Best']],
+        body:tableRows,startY:bannerH+6,
+        styles:{fontSize:8,cellPadding:2.5},
+        headStyles:{fillColor:[22,160,133],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},
+        alternateRowStyles:{fillColor:[235,250,247]},
+        columnStyles:{0:{cellWidth:55,fontStyle:'bold'},...Object.fromEntries(termKeys.map((_,i)=>[i+1,{halign:'center',cellWidth:cw}])),[termKeys.length+1]:{halign:'center',cellWidth:20,fontStyle:'bold'},[termKeys.length+2]:{halign:'center',cellWidth:16}},
+        didParseCell:d=>{
+            if(d.row.section!=='body')return;
+            if(d.column.index>0&&d.column.index<=termKeys.length){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=v>=75?[27,153,67]:v>=58?[30,100,185]:v>=41?[190,100,0]:[180,30,30];d.cell.styles.fontStyle='bold';}}
+            if(d.column.index===termKeys.length+1){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=v>0?[27,153,67]:v<0?[180,30,30]:[150,150,150];d.cell.styles.fontStyle='bold';}}
+        },
+        didDrawPage:d=>{doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text(`Page ${d.pageNumber} | Kanyadet Junior School Trend Analysis`,pw/2,ph-5,{align:'center'});}
+    });
+    doc.save(`Trend_Analysis_${new Date().toISOString().split('T')[0]}.pdf`);
+    notify('📥 Trend Analysis PDF exported!','success');
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -3224,6 +3925,202 @@ Weakest subject: ${ds._weakSubject||'N/A'}
 Write a 3-4 sentence teacher's remark suitable for an official school report card. Reference specific subjects and performance levels. End with an encouraging note about the next term. Do NOT use bullet points — write as flowing prose only. Do not include a salutation or sign-off.`;
 }
 
+// ══════════════════════════════════════════════════════════════
+// SMART REMARK GENERATOR — personalised, data-driven, no API needed
+// ══════════════════════════════════════════════════════════════
+function generateRemarkFor(s, tone){
+    const avg   = parseFloat(s._avg)||0;
+    const name  = (s['Official Student Name']||'The student').split(' ')[0];
+    const grade = s._grade||'';
+    const top   = s._topSubject||null;
+    const weak  = s._weakSubject||null;
+    const gi    = s._gradeInfo||{code:'ME2',label:'Meeting Expectation'};
+    const rank  = s._rank||null;
+    const gender= (s['Gender']||'').toLowerCase();
+    const pronoun    = gender.startsWith('f') ? 'she' : gender.startsWith('m') ? 'he' : 'they';
+    const pronoun2   = gender.startsWith('f') ? 'her' : gender.startsWith('m') ? 'his' : 'their';
+    const pronoun3   = gender.startsWith('f') ? 'her' : gender.startsWith('m') ? 'him' : 'them';
+
+    // ── Term trend ──────────────────────────────────────────
+    const aNo = s._assessmentNo||(s['Assessment No']||'');
+    const allRes = (studentProfiles[aNo]||[s]).slice().sort((a,b)=>(a._termKey||'').localeCompare(b._termKey||''));
+    let trendSentence = '';
+    if(allRes.length>=2){
+        const prev = parseFloat(calcStats(allRes[allRes.length-2]).avg)||0;
+        const diff = avg - prev;
+        if(diff >= 5)       trendSentence = ` ${name} has shown commendable improvement of ${diff.toFixed(1)}% compared to the previous term, which is truly encouraging.`;
+        else if(diff <= -5) trendSentence = ` A slight dip of ${Math.abs(diff).toFixed(1)}% from last term is noted; with renewed effort, recovery is very much within reach.`;
+        else                trendSentence = ` ${name} has maintained a consistent performance level across terms, demonstrating reliability and steady effort.`;
+    }
+
+    // ── Subject sentence ────────────────────────────────────
+    let subjSentence = '';
+    if(top && weak && top !== weak){
+        const tv = readScore(s, top);
+        const wv = readScore(s, weak);
+        const tg = tv !== null ? getGradeInfo(tv) : null;
+        const wg = wv !== null ? getGradeInfo(wv) : null;
+        subjSentence = ` ${pronoun2.charAt(0).toUpperCase()+pronoun2.slice(1)} strongest performance was in ${top}${tg?' ('+tg.code+')':''}, while ${weak}${wg?' ('+wg.code+')':''} is an area that would benefit from additional practice and attention.`;
+    } else if(top){
+        subjSentence = ` ${pronoun2.charAt(0).toUpperCase()+pronoun2.slice(1)} standout performance in ${top} is particularly noteworthy.`;
+    }
+
+    // ── Rank sentence ───────────────────────────────────────
+    let rankSentence = '';
+    if(rank && rank <= 3)       rankSentence = ` Achieving position ${rank} in ${pronoun2} class is a tremendous accomplishment that reflects exceptional dedication.`;
+    else if(rank && rank <= 10) rankSentence = ` Finishing in position ${rank} in ${pronoun2} class reflects solid commitment and consistent hard work.`;
+
+    // ── Tone-specific openers + closers ─────────────────────
+    const T = {
+        encouraging: {
+            openers: {
+                EE1: [`${name} has had an outstanding term, achieving an exceptional average of ${avg.toFixed(1)}%.`,
+                      `It is with great pride that we celebrate ${name}'s remarkable achievement of ${avg.toFixed(1)}% this term.`],
+                EE2: [`${name} has demonstrated excellent performance this term with an average of ${avg.toFixed(1)}%.`,
+                      `This has been a truly impressive term for ${name}, who achieved an average of ${avg.toFixed(1)}%.`],
+                ME1: [`${name} has had a good term, achieving a commendable average of ${avg.toFixed(1)}%.`,
+                      `${name} demonstrated solid competence this term with an average score of ${avg.toFixed(1)}%.`],
+                ME2: [`${name} has made reasonable progress this term, attaining an average of ${avg.toFixed(1)}%.`,
+                      `This term, ${name} showed a developing understanding of ${pronoun2} subjects with an average of ${avg.toFixed(1)}%.`],
+                AE1: [`${name} has shown real effort and determination this term, earning an average of ${avg.toFixed(1)}%.`,
+                      `${name} demonstrated growing resilience this term, achieving an average of ${avg.toFixed(1)}%.`],
+                AE2: [`${name} showed courage and perseverance this term, obtaining an average of ${avg.toFixed(1)}%.`,
+                      `Despite some challenges this term, ${name} pressed forward and achieved an average of ${avg.toFixed(1)}%.`],
+                BE1: [`${name} faced some difficulties this term but demonstrated important learning moments, achieving an average of ${avg.toFixed(1)}%.`,
+                      `This term presented challenges for ${name}, who earned an average of ${avg.toFixed(1)}%, yet showed moments of real potential.`],
+                BE2: [`${name} is on a learning journey and this term has provided valuable experience, with an average of ${avg.toFixed(1)}%.`,
+                      `While ${name} found this term challenging with an average of ${avg.toFixed(1)}%, every step forward matters deeply.`],
+            },
+            closers: {
+                EE1: [`We look forward to seeing ${pronoun3} continue to set the standard in ${grade} next term.`,
+                      `May ${name} carry this momentum into next term and continue to inspire others.`],
+                EE2: [`We are excited to see ${pronoun3} build further on these excellent foundations next term.`,
+                      `Next term holds even greater possibilities — keep reaching higher, ${name}!`],
+                ME1: [`With continued dedication, ${name} is well-positioned to reach even greater heights next term.`,
+                      `We encourage ${name} to keep up this positive momentum going into next term.`],
+                ME2: [`With focused effort on ${pronoun2} weaker areas, ${name} has excellent potential for a stronger next term.`,
+                      `We believe in ${name}'s ability to push higher next term — the foundation is there.`],
+                AE1: [`Next term is a fresh opportunity, and we fully believe ${name} will rise to meet it with confidence.`,
+                      `With the right support and commitment, next term can be a breakthrough term for ${name}.`],
+                AE2: [`We stand behind ${name} fully and look forward to seeing significant improvement next term.`,
+                      `A positive next term is entirely within reach for ${name} — keep believing and keep going.`],
+                BE1: [`We encourage ${name} to seek extra support and approach next term with renewed determination.`,
+                      `Next term is a new beginning, and with the right mindset, ${name} can make significant strides.`],
+                BE2: [`We urge ${name} to put in extra time and practice, and we have every confidence the effort will pay off.`,
+                      `The school fully supports ${name}, and we look forward to a much-improved next term together.`],
+            }
+        },
+        formal:{
+            openers:{
+                EE1:[`${name} has attained an excellent overall average of ${avg.toFixed(1)}% this term, placing ${pronoun3} firmly in the Exceeding Expectation category.`],
+                EE2:[`${name} performed commendably this term with an overall average of ${avg.toFixed(1)}%, reflecting high academic competence.`],
+                ME1:[`${name} achieved a satisfactory average of ${avg.toFixed(1)}% this term, meeting the expected academic standards.`],
+                ME2:[`${name} attained an overall average of ${avg.toFixed(1)}% this term, indicating a foundational grasp of the required competencies.`],
+                AE1:[`${name} recorded an overall average of ${avg.toFixed(1)}% this term, which is below the expected standard and requires attention.`],
+                AE2:[`${name}'s overall average of ${avg.toFixed(1)}% this term indicates that significant improvement is required across several learning areas.`],
+                BE1:[`${name} attained an overall average of ${avg.toFixed(1)}% this term, which is below expectation and necessitates urgent academic intervention.`],
+                BE2:[`${name}'s overall average of ${avg.toFixed(1)}% this term is considerably below the expected standard and requires immediate remedial action.`],
+            },
+            closers:{
+                EE1:[`${name} is encouraged to maintain this standard of excellence in the forthcoming term.`],
+                EE2:[`It is expected that ${name} will sustain and build upon this performance in the next term.`],
+                ME1:[`${name} is encouraged to target the higher performance bands in the next term.`],
+                ME2:[`${name} is advised to dedicate additional study time to identified areas of weakness ahead of next term.`],
+                AE1:[`It is strongly recommended that ${name} seeks additional support and increases study commitment for next term.`],
+                AE2:[`Intervention and additional academic support are recommended for ${name} ahead of the next term.`],
+                BE1:[`Urgent remedial support is advised; the school will work closely with ${name} and ${pronoun2} guardians toward improvement.`],
+                BE2:[`A meeting with parents or guardians is recommended to discuss a structured improvement plan for next term.`],
+            }
+        },
+        concise:{
+            openers:{
+                EE1:[`${name} achieved an outstanding ${avg.toFixed(1)}% average this term — exceptional work.`],
+                EE2:[`Excellent term for ${name}: ${avg.toFixed(1)}% overall, demonstrating strong competence.`],
+                ME1:[`${name} performed well this term with a ${avg.toFixed(1)}% average — good effort.`],
+                ME2:[`${name} attained ${avg.toFixed(1)}% this term, meeting foundational expectations.`],
+                AE1:[`${name} scored ${avg.toFixed(1)}% this term; improvement is needed in several areas.`],
+                AE2:[`${name} achieved ${avg.toFixed(1)}% this term and must put in significantly more effort next term.`],
+                BE1:[`${name} scored ${avg.toFixed(1)}% this term — below expectation; urgent improvement is needed.`],
+                BE2:[`${name} attained ${avg.toFixed(1)}% this term and requires immediate academic support.`],
+            },
+            closers:{
+                EE1:[`Keep it up next term!`],
+                EE2:[`Looking forward to continued excellence next term.`],
+                ME1:[`Keep pushing higher next term.`],
+                ME2:[`More focused effort next term will yield better results.`],
+                AE1:[`A concerted effort next term is strongly encouraged.`],
+                AE2:[`Dedicated revision and support are key next term.`],
+                BE1:[`Remedial support and extra practice are essential next term.`],
+                BE2:[`Urgent support and parental involvement are advised for next term.`],
+            }
+        },
+        detailed:{
+            openers:{
+                EE1:[`${name} has delivered a truly exceptional academic performance this term, attaining an overall average of ${avg.toFixed(1)}% and earning the highest performance classification of ${gi.code} — ${gi.label}.`],
+                EE2:[`${name} has performed excellently this term with an overall average of ${avg.toFixed(1)}%, classified at ${gi.code} — ${gi.label}, reflecting deep understanding and consistent effort across the learning areas.`],
+                ME1:[`${name} has achieved a commendable overall average of ${avg.toFixed(1)}% this term, attaining a ${gi.code} — ${gi.label} classification, which indicates a solid and growing academic foundation.`],
+                ME2:[`${name} has recorded an overall average of ${avg.toFixed(1)}% this term, classified at ${gi.code} — ${gi.label}, showing adequate competence but indicating clear room for growth in several areas.`],
+                AE1:[`${name} has recorded an overall average of ${avg.toFixed(1)}% this term, falling in the ${gi.code} — ${gi.label} category, which indicates that learning objectives are not yet being fully met across the required competencies.`],
+                AE2:[`${name} attained an overall average of ${avg.toFixed(1)}% this term, classified at ${gi.code} — ${gi.label}, indicating that significant gaps in understanding exist and must be addressed urgently.`],
+                BE1:[`${name} achieved an overall average of ${avg.toFixed(1)}% this term, classified at ${gi.code} — ${gi.label}, which is significantly below the expected standard and requires a structured and targeted intervention plan.`],
+                BE2:[`${name} recorded an overall average of ${avg.toFixed(1)}% this term, which falls in the ${gi.code} — ${gi.label} band, indicating critical academic need that requires immediate and sustained remedial support.`],
+            },
+            closers:{
+                EE1:[`It is recommended that ${name} maintains this exceptional momentum into the next term by continuing to challenge ${pronoun2}self and supporting ${pronoun2} peers.`],
+                EE2:[`It is recommended that ${name} continues to build on these excellent foundations by setting even higher personal targets next term.`],
+                ME1:[`It is recommended that ${name} targets the higher performance bands by strengthening identified weak areas and sustaining ${pronoun2} positive study habits into next term.`],
+                ME2:[`It is recommended that ${name} engages in focused revision of weaker subjects and seeks teacher support where necessary to achieve stronger outcomes next term.`],
+                AE1:[`It is strongly recommended that ${name} engages in targeted revision, attends extra support sessions, and seeks consistent guidance from ${pronoun2} subject teachers ahead of next term.`],
+                AE2:[`An urgent academic recovery plan — including additional support sessions, structured revision, and close parental involvement — is recommended for ${name} ahead of next term.`],
+                BE1:[`A comprehensive intervention plan involving the class teacher, subject specialists, and parents is strongly recommended to support ${name}'s learning recovery ahead of next term.`],
+                BE2:[`Immediate, intensive academic support — including daily remedial sessions, parental engagement, and a personalised learning plan — is critical for ${name} ahead of the next term.`],
+            }
+        },
+        improvement:{
+            openers:{
+                EE1:[`${name} has achieved an outstanding average of ${avg.toFixed(1)}% this term; to maintain this level, the focus should now shift to broadening depth and mentoring peers.`],
+                EE2:[`${name} performed excellently with ${avg.toFixed(1)}% this term; the next step is to target the highest performance band by refining areas that are not yet at the very top level.`],
+                ME1:[`${name} achieved ${avg.toFixed(1)}% this term — a solid result; however, targeted improvement in selected learning areas could elevate ${pronoun3} to the Exceeding Expectation level.`],
+                ME2:[`${name} attained ${avg.toFixed(1)}% this term; there is clear potential to reach the Meeting Expectation upper band with focused effort on specific competency gaps.`],
+                AE1:[`${name} scored ${avg.toFixed(1)}% this term; meaningful improvement is achievable next term through consistent daily practice and targeted revision.`],
+                AE2:[`${name} attained ${avg.toFixed(1)}% this term; to reach the passing threshold next term, a structured daily study plan with teacher support is essential.`],
+                BE1:[`${name} scored ${avg.toFixed(1)}% this term; significant improvement is urgently needed, and specific, measurable steps must be taken starting immediately.`],
+                BE2:[`${name} recorded ${avg.toFixed(1)}% this term; a complete reset of study habits, daily practice, and close teacher mentorship are the three pillars of improvement needed now.`],
+            },
+            closers:{
+                EE1:[`Setting clear personal goals and taking on leadership roles in class will be key to continued growth for ${name} next term.`],
+                EE2:[`Targeting 90%+ in ${pronoun2} weakest subject next term would be a meaningful and achievable growth goal for ${name}.`],
+                ME1:[`Dedicating an extra 20 minutes daily to ${pronoun2} weakest learning area would be a powerful step toward the next performance level.`],
+                ME2:[`A focused study schedule prioritising ${weak||'identified weak subjects'} could unlock a significant improvement for ${name} next term.`],
+                AE1:[`Joining available study groups and committing to teacher-guided revision in ${weak||'weaker subjects'} will be transformative for ${name} next term.`],
+                AE2:[`Daily revision of at least 30 minutes across all learning areas, with particular attention to ${weak||'identified areas'}, is the most actionable path forward for ${name}.`],
+                BE1:[`Systematic daily practice, regular teacher check-ins, and parental oversight of homework completion are the most critical next steps for ${name}.`],
+                BE2:[`Immediate enrolment in available remedial classes and daily one-on-one support sessions with ${pronoun2} teacher are strongly recommended for ${name}.`],
+            }
+        }
+    };
+
+    // Determine level bucket
+    const code = gi.code;
+    const bucket = code==='EE1'?'EE1':code==='EE2'?'EE2':code==='ME1'?'ME1':code==='ME2'?'ME2':
+                   (code==='AE1'||code==='AE2')?code:(code==='BE1'||code==='BE2')?code:'ME2';
+
+    const tObj  = T[tone]||T.encouraging;
+    const opArr = tObj.openers[bucket]||tObj.openers['ME2'];
+    const clArr = tObj.closers[bucket]||tObj.closers['ME2'];
+
+    // Pick randomly from arrays
+    const opener = opArr[Math.floor(Math.random()*opArr.length)];
+    const closer = clArr[Math.floor(Math.random()*clArr.length)];
+
+    // Assemble final remark
+    return [opener, subjSentence, trendSentence, rankSentence, closer]
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s{2,}/g,' ')
+        .trim();
+}
+
 window.renderAiTab=function(){
     // just ensure grade filters are up to date
     populateAiGradeFilters();
@@ -3240,27 +4137,19 @@ window.generateSingleAiReport=async function(){
     document.getElementById('ai-report-student-name').textContent=s['Official Student Name']||'N/A';
     document.getElementById('ai-report-student-meta').textContent=`${s._grade} · Avg: ${s._avg.toFixed(1)}% · ${s._gradeInfo.code} · Rank #${s._rank||'N/A'}`;
     const content=document.getElementById('ai-report-content');
-    content.innerHTML=`<div class="ai-placeholder"><div class="ai-placeholder-icon ai-spin">🤖</div><div>Claude is writing the report...</div></div>`;
+    content.innerHTML=`<div class="ai-placeholder"><div class="ai-placeholder-icon ai-spin">🤖</div><div>Generating report...</div></div>`;
+
+    // Small delay so spinner shows
+    await new Promise(r=>setTimeout(r,320));
 
     try{
-        const prompt=buildStudentPrompt(s,aiTone);
-        const response=await fetch('https://api.anthropic.com/v1/messages',{
-            method:'POST',
-            headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({
-                model:'claude-sonnet-4-20250514',
-                max_tokens:400,
-                messages:[{role:'user',content:prompt}]
-            })
-        });
-        const data=await response.json();
-        const text=data.content?.[0]?.text||'Could not generate report. Please try again.';
+        const text = generateRemarkFor(s, aiTone);
         content.innerHTML=`<div class="ai-report-text">${esc(text)}</div>`;
         window._lastAiReport={student:s['Official Student Name'],text};
         notify('✅ Report generated for '+s['Official Student Name'],'success');
     }catch(e){
-        content.innerHTML=`<div class="ai-placeholder"><div>⚠️ Error: ${esc(e.message)}</div></div>`;
-        notify('Error generating report: '+e.message,'error');
+        content.innerHTML=`<div class="ai-placeholder"><div style="font-size:13px;color:var(--text-primary);">⚠️ ${esc(e.message)}</div></div>`;
+        notify('Error: '+e.message,'error');
     }
     btn.disabled=false; btn.innerHTML='🤖 Generate Report';
 };
@@ -3270,12 +4159,14 @@ window.copyAiReport=function(){
     navigator.clipboard.writeText(window._lastAiReport.text).then(()=>notify('📋 Report copied to clipboard!','success'));
 };
 
-window.exportSingleAiPDF=function(){
+window.exportSingleAiPDF=async function(){
     if(!window._lastAiReport||!window.jspdf){notify('No report to export','warning');return;}
     const{jsPDF}=window.jspdf;
     const doc=new jsPDF('portrait');
     const pw=doc.internal.pageSize.width;
     doc.setFillColor(142,68,173);doc.rect(0,0,pw,28,'F');
+    const _aiLogo=await _loadLogoPDF();
+    _drawPDFLogo(doc,_aiLogo,20,28);
     doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
     doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,10,{align:'center'});
     doc.setFontSize(10);doc.setFont(undefined,'normal');
@@ -3305,28 +4196,11 @@ window.generateBulkAiReports=async function(){
     const btn=document.getElementById('ai-bulk-btn');
     btn.disabled=true;
     const grid=document.getElementById('ai-bulk-output');
-    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-secondary);"><span class="ai-spin">⚙️</span> Generating ${students.length} reports... this may take a moment.</div>`;
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-secondary);"><span class="ai-spin">⚙️</span> Generating ${students.length} reports...</div>`;
 
-    const results=[];
-    for(let i=0;i<students.length;i++){
-        const s=students[i];
-        btn.innerHTML=`<span class="ai-spin">⚙️</span> ${i+1}/${students.length}...`;
-        try{
-            const prompt=buildStudentPrompt(s,aiTone);
-            const resp=await fetch('https://api.anthropic.com/v1/messages',{
-                method:'POST',
-                headers:{'Content-Type':'application/json'},
-                body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:prompt}]})
-            });
-            const data=await resp.json();
-            const text=data.content?.[0]?.text||'Could not generate.';
-            results.push({s,text});
-        }catch(e){
-            results.push({s,text:'Error: '+e.message});
-        }
-        // Small delay to avoid rate limits
-        if(i<students.length-1)await new Promise(r=>setTimeout(r,400));
-    }
+    await new Promise(r=>setTimeout(r,200));
+
+    const results = students.map(s=>({s, text:generateRemarkFor(s, aiTone)}));
 
     grid.innerHTML=results.map(({s,text})=>`
         <div class="ai-bulk-card">
@@ -3729,19 +4603,21 @@ window.clearDashboard=function(){
 function saveDashboard(){
     localStorage.setItem('kanyadet_dashboard',JSON.stringify(dashWidgets));
 }
-window.exportDashPDF=function(){
+window.exportDashPDF=async function(){
     if(!dashWidgets.length){notify('Add some widgets first','warning');return;}
     if(!window.jspdf){notify('PDF library not ready','error');return;}
     const{jsPDF}=window.jspdf;
     const doc=new jsPDF('portrait');
     const pw=doc.internal.pageSize.width;
-    doc.setFillColor(41,128,185);doc.rect(0,0,pw,26,'F');
+    doc.setFillColor(41,128,185);doc.rect(0,0,pw,28,'F');
+    const _dashLogo=await _loadLogoPDF();
+    _drawPDFLogo(doc,_dashLogo,20,28);
     doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
     doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,10,{align:'center'});
     doc.setFontSize(10);doc.setFont(undefined,'normal');
     doc.text('Custom Dashboard Export',pw/2,18,{align:'center'});
     doc.setFontSize(7);doc.setTextColor(200,235,255);
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`,pw/2,23,{align:'center'});
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`,pw/2,24,{align:'center'});
     const rows=dashWidgets.map(wt=>{
         const def=WIDGET_DEFS[wt];if(!def)return null;
         return[def.icon+' '+def.label,String(def.value()),def.sub?String(def.sub()):''];
@@ -3777,7 +4653,10 @@ window.renderPhotos=function(){
     const q=(document.getElementById('photos-search')?.value||'').toLowerCase();
     const gf=document.getElementById('photos-grade-filter')?.value||'';
     const sort=document.getElementById('photos-sort')?.value||'name';
-    if(!allStudents.length){grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📸</div><div class="empty-title">No students loaded</div></div>`;return;}
+    if(!allStudents.length){
+        grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📸</div><div class="empty-title">No students loaded</div></div>`;
+        return;
+    }
 
     let pool=[...allStudents];
     if(gf)pool=pool.filter(s=>s._grade===gf);
@@ -3791,15 +4670,20 @@ window.renderPhotos=function(){
     if(badge)badge.textContent=photoCount+' photo'+(photoCount!==1?'s':'');
 
     const fc=s=>s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c';
+
+    // Build grid with initials as placeholders first (instant render)
     grid.innerHTML=pool.map(s=>{
         const aNo=s._assessmentNo||s['Assessment No']||s._firebaseId||'';
-        const photo=photoStore[aNo];
+        const storedPhoto=photoStore[aNo];
         const initials=(s['Official Student Name']||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2);
         const nameParts=(s['Official Student Name']||'N/A').split(' ');
         const shortName=nameParts.slice(0,2).join(' ');
-        return`<div class="photo-card" onclick="triggerPhotoUpload('${esc(aNo)}')">
-            <div class="photo-avatar-wrap">
-                ${photo?`<img class="photo-avatar-img" src="${photo}" alt="${esc(s['Official Student Name']||'')}">`:`<div class="photo-avatar-initials">${initials}</div>`}
+        const cardId='phcard_'+aNo.replace(/[^a-z0-9]/gi,'_');
+        return`<div class="photo-card" id="${cardId}" onclick="triggerPhotoUpload('${esc(aNo)}')">
+            <div class="photo-avatar-wrap" id="av_${cardId}">
+                ${storedPhoto
+                    ?`<img class="photo-avatar-img" src="${storedPhoto}" alt="${esc(s['Official Student Name']||'')}">`
+                    :`<div class="photo-avatar-initials" id="init_${cardId}">${initials}</div>`}
                 <div class="photo-upload-overlay">📷</div>
             </div>
             <div class="photo-card-body">
@@ -3809,6 +4693,28 @@ window.renderPhotos=function(){
             </div>
         </div>`;
     }).join('');
+
+    // Async: load server-side photos from ./Report-Cards/student_images/{grade}/{name}.jpg
+    // Same pattern as Individual-student-portal.html — silently skips if file not found
+    pool.forEach(async s=>{
+        const aNo=s._assessmentNo||s['Assessment No']||s._firebaseId||'';
+        if(photoStore[aNo]) return; // already have an uploaded/stored photo — skip
+        const cardId='phcard_'+aNo.replace(/[^a-z0-9]/gi,'_');
+        const avWrap=document.getElementById('av_'+cardId);
+        const initEl=document.getElementById('init_'+cardId);
+        if(!avWrap) return;
+        const res=await loadStudentImg(s['Official Student Name']||'',s._grade||s['Grade']||'');
+        if(!res.ok) return; // no server photo found — keep initials
+        // Replace initials with the loaded photo
+        if(initEl) initEl.remove();
+        const img=new Image();
+        img.className='photo-avatar-img';
+        img.alt=s['Official Student Name']||'';
+        img.src=res.img.src;
+        // Insert before the upload overlay
+        const overlay=avWrap.querySelector('.photo-upload-overlay');
+        avWrap.insertBefore(img,overlay||null);
+    });
 };
 
 window.triggerPhotoUpload=function(aNo){
@@ -3842,15 +4748,17 @@ window.handlePhotoUpload=function(evt){
     evt.target.value='';
 };
 
-window.exportPhotosPDF=function(){
+window.exportPhotosPDF=async function(){
     if(!filteredStudents.length){notify('No students','warning');return;}
     if(!window.jspdf){notify('PDF library not ready','error');return;}
     const{jsPDF}=window.jspdf;
     const doc=new jsPDF('portrait');
     const pw=doc.internal.pageSize.width,ph=doc.internal.pageSize.height;
-    doc.setFillColor(41,128,185);doc.rect(0,0,pw,22,'F');
+    doc.setFillColor(41,128,185);doc.rect(0,0,pw,24,'F');
+    const _photosLogo=await _loadLogoPDF();
+    _drawPDFLogo(doc,_photosLogo,18,24);
     doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');
-    doc.text('KANYADET — Student Photo Directory',pw/2,14,{align:'center'});
+    doc.text('KANYADET — Student Photo Directory',pw/2,15,{align:'center'});
     const cols=4,cellW=(pw-28)/cols,cellH=36;
     const students=[...allStudents].sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
     students.forEach((s,i)=>{
