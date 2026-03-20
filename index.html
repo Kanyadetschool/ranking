@@ -6,6 +6,7 @@
     <title>School Analytics & Rankings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
     <style>
         /* ════════════════════════════════════════════════════════
            🌌 OBSIDIAN AURORA — World-Class Dark Theme
@@ -199,24 +200,15 @@
         }
         [data-theme="light"] body::after { display:none; }
 
-        /* ── Floating particles ── */
-        #analytics-particles { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; }
-        [data-theme="light"] #analytics-particles { opacity:.2; }
-        .a-particle {
-            position:absolute; border-radius:50%;
-            animation: aDrift linear infinite;
-        }
-        @keyframes aDrift {
-            0%   { transform:translateY(105vh) translateX(0) scale(1);    opacity:0; }
-            5%   { opacity:var(--op,.3); }
-            85%  { opacity:calc(var(--op,.3)*.4); }
-            100% { transform:translateY(-40px) translateX(calc(var(--dx,0)*1px)) scale(.5); opacity:0; }
-        }
+        /* ── tsParticles container ── */
+        #tsparticles { position:fixed; inset:0; z-index:0; pointer-events:none; }
+        [data-theme="light"] #tsparticles { opacity:.55; }
 
         /* everything sits above bg layers */
         .topbar, .main, #loader, #notif-wrap, .scroll-to-top,
         #auth-screen, #dashboard, .sched-modal-overlay,
         .notif-panel, #heatmap-tooltip { position:relative; z-index:1; }
+        #tsparticles { z-index:0 !important; }
 
         /* ════ GLASS MORPHISM — card base ════ */
         [data-theme="dark"] .panel,
@@ -1496,9 +1488,9 @@
 
 <header class="topbar">
     <div class="topbar-brand">
-      
+        <div class="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name">Analytics &amp; Rankings</div>
+            <div class="brand-name">Junior School - Analytics &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -1546,8 +1538,8 @@
 </div>
 <div id="notif-wrap"></div>
 
-<!-- ANIMATED PARTICLES -->
-<div id="analytics-particles"></div>
+<!-- TSPARTICLES CONTAINER -->
+<div id="tsparticles" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></div>
 
 <!-- SCROLL TO TOP BUTTON -->
 <button class="scroll-to-top" id="scroll-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
@@ -2216,45 +2208,103 @@ window.toggleTheme = function(){
     if(currentTab === 'trends' && filteredStudents.length) renderTrends();
 };
 
-// ── OBSIDIAN AURORA PARTICLES — multicolour constellation ────
-(function(){
-    const container = document.getElementById('analytics-particles');
-    if(!container) return;
-    const colors = [
-        'rgba(0,212,255,VAR)',    // cyan
-        'rgba(139,92,246,VAR)',   // purple
-        'rgba(20,184,166,VAR)',   // teal
-        'rgba(245,158,11,VAR)',   // amber
-        'rgba(236,72,153,VAR)',   // pink
-        'rgba(59,130,246,VAR)',   // blue
-        'rgba(255,255,255,VAR)',  // white
-    ];
-    const count = 32;
-    for(let i = 0; i < count; i++){
-        const p = document.createElement('div');
-        p.className = 'a-particle';
-        const size    = 1.5 + Math.random() * 3.5;
-        const opacity = .12 + Math.random() * .28;
-        const color   = colors[Math.floor(Math.random()*colors.length)].replace('VAR', opacity.toFixed(2));
-        // Some particles are stars (slightly larger, cross-shaped via box-shadow)
-        const isStar  = Math.random() < .15;
-        const extra   = isStar
-            ? `box-shadow:0 0 ${size*3}px ${color},0 0 ${size*6}px ${color};border-radius:50%;`
-            : 'border-radius:50%;';
-        p.style.cssText = [
-            `left:${Math.random()*100}%`,
-            `width:${size}px`,
-            `height:${size}px`,
-            `background:${color}`,
-            `animation-duration:${14+Math.random()*20}s`,
-            `animation-delay:-${Math.random()*26}s`,
-            `--dx:${(Math.random()-.5)*220}`,
-            `--op:${opacity}`,
-            extra
-        ].join(';');
-        container.appendChild(p);
+// ── TSPARTICLES — Obsidian Aurora constellation ──────────────
+let _tsParticlesLoaded = false;
+function _initTsParticles(){
+    if(!window.tsParticles || _tsParticlesLoaded) return;
+    _tsParticlesLoaded = true;
+    const isDark = ()=>document.documentElement.getAttribute('data-theme')==='dark';
+
+    const darkColors  = ["#00d4ff","#8b5cf6","#14b8a6","#f59e0b","#ec4899","#3b82f6","#ffffff","#06b6d4","#a855f7"];
+    const lightColors = ["#2980b9","#8e44ad","#16a085","#e67e22","#e91e63","#3498db","#1abc9c"];
+
+    function buildConfig(dark){
+        return {
+            fullScreen:{enable:false},
+            fpsLimit:60,
+            particles:{
+                number:{ value: dark?70:40, density:{enable:true,width:1920,height:1080} },
+                color:{ value: dark?darkColors:lightColors },
+                shape:{
+                    type:["circle","triangle","square"],
+                    options:{
+                        triangle:{ fill:true },
+                        square:{ fill:true }
+                    }
+                },
+                opacity:{
+                    value:{ min:0.03, max: dark?0.35:0.18 },
+                    animation:{ enable:true, speed:0.5, minimumValue:0.02, sync:false }
+                },
+                size:{
+                    value:{ min:1, max: dark?3.5:2.5 },
+                    animation:{ enable:true, speed:1.2, minimumValue:0.5, sync:false }
+                },
+                move:{
+                    enable:true,
+                    speed:{ min:0.2, max: dark?0.8:0.5 },
+                    direction:"none",
+                    random:true,
+                    straight:false,
+                    outModes:{ default:"out" },
+                    attract:{ enable:false }
+                },
+                links:{
+                    enable: dark,
+                    distance:130,
+                    color: dark?"#00d4ff":"#2980b9",
+                    opacity: dark?0.06:0.04,
+                    width:0.8
+                },
+                // Star-burst effect for some particles
+                twinkle:{
+                    particles:{ enable:true, frequency:0.04, opacity:dark?0.6:0.3 },
+                    lines:{ enable:false }
+                }
+            },
+            interactivity:{
+                detectsOn:"canvas",
+                events:{
+                    onHover:{ enable:true, mode:["grab","bubble"] },
+                    onClick:{ enable:true, mode:"push" },
+                    resize:true
+                },
+                modes:{
+                    grab:{ distance:120, links:{ opacity: dark?0.25:0.15 } },
+                    bubble:{ distance:80, size:6, duration:0.4, opacity: dark?0.5:0.3 },
+                    push:{ quantity:4 }
+                }
+            },
+            detectRetina:true,
+            background:{ color:"transparent" }
+        };
     }
-})();
+
+    tsParticles.load("tsparticles", buildConfig(isDark())).then(container=>{
+        window._tsContainer = container;
+    });
+}
+
+// Reload particles when theme changes to swap colours
+const _origToggleTheme = window.toggleTheme;
+window.toggleTheme = function(){
+    _origToggleTheme();
+    // Refresh particles for new theme
+    setTimeout(()=>{
+        if(window._tsContainer){
+            window._tsContainer.destroy();
+            _tsParticlesLoaded = false;
+            _initTsParticles();
+        }
+    }, 350);
+};
+
+// Load on ready
+if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(_initTsParticles,200));
+} else {
+    setTimeout(_initTsParticles, 200);
+}
 
 // ══════════════════════════════════════════════════════════════
 // SCROLL TO TOP
@@ -2843,11 +2893,9 @@ window.renderHeatmap=function(){
     const labelMode=document.getElementById('heatmap-labels').value;
     const cellSize=parseInt(document.getElementById('heatmap-size').value)||36;
 
-    // Build subject list (only those with any data)
     const activeSubjs=SUBJECTS.filter(subj=>filteredStudents.some(s=>readScore(s,subj.name)!==null));
     if(!activeSubjs.length){container.innerHTML=`<div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-title">No subject data</div></div>`;return;}
 
-    // Sort students
     let students=[...filteredStudents];
     if(sortMode==='avg_desc') students.sort((a,b)=>b._avg-a._avg);
     else if(sortMode==='avg_asc') students.sort((a,b)=>a._avg-b._avg);
@@ -2856,85 +2904,154 @@ window.renderHeatmap=function(){
 
     badge.textContent=`${students.length} students × ${activeSubjs.length} subjects`;
 
-    // Colour function
     function getColor(score){
-        if(score===null) return getComputedStyle(document.documentElement).getPropertyValue('--heatmap-empty').trim()||'#eef2f7';
-        if(colourMode==='grade'){
-            const gi=getGradeInfo(score);
-            return GRADE_COLORS[gi.code]||'#95a5a6';
-        }
-        // Continuous colour: red → yellow → green
-        if(score>=75) return `hsl(${120*(score-75)/25+90},70%,42%)`;
-        if(score>=58) return `hsl(${90*(score-58)/17+30},70%,45%)`;
-        if(score>=41) return `hsl(${30*(score-41)/17},70%,50%)`;
-        if(score>=21) return `hsl(${10},70%,45%)`;
-        return '#c0392b';
+        if(score===null) return getComputedStyle(document.documentElement).getPropertyValue('--heatmap-empty').trim()||'#1a2a3a';
+        if(colourMode==='grade') return GRADE_COLORS[getGradeInfo(score).code]||'#95a5a6';
+        if(score>=75) return `hsl(${120*(score-75)/25+90},68%,38%)`;
+        if(score>=58) return `hsl(${90*(score-58)/17+30},68%,40%)`;
+        if(score>=41) return `hsl(${30*(score-41)/17},68%,44%)`;
+        if(score>=21) return `hsl(10,68%,38%)`;
+        return '#a93226';
     }
-
     function getLabelText(score){
-        if(score===null) return '';
-        if(labelMode==='none') return '';
+        if(score===null||labelMode==='none') return '';
         if(labelMode==='grade') return getGradeInfo(score).code;
         return Math.round(score);
     }
 
-    // Build grid HTML
-    const nameColW=160;
-    // Header height: enough for longest subject name at 45° rotation
+    const gap=3;
+    const nameColW=170;
+    // Header height for rotated labels — computed from longest name
     const maxSubjLen=Math.max(...activeSubjs.map(s=>s.name.length),8);
-    const headerH=Math.max(80, Math.min(140, Math.ceil(maxSubjLen * 5.2)));
-    const totalW=nameColW+8+(cellSize+3)*activeSubjs.length;
+    // At -45deg, label height ≈ name_char_count * 5px capped
+    const headerH=Math.max(70, Math.min(130, Math.ceil(maxSubjLen*5.0)));
 
-    let html=`<div style="display:inline-block;min-width:${totalW}px;">`;
+    // ── TABLE: CSS-grid approach with sticky header row & sticky name col ──
+    // We build a native HTML table for proper sticky support
+    const colW=cellSize;
 
-    // Header row: column labels (subject names, rotated -45°, full name visible)
-    html+=`<div style="display:flex;align-items:flex-end;margin-bottom:6px;padding-left:${nameColW+8}px;">`;
-    activeSubjs.forEach(subj=>{
-        html+=`<div style="width:${cellSize}px;margin-right:3px;height:${headerH}px;position:relative;overflow:visible;">
+    let tbl=`<div style="overflow:auto;max-height:72vh;border-radius:10px;border:1px solid var(--border-color);">
+    <table style="border-collapse:separate;border-spacing:0;min-width:max-content;">
+    <thead>
+      <tr>
+        <!-- Sticky corner -->
+        <th style="
+          position:sticky;left:0;top:0;z-index:30;
+          background:var(--bg-panel);
+          min-width:${nameColW}px;max-width:${nameColW}px;
+          border-right:2px solid var(--border-color);
+          border-bottom:2px solid var(--border-color);
+          padding:0;
+        "></th>`;
+
+    // Subject header cells — rotated labels, sticky top
+    activeSubjs.forEach((subj,si)=>{
+        tbl+=`<th style="
+          position:sticky;top:0;z-index:20;
+          background:var(--bg-panel);
+          border-bottom:2px solid var(--border-color);
+          padding:0;
+          width:${colW+gap}px;min-width:${colW+gap}px;
+          vertical-align:bottom;
+          text-align:center;
+        ">
+          <div style="
+            height:${headerH}px;
+            display:flex;align-items:flex-end;justify-content:center;
+            padding-bottom:6px;overflow:visible;
+            position:relative;
+          ">
             <span style="
-                font-size:11px;
-                color:var(--text-primary);
-                font-weight:700;
-                white-space:nowrap;
-                position:absolute;
-                bottom:4px;
-                left:50%;
-                transform-origin:left bottom;
-                transform:rotate(-45deg) translateX(-50%);
-                display:inline-block;
-                letter-spacing:0.2px;
+              font-size:10.5px;font-weight:700;
+              color:var(--text-primary);
+              white-space:nowrap;
+              display:inline-block;
+              transform:rotate(-45deg);
+              transform-origin:center bottom;
+              position:absolute;bottom:4px;left:50%;
+              letter-spacing:0.2px;
             " title="${esc(subj.name)}">${esc(subj.name)}</span>
-        </div>`;
+          </div>
+        </th>`;
     });
-    html+='</div>';
+    tbl+=`</tr></thead><tbody>`;
 
     // Data rows
-    students.forEach(s=>{
+    students.forEach((s,si)=>{
         const fullName=s['Official Student Name']||'N/A';
-        const rowId=`hmrow_${esc(s._assessmentNo||s['Assessment No']||s._firebaseId)}`;
-        html+=`<div id="${rowId}" style="display:flex;align-items:center;margin-bottom:3px;"
-            onmouseenter="heatmapRowHover('${rowId}',true)"
-            onmouseleave="heatmapRowHover('${rowId}',false)">`;
-        // Row label — full name, bold on hover via JS
-        html+=`<div class="hm-row-name" style="width:${nameColW}px;margin-right:8px;font-size:11px;color:var(--text-secondary);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:color 0.15s,font-weight 0.1s;" onclick="jumpToProgress('${esc(s._assessmentNo||s['Assessment No']||s._firebaseId)}')" title="${esc(fullName)} - ${esc(s._grade)} - Avg: ${s._avg.toFixed(1)}%">${esc(fullName)}</div>`;
-        // Cells
+        const avg=s._avg.toFixed(1);
+        const gi=s._gradeInfo;
+        const aNo=esc(s._assessmentNo||s['Assessment No']||s._firebaseId||'');
+        const rowBg=si%2===0?'var(--bg-body)':'var(--bg-table-alt)';
+
+        tbl+=`<tr class="hm-data-row" data-rowid="${aNo}"
+          onmouseenter="this.querySelectorAll('td').forEach(td=>td.style.background='var(--bg-table-hover)');this.querySelector('.hm-name-cell').style.color='var(--text-primary)';this.querySelector('.hm-name-cell').style.fontWeight='800';"
+          onmouseleave="this.querySelectorAll('td').forEach((td,i)=>td.style.background=i===0?'var(--bg-panel)':'${rowBg}');this.querySelector('.hm-name-cell').style.color='var(--text-secondary)';this.querySelector('.hm-name-cell').style.fontWeight='600';">`;
+
+        // Sticky name column
+        tbl+=`<td style="
+          position:sticky;left:0;z-index:10;
+          background:var(--bg-panel);
+          min-width:${nameColW}px;max-width:${nameColW}px;
+          border-right:2px solid var(--border-color);
+          padding:0 10px 0 8px;
+          vertical-align:middle;
+        ">
+          <div class="hm-name-cell" style="
+            font-size:11px;font-weight:600;color:var(--text-secondary);
+            cursor:pointer;transition:color 0.15s,font-weight 0.1s;
+            white-space:normal;word-break:break-word;line-height:1.3;
+          "
+          onclick="jumpToProgress('${aNo}')"
+          title="${esc(fullName)} · ${esc(s._grade)} · Avg ${avg}%"
+          >${esc(fullName)}<span style="display:block;font-size:9.5px;color:var(--text-muted);margin-top:1px;">${esc(s._grade)} · ${avg}%</span>
+          </div>
+        </td>`;
+
+        // Score cells
         activeSubjs.forEach(subj=>{
             const score=readScore(s,subj.name);
             const bg=getColor(score);
             const label=getLabelText(score);
-            const textColor=score!==null&&score>=41?'rgba(255,255,255,0.95)':'rgba(255,255,255,0.85)';
-            const ttStudent=esc(fullName);
-            const ttSubject=esc(subj.name);
-            const ttScore=score!==null?score.toFixed(1)+'% ('+getGradeInfo(score).code+')':'Not assessed';
-            html+=`<div class="heatmap-cell" style="width:${cellSize}px;height:${cellSize}px;background:${bg};color:${score!==null?textColor:'var(--text-muted)'};font-size:${cellSize<=28?8:cellSize<=36?9:10}px;margin-right:3px;"
-                onmouseenter="showHeatmapTooltip(event,'${ttStudent}','${ttSubject}','${ttScore}')"
-                onmouseleave="hideHeatmapTooltip()">${label}</div>`;
+            const textCol=score!==null?'rgba(255,255,255,0.95)':'var(--text-muted)';
+            const ttScore=score!==null?`${score.toFixed(1)}% · ${getGradeInfo(score).code}`:'Not assessed';
+            const tooltipContent=`${esc(fullName)}|${esc(subj.name)}|${ttScore}|${esc(s._grade)}|${avg}`;
+            tbl+=`<td style="
+              background:${rowBg};
+              padding:${gap/2}px ${gap/2}px;
+              border:none;
+              transition:background 0.12s;
+            ">
+              <div style="
+                width:${colW}px;height:${colW}px;border-radius:6px;
+                background:${bg};
+                display:flex;align-items:center;justify-content:center;
+                font-size:${colW<=28?8:colW<=36?9:10}px;font-weight:700;
+                color:${textCol};
+                cursor:pointer;
+                transition:transform 0.15s cubic-bezier(.34,1.56,.64,1), box-shadow 0.15s;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+              "
+              onmouseenter="
+                this.style.transform='scale(1.22)';
+                this.style.zIndex='50';
+                this.style.boxShadow='0 4px 16px rgba(0,0,0,0.4)';
+                showHeatmapTooltip(event,'${tooltipContent}');
+              "
+              onmouseleave="
+                this.style.transform='scale(1)';
+                this.style.zIndex='1';
+                this.style.boxShadow='inset 0 1px 0 rgba(255,255,255,0.15)';
+                hideHeatmapTooltip();
+              "
+              >${label}</div>
+            </td>`;
         });
-        html+='</div>';
+        tbl+=`</tr>`;
     });
-    html+='</div>';
 
-    container.innerHTML=html;
+    tbl+=`</tbody></table></div>`;
+    container.innerHTML=tbl;
 
     // Legend
     if(colourMode==='grade'){
@@ -2945,39 +3062,40 @@ window.renderHeatmap=function(){
             `<div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:var(--heatmap-empty);border:1px solid var(--border-color);"></div>N/A</div>`;
     } else {
         legend.innerHTML=`<span style="font-size:11px;color:var(--text-secondary);font-weight:700;margin-right:8px;">Score:</span>
-            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#c0392b;"></div>0-20</div>
-            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#e67e22;"></div>21-40</div>
-            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#f39c12;"></div>41-57</div>
-            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#2ecc71;"></div>58-74</div>
-            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#27ae60;"></div>75-100</div>
+            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#a93226;"></div>0–20</div>
+            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#e67e22;"></div>21–40</div>
+            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#f39c12;"></div>41–57</div>
+            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#2ecc71;"></div>58–74</div>
+            <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:#27ae60;"></div>75–100</div>
             <div class="heatmap-legend-item"><div class="heatmap-legend-box" style="background:var(--heatmap-empty);border:1px solid var(--border-color);"></div>N/A</div>`;
     }
 };
 
-window.showHeatmapTooltip=function(evt,student,subject,score){
+window.showHeatmapTooltip=function(evt,content){
     const tt=document.getElementById('heatmap-tooltip');
-    tt.innerHTML=`<strong style="font-size:13px;color:var(--text-primary);display:block;margin-bottom:4px;">${student}</strong><span style="color:var(--text-secondary);font-size:11px;">${subject}</span><br><span style="font-size:13px;font-weight:700;color:#3498db;">${score}</span>`;
+    const [student,subject,score,grade,avg]=content.split('|');
+    const scoreNum=parseFloat(score);
+    const scoreColor=!isNaN(scoreNum)?(scoreNum>=75?'#27ae60':scoreNum>=58?'#3498db':scoreNum>=41?'#f39c12':'#e74c3c'):'#95a5a6';
+    tt.innerHTML=`
+      <div style="font-size:13px;font-weight:800;color:var(--text-primary);margin-bottom:3px;">${student}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">${grade} · Avg ${avg}%</div>
+      <div style="display:flex;align-items:center;gap:8px;border-top:1px solid var(--border-color);padding-top:7px;">
+        <div style="font-size:10px;color:var(--text-secondary);flex:1;">${subject}</div>
+        <div style="font-size:15px;font-weight:800;color:${scoreColor};">${score}</div>
+      </div>
+    `;
     tt.style.display='block';
-    const x=evt.clientX+14,y=evt.clientY+14;
-    tt.style.left=Math.min(x,window.innerWidth-240)+'px';
-    tt.style.top=Math.min(y,window.innerHeight-100)+'px';
+    const ttW=220,ttH=90;
+    const x=Math.min(evt.clientX+16,window.innerWidth-ttW-8);
+    const y=Math.min(evt.clientY+16,window.innerHeight-ttH-8);
+    tt.style.left=x+'px';
+    tt.style.top=y+'px';
 };
 window.hideHeatmapTooltip=function(){
     document.getElementById('heatmap-tooltip').style.display='none';
 };
-window.heatmapRowHover=function(rowId,enter){
-    const row=document.getElementById(rowId);
-    if(!row)return;
-    const nameEl=row.querySelector('.hm-row-name');
-    if(nameEl){
-        nameEl.style.fontWeight=enter?'800':'600';
-        nameEl.style.color=enter?'var(--text-primary)':'var(--text-secondary)';
-        nameEl.style.fontSize=enter?'12px':'11px';
-    }
-    // Highlight entire row with a subtle background
-    row.style.background=enter?'var(--bg-table-hover)':'transparent';
-    row.style.borderRadius=enter?'6px':'0';
-};
+// heatmapRowHover handled inline in renderHeatmap
+
 
 // ══════════════════════════════════════════════════════════════
 // INSIGHTS
