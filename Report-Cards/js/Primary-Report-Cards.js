@@ -906,14 +906,14 @@ doc.setFontSize(10);
 doc.text("CLASS TEACHER  REMARKS", 20, yPos);
 
 // Generate automated remark
-const teacherRemark = generateTeacherRemark(student);
+let teacherRemark = generateTeacherRemark(student);
 
 doc.setFont(undefined, 'normal');
 doc.setFontSize(9);
 doc.setDrawColor(200, 200, 200);
 
 // Add the automated remark
-const remarkLines = doc.splitTextToSize(teacherRemark, pageWidth - 40);
+let remarkLines = doc.splitTextToSize(teacherRemark, pageWidth - 40);
 let remarkY = yPos + 5;
 remarkLines.forEach(line => {
     doc.text(line, 20, remarkY);
@@ -1097,6 +1097,7 @@ async function generateBulkReportCards() {
             combinedDoc.setFont(undefined, 'bold');
             combinedDoc.setFontSize(9);
             combinedDoc.text(` CLOSING DATE: ${student['Closing Date'] || '...................'} | OPENING DATE: ${student['Opening Date'] || '...................'}`, 100, yPos);
+            const headers = [['Learning Area', 'Score', 'Points', 'Comment']];
             const tableData = [];
             
             getSubjects(student).forEach(subject => {
@@ -1145,14 +1146,14 @@ combinedDoc.setFontSize(10);
 combinedDoc.text("CLASS TEACHER  REMARKS", 20, yPos);
 
 // Generate automated remark
-const teacherRemark = generateTeacherRemark(student);
+let teacherRemark = generateTeacherRemark(student);
 
 combinedDoc.setFont(undefined, 'normal');
 combinedDoc.setFontSize(9);
 combinedDoc.setDrawColor(200, 200, 200);
 
 // Add the automated remark
-const remarkLines = combinedDoc.splitTextToSize(teacherRemark, pageWidth - 40);
+let remarkLines = combinedDoc.splitTextToSize(teacherRemark, pageWidth - 40);
 let remarkY = yPos + 5;
 remarkLines.forEach(line => {
     combinedDoc.text(line, 20, remarkY);
@@ -1590,14 +1591,14 @@ combinedDoc.setFontSize(10);
 combinedDoc.text("CLASS TEACHER  REMARKS", 20, yPos);
 
 // Generate automated remark
-const teacherRemark = generateTeacherRemark(student);
+let teacherRemark = generateTeacherRemark(student);
 
 combinedDoc.setFont(undefined, 'normal');
 combinedDoc.setFontSize(9);
 combinedDoc.setDrawColor(200, 200, 200);
 
 // Add the automated remark
-const remarkLines = combinedDoc.splitTextToSize(teacherRemark, pageWidth - 40);
+let remarkLines = combinedDoc.splitTextToSize(teacherRemark, pageWidth - 40);
 let remarkY = yPos + 5;
 remarkLines.forEach(line => {
     combinedDoc.text(line, 20, remarkY);
@@ -2582,14 +2583,14 @@ combinedDoc.setFontSize(10);
 combinedDoc.text("CLASS TEACHER  REMARKS", 20, yPos);
 
 // Generate automated remark
-const teacherRemark = generateTeacherRemark(student);
+let teacherRemark = generateTeacherRemark(student);
 
 combinedDoc.setFont(undefined, 'normal');
 combinedDoc.setFontSize(9);
 combinedDoc.setDrawColor(200, 200, 200);
 
 // Add the automated remark
-const remarkLines = combinedDoc.splitTextToSize(teacherRemark, pageWidth - 40);
+let remarkLines = combinedDoc.splitTextToSize(teacherRemark, pageWidth - 40);
 let remarkY = yPos + 5;
 remarkLines.forEach(line => {
     combinedDoc.text(line, 20, remarkY);
