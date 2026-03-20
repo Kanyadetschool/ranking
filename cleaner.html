@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kanyadet — Database Field Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
+<style>
+:root {
+  --cyan:#00d4ff; --blue:#2980b9; --purple:#8b5cf6;
+  --green:#10b981; --red:#ef4444; --amber:#f59e0b; --orange:#f97316;
+  --r:16px; --rm:12px; --rs:9px;
+  --spring:cubic-bezier(.34,1.56,.64,1);
+  --ease:cubic-bezier(.4,0,.2,1);
+}
+[data-theme="dark"] {
+  --bg:#060b14; --card:rgba(10,18,30,.92); --card2:rgba(8,15,26,.88);
+  --text:#e2f0ff; --text2:#7eb8d4; --text3:#3a6880;
+  --border:rgba(0,212,255,.12); --border2:rgba(0,212,255,.22);
+  --topbar:rgba(4,9,18,.88); --input:rgba(14,24,40,.95);
+  --shadow:0 4px 24px rgba(0,0,0,.6),0 0 0 1px rgba(0,212,255,.06);
+  --shadow-h:0 12px 48px rgba(0,0,0,.8),0 0 0 1px rgba(0,212,255,.18);
+}
+[data-theme="light"] {
+  --bg:#f0f6fb; --card:#fff; --card2:#f4f8fc;
+  --text:#0d2035; --text2:#3a6080; --text3:#7aabc5;
+  --border:rgba(41,128,185,.18); --border2:rgba(41,128,185,.35);
+  --topbar:rgba(240,246,251,.92); --input:#f4f8fc;
+  --shadow:0 2px 14px rgba(41,128,185,.08);
+  --shadow-h:0 8px 28px rgba(41,128,185,.14);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg); color:var(--text);
+  min-height:100vh; overflow-x:hidden;
+  transition:background .4s,color .4s;
+}
+
+/* ── BG layers ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse 80% 60% at -10% -5%, rgba(0,212,255,.09) 0%,transparent 55%),
+    radial-gradient(ellipse 70% 55% at 110% 105%,rgba(139,92,246,.08) 0%,transparent 55%),
+    radial-gradient(ellipse 55% 45% at 50% 50%, rgba(41,128,185,.05) 0%,transparent 65%);
+  animation:auroraDrift 18s ease-in-out infinite alternate;
+}
+@keyframes auroraDrift{
+  0%{opacity:1;filter:hue-rotate(0deg);}
+  50%{opacity:.85;filter:hue-rotate(8deg);}
+  100%{opacity:1;filter:hue-rotate(4deg);}
+}
+[data-theme="light"] body::before{animation:none;opacity:.5;}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,212,255,.007) 2px,rgba(0,212,255,.007) 4px);
+}
+[data-theme="light"] body::after{display:none;}
+#tsparticles{position:fixed;inset:0;z-index:0;pointer-events:none;}
+[data-theme="light"] #tsparticles{opacity:.3;}
+
+/* ── TOPBAR ── */
+.topbar{
+  position:sticky;top:0;z-index:200;
+  background:var(--topbar);
+  backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 28px;height:64px;gap:12px;
+  transition:background .4s;
+}
+.topbar::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,#00d4ff,#8b5cf6,#14b8a6,#00d4ff);
+  background-size:200% 100%;
+  animation:topbarShimmer 4s linear infinite;
+}
+@keyframes topbarShimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
+.brand{display:flex;align-items:center;gap:12px;}
+.brand-logo{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,#2980b9,#1a5276);
+  border:1.5px solid var(--border2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;overflow:hidden;
+}
+.brand-logo img{width:100%;height:100%;object-fit:cover;border-radius:9px;}
+.brand-name{
+  font-size:15px;font-weight:800;letter-spacing:-.02em;
+  background:linear-gradient(90deg,#e2f0ff 30%,#00d4ff 50%,#e2f0ff 70%);
+  background-size:200% 100%;
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:brandShimmer 5s ease-in-out infinite;
+}
+[data-theme="light"] .brand-name{background:none;-webkit-text-fill-color:#0d2035;color:#0d2035;}
+@keyframes brandShimmer{0%,100%{background-position:200% 0;}50%{background-position:-200% 0;}}
+.brand-sub{font-size:10px;color:rgba(0,212,255,.55);font-weight:600;letter-spacing:.04em;margin-top:1px;}
+[data-theme="light"] .brand-sub{color:#3a6080;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+
+/* theme toggle */
+.theme-toggle{
+  width:54px;height:28px;border-radius:14px;
+  background:rgba(0,212,255,.08);border:1.5px solid rgba(0,212,255,.2);
+  cursor:pointer;position:relative;display:flex;align-items:center;padding:3px;
+  transition:all .3s var(--spring);flex-shrink:0;
+  box-shadow:0 0 12px rgba(0,212,255,.1),inset 0 0 8px rgba(0,212,255,.05);
+}
+[data-theme="light"] .theme-toggle{background:rgba(41,128,185,.1);border-color:rgba(41,128,185,.22);box-shadow:none;}
+.theme-toggle::after{
+  content:'';width:20px;height:20px;border-radius:50%;
+  background:linear-gradient(135deg,#00d4ff,#2980b9);
+  transition:transform .38s var(--spring);transform:translateX(0);
+  box-shadow:0 0 10px rgba(0,212,255,.5),0 2px 6px rgba(0,0,0,.4);
+}
+[data-theme="light"] .theme-toggle::after{background:linear-gradient(135deg,#2980b9,#1a5276);transform:translateX(26px);box-shadow:0 2px 6px rgba(0,0,0,.2);}
+.theme-icon{position:absolute;font-size:11px;line-height:1;transition:opacity .25s;pointer-events:none;}
+.theme-icon.moon{left:7px;opacity:1;}
+.theme-icon.sun{right:6px;opacity:.3;}
+[data-theme="light"] .theme-icon.moon{opacity:.3;}
+[data-theme="light"] .theme-icon.sun{opacity:1;}
+.theme-toggle:hover{transform:scale(1.08);border-color:rgba(0,212,255,.4);}
+
+/* user pill */
+.user-pill{
+  display:flex;align-items:center;gap:8px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:40px;padding:4px 14px 4px 5px;
+  font-size:12px;color:var(--text);font-weight:600;
+  transition:all .3s;
+}
+.user-av{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,#f97316,#f59e0b);
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:800;color:#fff;flex-shrink:0;
+  overflow:hidden;
+}
+.user-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+
+/* btns */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 18px;border-radius:var(--rs);border:none;
+  cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:700;transition:all .2s;
+  position:relative;overflow:hidden;white-space:nowrap;
+}
+.btn::after{
+  content:'';position:absolute;top:0;left:-110%;width:100%;height:100%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+  transition:left .4s ease;pointer-events:none;
+}
+.btn:hover::after{left:110%;}
+.btn-cyan{background:linear-gradient(135deg,#00d4ff,#2980b9);color:#fff;box-shadow:0 4px 16px rgba(0,212,255,.3);}
+.btn-cyan:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,212,255,.45);}
+.btn-red{background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;box-shadow:0 4px 16px rgba(239,68,68,.3);}
+.btn-red:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(239,68,68,.45);}
+.btn-green{background:linear-gradient(135deg,#10b981,#059669);color:#fff;box-shadow:0 4px 16px rgba(16,185,129,.3);}
+.btn-green:hover{transform:translateY(-2px);}
+.btn-ghost{background:transparent;border:1.5px solid var(--border2);color:var(--text2);}
+.btn-ghost:hover{border-color:var(--cyan);color:var(--cyan);}
+.btn:active{transform:scale(.97) translateY(0);}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none !important;}
+
+/* ── MAIN ── */
+.main{max-width:1200px;margin:0 auto;padding:32px 24px 80px;position:relative;z-index:1;}
+
+/* ── CARDS ── */
+.card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);box-shadow:var(--shadow);
+  backdrop-filter:blur(12px) saturate(160%);
+  -webkit-backdrop-filter:blur(12px) saturate(160%);
+  transition:box-shadow .3s,border-color .3s;
+  animation:cardIn .4s var(--ease) both;
+}
+@keyframes cardIn{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+.card:hover{box-shadow:var(--shadow-h);border-color:var(--border2);}
+.card-header{
+  padding:20px 24px;border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  background:linear-gradient(135deg,rgba(0,212,255,.04) 0%,transparent 60%);
+  border-radius:var(--r) var(--r) 0 0;
+}
+.card-title{font-size:16px;font-weight:800;letter-spacing:-.02em;}
+.card-sub{font-size:12px;color:var(--text2);margin-top:2px;}
+.card-body{padding:24px;}
+
+/* ── AUTH SCREEN ── */
+#auth-screen{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:calc(100vh - 64px);gap:24px;text-align:center;
+  position:relative;z-index:1;padding:40px 20px;
+}
+[data-theme="dark"] #auth-screen::after{
+  content:'';position:fixed;width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,.07) 0%,transparent 70%);
+  top:50%;left:50%;transform:translate(-50%,-50%);
+  animation:authOrb 6s ease-in-out infinite;pointer-events:none;
+}
+@keyframes authOrb{0%,100%{transform:translate(-50%,-50%) scale(1);opacity:.7;}50%{transform:translate(-50%,-52%) scale(1.15);opacity:1;}}
+.auth-card{
+  background:rgba(8,15,28,.88);border:1px solid rgba(0,212,255,.18);
+  border-radius:20px;padding:48px;max-width:420px;width:100%;
+  box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(0,212,255,.1);
+  display:flex;flex-direction:column;align-items:center;gap:20px;
+  animation:authEntrance .55s var(--spring) both, authCardGlow 5s ease-in-out 1s infinite;
+  backdrop-filter:blur(20px);position:relative;z-index:1;
+}
+[data-theme="light"] .auth-card{
+  background:#fff;border-color:rgba(41,128,185,.15);
+  box-shadow:0 8px 40px rgba(41,128,185,.12);
+  animation:authEntrance .55s var(--spring) both;
+}
+@keyframes authEntrance{from{opacity:0;transform:scale(.9) translateY(24px);}to{opacity:1;transform:scale(1) translateY(0);}}
+@keyframes authCardGlow{
+  0%,100%{box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(0,212,255,.1),0 0 60px rgba(0,212,255,.04);}
+  50%{box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(139,92,246,.2),0 0 60px rgba(139,92,246,.08);}
+}
+.auth-icon{font-size:52px;animation:float 4s ease-in-out infinite;filter:drop-shadow(0 0 20px rgba(0,212,255,.4));}
+@keyframes float{0%,100%{transform:translateY(0);}50%{transform:translateY(-10px);}}
+.auth-title{
+  font-size:26px;font-weight:800;letter-spacing:-.03em;
+  background:linear-gradient(135deg,#e2f0ff 0%,#00d4ff 50%,#8b5cf6 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+[data-theme="light"] .auth-title{-webkit-text-fill-color:#0d2035;background:none;color:#0d2035;}
+.auth-sub{color:var(--text2);font-size:13px;line-height:1.7;max-width:320px;}
+.auth-warning{
+  background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);
+  border-left:4px solid #f59e0b;border-radius:10px;padding:12px 16px;
+  font-size:12px;color:var(--amber);line-height:1.6;text-align:left;width:100%;
+}
+[data-theme="light"] .auth-warning{background:rgba(245,158,11,.07);color:#92400e;}
+
+/* ── LOADER ── */
+#loader{
+  position:fixed;inset:0;z-index:9999;background:var(--bg);
+  display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px;
+}
+.ld-ring-wrap{position:relative;width:80px;height:80px;z-index:1;}
+.ld-outer,.ld-inner{position:absolute;border-radius:50%;border:2px solid transparent;}
+.ld-outer{inset:0;border-top-color:#00d4ff;border-right-color:rgba(0,212,255,.3);animation:spin .9s linear infinite;box-shadow:0 0 16px rgba(0,212,255,.3);}
+.ld-inner{inset:12px;border-bottom-color:#8b5cf6;border-left-color:rgba(139,92,246,.3);animation:spin 1.3s linear infinite reverse;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ld-logo{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:26px;animation:ldPulse 2s ease-in-out infinite;}
+@keyframes ldPulse{0%,100%{opacity:1;transform:scale(1);filter:drop-shadow(0 0 20px rgba(0,212,255,.4));}50%{opacity:.7;transform:scale(.88);filter:drop-shadow(0 0 8px rgba(0,212,255,.15));}}
+.ld-bar{width:180px;height:2px;background:rgba(0,212,255,.1);border-radius:2px;overflow:hidden;position:relative;z-index:1;}
+.ld-fill{height:100%;background:linear-gradient(90deg,transparent,#00d4ff,#8b5cf6,transparent);animation:ldLoad 1.6s ease-in-out infinite;}
+@keyframes ldLoad{0%{transform:translateX(-100%);}100%{transform:translateX(300%);}}
+.ld-text{font-size:12px;color:rgba(0,212,255,.5);font-weight:600;letter-spacing:.14em;text-transform:uppercase;z-index:1;}
+[data-theme="light"] .ld-text{color:var(--text2);text-transform:none;letter-spacing:normal;}
+
+/* ── NOTIF ── */
+#notif-area{position:fixed;top:76px;right:16px;z-index:9000;display:flex;flex-direction:column;gap:8px;max-width:340px;width:calc(100vw - 32px);}
+.notif{
+  padding:13px 16px;border-radius:12px;display:flex;align-items:flex-start;gap:10px;
+  font-size:12.5px;font-weight:600;line-height:1.5;cursor:pointer;
+  animation:notifIn .4s var(--spring) both;
+  background:rgba(8,15,28,.96);backdrop-filter:blur(20px);
+  border:1px solid var(--border2);
+  box-shadow:0 8px 32px rgba(0,0,0,.5),0 0 20px rgba(0,212,255,.06);
+  transition:opacity .3s;
+}
+[data-theme="light"] .notif{background:#fff;border-color:rgba(41,128,185,.18);box-shadow:0 4px 20px rgba(41,128,185,.12);}
+.notif.success{border-color:rgba(16,185,129,.4);color:#34d399;}
+.notif.error{border-color:rgba(239,68,68,.4);color:#f87171;}
+.notif.info{border-color:rgba(0,212,255,.35);color:#00d4ff;}
+.notif.warning{border-color:rgba(245,158,11,.4);color:#fbbf24;}
+[data-theme="light"] .notif.success{color:#059669;}
+[data-theme="light"] .notif.error{color:#dc2626;}
+[data-theme="light"] .notif.info{color:#1a5276;}
+[data-theme="light"] .notif.warning{color:#92400e;}
+@keyframes notifIn{from{opacity:0;transform:translateX(80px) scale(.9);}to{opacity:1;transform:translateX(0) scale(1);}}
+
+/* ── STAT BAR ── */
+.stats-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px;}
+.stat-card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--rm);
+  padding:18px 20px;box-shadow:var(--shadow);
+  transition:transform .2s var(--spring),box-shadow .2s,border-color .2s;
+  animation:statPop .4s var(--spring) both;
+}
+.stat-card:nth-child(1){animation-delay:.05s;}
+.stat-card:nth-child(2){animation-delay:.10s;}
+.stat-card:nth-child(3){animation-delay:.15s;}
+.stat-card:nth-child(4){animation-delay:.20s;}
+@keyframes statPop{from{opacity:0;transform:scale(.88) translateY(12px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.stat-card:hover{transform:translateY(-3px);box-shadow:var(--shadow-h);border-color:var(--border2);}
+.stat-icon{font-size:22px;margin-bottom:8px;}
+.stat-val{font-size:26px;font-weight:800;letter-spacing:-.03em;font-family:'JetBrains Mono',monospace;}
+.stat-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--text2);margin-top:3px;font-weight:700;}
+
+/* ── FIELD TABLE ── */
+.field-table-wrap{overflow-x:auto;}
+.field-table{width:100%;border-collapse:collapse;}
+.field-table th{
+  padding:11px 14px;text-align:left;font-size:10px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.08em;color:var(--cyan);
+  background:rgba(0,212,255,.06);border-bottom:2px solid rgba(0,212,255,.15);
+  white-space:nowrap;
+}
+[data-theme="light"] .field-table th{color:#1a5276;background:rgba(41,128,185,.06);border-bottom-color:rgba(41,128,185,.18);}
+.field-table td{
+  padding:10px 14px;font-size:12.5px;border-bottom:1px solid var(--border);
+  transition:background .15s;vertical-align:middle;
+}
+.field-table tr:last-child td{border-bottom:none;}
+.field-table tr:hover td{background:rgba(0,212,255,.03);}
+[data-theme="light"] .field-table tr:hover td{background:rgba(41,128,185,.03);}
+
+.field-name{
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;
+  color:var(--cyan);background:rgba(0,212,255,.07);
+  padding:3px 8px;border-radius:6px;border:1px solid rgba(0,212,255,.15);
+  display:inline-block;
+}
+[data-theme="light"] .field-name{color:#1a5276;background:rgba(41,128,185,.08);border-color:rgba(41,128,185,.2);}
+
+.field-type{
+  font-size:11px;padding:2px 8px;border-radius:6px;font-weight:700;
+}
+.type-meta{background:rgba(139,92,246,.12);color:#c4b5fd;border:1px solid rgba(139,92,246,.25);}
+.type-score{background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.25);}
+.type-text{background:rgba(0,212,255,.1);color:#00d4ff;border:1px solid rgba(0,212,255,.2);}
+[data-theme="light"] .type-meta{background:rgba(139,92,246,.08);color:#6d28d9;}
+[data-theme="light"] .type-score{background:rgba(16,185,129,.08);color:#059669;}
+[data-theme="light"] .type-text{background:rgba(41,128,185,.08);color:#1a5276;}
+
+.sample-val{
+  font-size:11px;color:var(--text2);font-family:'JetBrains Mono',monospace;
+  max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.count-badge{
+  font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;
+  background:rgba(0,212,255,.08);color:var(--text2);
+}
+
+/* checkbox */
+.cb-wrap{display:flex;align-items:center;gap:8px;}
+.cb-wrap input[type="checkbox"]{
+  width:18px;height:18px;cursor:pointer;accent-color:#00d4ff;
+  border-radius:4px;
+}
+[data-theme="light"] .cb-wrap input[type="checkbox"]{accent-color:#2980b9;}
+
+/* select all bar */
+.select-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  padding:12px 16px;background:rgba(0,212,255,.04);
+  border:1px solid var(--border);border-radius:var(--rs);margin-bottom:16px;
+  font-size:13px;color:var(--text2);
+}
+[data-theme="light"] .select-bar{background:rgba(41,128,185,.04);}
+.select-count{font-weight:700;color:var(--cyan);}
+[data-theme="light"] .select-count{color:#1a5276;}
+
+/* ── CONFIRM DIALOG ── */
+.overlay{
+  position:fixed;inset:0;z-index:8000;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(10px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.overlay.open{display:flex;}
+.dialog{
+  background:rgba(8,15,28,.96);border:1px solid rgba(239,68,68,.3);
+  border-radius:20px;padding:36px;max-width:460px;width:100%;
+  box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(239,68,68,.1);
+  animation:dialogPop .4s var(--spring) both;
+  backdrop-filter:blur(20px);
+}
+[data-theme="light"] .dialog{background:#fff;border-color:rgba(239,68,68,.25);box-shadow:0 8px 40px rgba(0,0,0,.2);}
+@keyframes dialogPop{from{opacity:0;transform:scale(.85) translateY(20px);}to{opacity:1;transform:scale(1) translateY(0);}}
+.dialog-icon{font-size:44px;margin-bottom:16px;}
+.dialog-title{font-size:20px;font-weight:800;color:#f87171;margin-bottom:8px;letter-spacing:-.02em;}
+[data-theme="light"] .dialog-title{color:#dc2626;}
+.dialog-body{font-size:13px;color:var(--text2);line-height:1.7;margin-bottom:20px;}
+.dialog-fields{
+  background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);
+  border-radius:10px;padding:12px 14px;margin-bottom:20px;
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:#f87171;
+  max-height:120px;overflow-y:auto;line-height:1.8;
+}
+[data-theme="light"] .dialog-fields{background:rgba(239,68,68,.04);color:#dc2626;}
+.dialog-actions{display:flex;gap:10px;justify-content:flex-end;}
+.type-input{
+  background:rgba(0,212,255,.04);border:1.5px solid var(--border2);border-radius:8px;
+  color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;
+  padding:9px 13px;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;
+}
+.type-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.12);}
+[data-theme="light"] .type-input{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+.confirm-label{font-size:12px;color:var(--text2);margin-bottom:6px;font-weight:600;}
+
+/* progress */
+.progress-bar-wrap{
+  width:100%;background:rgba(0,212,255,.1);border-radius:4px;height:6px;
+  margin:12px 0;overflow:hidden;
+}
+.progress-bar{height:100%;background:linear-gradient(90deg,#00d4ff,#8b5cf6);border-radius:4px;width:0%;transition:width .3s ease;}
+.progress-text{font-size:12px;color:var(--text2);text-align:center;}
+
+/* ── SEARCH ── */
+.search-wrap{position:relative;flex:1;min-width:200px;}
+.search-wrap input{
+  width:100%;padding:9px 12px 9px 36px;
+  background:var(--input);border:1.5px solid var(--border);
+  border-radius:var(--rs);color:var(--text);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.search-wrap input:focus{border-color:var(--border2);box-shadow:0 0 0 3px rgba(0,212,255,.08);}
+.search-wrap::before{content:'🔍';position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;}
+[data-theme="light"] .search-wrap input{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+
+/* ── empty state ── */
+.empty{text-align:center;padding:60px 20px;color:var(--text2);}
+.empty-icon{font-size:52px;opacity:.3;margin-bottom:14px;}
+
+/* ── section title ── */
+.section-title{
+  font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--cyan);display:flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+[data-theme="light"] .section-title{color:#1a5276;}
+.section-title::before{
+  content:'';display:inline-block;width:3px;height:14px;
+  background:linear-gradient(180deg,#00d4ff,#8b5cf6);border-radius:2px;
+}
+
+/* responsive */
+@media(max-width:640px){
+  .main{padding:16px 12px 60px;}
+  .topbar{padding:0 14px;}
+  .auth-card{padding:32px 24px;}
+  .stats-row{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="tsparticles"></div>
+
+<div id="loader" style="display:flex;">
+  <div class="ld-ring-wrap">
+    <div class="ld-outer"></div>
+    <div class="ld-inner"></div>
+    <div class="ld-logo" id="ld-logo">🗃️</div>
+  </div>
+  <div class="ld-bar"><div class="ld-fill"></div></div>
+  <div class="ld-text">Connecting to database…</div>
+</div>
+
+<div id="notif-area"></div>
+
+<!-- ── TOPBAR ── -->
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-logo" id="brand-logo">🏫</div>
+    <div>
+      <div class="brand-name">Kanyadet School</div>
+      <div class="brand-sub">Database Field Manager</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme">
+      <span class="theme-icon moon">🌙</span>
+      <span class="theme-icon sun">☀️</span>
+    </button>
+    <div class="user-pill" id="user-pill" style="display:none;">
+      <div class="user-av" id="user-av">?</div>
+      <span id="user-name">User</span>
+    </div>
+    <button class="btn btn-ghost" id="signout-btn" style="display:none;font-size:12px;padding:7px 14px;" onclick="doSignOut()">🚪 Sign Out</button>
+  </div>
+</header>
+
+<!-- ── AUTH ── -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-icon">🗃️</div>
+    <div class="auth-title">Field Manager</div>
+    <p class="auth-sub">Sign in with your authorised school Google account to manage database fields across all student records.</p>
+    <div class="auth-warning">
+      ⚠️ <strong>Admin access only.</strong> This tool permanently deletes fields from all student records in the database. Actions cannot be undone.
+    </div>
+    <button class="btn btn-cyan" style="width:100%;padding:13px;font-size:14px;justify-content:center;" onclick="doSignIn()" id="signin-btn">
+      🔐 Sign in with Google
+    </button>
+  </div>
+</div>
+
+<!-- ── DASHBOARD ── -->
+<div id="dashboard" style="display:none;">
+  <div class="main">
+
+    <!-- Stats row -->
+    <div class="stats-row" id="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon">👥</div>
+        <div class="stat-val" id="stat-students" style="color:#00d4ff;">—</div>
+        <div class="stat-lbl">Total Records</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🔑</div>
+        <div class="stat-val" id="stat-fields" style="color:#8b5cf6;">—</div>
+        <div class="stat-lbl">Unique Fields</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">✅</div>
+        <div class="stat-val" id="stat-selected" style="color:#10b981;">0</div>
+        <div class="stat-lbl">Selected to Delete</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🗂️</div>
+        <div class="stat-val" id="stat-path" style="color:#f59e0b;font-size:12px;font-family:'JetBrains Mono',monospace;">—</div>
+        <div class="stat-lbl">DB Path</div>
+      </div>
+    </div>
+
+    <!-- Fields card -->
+    <div class="card" style="animation-delay:.1s;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📋 Database Fields</div>
+          <div class="card-sub" id="fields-sub">Loading field inventory from all student records…</div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-cyan" onclick="refreshData()" style="font-size:12px;padding:8px 14px;">🔄 Refresh</button>
+          <button class="btn btn-red" id="delete-btn" onclick="openConfirm()" disabled style="font-size:12px;padding:8px 14px;">🗑️ Delete Selected</button>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- Select bar -->
+        <div class="select-bar">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-weight:600;">
+            <input type="checkbox" id="select-all-cb" onchange="toggleSelectAll(this.checked)" style="width:18px;height:18px;accent-color:#00d4ff;">
+            Select / Deselect All
+          </label>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+            <span class="select-count" id="sel-count-txt">0 selected</span>
+            <div class="search-wrap" style="min-width:180px;">
+              <input type="text" placeholder="Filter fields…" oninput="filterFields(this.value)" id="field-search">
+            </div>
+          </div>
+        </div>
+
+        <!-- Field type legend -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-size:11px;">
+          <span class="field-type type-meta">📌 Metadata</span>
+          <span class="field-type type-score">📊 Score / Number</span>
+          <span class="field-type type-text">💬 Text</span>
+          <span style="color:var(--text2);font-size:11px;margin-left:4px;">— hover a row for sample values</span>
+        </div>
+
+        <div class="field-table-wrap">
+          <table class="field-table">
+            <thead>
+              <tr>
+                <th style="width:40px;"></th>
+                <th>Field Name</th>
+                <th>Type</th>
+                <th>Coverage</th>
+                <th>Sample Value</th>
+                <th>Records with field</th>
+              </tr>
+            </thead>
+            <tbody id="field-tbody">
+              <tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div>Loading…</div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity log -->
+    <div class="card" style="margin-top:20px;animation-delay:.2s;">
+      <div class="card-header">
+        <div><div class="card-title">📜 Activity Log</div></div>
+        <button class="btn btn-ghost" onclick="clearLog()" style="font-size:11px;padding:6px 12px;">Clear</button>
+      </div>
+      <div class="card-body" style="padding:0;">
+        <div id="activity-log" style="max-height:220px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:11.5px;padding:16px 20px;line-height:1.9;color:var(--text2);">
+          <div style="color:var(--text3);">No actions yet.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── CONFIRM DIALOG ── -->
+<div class="overlay" id="confirm-overlay" onclick="if(event.target===this&&!_deleting)closeConfirm()">
+  <div class="dialog">
+    <div class="dialog-icon">⚠️</div>
+    <div class="dialog-title">Confirm Deletion</div>
+    <div class="dialog-body">
+      You are about to <strong>permanently delete</strong> the following fields from <strong id="dlg-count">—</strong> student records. This action <strong>cannot be undone</strong>.
+    </div>
+    <div class="dialog-fields" id="dlg-fields-list"></div>
+    <div class="confirm-label">Type <strong>DELETE</strong> to confirm:</div>
+    <input type="text" class="type-input" id="confirm-input" placeholder="Type DELETE here…" oninput="checkConfirmInput(this.value)" style="margin-bottom:16px;">
+    <div class="progress-bar-wrap" id="progress-wrap" style="display:none;">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-text" id="progress-text"></div>
+    <div class="dialog-actions" style="margin-top:12px;">
+      <button class="btn btn-ghost" onclick="closeConfirm()" id="cancel-btn">Cancel</button>
+      <button class="btn btn-red" id="confirm-del-btn" disabled onclick="executeDelete()">🗑️ Delete Fields</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+  import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+  import { getDatabase, ref, get, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, update, getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut, onAuthStateChanged };
+  if(typeof window._fbReady==='function') window._fbReady();
+  else window._fbLoaded=true;
+</script>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────
+const FB_CONFIG = {
+  apiKey:"AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE",
+  authDomain:"kanyadet-school-admin.firebaseapp.com",
+  databaseURL:"https://kanyadet-school-admin-default-rtdb.firebaseio.com",
+  projectId:"kanyadet-school-admin",
+  storageBucket:"kanyadet-school-admin.firebasestorage.app",
+  messagingSenderId:"409708360032",
+  appId:"1:409708360032:web:a21d63e8cb5fa1ecabee05"
+};
+const DB_PATHS = [
+  'Results/default-app-id/students',
+  'Results/students'
+];
+
+// ── STATE ────────────────────────────────────────────────────
+let db, auth, fb;
+let allRecords = {};      // { firebaseKey: recordObj }
+let fieldStats = {};      // { fieldName: { count, samples, type } }
+let selectedFields = new Set();
+let _deleting = false;
+let _activePath = '';
+
+// ── THEME ────────────────────────────────────────────────────
+(()=>{
+  const saved = localStorage.getItem('kanyadet_dbcleaner_theme')||'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
+function toggleTheme(){
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme')==='dark'?'light':'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('kanyadet_dbcleaner_theme', next);
+}
+
+// ── PARTICLES ────────────────────────────────────────────────
+function initParticles(){
+  if(!window.tsParticles) return;
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  tsParticles.load("tsparticles",{
+    fullScreen:{enable:false},fpsLimit:50,
+    particles:{
+      number:{value:dark?55:30,density:{enable:true,width:1920,height:1080}},
+      color:{value:dark?["#00d4ff","#8b5cf6","#14b8a6","#f59e0b","#ec4899","#3b82f6"]:["#2980b9","#27ae60","#8e44ad","#e67e22"]},
+      shape:{type:["circle","triangle"]},
+      opacity:{value:{min:.02,max:dark?.3:.15},animation:{enable:true,speed:.5,minimumValue:.02,sync:false}},
+      size:{value:{min:.8,max:dark?3:2}},
+      move:{enable:true,speed:{min:.2,max:dark?.7:.4},random:true,outModes:{default:"out"}},
+      links:{enable:dark,distance:120,color:"#00d4ff",opacity:.06,width:.8},
+      twinkle:{particles:{enable:true,frequency:.04,opacity:dark?.6:.25}}
+    },
+    interactivity:{events:{onHover:{enable:true,mode:"bubble"},onClick:{enable:true,mode:"push"},resize:true},
+      modes:{bubble:{distance:80,size:5,duration:.4,opacity:dark?.5:.2},push:{quantity:3}}},
+    detectRetina:true,background:{color:"transparent"}
+  });
+}
+setTimeout(initParticles, 300);
+
+// ── FIREBASE INIT ─────────────────────────────────────────────
+function _initFB(){
+  fb = window._fb;
+  const app = fb.getApps().length===0 ? fb.initializeApp(FB_CONFIG) : fb.getApps()[0];
+  db = fb.getDatabase(app);
+  auth = fb.getAuth(app);
+  // Handle redirect result
+  fb.getRedirectResult(auth).catch(()=>{});
+  fb.onAuthStateChanged(auth, user=>{
+    document.getElementById('loader').style.display='none';
+    if(user) onSignedIn(user);
+    else onSignedOut();
+  });
+  tryLoadLogo();
+}
+window._fbReady = _initFB;
+if(window._fbLoaded) _initFB();
+
+// ── LOGO ─────────────────────────────────────────────────────
+function tryLoadLogo(){
+  const img = new Image();
+  img.src='./imgs/logo.png';
+  img.onload=()=>{
+    const w=document.getElementById('brand-logo');
+    if(w) w.innerHTML=`<img src="./imgs/logo.png" alt="Logo">`;
+    const ll=document.getElementById('ld-logo');
+    if(ll){ ll.style.fontSize='24px'; ll.innerHTML=`<img src="./imgs/logo.png" style="width:38px;height:38px;object-fit:cover;border-radius:8px;">`; }
+  };
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+function onSignedIn(user){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('dashboard').style.display='block';
+  document.getElementById('user-pill').style.display='flex';
+  document.getElementById('signout-btn').style.display='inline-flex';
+  document.getElementById('user-av').textContent=(user.displayName||user.email||'?')[0].toUpperCase();
+  if(user.photoURL){
+    const img=new Image(); img.src=user.photoURL;
+    img.onload=()=>{ document.getElementById('user-av').innerHTML=`<img src="${user.photoURL}">`; };
+  }
+  document.getElementById('user-name').textContent=user.displayName||user.email;
+  log(`✅ Signed in as ${user.email}`,'success');
+  loadData();
+}
+function onSignedOut(){
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('user-pill').style.display='none';
+  document.getElementById('signout-btn').style.display='none';
+}
+function doSignOut(){
+  fb.signOut(auth);
+  allRecords={}; fieldStats={}; selectedFields.clear();
+  notify('Signed out','info');
+}
+window.doSignOut=doSignOut;
+
+async function doSignIn(){
+  const btn=document.getElementById('signin-btn');
+  btn.textContent='⏳ Signing in…'; btn.disabled=true;
+  const provider=new fb.GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'});
+  try{
+    await fb.signInWithPopup(auth, provider);
+  } catch(e){
+    const blocked=['auth/popup-blocked','auth/popup-closed-by-user','auth/cancelled-popup-request'];
+    if(blocked.includes(e.code)){
+      try{ await fb.signInWithRedirect(auth,provider); return; }catch(e2){}
+    }
+    notify('Sign-in failed: '+e.message,'error');
+  } finally{
+    btn.textContent='🔐 Sign in with Google'; btn.disabled=false;
+  }
+}
+window.doSignIn=doSignIn;
+
+// ── DATA LOADING ──────────────────────────────────────────────
+async function loadData(){
+  document.getElementById('loader').style.display='flex';
+  document.getElementById('field-tbody').innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">⏳</div>Scanning database…</div></td></tr>`;
+  allRecords={}; fieldStats={}; selectedFields.clear();
+
+  let loaded=false;
+  for(const path of DB_PATHS){
+    try{
+      const snap = await fb.get(fb.ref(db, path));
+      const data = snap.val();
+      if(data && Object.keys(data).length>0){
+        Object.entries(data).forEach(([k,v])=>{ if(typeof v==='object'&&v!==null) allRecords[k]=v; });
+        _activePath=path;
+        loaded=true;
+        log(`📂 Loaded ${Object.keys(allRecords).length} records from ${path}`);
+        break;
+      }
+    } catch(e){ log(`⚠️ Could not read ${path}: ${e.message}`,'warning'); }
+  }
+
+  document.getElementById('loader').style.display='none';
+  if(!loaded){
+    notify('No records found. Check database path.','error');
+    document.getElementById('field-tbody').innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">📭</div><div>No records found</div></div></td></tr>`;
+    return;
+  }
+
+  analyseFields();
+  renderTable();
+  updateStats();
+  document.getElementById('stat-path').textContent=_activePath;
+}
+window.refreshData=loadData;
+
+// ── FIELD ANALYSIS ────────────────────────────────────────────
+// Known metadata keys (never auto-mark as score)
+const META_KEYS=new Set(['id','Term','Grade','Class','Gender','UPI','Official Student Name',
+  'Assessment No','Position','Stream','Year','School','Remarks','Class Teacher',
+  'Opening Date','Closing Date','Total','Average','Points','Level','_firebaseId',
+  'AssessmentNo','Percentage','Perc Avrg','Teacher Remarks','Grade Level',
+  'Admission No','Date of Birth','Parent','Phone','Subject','Mark']);
+
+function classifyField(name, samples){
+  if(META_KEYS.has(name)||name.startsWith('_')) return 'meta';
+  // Check if values are mostly numeric
+  const nums=samples.filter(v=>{ const n=parseFloat(String(v).replace(/[^0-9.-]/g,'')); return !isNaN(n)&&n>=0&&n<=100; });
+  if(nums.length/Math.max(samples.length,1)>0.6) return 'score';
+  return 'text';
+}
+
+function analyseFields(){
+  fieldStats={};
+  const records=Object.values(allRecords);
+  records.forEach(rec=>{
+    Object.entries(rec).forEach(([k,v])=>{
+      if(k.startsWith('__')) return;
+      if(!fieldStats[k]) fieldStats[k]={count:0,samples:[],type:''};
+      fieldStats[k].count++;
+      if(fieldStats[k].samples.length<5 && v!==null && v!==undefined && String(v).trim()!==''){
+        fieldStats[k].samples.push(String(v).slice(0,50));
+      }
+    });
+  });
+  Object.entries(fieldStats).forEach(([k,v])=>{
+    v.type=classifyField(k,v.samples);
+    v.coverage=Math.round(v.count/records.length*100);
+  });
+}
+
+// ── RENDER TABLE ─────────────────────────────────────────────
+let _filterQuery='';
+function renderTable(){
+  const tbody=document.getElementById('field-tbody');
+  const allFields=Object.entries(fieldStats).sort((a,b)=>{
+    // Sort: meta first, then score, then text; within each by count desc
+    const order={meta:0,score:1,text:2};
+    const od=order[a[1].type]-order[b[1].type];
+    return od!==0?od:b[1].count-a[1].count;
+  });
+  const filtered=_filterQuery
+    ? allFields.filter(([k])=>k.toLowerCase().includes(_filterQuery.toLowerCase()))
+    : allFields;
+
+  if(!filtered.length){
+    tbody.innerHTML=`<tr><td colspan="6"><div class="empty"><div class="empty-icon">🔍</div><div>No fields match filter</div></div></td></tr>`;
+    return;
+  }
+
+  const total=Object.keys(allRecords).length;
+  tbody.innerHTML=filtered.map(([name,stat])=>{
+    const checked=selectedFields.has(name);
+    const typeLabel=stat.type==='meta'?'📌 Metadata':stat.type==='score'?'📊 Score':'💬 Text';
+    const typeClass=`type-${stat.type}`;
+    const sample=stat.samples[0]||'—';
+    const pct=stat.coverage;
+    const barColor=pct>=80?'#10b981':pct>=50?'#f59e0b':'#ef4444';
+    return `<tr>
+      <td>
+        <div class="cb-wrap">
+          <input type="checkbox" data-field="${esc(name)}" ${checked?'checked':''} onchange="toggleField('${esc(name)}',this.checked)">
+        </div>
+      </td>
+      <td><span class="field-name">${esc(name)}</span></td>
+      <td><span class="field-type ${typeClass}">${typeLabel}</span></td>
+      <td style="min-width:120px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="flex:1;height:6px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;">
+            <div style="width:${pct}%;height:100%;background:${barColor};border-radius:3px;transition:width .6s ease;"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:${barColor};min-width:34px;">${pct}%</span>
+        </div>
+      </td>
+      <td><span class="sample-val" title="${esc(sample)}">${esc(sample)}</span></td>
+      <td><span class="count-badge">${stat.count} / ${total}</span></td>
+    </tr>`;
+  }).join('');
+
+  updateSelectAllState();
+  updateStats();
+}
+
+function filterFields(q){
+  _filterQuery=q;
+  renderTable();
+}
+window.filterFields=filterFields;
+
+// ── SELECTION ─────────────────────────────────────────────────
+function toggleField(name,checked){
+  if(checked) selectedFields.add(name);
+  else selectedFields.delete(name);
+  updateStats();
+  updateSelectAllState();
+  document.getElementById('delete-btn').disabled=selectedFields.size===0;
+}
+window.toggleField=toggleField;
+
+function toggleSelectAll(checked){
+  const allFields=Object.entries(fieldStats).filter(([k])=>
+    !_filterQuery||k.toLowerCase().includes(_filterQuery.toLowerCase())
+  );
+  allFields.forEach(([k])=>{ checked?selectedFields.add(k):selectedFields.delete(k); });
+  renderTable();
+  document.getElementById('delete-btn').disabled=selectedFields.size===0;
+}
+window.toggleSelectAll=toggleSelectAll;
+
+function updateSelectAllState(){
+  const allVisible=Object.keys(fieldStats).filter(k=>
+    !_filterQuery||k.toLowerCase().includes(_filterQuery.toLowerCase())
+  );
+  const allChecked=allVisible.length>0&&allVisible.every(k=>selectedFields.has(k));
+  const someChecked=allVisible.some(k=>selectedFields.has(k));
+  const cb=document.getElementById('select-all-cb');
+  cb.checked=allChecked;
+  cb.indeterminate=!allChecked&&someChecked;
+  document.getElementById('sel-count-txt').textContent=`${selectedFields.size} selected`;
+  document.getElementById('stat-selected').textContent=selectedFields.size;
+}
+
+function updateStats(){
+  document.getElementById('stat-students').textContent=Object.keys(allRecords).length;
+  document.getElementById('stat-fields').textContent=Object.keys(fieldStats).length;
+  document.getElementById('stat-selected').textContent=selectedFields.size;
+  document.getElementById('fields-sub').textContent=
+    `${Object.keys(fieldStats).length} unique fields found across ${Object.keys(allRecords).length} records in ${_activePath||'—'}`;
+}
+
+// ── CONFIRM + DELETE ──────────────────────────────────────────
+function openConfirm(){
+  if(selectedFields.size===0) return;
+  const fields=[...selectedFields].sort();
+  document.getElementById('dlg-count').textContent=Object.keys(allRecords).length;
+  document.getElementById('dlg-fields-list').innerHTML=fields.map(f=>`• ${f}`).join('<br>');
+  document.getElementById('confirm-input').value='';
+  document.getElementById('confirm-del-btn').disabled=true;
+  document.getElementById('progress-wrap').style.display='none';
+  document.getElementById('progress-text').textContent='';
+  document.getElementById('confirm-overlay').classList.add('open');
+  setTimeout(()=>document.getElementById('confirm-input').focus(),300);
+}
+window.openConfirm=openConfirm;
+
+function closeConfirm(){
+  if(_deleting) return;
+  document.getElementById('confirm-overlay').classList.remove('open');
+}
+window.closeConfirm=closeConfirm;
+
+function checkConfirmInput(val){
+  document.getElementById('confirm-del-btn').disabled=val.trim()!=='DELETE';
+}
+window.checkConfirmInput=checkConfirmInput;
+
+async function executeDelete(){
+  if(_deleting) return;
+  _deleting=true;
+  document.getElementById('cancel-btn').disabled=true;
+  document.getElementById('confirm-del-btn').disabled=true;
+  document.getElementById('confirm-del-btn').textContent='⏳ Deleting…';
+  document.getElementById('progress-wrap').style.display='block';
+
+  const fields=[...selectedFields];
+  const keys=Object.keys(allRecords);
+  const total=keys.length;
+  let done=0, errors=0;
+
+  log(`🗑️ Starting deletion of [${fields.join(', ')}] from ${total} records…`,'warning');
+
+  // Process in batches of 50 for speed
+  const BATCH=50;
+  for(let i=0;i<keys.length;i+=BATCH){
+    const batch=keys.slice(i,i+BATCH);
+    const updates={};
+    batch.forEach(key=>{
+      fields.forEach(field=>{
+        updates[`${_activePath}/${key}/${field}`]=null; // null = delete in Firebase
+      });
+    });
+    try{
+      await fb.update(fb.ref(db), updates);
+      done+=batch.length;
+    } catch(e){
+      errors+=batch.length;
+      log(`❌ Batch error at record ${i}: ${e.message}`,'error');
+    }
+    // Update progress
+    const pct=Math.round(done/total*100);
+    document.getElementById('progress-bar').style.width=pct+'%';
+    document.getElementById('progress-text').textContent=`${done} / ${total} records updated (${pct}%)`;
+    // Small pause to keep UI responsive
+    await new Promise(r=>setTimeout(r,20));
+  }
+
+  _deleting=false;
+  document.getElementById('cancel-btn').disabled=false;
+  document.getElementById('confirm-overlay').classList.remove('open');
+
+  if(errors===0){
+    notify(`✅ Successfully deleted ${fields.length} field${fields.length>1?'s':''} from ${done} records!`,'success');
+    log(`✅ Deleted [${fields.join(', ')}] from ${done} records successfully.`,'success');
+  } else {
+    notify(`⚠️ Completed with ${errors} errors. Check the log.`,'warning');
+    log(`⚠️ Completed: ${done} ok, ${errors} errors.`,'warning');
+  }
+
+  // Clear selection and reload
+  selectedFields.clear();
+  await loadData();
+}
+window.executeDelete=executeDelete;
+
+// ── ACTIVITY LOG ─────────────────────────────────────────────
+const _logColors={success:'#10b981',error:'#f87171',warning:'#fbbf24',info:'#00d4ff'};
+function log(msg,type='info'){
+  const el=document.getElementById('activity-log');
+  const time=new Date().toLocaleTimeString();
+  const color=_logColors[type]||_logColors.info;
+  el.innerHTML+=`<div><span style="color:var(--text3);">[${time}]</span> <span style="color:${color};">${msg}</span></div>`;
+  el.scrollTop=el.scrollHeight;
+  if(el.children.length>1 && el.children[0].textContent.includes('No actions')) el.children[0].remove();
+}
+function clearLog(){
+  document.getElementById('activity-log').innerHTML=`<div style="color:var(--text3);">Log cleared.</div>`;
+}
+window.clearLog=clearLog;
+
+// ── NOTIFY ───────────────────────────────────────────────────
+function notify(msg,type='info'){
+  const a=document.getElementById('notif-area');
+  const d=document.createElement('div');
+  d.className=`notif ${type}`;
+  d.innerHTML=`<span>${type==='success'?'✅':type==='error'?'❌':type==='warning'?'⚠️':'ℹ️'}</span><span>${msg}</span>`;
+  d.onclick=()=>d.remove();
+  a.appendChild(d);
+  setTimeout(()=>{d.style.opacity='0';d.style.transition='opacity .4s';setTimeout(()=>d.remove(),400);},5000);
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+</script>
+</body>
+</html>
