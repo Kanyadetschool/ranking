@@ -4,12 +4,8 @@
     <meta charset="UTF-8"> 
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Analytics & Rankings</title>
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="./Report-Cards/css/swalOnly.css">
-    
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
     <style>
         /* ════════════════════════════════════════════════════════
@@ -372,16 +368,177 @@
         .main { max-width: 1800px; margin: 0 auto; padding: 28px 32px; }
 
         /* ══ AUTH ══ */
-        #auth-screen { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: calc(100vh - 64px); text-align: center; gap: 20px; }
-        #auth-screen.show { display: flex; }
-        .auth-card { background: var(--bg-card); border-radius: 18px; padding: 48px; box-shadow: var(--auth-card-shadow); max-width: 440px; width: 100%; display: flex; flex-direction: column; align-items: center; gap: 18px; border: 1px solid var(--border-color); transition: var(--transition); }
-        [data-theme="dark"] .auth-card { background: rgba(21,38,56,.95); border-color: rgba(41,128,185,.28); box-shadow: 0 8px 40px rgba(0,0,0,.5), 0 0 0 1px rgba(41,128,185,.1); }
-        [data-theme="light"] .auth-card { background: #fff; }
-        .auth-icon { font-size: 42px; animation: float 3s ease-in-out infinite; }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
-        .auth-title { font-size: 26px; font-weight: 800; color: var(--text-primary); }
-        [data-theme="dark"] .auth-title { background: linear-gradient(135deg, #e2f0ff 0%, #00d4ff 50%, #8b5cf6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-        .auth-sub { color: var(--text-secondary); font-size: 14px; line-height: 1.7; }
+
+        /* ══ AUTH SCREEN v2 — Split-panel redesign ══ */
+        #auth-screen {
+          display:none; flex-direction:row !important; align-items:stretch !important;
+          justify-content:stretch !important; min-height:calc(100vh - 64px) !important;
+          padding:0 !important; gap:0 !important; text-align:left !important;
+        }
+        #auth-screen.show { display:flex !important; }
+        .auth-left {
+          flex:1; display:flex; flex-direction:column; justify-content:center;
+          padding:60px 52px; gap:36px; border-right:1px solid rgba(0,212,255,.1);
+        }
+        [data-theme="light"] .auth-left { border-right-color:rgba(41,128,185,.12); }
+        .auth-left-badge {
+          display:inline-flex; align-items:center; gap:10px;
+          background:rgba(0,212,255,.06); border:1px solid rgba(0,212,255,.18);
+          border-radius:100px; padding:7px 18px 7px 9px; width:fit-content;
+          animation:authFadeUp .5s ease both;
+        }
+        [data-theme="light"] .auth-left-badge { background:rgba(41,128,185,.07); border-color:rgba(41,128,185,.2); }
+        .auth-left-badge-icon {
+          width:26px; height:26px; background:linear-gradient(135deg,#00d4ff,#2980b9);
+          border-radius:50%; display:flex; align-items:center; justify-content:center;
+          font-size:13px; box-shadow:0 0 12px rgba(0,212,255,.4);
+        }
+        [data-theme="light"] .auth-left-badge-icon { background:linear-gradient(135deg,#2980b9,#1a5276); }
+        .auth-left-badge span { font-size:11.5px; font-weight:600; color:rgba(0,212,255,.8); letter-spacing:.03em; }
+        [data-theme="light"] .auth-left-badge span { color:rgba(41,128,185,.8); }
+        .auth-headline { animation:authFadeUp .55s .08s ease both; }
+        .auth-headline h2 {
+          font-family:'Syne','Plus Jakarta Sans',sans-serif;
+          font-size:clamp(32px,3.8vw,50px); font-weight:800; line-height:1.05; letter-spacing:-.03em;
+          background:linear-gradient(135deg,#e2f0ff 0%,#a8d8ff 30%,#00d4ff 60%,#7dd3fc 80%,#e2f0ff 100%);
+          background-size:200% 100%; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+          background-clip:text; animation:authHeadShimmer 6s ease-in-out infinite;
+        }
+        [data-theme="light"] .auth-headline h2 {
+          background:linear-gradient(135deg,#0d2035,#2980b9,#1a5276);
+          -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; animation:none;
+        }
+        @keyframes authHeadShimmer { 0%,100%{background-position:200% 0;} 50%{background-position:-200% 0;} }
+        .auth-headline p { margin-top:14px; font-size:14px; color:rgba(126,184,212,.65); line-height:1.75; max-width:380px; }
+        [data-theme="light"] .auth-headline p { color:#3a6080; }
+        .auth-stats-strip { display:flex; animation:authFadeUp .55s .18s ease both; }
+        .auth-stat-item {
+          flex:1; padding:16px 18px; border:1px solid rgba(0,212,255,.1);
+          background:rgba(0,212,255,.025); transition:all .2s;
+        }
+        [data-theme="light"] .auth-stat-item { border-color:rgba(41,128,185,.12); background:rgba(41,128,185,.04); }
+        .auth-stat-item:first-child { border-radius:12px 0 0 12px; }
+        .auth-stat-item:last-child  { border-radius:0 12px 12px 0; }
+        .auth-stat-item:not(:last-child) { border-right:none; }
+        .auth-stat-item:hover { background:rgba(0,212,255,.06); border-color:rgba(0,212,255,.22); }
+        [data-theme="light"] .auth-stat-item:hover { background:rgba(41,128,185,.08); border-color:rgba(41,128,185,.25); }
+        .auth-stat-val { font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:600; color:#00d4ff; line-height:1; }
+        [data-theme="light"] .auth-stat-val { color:#2980b9; }
+        .auth-stat-lbl { font-size:9.5px; text-transform:uppercase; letter-spacing:.08em; color:rgba(126,184,212,.45); margin-top:5px; font-weight:600; }
+        [data-theme="light"] .auth-stat-lbl { color:#7aabc5; }
+        .auth-features { display:flex; flex-direction:column; gap:11px; animation:authFadeUp .55s .26s ease both; }
+        .auth-feature-row { display:flex; align-items:center; gap:12px; }
+        .auth-feature-dot { width:5px; height:5px; border-radius:50%; background:#00d4ff; box-shadow:0 0 8px rgba(0,212,255,.8); flex-shrink:0; }
+        [data-theme="light"] .auth-feature-dot { background:#2980b9; box-shadow:none; }
+        .auth-feature-text { font-size:13px; color:rgba(126,184,212,.6); }
+        [data-theme="light"] .auth-feature-text { color:#3a6080; }
+        .auth-panel-divider {
+          width:1px; flex-shrink:0;
+          background:linear-gradient(180deg,transparent,rgba(0,212,255,.2) 20%,rgba(0,212,255,.35) 50%,rgba(0,212,255,.2) 80%,transparent);
+          position:relative;
+        }
+        [data-theme="light"] .auth-panel-divider { background:linear-gradient(180deg,transparent,rgba(41,128,185,.18) 20%,rgba(41,128,185,.3) 50%,rgba(41,128,185,.18) 80%,transparent); }
+        .auth-panel-divider::after {
+          content:''; position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+          width:8px; height:8px; border-radius:50%; background:#00d4ff; box-shadow:0 0 20px rgba(0,212,255,.8);
+        }
+        [data-theme="light"] .auth-panel-divider::after { background:#2980b9; box-shadow:0 0 12px rgba(41,128,185,.5); }
+        .auth-right { flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center; padding:60px 52px; gap:16px; }
+        .auth-card-v2 { width:100%; max-width:400px; animation:authCardPop .65s .15s cubic-bezier(.34,1.56,.64,1) both; }
+        @keyframes authCardPop { from{opacity:0;transform:scale(.9) translateY(24px);} to{opacity:1;transform:scale(1) translateY(0);} }
+        .auth-card-v2-inner {
+          background:rgba(8,15,26,.88); border:1px solid rgba(0,212,255,.14); border-radius:24px; padding:38px;
+          position:relative; overflow:hidden; backdrop-filter:blur(20px) saturate(160%); -webkit-backdrop-filter:blur(20px) saturate(160%);
+          box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(0,212,255,.06),0 0 60px rgba(0,212,255,.04);
+          animation:authCardGlowV2 5s ease-in-out 1s infinite;
+        }
+        [data-theme="light"] .auth-card-v2-inner { background:#fff; border-color:rgba(41,128,185,.15); box-shadow:0 8px 40px rgba(41,128,185,.12); backdrop-filter:none; animation:none; }
+        @keyframes authCardGlowV2 {
+          0%,100%{box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(0,212,255,.08),0 0 60px rgba(0,212,255,.04);}
+          50%    {box-shadow:0 24px 80px rgba(0,0,0,.7),0 0 0 1px rgba(139,92,246,.18),0 0 60px rgba(139,92,246,.06);}
+        }
+        .auth-card-v2-inner::before {
+          content:''; position:absolute; top:0; left:0; right:0; height:1px;
+          background:linear-gradient(90deg,transparent,rgba(0,212,255,.55),rgba(139,92,246,.45),transparent);
+          animation:authEdgeGlow 3s ease-in-out infinite;
+        }
+        [data-theme="light"] .auth-card-v2-inner::before { display:none; }
+        @keyframes authEdgeGlow { 0%,100%{opacity:.6;} 50%{opacity:1;} }
+        .auth-corner { position:absolute; width:18px; height:18px; }
+        .auth-corner-tl { top:13px; left:13px; border-top:1.5px solid rgba(0,212,255,.35); border-left:1.5px solid rgba(0,212,255,.35); border-radius:3px 0 0 0; }
+        .auth-corner-tr { top:13px; right:13px; border-top:1.5px solid rgba(0,212,255,.35); border-right:1.5px solid rgba(0,212,255,.35); border-radius:0 3px 0 0; }
+        .auth-corner-bl { bottom:13px; left:13px; border-bottom:1.5px solid rgba(0,212,255,.35); border-left:1.5px solid rgba(0,212,255,.35); border-radius:0 0 0 3px; }
+        .auth-corner-br { bottom:13px; right:13px; border-bottom:1.5px solid rgba(0,212,255,.35); border-right:1.5px solid rgba(0,212,255,.35); border-radius:0 0 3px 0; }
+        [data-theme="light"] .auth-corner { display:none; }
+        .auth-logo-v2 {
+          width:62px; height:62px; background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(139,92,246,.15));
+          border:1px solid rgba(0,212,255,.25); border-radius:16px; display:flex; align-items:center;
+          justify-content:center; font-size:28px; margin:0 auto 18px; overflow:hidden;
+          box-shadow:0 0 30px rgba(0,212,255,.12); animation:authLogoPulse 4s ease-in-out infinite;
+        }
+        [data-theme="light"] .auth-logo-v2 { background:linear-gradient(135deg,rgba(41,128,185,.1),rgba(41,128,185,.06)); border-color:rgba(41,128,185,.22); box-shadow:0 4px 14px rgba(41,128,185,.12); animation:none; }
+        @keyframes authLogoPulse { 0%,100%{box-shadow:0 0 30px rgba(0,212,255,.12);} 50%{box-shadow:0 0 50px rgba(0,212,255,.28),0 0 80px rgba(0,212,255,.06);} }
+        .auth-title-v2 { font-family:'Syne','Plus Jakarta Sans',sans-serif; font-size:22px; font-weight:700; text-align:center; letter-spacing:-.025em; margin-bottom:6px; color:#e2f0ff; }
+        [data-theme="light"] .auth-title-v2 { color:#0d2035; }
+        .auth-sub-v2 { font-size:12.5px; color:rgba(126,184,212,.5); text-align:center; line-height:1.65; margin-bottom:26px; }
+        [data-theme="light"] .auth-sub-v2 { color:#3a6080; }
+        .auth-signin-btn {
+          width:100%; padding:13px 18px; border-radius:12px; border:1.5px solid rgba(0,212,255,.32); cursor:pointer;
+          background:linear-gradient(135deg,rgba(0,212,255,.15),rgba(41,128,185,.22)); color:#e2f0ff;
+          font-family:'Plus Jakarta Sans','Poppins',sans-serif; font-size:14px; font-weight:600;
+          display:flex; align-items:center; justify-content:center; gap:12px;
+          transition:all .25s cubic-bezier(.34,1.56,.64,1); position:relative; overflow:hidden;
+          box-shadow:0 4px 20px rgba(0,0,0,.3);
+        }
+        [data-theme="light"] .auth-signin-btn { background:linear-gradient(135deg,#2980b9,#3498db); border-color:transparent; color:#fff; box-shadow:0 4px 16px rgba(41,128,185,.35); }
+        .auth-signin-btn:hover { transform:translateY(-2px); border-color:rgba(0,212,255,.55); box-shadow:0 8px 30px rgba(0,0,0,.4),0 0 30px rgba(0,212,255,.15); background:linear-gradient(135deg,rgba(0,212,255,.22),rgba(41,128,185,.3)); }
+        [data-theme="light"] .auth-signin-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(41,128,185,.45); filter:brightness(1.08); background:linear-gradient(135deg,#2980b9,#3498db); border-color:transparent; }
+        .auth-signin-btn:active { transform:translateY(0) !important; }
+        .auth-signin-btn::after { content:''; position:absolute; top:0; left:-110%; width:100%; height:100%; background:linear-gradient(90deg,transparent,rgba(255,255,255,.1),transparent); transition:left .5s ease; pointer-events:none; }
+        .auth-signin-btn:hover::after { left:110%; }
+        .auth-google-icon { width:20px; height:20px; background:white; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .auth-google-icon svg { width:13px; height:13px; }
+        .auth-or-divider { display:flex; align-items:center; gap:14px; margin:18px 0 0; }
+        .auth-or-line { flex:1; height:1px; background:rgba(0,212,255,.1); }
+        [data-theme="light"] .auth-or-line { background:rgba(41,128,185,.12); }
+        .auth-or-text { font-size:10px; color:rgba(126,184,212,.35); letter-spacing:.12em; font-weight:600; }
+        [data-theme="light"] .auth-or-text { color:#7aabc5; }
+        .auth-qlinks-toggle { width:100%; margin-top:14px; padding:10px 16px; border-radius:10px; background:transparent; border:1.5px dashed rgba(0,212,255,.15); color:rgba(126,184,212,.45); font-family:'Plus Jakarta Sans','Poppins',sans-serif; font-size:12.5px; font-weight:600; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:all .2s; }
+        [data-theme="light"] .auth-qlinks-toggle { border-color:rgba(41,128,185,.2); color:#3a6080; }
+        .auth-qlinks-toggle:hover { border-color:rgba(0,212,255,.32); color:rgba(0,212,255,.75); background:rgba(0,212,255,.04); }
+        [data-theme="light"] .auth-qlinks-toggle:hover { border-color:rgba(41,128,185,.35); color:#2980b9; background:rgba(41,128,185,.05); }
+        .auth-toggle-arrow { display:inline-block; font-size:10px; transition:transform .3s; }
+        .auth-qlinks-panel { overflow:hidden; max-height:0; transition:max-height .4s ease,opacity .3s ease; opacity:0; }
+        .auth-qlinks-panel.open { max-height:300px; opacity:1; }
+        .auth-qlink { display:flex; align-items:center; gap:10px; padding:10px 14px; border-radius:10px; margin-top:7px; text-decoration:none; font-size:12px; font-weight:600; transition:all .2s; border:1px solid transparent; position:relative; overflow:hidden; }
+        .auth-qlink-arrow { margin-left:auto; font-size:11px; opacity:.4; transition:transform .2s,opacity .2s; }
+        .auth-qlink:hover .auth-qlink-arrow { transform:translateX(3px); opacity:.8; }
+        .auth-qlink-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+        .auth-qlink-1 { color:rgba(0,212,255,.75); border-color:rgba(0,212,255,.14); background:rgba(0,212,255,.04); }
+        .auth-qlink-1:hover { border-color:rgba(0,212,255,.28); background:rgba(0,212,255,.08); }
+        .auth-qlink-1 .auth-qlink-dot { background:#00d4ff; box-shadow:0 0 8px rgba(0,212,255,.7); }
+        .auth-qlink-2 { color:rgba(59,130,246,.75); border-color:rgba(59,130,246,.14); background:rgba(59,130,246,.04); }
+        .auth-qlink-2:hover { border-color:rgba(59,130,246,.28); background:rgba(59,130,246,.08); }
+        .auth-qlink-2 .auth-qlink-dot { background:#3b82f6; box-shadow:0 0 8px rgba(59,130,246,.7); }
+        .auth-qlink-3 { color:rgba(239,68,68,.7); border-color:rgba(239,68,68,.14); background:rgba(239,68,68,.03); }
+        .auth-qlink-3:hover { border-color:rgba(239,68,68,.28); background:rgba(239,68,68,.07); }
+        .auth-qlink-3 .auth-qlink-dot { background:#ef4444; box-shadow:0 0 8px rgba(239,68,68,.7); }
+        [data-theme="light"] .auth-qlink-1 { color:#1a5276; border-color:rgba(41,128,185,.18); background:rgba(41,128,185,.05); }
+        [data-theme="light"] .auth-qlink-1:hover { border-color:rgba(41,128,185,.32); background:rgba(41,128,185,.1); }
+        [data-theme="light"] .auth-qlink-1 .auth-qlink-dot { background:#2980b9; box-shadow:none; }
+        [data-theme="light"] .auth-qlink-2 { color:#1a5276; border-color:rgba(59,130,246,.18); background:rgba(59,130,246,.04); }
+        [data-theme="light"] .auth-qlink-2:hover { border-color:rgba(59,130,246,.32); background:rgba(59,130,246,.09); }
+        [data-theme="light"] .auth-qlink-3 { color:#a02010; border-color:rgba(239,68,68,.18); background:rgba(239,68,68,.04); }
+        [data-theme="light"] .auth-qlink-3:hover { border-color:rgba(239,68,68,.32); background:rgba(239,68,68,.08); }
+        .auth-sys-tag { font-family:'JetBrains Mono',monospace; font-size:10px; color:rgba(0,212,255,.25); letter-spacing:.08em; margin-top:4px; animation:authFadeUp .6s .45s ease both; }
+        [data-theme="light"] .auth-sys-tag { color:rgba(41,128,185,.3); }
+        @keyframes authFadeUp { from{opacity:0;transform:translateY(14px);} to{opacity:1;transform:translateY(0);} }
+        @media(max-width:820px) {
+          #auth-screen { flex-direction:column !important; }
+          .auth-left { display:none !important; }
+          .auth-panel-divider { display:none !important; }
+          .auth-right { flex:unset; padding:40px 24px; min-height:calc(100vh - 64px); }
+        }
 
         #dashboard { display: none; }
         #dashboard.show { display: block; }
@@ -1904,8 +2061,9 @@
 
 <header class="topbar">
     <div class="topbar-brand">
+        <div class="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name"> Analytics &amp; Rankings</div>
+            <div class="brand-name">Junior School - Analytics &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -1961,52 +2119,87 @@
 
 <!-- AUTH -->
 <div id="auth-screen" class="main" style="display:none;">
-    <div class="auth-card">
-        <div class="auth-title">Analytics &amp; Rankings</div>
-        <p class="auth-sub">Sign in with your school Google account to access comprehensive student analytics, subject rankings, and performance reports.</p>
-        <button class="btn btn-primary" onclick="signInWithGoogle()" style="padding:13px 32px;font-size:15px;width:100%;">🔐 Sign in with Google</button>
 
-        <button onclick="toggleQuickLinks()" id="quick-links-toggle"
-                style="margin-top:8px;background:transparent;border:1.5px solid var(--border-color);border-radius:8px;
-                       padding:9px 18px;font-family:'Poppins',sans-serif;font-size:13px;font-weight:600;
-                       color:var(--text-secondary);cursor:pointer;width:100%;transition:all 0.2s;display:flex;
-                       align-items:center;justify-content:center;gap:8px;">
-            <span id="toggle-arrow" style="transition:transform 0.3s;">▼</span>
-            Quick Links
+  <div class="auth-left">
+    <div class="auth-left-badge">
+      <div class="auth-left-badge-icon">🏫</div>
+      <span>Kanyadet Primary &amp; Junior School</span>
+    </div>
+    <div class="auth-headline">
+      <h2>Student Analytics &amp; Rankings</h2>
+      <p>Comprehensive performance tracking for every learner — subject breakdowns, KNEC grade distributions, trends, and AI-generated teacher remarks.</p>
+    </div>
+    <div class="auth-stats-strip">
+      <div class="auth-stat-item"><div class="auth-stat-val">9+</div><div class="auth-stat-lbl">Learning Areas</div></div>
+      <div class="auth-stat-item"><div class="auth-stat-val">EE→BE</div><div class="auth-stat-lbl">KNEC Grading</div></div>
+      <div class="auth-stat-item"><div class="auth-stat-val">Live</div><div class="auth-stat-lbl">Firebase Sync</div></div>
+    </div>
+    <div class="auth-features">
+      <div class="auth-feature-row"><div class="auth-feature-dot"></div><div class="auth-feature-text">Overall &amp; per-subject rankings with interactive heatmaps</div></div>
+      <div class="auth-feature-row"><div class="auth-feature-dot"></div><div class="auth-feature-text">AI-generated teacher remarks powered by Claude</div></div>
+      <div class="auth-feature-row"><div class="auth-feature-dot"></div><div class="auth-feature-text">Term-over-term trend charts &amp; bulk PDF exports</div></div>
+      <div class="auth-feature-row"><div class="auth-feature-dot"></div><div class="auth-feature-text">Class comparison, gender analysis &amp; exam scheduler</div></div>
+    </div>
+  </div>
+
+  <div class="auth-panel-divider"></div>
+
+  <div class="auth-right">
+    <div class="auth-card-v2">
+      <div class="auth-card-v2-inner">
+        <div class="auth-corner auth-corner-tl"></div>
+        <div class="auth-corner auth-corner-tr"></div>
+        <div class="auth-corner auth-corner-bl"></div>
+        <div class="auth-corner auth-corner-br"></div>
+        <div class="auth-logo-v2" id="topbar-logo-auth">🎓</div>
+        <div class="auth-title-v2">Welcome back</div>
+        <div class="auth-sub-v2">Sign in with your school Google account<br>to access the analytics dashboard</div>
+        <button class="auth-signin-btn" onclick="signInWithGoogle()">
+          <div class="auth-google-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+          </div>
+          Continue with Google
         </button>
+        <div class="auth-or-divider">
+          <div class="auth-or-line"></div>
+          <div class="auth-or-text">QUICK ACCESS</div>
+          <div class="auth-or-line"></div>
+        </div>
+        <button class="auth-qlinks-toggle" id="auth-qlinks-btn" onclick="toggleQuickLinks()">
+          <span class="auth-toggle-arrow" id="auth-toggle-arrow">▾</span>
+          Public Portals
+        </button>
+        <div class="auth-qlinks-panel" id="quick-links-panel">
+          <a href="./Report-Cards/Reports.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
+            <div class="auth-qlink-dot"></div>📄 Report Cards — Junior School<span class="auth-qlink-arrow">→</span>
+          </a>
+          <a href="./Report-Cards/Primary-Report-Cards.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-2">
+            <div class="auth-qlink-dot"></div>📄 Report Cards — Primary School<span class="auth-qlink-arrow">→</span>
+          </a>
+          <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
+            <div class="auth-qlink-dot"></div>🎓 Students Portal<span class="auth-qlink-arrow">→</span>
+          </a>
+        </div>
+      </div>
     </div>
-
-    <div id="quick-links-panel"
-         style="overflow:hidden;max-height:0;transition:max-height 0.4s ease,opacity 0.3s ease;
-                opacity:0;display:flex;gap:12px;flex-wrap:wrap;padding:0 0;">
-        <a href="./Report-Cards/Reports.html" target="_blank" rel="noopener"
-           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;
-                  background:#040303;color:#fff;font-family:sans-serif;font-size:14px;
-                  font-weight:500;text-decoration:none;cursor:pointer;">📄 Report Cards - Junior School</a>
-        <a href="./Report-Cards/Primary-Report-Cards.html" target="_blank" rel="noopener"
-           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;
-                  background:hsl(206,85%,32%);color:#fff;font-family:sans-serif;font-size:14px;
-                  font-weight:500;text-decoration:none;cursor:pointer;">📄 Report Cards - Primary School</a>
-        <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener"
-           style="display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;
-                  background:#f51109;color:#fff;font-family:sans-serif;font-size:14px;
-                  font-weight:500;text-decoration:none;cursor:pointer;">🎓 Students Portal</a>
-    </div>
+    <div class="auth-sys-tag">SYS // ANALYTICS v2.0 // FIREBASE RTDB</div>
+  </div>
 </div>
 
 <script>
 function toggleQuickLinks() {
-    const panel  = document.getElementById('quick-links-panel');
-    const arrow  = document.getElementById('toggle-arrow');
-    const btn    = document.getElementById('quick-links-toggle');
-    const isOpen = panel.style.maxHeight !== '0px' && panel.style.maxHeight !== '';
-    if (isOpen) {
-        panel.style.maxHeight = '0px'; panel.style.opacity = '0'; panel.style.padding = '0';
-        arrow.style.transform = 'rotate(0deg)'; btn.style.color = 'var(--text-secondary)';
-    } else {
-        panel.style.maxHeight = '200px'; panel.style.opacity = '1'; panel.style.padding = '1rem 0';
-        arrow.style.transform = 'rotate(180deg)'; btn.style.color = '#2980b9';
-    }
+  const panel = document.getElementById('quick-links-panel');
+  const arrow = document.getElementById('auth-toggle-arrow');
+  const btn   = document.getElementById('auth-qlinks-btn');
+  const isOpen = panel.classList.contains('open');
+  panel.classList.toggle('open', !isOpen);
+  arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+  btn.style.color = isOpen ? '' : (document.documentElement.getAttribute('data-theme')==='light' ? '#2980b9' : 'rgba(0,212,255,.75)');
 }
 </script>
 
@@ -2559,7 +2752,6 @@ function toggleQuickLinks() {
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-<script src="./image-popup.js"></script>
 
 <script>
 
@@ -2930,7 +3122,7 @@ function onSignedOut(){
 
 window.signInWithGoogle=async()=>{
     // Auth screen button
-    const btn=document.querySelector('#auth-screen .btn-primary');
+    const btn=document.querySelector('#auth-screen .auth-signin-btn');
     const origText=btn?btn.textContent:'';
     if(btn){btn.textContent='⏳ Signing in...'; btn.disabled=true;}
 
