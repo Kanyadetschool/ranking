@@ -441,13 +441,13 @@
 
         /* ── Column widths – spacious and never squished ── */
         .rank-table .col-rank    { width: 56px;  min-width: 56px; }
-        .rank-table .col-name    { width: 200px; min-width: 180px; }
+        .rank-table .col-name    { min-width: 180px; }
         .rank-table .col-avg     { width: 200px; min-width: 180px; }
         .rank-table .col-pts     { width: 100px; min-width: 90px; }
         .rank-table .col-subj    { width: 72px;  min-width: 60px; }
         .rank-table .col-level   { width: 80px;  min-width: 70px; }
-        .rank-table .col-strong  { width: 160px; min-width: 140px; }
-        .rank-table .col-weak    { width: 160px; min-width: 140px; }
+        .rank-table .col-strong  { min-width: 120px; }
+        .rank-table .col-weak    { min-width: 120px; }
 
         /* ── Rank badges ── */
         .rank-badge { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 8px; font-size: 14px; font-weight: 700; }
@@ -1062,6 +1062,187 @@
         [data-theme="light"]::-webkit-scrollbar-thumb { background:rgba(41,128,185,.25); border-radius:3px; }
         [data-theme="light"]::-webkit-scrollbar-thumb:hover { background:rgba(41,128,185,.45); }
 
+
+        /* ════════════════════════════════════════════════════
+           THEME ANIMATIONS — smooth transitions everywhere
+           ════════════════════════════════════════════════════ */
+
+        /* Global smooth transition on theme switch */
+        *, *::before, *::after {
+            transition: background-color .35s ease, border-color .3s ease,
+                        color .25s ease, box-shadow .3s ease !important;
+        }
+        /* But don't slow down hover transforms */
+        .stat-card, .insight-card, .subject-card, .photo-card,
+        .compare-class-card, .trend-card, .progress-subject-card,
+        .tab, .page-btn, .btn, .sched-item, .dash-widget {
+            transition: transform .2s cubic-bezier(.34,1.56,.64,1),
+                        box-shadow .2s ease, border-color .2s ease,
+                        background-color .2s ease, color .15s ease !important;
+        }
+        /* Loader rings and bar — keep spinner animations */
+        .loader-ring-outer, .loader-ring-inner, .loader-fill,
+        .a-particle, .loader-logo, body::before {
+            transition: none !important;
+        }
+
+        /* Panel fade-in when tab switches */
+        .panel { animation: panelFadeIn .32s cubic-bezier(.4,0,.2,1); }
+        @keyframes panelFadeIn {
+            from { opacity:0; transform:translateY(10px); }
+            to   { opacity:1; transform:translateY(0); }
+        }
+
+        /* Stat cards staggered pop-in */
+        .stat-card { animation: statPop .38s cubic-bezier(.34,1.56,.64,1) both; }
+        .stat-card:nth-child(1) { animation-delay:.04s; }
+        .stat-card:nth-child(2) { animation-delay:.08s; }
+        .stat-card:nth-child(3) { animation-delay:.12s; }
+        .stat-card:nth-child(4) { animation-delay:.16s; }
+        .stat-card:nth-child(5) { animation-delay:.20s; }
+        .stat-card:nth-child(6) { animation-delay:.24s; }
+        .stat-card:nth-child(7) { animation-delay:.28s; }
+        .stat-card:nth-child(8) { animation-delay:.32s; }
+        @keyframes statPop {
+            from { opacity:0; transform:scale(.88) translateY(12px); }
+            to   { opacity:1; transform:scale(1) translateY(0); }
+        }
+
+        /* Insight cards slide in from left */
+        .insight-card { animation: slideInLeft .35s cubic-bezier(.4,0,.2,1) both; }
+        .insight-card:nth-child(1){animation-delay:.05s;}
+        .insight-card:nth-child(2){animation-delay:.10s;}
+        .insight-card:nth-child(3){animation-delay:.15s;}
+        .insight-card:nth-child(4){animation-delay:.20s;}
+        .insight-card:nth-child(5){animation-delay:.25s;}
+        .insight-card:nth-child(6){animation-delay:.30s;}
+        @keyframes slideInLeft {
+            from { opacity:0; transform:translateX(-18px); }
+            to   { opacity:1; transform:translateX(0); }
+        }
+
+        /* Subject cards cascade */
+        .subject-card { animation: cardRise .38s cubic-bezier(.34,1.56,.64,1) both; }
+        .subject-card:nth-child(1){animation-delay:.04s;}
+        .subject-card:nth-child(2){animation-delay:.09s;}
+        .subject-card:nth-child(3){animation-delay:.14s;}
+        .subject-card:nth-child(4){animation-delay:.19s;}
+        .subject-card:nth-child(5){animation-delay:.24s;}
+        @keyframes cardRise {
+            from { opacity:0; transform:translateY(20px) scale(.96); }
+            to   { opacity:1; transform:translateY(0) scale(1); }
+        }
+
+        /* Rankings rows slide in */
+        .rank-table tbody tr {
+            animation: rowSlide .28s ease both;
+        }
+        .rank-table tbody tr:nth-child(1){animation-delay:.02s;}
+        .rank-table tbody tr:nth-child(2){animation-delay:.04s;}
+        .rank-table tbody tr:nth-child(3){animation-delay:.06s;}
+        .rank-table tbody tr:nth-child(4){animation-delay:.08s;}
+        .rank-table tbody tr:nth-child(5){animation-delay:.10s;}
+        .rank-table tbody tr:nth-child(n+6){animation-delay:.12s;}
+        @keyframes rowSlide {
+            from { opacity:0; transform:translateX(-8px); }
+            to   { opacity:1; transform:translateX(0); }
+        }
+
+        /* Auth card entrance */
+        .auth-card {
+            animation: authEntrance .55s cubic-bezier(.34,1.56,.64,1) both;
+        }
+        @keyframes authEntrance {
+            from { opacity:0; transform:scale(.9) translateY(24px); }
+            to   { opacity:1; transform:scale(1) translateY(0); }
+        }
+
+        /* Score bars animate width on load */
+        .score-fill {
+            animation: barGrow .9s cubic-bezier(.34,1.56,.64,1) both;
+            animation-delay:.3s;
+        }
+        @keyframes barGrow {
+            from { width:0 !important; }
+        }
+
+        /* Tab ripple effect */
+        .tab { position:relative; overflow:hidden; }
+        .tab::after {
+            content:''; position:absolute; inset:0; border-radius:8px;
+            background:currentColor; opacity:0;
+            transform:scale(0); transition:transform .3s, opacity .3s;
+            pointer-events:none;
+        }
+        .tab:active::after { opacity:.12; transform:scale(1); }
+
+        /* Btn press effect */
+        .btn:active { transform:scale(.97) !important; }
+        .btn-primary:active, .btn-success:active, .btn-purple:active {
+            transform:scale(.97) translateY(1px) !important;
+        }
+
+        /* Toggle slide spring (already set but reinforce) */
+        .theme-toggle { transition: transform .3s cubic-bezier(.34,1.56,.64,1), 
+                                    box-shadow .3s ease, border-color .3s ease !important; }
+        .theme-toggle::after { transition: transform .38s cubic-bezier(.34,1.56,.64,1) !important; }
+
+        /* Photo card hover zoom */
+        .photo-avatar-wrap { overflow:hidden; }
+        .photo-avatar-img { transition: transform .3s ease !important; }
+        .photo-card:hover .photo-avatar-img { transform:scale(1.07); }
+
+        /* Dashboard widget drop in */
+        .dash-widget { animation: widgetDrop .35s cubic-bezier(.34,1.56,.64,1) both; }
+
+        /* Notification slide in */
+        .notif { animation: notifSlide .4s cubic-bezier(.34,1.56,.64,1) both; }
+        @keyframes notifSlide {
+            from { opacity:0; transform:translateX(100px) scale(.9); }
+            to   { opacity:1; transform:translateX(0) scale(1); }
+        }
+
+        /* Scheduler items */
+        .sched-item { animation: schedIn .3s ease both; }
+        .sched-item:nth-child(1){animation-delay:.03s;}
+        .sched-item:nth-child(2){animation-delay:.06s;}
+        .sched-item:nth-child(3){animation-delay:.09s;}
+        .sched-item:nth-child(4){animation-delay:.12s;}
+        .sched-item:nth-child(5){animation-delay:.15s;}
+        @keyframes schedIn {
+            from { opacity:0; transform:translateX(-10px); }
+            to   { opacity:1; transform:translateX(0); }
+        }
+
+        /* Progress cards wave */
+        .progress-subject-card {
+            animation: cardRise .35s cubic-bezier(.34,1.56,.64,1) both;
+        }
+
+        /* Compare cards */
+        .compare-class-card {
+            animation: cardRise .4s cubic-bezier(.34,1.56,.64,1) both;
+        }
+
+        /* Heatmap cells pulse on hover */
+        .heatmap-cell { transition: transform .15s cubic-bezier(.34,1.56,.64,1),
+                                    box-shadow .15s ease !important; }
+        .heatmap-cell:hover { transform:scale(1.18) !important; }
+
+        /* Score bars in progress subject cards */
+        .exam-score-fill {
+            animation: barGrow .85s cubic-bezier(.34,1.56,.64,1) both;
+            animation-delay:.4s;
+        }
+
+        /* Loader pulse glow */
+        .loader-ring-outer {
+            filter: drop-shadow(0 0 6px rgba(0,212,255,.5));
+        }
+
+        /* Page transition overlay — flashes on theme switch */
+        body { position:relative; }
+
         /* ══ RESPONSIVE ══ */
         @media (max-width: 900px) {
             .main { padding: 14px 12px; }
@@ -1315,9 +1496,9 @@
 
 <header class="topbar">
     <div class="topbar-brand">
-        <div class="topbar-logo">🏫</div>
+        <div class="topbar-logo"><img src="./imgs/logo.png" alt="Logo"></div>
         <div>
-            <div class="brand-name">Junior School - Analytics &amp; Rankings</div>
+            <div class="brand-name">Analytics &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -2213,10 +2394,10 @@ function onSignedOut(){
 }
 
 window.signInWithGoogle=async()=>{
-    const btn=document.getElementById('sign-in-btn');
-    const origText=btn.textContent;
-    btn.textContent='⏳ Signing in...';
-    btn.disabled=true;
+    // Auth screen button
+    const btn=document.querySelector('#auth-screen .btn-primary');
+    const origText=btn?btn.textContent:'';
+    if(btn){btn.textContent='⏳ Signing in...'; btn.disabled=true;}
 
     const provider=new fb.GoogleAuthProvider();
     provider.setCustomParameters({prompt:'select_account'});
@@ -2250,8 +2431,7 @@ window.signInWithGoogle=async()=>{
             notify('Sign-in failed: '+popupErr.message,'error');
         }
     } finally{
-        btn.textContent=origText;
-        btn.disabled=false;
+        if(btn){btn.textContent=origText; btn.disabled=false;}
     }
 };
 // Sign-in triggered by onclick on auth-screen button
@@ -2546,13 +2726,13 @@ function renderRankings(){
         const pct=s._avg/mxA*100,fc=s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c';
         return `<tr>
             <td class="col-rank" style="text-align:center;"><span class="rank-badge ${rc}">${gr}</span></td>
-            <td class="col-name" style="font-weight:700;cursor:pointer;color:#2980b9;white-space:nowrap;" onclick="jumpToProgress('${esc(s._assessmentNo||s['Assessment No']||s._firebaseId)}')" title="View Progress Report">${esc(s['Official Student Name']||'N/A')} <span style="font-size:10px;opacity:0.5;">📈</span></td>
+            <td class="col-name" style="font-weight:700;cursor:pointer;color:#2980b9;" onclick="jumpToProgress('${esc(s._assessmentNo||s['Assessment No']||s._firebaseId)}')" title="View Progress Report">${esc(s['Official Student Name']||'N/A')} <span style="font-size:10px;opacity:0.5;">📈</span></td>
             <td class="col-avg"><div class="score-bar-wrap"><div class="score-bar"><div class="score-fill" style="width:${pct}%;background:${fc};"></div></div><span class="score-val" style="color:${fc};">${s._avg.toFixed(1)}%</span></div></td>
             <td class="col-pts" style="font-size:12px;font-weight:700;text-align:center;">${s._totalPts.toFixed(1)}/${s._maxPts.toFixed(1)}</td>
             <td class="col-subj" style="font-size:12px;color:var(--text-secondary);text-align:center;">${s._assessed}/${SUBJECTS.length}</td>
             <td class="col-level" style="text-align:center;"><span class="grade-pill grade-${s._gradeInfo.code}">${s._gradeInfo.code}</span></td>
-            <td class="col-strong" style="font-size:12px;color:#27ae60;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">${esc(s._topSubject||'-')}</td>
-            <td class="col-weak" style="font-size:12px;color:#e74c3c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;">${esc(s._weakSubject||'-')}</td>
+            <td class="col-strong" style="font-size:12px;color:#27ae60;white-space:normal;word-break:break-word;">${esc(s._topSubject||'-')}</td>
+            <td class="col-weak" style="font-size:12px;color:#e74c3c;white-space:normal;word-break:break-word;">${esc(s._weakSubject||'-')}</td>
         </tr>`;
     }).join('');
     document.getElementById('rank-pagination').innerHTML=renderPagination(total,rankPerPage,rankPage,p=>{rankPage=p;renderRankings();});
@@ -3179,7 +3359,7 @@ window.exportProgressPDF=async function(){
     });
     const avgRow=['Average',...termsToShow.map(r=>{const sc=SUBJECTS.map(sub=>readScore(r,sub.name)).filter(v=>v!==null);return sc.length?(sc.reduce((a,b)=>a+b,0)/sc.length).toFixed(1)+'%':'—';}),termsToShow.length>1?'':'',' ',' ',' '];
     body.push(avgRow);
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head,body,startY:68,styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:38,fontStyle:'bold'},...Object.fromEntries(termsToShow.map((_,i)=>[i+1,{halign:'center',cellWidth:Math.min(28,Math.floor((pw-80)/(termsToShow.length+4)))}])),[termsToShow.length+1]:{halign:'center',cellWidth:18},[termsToShow.length+2]:{halign:'center',cellWidth:14,fontStyle:'bold'},[termsToShow.length+3]:{halign:'center',cellWidth:14},[termsToShow.length+4]:{halign:'center',cellWidth:10}},didParseCell:(d)=>{const v=parseFloat(d.cell.raw);if(!isNaN(v)&&d.row.section==='body'&&d.column.index>=1&&d.column.index<=termsToShow.length){d.cell.styles.textColor=v>=75?[39,174,96]:v>=58?[41,128,185]:v>=41?[230,126,34]:[192,57,43];d.cell.styles.fontStyle='bold';}},didDrawPage:d=>{doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text(`Page ${d.pageNumber} | ${s['Official Student Name']||'N/A'} | Kanyadet Junior School`,pw/2,ph-8,{align:'center'});}});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head,body,startY:68,styles:{fontSize:8,cellPadding:2},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:38,fontStyle:'bold'},...Object.fromEntries(termsToShow.map((_,i)=>[i+1,{halign:'center',cellWidth:Math.min(28,Math.floor((pw-80)/(termsToShow.length+4)))}])),[termsToShow.length+1]:{halign:'center',cellWidth:18},[termsToShow.length+2]:{halign:'center',cellWidth:14,fontStyle:'bold'},[termsToShow.length+3]:{halign:'center',cellWidth:14},[termsToShow.length+4]:{halign:'center',cellWidth:10}},didParseCell:(d)=>{const v=parseFloat(d.cell.raw);if(!isNaN(v)&&d.row.section==='body'&&d.column.index>=1&&d.column.index<=termsToShow.length){d.cell.styles.textColor=v>=75?[39,174,96]:v>=58?[41,128,185]:v>=41?[230,126,34]:[192,57,43];d.cell.styles.fontStyle='bold';}},didDrawPage:d=>{doc.setFontSize(7);doc.setTextColor(150,150,150);doc.text(`Page ${d.pageNumber} | ${s['Official Student Name']||'N/A'} | Kanyadet Junior School`,pw/2,ph-8,{align:'center'});}});
     let yy=doc.lastAutoTable.finalY+10;
     if(yy>ph-44){doc.addPage();yy=18;}
     doc.setFontSize(9);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
@@ -3294,7 +3474,7 @@ window.exportSubjectsPDF=async function(){
     await pdfHeader(doc,'SUBJECT PERFORMANCE ANALYTICS',`${dynSubjects.length} learning areas with data`);
     const subjData=dynSubjects.map(subj=>{const sc=sorted.map(s=>readScore(s,subj.name)).filter(v=>v!==null);const avg=sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0;return{subj,sc,avg};}).sort((a,b)=>b.avg-a.avg);
     const rows=subjData.map(({subj,sc,avg})=>{if(!sc.length)return[subj.name,'0','-','-','-','-','-%','0','0','0','0','0','0','0','0'];const sd=Math.sqrt(sc.reduce((a,b)=>a+Math.pow(b-avg,2),0)/sc.length);const passN=sc.filter(v=>v>=41).length;const dist={EE1:0,EE2:0,ME1:0,ME2:0,AE1:0,AE2:0,BE1:0,BE2:0};sc.forEach(v=>{const gi=getGradeInfo(v);if(dist[gi.code]!==undefined)dist[gi.code]++;});return[subj.name,String(sc.length),avg.toFixed(1)+'%',Math.max(...sc).toFixed(1),Math.min(...sc).toFixed(1),sd.toFixed(1),(passN/sc.length*100).toFixed(1)+'%',String(sc.length-passN),String(dist.EE1),String(dist.EE2),String(dist.ME1),String(dist.ME2),String(dist.AE1),String(dist.AE2),String(dist.BE1),String(dist.BE2)];});
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['Learning Area','KNEC Code','Count','Average','Highest','Lowest','Std Dev','Pass %','Failed','EE1\n(90-100)','EE2\n(75-89)','ME1\n(58-74)','ME2\n(41-57)','AE1\n(31-40)','AE2\n(21-30)','BE1\n(11-20)','BE2\n(0-10)']],body:rows.map(r=>[r[0],getKnecCode(r[0]),...r.slice(1)]),startY:36,styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-52-22-14)/14);return{0:{cellWidth:52,fontStyle:'bold'},1:{cellWidth:22,halign:'center',fontStyle:'bold'},2:{cellWidth:14,halign:'center'},3:{cellWidth:cw,halign:'center',fontStyle:'bold'},4:{cellWidth:cw,halign:'center'},5:{cellWidth:cw,halign:'center'},6:{cellWidth:cw,halign:'center'},7:{cellWidth:cw,halign:'center'},8:{cellWidth:cw,halign:'center'},...Object.fromEntries([9,10,11,12,13,14,15,16].map(i=>[i,{cellWidth:cw,halign:'center'}]))};})(),didParseCell:d=>{if(d.row.section!=='body')return;colourScoreCell(d,3);const gc=[[27,153,67],[39,174,96],[30,100,185],[52,125,210],[200,140,0],[220,110,0],[180,30,30],[140,20,20]];if(d.column.index>=9&&d.column.index<=16){const cnt=parseInt(d.cell.raw);if(cnt>0){d.cell.styles.textColor=gc[d.column.index-9];d.cell.styles.fontStyle='bold';}}},didDrawPage:()=>pdfFooter(doc)});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['Learning Area','KNEC Code','Count','Average','Highest','Lowest','Std Dev','Pass %','Failed','EE1\n(90-100)','EE2\n(75-89)','ME1\n(58-74)','ME2\n(41-57)','AE1\n(31-40)','AE2\n(21-30)','BE1\n(11-20)','BE2\n(0-10)']],body:rows.map(r=>[r[0],getKnecCode(r[0]),...r.slice(1)]),startY:36,styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-52-22-14)/14);return{0:{cellWidth:52,fontStyle:'bold'},1:{cellWidth:22,halign:'center',fontStyle:'bold'},2:{cellWidth:14,halign:'center'},3:{cellWidth:cw,halign:'center',fontStyle:'bold'},4:{cellWidth:cw,halign:'center'},5:{cellWidth:cw,halign:'center'},6:{cellWidth:cw,halign:'center'},7:{cellWidth:cw,halign:'center'},8:{cellWidth:cw,halign:'center'},...Object.fromEntries([9,10,11,12,13,14,15,16].map(i=>[i,{cellWidth:cw,halign:'center'}]))};})(),didParseCell:d=>{if(d.row.section!=='body')return;colourScoreCell(d,3);const gc=[[27,153,67],[39,174,96],[30,100,185],[52,125,210],[200,140,0],[220,110,0],[180,30,30],[140,20,20]];if(d.column.index>=9&&d.column.index<=16){const cnt=parseInt(d.cell.raw);if(cnt>0){d.cell.styles.textColor=gc[d.column.index-9];d.cell.styles.fontStyle='bold';}}},didDrawPage:()=>pdfFooter(doc)});
     doc.save(`Subject_Analytics_${new Date().toISOString().split('T')[0]}.pdf`);
     notify('📥 Subject Analytics PDF exported!','success');
 };
@@ -3310,14 +3490,14 @@ window.exportDistributionPDF=async function(){
     const allSc=sorted.map(s=>s._avg);
     const makeDistRow=(name,sc)=>{if(!sc.length)return[name,'0',...GRADE_CODES.map(()=>'-'),'-'];const dist={};GRADE_CODES.forEach(c=>dist[c]=0);sc.forEach(v=>{const gi=getGradeInfo(v);if(dist[gi.code]!==undefined)dist[gi.code]++;});const passN=sc.filter(v=>v>=41).length;return[name,String(sc.length),...GRADE_CODES.map(c=>`${dist[c]} (${(dist[c]/sc.length*100).toFixed(0)}%)`),(passN/sc.length*100).toFixed(1)+'%'];};
     const gradeRows=[makeDistRow('OVERALL AVERAGE',allSc),...subjData.map(({name,sc})=>makeDistRow(name,sc))];
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['Learning Area','Count',...GRADE_CODES,'Pass%']],body:gradeRows,startY:36,styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-50-14-16)/(GRADE_CODES.length));return{0:{cellWidth:50,fontStyle:'bold'},1:{cellWidth:14,halign:'center'},...Object.fromEntries(GRADE_CODES.map((_,i)=>[i+2,{halign:'center',cellWidth:cw}])),[GRADE_CODES.length+2]:{halign:'center',cellWidth:16,fontStyle:'bold'}};})(),didDrawPage:()=>pdfFooter(doc)});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['Learning Area','Count',...GRADE_CODES,'Pass%']],body:gradeRows,startY:36,styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-50-14-16)/(GRADE_CODES.length));return{0:{cellWidth:50,fontStyle:'bold'},1:{cellWidth:14,halign:'center'},...Object.fromEntries(GRADE_CODES.map((_,i)=>[i+2,{halign:'center',cellWidth:cw}])),[GRADE_CODES.length+2]:{halign:'center',cellWidth:16,fontStyle:'bold'}};})(),didDrawPage:()=>pdfFooter(doc)});
     const ranges=[{l:'91-100',mn:91,mx:100},{l:'81-90',mn:81,mx:90},{l:'71-80',mn:71,mx:80},{l:'61-70',mn:61,mx:70},{l:'51-60',mn:51,mx:60},{l:'41-50',mn:41,mx:50},{l:'31-40',mn:31,mx:40},{l:'21-30',mn:21,mx:30},{l:'11-20',mn:11,mx:20},{l:'0-10',mn:0,mx:10}];
     let y2=doc.lastAutoTable.finalY+12;
     doc.setFontSize(10);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
     doc.text('Score Range Distribution (0–100) - sorted by average',14,y2);
     const makeRangeRow=(name,sc)=>[name,...ranges.map(r=>{const cnt=sc.filter(v=>v>=r.mn&&v<=r.mx).length;return cnt>0?`${cnt} (${(cnt/sc.length*100).toFixed(0)})`:'-';})];
     const rangeRows=[makeRangeRow('OVERALL AVERAGE',allSc),...subjData.map(({name,sc})=>makeRangeRow(name,sc))];
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['Learning Area',...ranges.map(r=>r.l)]],body:rangeRows,startY:y2+5,styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:[39,130,100],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[235,250,245]},columnStyles:(()=>{const cw=Math.floor((pw-20-50)/ranges.length);return{0:{cellWidth:50,fontStyle:'bold'},...ranges.map((_,i)=>({[i+1]:{halign:'center',cellWidth:cw}})).reduce((a,b)=>({...a,...b}),{})};})(),didDrawPage:()=>pdfFooter(doc)});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['Learning Area',...ranges.map(r=>r.l)]],body:rangeRows,startY:y2+5,styles:{fontSize:7.5,cellPadding:2.5},headStyles:{fillColor:[39,130,100],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7},alternateRowStyles:{fillColor:[235,250,245]},columnStyles:(()=>{const cw=Math.floor((pw-20-50)/ranges.length);return{0:{cellWidth:50,fontStyle:'bold'},...ranges.map((_,i)=>({[i+1]:{halign:'center',cellWidth:cw}})).reduce((a,b)=>({...a,...b}),{})};})(),didDrawPage:()=>pdfFooter(doc)});
     doc.save(`Grade_Distribution_${new Date().toISOString().split('T')[0]}.pdf`);
     notify('📥 Grade Distribution PDF exported!','success');
 };
@@ -3338,11 +3518,11 @@ window.exportInsightsPDF=async function(){
     const fAvg=females.length?(females.reduce((a,b)=>a+b._avg,0)/females.length):null;
     const subjRanked=dynSubjects.map(subj=>{const sc=sorted.map(s=>readScore(s,subj.name)).filter(v=>v!==null);return{name:subj.name,avg:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0,sc};}).filter(s=>s.sc.length>0).sort((a,b)=>b.avg-a.avg);
     const insightRows=[['📊 Overall Class Average',oAvg.toFixed(1)+'%',getGradeInfo(oAvg).code+' - '+getGradeInfo(oAvg).label],['Total Students',String(sorted.length),[...new Set(sorted.map(s=>s._grade))].sort().join(', ')],['Learning Areas with Data',String(dynSubjects.length),dynSubjects.map(s=>s.name).join(', ')],['Pass Rate (41 and above)',(passN/sorted.length*100).toFixed(1)+'%',`${passN} passing | ${sorted.length-passN} below pass mark`],['🌟 Exceeding Expectation (EE)',`${eeN} students`,(eeN/sorted.length*100).toFixed(1)+'% of class'],['Below Expectation (BE)',`${beN} students`,(beN/sorted.length*100).toFixed(1)+'% needing most support'],['Top Performer',sorted[0]?.['Official Student Name']||'N/A',sorted[0]?`${sorted[0]._avg.toFixed(1)}% - ${sorted[0]._gradeInfo.code} - ${sorted[0]._grade}`:''],['Needs Most Support',sorted[sorted.length-1]?.['Official Student Name']||'N/A',sorted[sorted.length-1]?`${sorted[sorted.length-1]._avg.toFixed(1)}% - ${sorted[sorted.length-1]._gradeInfo.code}`:''],['💪 Strongest Subject',subjRanked[0]?.name||'N/A',subjRanked[0]?`Avg: ${subjRanked[0].avg.toFixed(1)}% (${subjRanked[0].sc.length} assessed)`:''],['Weakest Subject',subjRanked[subjRanked.length-1]?.name||'N/A',subjRanked[subjRanked.length-1]?`Avg: ${subjRanked[subjRanked.length-1].avg.toFixed(1)}% (${subjRanked[subjRanked.length-1].sc.length} assessed)`:''],['👨 Male Students',`${males.length}`,mAvg?`Avg: ${mAvg.toFixed(1)}% | Pass: ${(males.filter(s=>s._avg>=41).length/males.length*100).toFixed(1)}%`:'No data'],['👩 Female Students',`${females.length}`,fAvg?`Avg: ${fAvg.toFixed(1)}% | Pass: ${(females.filter(s=>s._avg>=41).length/females.length*100).toFixed(1)}%`:'No data'],['Gender Gap',mAvg&&fAvg?`M:${mAvg.toFixed(1)}% F:${fAvg.toFixed(1)}%`:'N/A',mAvg&&fAvg?`${mAvg>fAvg?'Male':'Female'} lead by ${Math.abs(mAvg-fAvg).toFixed(1)}%`:'Not enough data'],['Avg Total Points',(sorted.reduce((a,b)=>a+b._totalPts,0)/sorted.length).toFixed(2),`Out of ${dynSubjects.length*8} possible points`],['Assessment',currentTermLabel(),`${allTerms.length} assessment period${allTerms.length!==1?'s':''} in dataset`]];
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['Insight','Value','Details']],body:insightRows,startY:36,styles:{fontSize:9,cellPadding:3.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:60,fontStyle:'bold'},1:{cellWidth:38,halign:'center',fontStyle:'bold'},2:{cellWidth:pw-60-38-20}},didDrawPage:()=>pdfFooter(doc)});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['Insight','Value','Details']],body:insightRows,startY:36,styles:{fontSize:9,cellPadding:3.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:60,fontStyle:'bold'},1:{cellWidth:38,halign:'center',fontStyle:'bold'},2:{cellWidth:pw-60-38-20}},didDrawPage:()=>pdfFooter(doc)});
     let y2=doc.lastAutoTable.finalY+12;
     doc.setFontSize(10);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
     doc.text('Subject Ranking - Highest to Lowest Average',14,y2);
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['Rank','Learning Area','Assessed','Average %','Highest','Lowest','Pass Rate','EE','BE']],body:subjRanked.map((s,i)=>[String(i+1),s.name,String(s.sc.length),s.avg.toFixed(1)+'%',Math.max(...s.sc).toFixed(1),Math.min(...s.sc).toFixed(1),(s.sc.filter(v=>v>=41).length/s.sc.length*100).toFixed(1)+'%',String(s.sc.filter(v=>v>=75).length),String(s.sc.filter(v=>v<31).length)]),startY:y2+5,styles:{fontSize:8.5,cellPadding:3},headStyles:{fillColor:[142,68,173],textColor:[255,255,255],fontStyle:'bold',halign:'center'},alternateRowStyles:{fillColor:[248,240,255]},columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:48,fontStyle:'bold'},2:{cellWidth:18,halign:'center'},3:{cellWidth:18,halign:'center',fontStyle:'bold'},4:{cellWidth:14,halign:'center'},5:{cellWidth:14,halign:'center'},6:{cellWidth:18,halign:'center'},7:{cellWidth:12,halign:'center'},8:{cellWidth:12,halign:'center'}},didParseCell:d=>{colourScoreCell(d,3);},didDrawPage:()=>pdfFooter(doc)});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['Rank','Learning Area','Assessed','Average %','Highest','Lowest','Pass Rate','EE','BE']],body:subjRanked.map((s,i)=>[String(i+1),s.name,String(s.sc.length),s.avg.toFixed(1)+'%',Math.max(...s.sc).toFixed(1),Math.min(...s.sc).toFixed(1),(s.sc.filter(v=>v>=41).length/s.sc.length*100).toFixed(1)+'%',String(s.sc.filter(v=>v>=75).length),String(s.sc.filter(v=>v<31).length)]),startY:y2+5,styles:{fontSize:8.5,cellPadding:3},headStyles:{fillColor:[142,68,173],textColor:[255,255,255],fontStyle:'bold',halign:'center'},alternateRowStyles:{fillColor:[248,240,255]},columnStyles:{0:{cellWidth:10,halign:'center'},1:{cellWidth:48,fontStyle:'bold'},2:{cellWidth:18,halign:'center'},3:{cellWidth:18,halign:'center',fontStyle:'bold'},4:{cellWidth:14,halign:'center'},5:{cellWidth:14,halign:'center'},6:{cellWidth:18,halign:'center'},7:{cellWidth:12,halign:'center'},8:{cellWidth:12,halign:'center'}},didParseCell:d=>{colourScoreCell(d,3);},didDrawPage:()=>pdfFooter(doc)});
     doc.save(`Insights_Summary_${new Date().toISOString().split('T')[0]}.pdf`);
     notify('📥 Insights PDF exported!','success');
 };
@@ -3360,12 +3540,12 @@ window.exportGenderPDF=async function(){
     doc.setFontSize(10);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
     doc.text(`Male: ${males.length} students | Avg: ${mAvg?mAvg.toFixed(1)+'%':'N/A'}     Female: ${females.length} students | Avg: ${fAvg?fAvg.toFixed(1)+'%':'N/A'}     Gap: ${mAvg&&fAvg?Math.abs(mAvg-fAvg).toFixed(1)+'% ('+( mAvg>fAvg?'Male':'Female')+' lead)':'N/A'}`,14,34);
     const summaryRows=[['Overall Average',males.length?mAvg.toFixed(1)+'%':'—',females.length?fAvg.toFixed(1)+'%':'—',mAvg&&fAvg?((mAvg-fAvg>0?'+':'')+(mAvg-fAvg).toFixed(1)+'%'):'—',mAvg&&fAvg?(Math.abs(mAvg-fAvg)<0.5?'Tied':mAvg>fAvg?'Male':'Female'):'—'],['Pass Rate (≥41)',males.length?(males.filter(s=>s._avg>=41).length/males.length*100).toFixed(1)+'%':'—',females.length?(females.filter(s=>s._avg>=41).length/females.length*100).toFixed(1)+'%':'—','—','—'],['EE (75+)',String(males.filter(s=>s._avg>=75).length),String(females.filter(s=>s._avg>=75).length),'—','—'],['BE (0-30)',String(males.filter(s=>s._avg<31).length),String(females.filter(s=>s._avg<31).length),'—','—'],['Top Score',males.length?Math.max(...males.map(s=>s._avg)).toFixed(1)+'%':'—',females.length?Math.max(...females.map(s=>s._avg)).toFixed(1)+'%':'—','—','—']];
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['Metric','Male','Female','Difference','Leader']],body:summaryRows,startY:40,styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-55)/4);return{0:{cellWidth:55,fontStyle:'bold'},1:{cellWidth:cw,halign:'center'},2:{cellWidth:cw,halign:'center'},3:{cellWidth:cw,halign:'center'},4:{cellWidth:cw,halign:'center'}};})(),didDrawPage:()=>pdfFooter(doc)});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['Metric','Male','Female','Difference','Leader']],body:summaryRows,startY:40,styles:{fontSize:9,cellPadding:3},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-55)/4);return{0:{cellWidth:55,fontStyle:'bold'},1:{cellWidth:cw,halign:'center'},2:{cellWidth:cw,halign:'center'},3:{cellWidth:cw,halign:'center'},4:{cellWidth:cw,halign:'center'}};})(),didDrawPage:()=>pdfFooter(doc)});
     let y2=doc.lastAutoTable.finalY+12;
     doc.setFontSize(10);doc.setFont(undefined,'bold');doc.setTextColor(0,0,0);
     doc.text('Per-Subject Gender Comparison (sorted by average score, descending)',14,y2);
     const subjRows=dynSubjects.map(subj=>{const msc=males.map(s=>readScore(s,subj.name)).filter(v=>v!==null);const fsc=females.map(s=>readScore(s,subj.name)).filter(v=>v!==null);const mA=msc.length?msc.reduce((a,b)=>a+b,0)/msc.length:null;const fA=fsc.length?fsc.reduce((a,b)=>a+b,0)/fsc.length:null;const bothAvg=(mA||0+fA||0)/((mA?1:0)+(fA?1:0));const diff=mA!==null&&fA!==null?(mA-fA):null;return{name:subj.name,msc,fsc,mA,fA,diff,bothAvg};}).sort((a,b)=>b.bothAvg-a.bothAvg).map(({name,msc,fsc,mA,fA,diff})=>[name,String(msc.length),mA!==null?mA.toFixed(1)+'%':'-',msc.length?Math.max(...msc).toFixed(1):'-',msc.length?(msc.filter(v=>v>=41).length/msc.length*100).toFixed(1)+'%':'-',String(fsc.length),fA!==null?fA.toFixed(1)+'%':'-',fsc.length?Math.max(...fsc).toFixed(1):'-',fsc.length?(fsc.filter(v=>v>=41).length/fsc.length*100).toFixed(1)+'%':'-',diff!==null?(diff>0?'+':'')+diff.toFixed(1)+'%':'-',diff!==null?(Math.abs(diff)<0.5?'Tied':diff>0?'Male':'Female'):'-']);
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['Learning Area','M Count','M Avg','M Best','M Pass%','F Count','F Avg','F Best','F Pass%','Diff','Leader']],body:subjRows,startY:y2+5,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7.5},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-50)/10);return{0:{cellWidth:50,fontStyle:'bold'},...[1,2,3,4,5,6,7,8,9,10].reduce((o,i)=>{o[i]={halign:'center',cellWidth:cw};return o;},{})};})(),didDrawPage:()=>pdfFooter(doc)});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['Learning Area','M Count','M Avg','M Best','M Pass%','F Count','F Avg','F Best','F Pass%','Diff','Leader']],body:subjRows,startY:y2+5,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center',fontSize:7.5},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-50)/10);return{0:{cellWidth:50,fontStyle:'bold'},...[1,2,3,4,5,6,7,8,9,10].reduce((o,i)=>{o[i]={halign:'center',cellWidth:cw};return o;},{})};})(),didDrawPage:()=>pdfFooter(doc)});
     doc.save(`Gender_Analysis_${new Date().toISOString().split('T')[0]}.pdf`);
     notify('📥 Gender Analysis PDF exported!','success');
 };
@@ -3377,7 +3557,7 @@ window.exportDetailedPDF=async function(){
     await pdfHeader(doc,'DETAILED STUDENT RECORDS',`${sorted.length} students - ${dynSubjects.length} learning areas - ranked by average score`);
     const pw=doc.internal.pageSize.width;
     const subjectColW=Math.min(15,Math.floor((pw-118)/Math.max(dynSubjects.length,1)));
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['#','Student Name','Grade','Gender','Assess. No','Term',...dynSubjects.map(s=>`${s.name.length>9?s.name.slice(0,8)+'..':s.name}\n${getKnecCode(s.name)}`),'Avg %','Pts','Level']],body:sorted.map((s,i)=>[String(i+1),s['Official Student Name']||'N/A',s._grade||'N/A',s['Gender']||'N/A',s._assessmentNo||s['Assessment No']||'N/A',s._termLabel||s['Term']||'N/A',...dynSubjects.map(subj=>{const v=readScore(s,subj.name);return v===null?'-':v.toFixed(1);}),s._avg.toFixed(1)+'%',s._totalPts.toFixed(1),s._gradeInfo.code]),startY:36,styles:{fontSize:6.5,cellPadding:1.8,overflow:'ellipsize'},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',fontSize:6,halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:9,halign:'center'},1:{cellWidth:32},2:{cellWidth:12},3:{cellWidth:11},4:{cellWidth:18},5:{cellWidth:18},...Object.fromEntries(dynSubjects.map((_,i)=>[i+6,{cellWidth:subjectColW,halign:'center'}])),[dynSubjects.length+6]:{cellWidth:13,halign:'center',fontStyle:'bold'},[dynSubjects.length+7]:{cellWidth:12,halign:'center'},[dynSubjects.length+8]:{cellWidth:10,halign:'center'}},didParseCell:d=>{if(d.row.section!=='body')return;const sI=6,eI=6+dynSubjects.length-1;if(d.column.index>=sI&&d.column.index<=eI){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scoreColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:()=>pdfFooter(doc)});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['#','Student Name','Grade','Gender','Assess. No','Term',...dynSubjects.map(s=>`${s.name.length>9?s.name.slice(0,8)+'..':s.name}\n${getKnecCode(s.name)}`),'Avg %','Pts','Level']],body:sorted.map((s,i)=>[String(i+1),s['Official Student Name']||'N/A',s._grade||'N/A',s['Gender']||'N/A',s._assessmentNo||s['Assessment No']||'N/A',s._termLabel||s['Term']||'N/A',...dynSubjects.map(subj=>{const v=readScore(s,subj.name);return v===null?'-':v.toFixed(1);}),s._avg.toFixed(1)+'%',s._totalPts.toFixed(1),s._gradeInfo.code]),startY:36,styles:{fontSize:6.5,cellPadding:1.8,overflow:'ellipsize'},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',fontSize:6,halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:9,halign:'center'},1:{cellWidth:32},2:{cellWidth:12},3:{cellWidth:11},4:{cellWidth:18},5:{cellWidth:18},...Object.fromEntries(dynSubjects.map((_,i)=>[i+6,{cellWidth:subjectColW,halign:'center'}])),[dynSubjects.length+6]:{cellWidth:13,halign:'center',fontStyle:'bold'},[dynSubjects.length+7]:{cellWidth:12,halign:'center'},[dynSubjects.length+8]:{cellWidth:10,halign:'center'}},didParseCell:d=>{if(d.row.section!=='body')return;const sI=6,eI=6+dynSubjects.length-1;if(d.column.index>=sI&&d.column.index<=eI){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scoreColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:()=>pdfFooter(doc)});
     doc.save(`Detailed_Records_${new Date().toISOString().split('T')[0]}.pdf`);
     notify('📥 Detailed Records PDF exported!','success');
 };
@@ -3417,14 +3597,14 @@ window.exportAllDataPDF=async function(){
 
     // Sheet 1
     await addHeader(doc,'COMPLETE STUDENT RANKINGS - ALL FIELDS','Rankings + All Subject Scores - Ordered Descending by Average');
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['#','Student Name','Grade','Gender','Assessment No','UPI',...dynSubj.map(s=>`${s.name.length>8?s.name.slice(0,7)+'..':s.name}\n${getKnecCode(s.name)}`),'Avg %','Total Pts','Assessed','Level','Strongest','Weakest']],body:sorted.map((s,i)=>[String(i+1),s['Official Student Name']||'N/A',s._grade||'N/A',s['Gender']||'N/A',s._assessmentNo||s['Assessment No']||'N/A',s['UPI']||'N/A',...dynSubj.map(subj=>{const v=readScore(s,subj.name);return v===null?'-':v.toFixed(1);}),s._avg.toFixed(1)+'%',s._totalPts.toFixed(1)+'/'+s._maxPts.toFixed(1),s._assessed+'/'+dynSubj.length,s._gradeInfo.code,s._topSubject||'-',s._weakSubject||'-']),startY:36,styles:{fontSize:6.5,cellPadding:1.8,overflow:'ellipsize'},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',fontSize:6,halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:9,halign:'center'},1:{cellWidth:34},2:{cellWidth:13},3:{cellWidth:11},4:{cellWidth:20},5:{cellWidth:14},...Object.fromEntries(dynSubj.map((_,i)=>[i+6,{cellWidth:Math.min(14,Math.floor((pw-145)/Math.max(dynSubj.length,1))),halign:'center'}])),[dynSubj.length+6]:{cellWidth:12,halign:'center',fontStyle:'bold'},[dynSubj.length+7]:{cellWidth:14,halign:'center'},[dynSubj.length+8]:{cellWidth:10,halign:'center'},[dynSubj.length+9]:{cellWidth:10,halign:'center'},[dynSubj.length+10]:{cellWidth:16,overflow:'ellipsize'},[dynSubj.length+11]:{cellWidth:16,overflow:'ellipsize'}},didParseCell:d=>{if(d.row.section!=='body')return;const subjStart=6,subjEnd=6+dynSubj.length-1;if(d.column.index>=subjStart&&d.column.index<=subjEnd){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:d=>{addFooter(doc,d.pageNumber);}});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['#','Student Name','Grade','Gender','Assessment No','UPI',...dynSubj.map(s=>`${s.name.length>8?s.name.slice(0,7)+'..':s.name}\n${getKnecCode(s.name)}`),'Avg %','Total Pts','Assessed','Level','Strongest','Weakest']],body:sorted.map((s,i)=>[String(i+1),s['Official Student Name']||'N/A',s._grade||'N/A',s['Gender']||'N/A',s._assessmentNo||s['Assessment No']||'N/A',s['UPI']||'N/A',...dynSubj.map(subj=>{const v=readScore(s,subj.name);return v===null?'-':v.toFixed(1);}),s._avg.toFixed(1)+'%',s._totalPts.toFixed(1)+'/'+s._maxPts.toFixed(1),s._assessed+'/'+dynSubj.length,s._gradeInfo.code,s._topSubject||'-',s._weakSubject||'-']),startY:36,styles:{fontSize:6.5,cellPadding:1.8,overflow:'ellipsize'},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',fontSize:6,halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:{0:{cellWidth:9,halign:'center'},1:{cellWidth:34},2:{cellWidth:13},3:{cellWidth:11},4:{cellWidth:20},5:{cellWidth:14},...Object.fromEntries(dynSubj.map((_,i)=>[i+6,{cellWidth:Math.min(14,Math.floor((pw-145)/Math.max(dynSubj.length,1))),halign:'center'}])),[dynSubj.length+6]:{cellWidth:12,halign:'center',fontStyle:'bold'},[dynSubj.length+7]:{cellWidth:14,halign:'center'},[dynSubj.length+8]:{cellWidth:10,halign:'center'},[dynSubj.length+9]:{cellWidth:10,halign:'center'},[dynSubj.length+10]:{cellWidth:16,overflow:'ellipsize'},[dynSubj.length+11]:{cellWidth:16,overflow:'ellipsize'}},didParseCell:d=>{if(d.row.section!=='body')return;const subjStart=6,subjEnd=6+dynSubj.length-1;if(d.column.index>=subjStart&&d.column.index<=subjEnd){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:d=>{addFooter(doc,d.pageNumber);}});
 
     // Remaining sheets (2-9) - all identical to original, just appended
     doc.addPage();
     await addHeader(doc,'SUBJECT PERFORMANCE ANALYSIS','Per-subject statistics across all students');
     const subjStats=dynSubj.map(subj=>{const scores=sorted.map(s=>readScore(s,subj.name)).filter(v=>v!==null);if(!scores.length)return{name:subj.name,n:0,avg:'-',avgNum:0,hi:'-',lo:'-',sd:'-',pass:'-',passN:0,failN:0,ee:0,me:0,ae:0,be:0};const avg=scores.reduce((a,b)=>a+b,0)/scores.length;const hi=Math.max(...scores),lo=Math.min(...scores);const sd=Math.sqrt(scores.reduce((a,b)=>a+Math.pow(b-avg,2),0)/scores.length);const passN=scores.filter(v=>v>=41).length;return{name:subj.name,n:scores.length,avgNum:avg,avg:avg.toFixed(1),hi:hi.toFixed(1),lo:lo.toFixed(1),sd:sd.toFixed(1),pass:(passN/scores.length*100).toFixed(1)+'%',passN,failN:scores.length-passN,ee:scores.filter(v=>v>=75).length,me:scores.filter(v=>v>=41&&v<75).length,ae:scores.filter(v=>v>=31&&v<41).length,be:scores.filter(v=>v<31).length};});
     subjStats.sort((a,b)=>b.avgNum-a.avgNum);
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},head:[['Learning Area (Desc Avg)','KNEC Code','Assessed','Average','Highest','Lowest','Std Dev','Pass Rate','Passed','Failed','EE (75+)','ME (41-74)','AE (31-40)','BE (0-30)']],body:subjStats.filter(s=>s.n>0).map(s=>[s.name,getKnecCode(s.name),String(s.n),s.avg,s.hi,s.lo,s.sd,s.pass,String(s.passN),String(s.failN),String(s.ee),String(s.me),String(s.ae),String(s.be)]),startY:36,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-52-14)/12);return{0:{cellWidth:52,fontStyle:'bold'},1:{cellWidth:14,halign:'center'},...Object.fromEntries([2,3,4,5,6,7,8,9,10,11,12,13].map(i=>[i,{halign:'center',cellWidth:cw}]))};})(),didParseCell:d=>{if(d.row.section!=='body')return;if(d.column.index===3){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:d=>{addFooter(doc,doc.internal.getNumberOfPages());}});
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',head:[['Learning Area (Desc Avg)','KNEC Code','Assessed','Average','Highest','Lowest','Std Dev','Pass Rate','Passed','Failed','EE (75+)','ME (41-74)','AE (31-40)','BE (0-30)']],body:subjStats.filter(s=>s.n>0).map(s=>[s.name,getKnecCode(s.name),String(s.n),s.avg,s.hi,s.lo,s.sd,s.pass,String(s.passN),String(s.failN),String(s.ee),String(s.me),String(s.ae),String(s.be)]),startY:36,styles:{fontSize:8,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold',halign:'center'},alternateRowStyles:{fillColor:[240,248,255]},columnStyles:(()=>{const cw=Math.floor((pw-20-52-14)/12);return{0:{cellWidth:52,fontStyle:'bold'},1:{cellWidth:14,halign:'center'},...Object.fromEntries([2,3,4,5,6,7,8,9,10,11,12,13].map(i=>[i,{halign:'center',cellWidth:cw}]))};})(),didParseCell:d=>{if(d.row.section!=='body')return;if(d.column.index===3){const v=parseFloat(d.cell.raw);if(!isNaN(v)){d.cell.styles.textColor=scColor(v);d.cell.styles.fontStyle='bold';}}},didDrawPage:d=>{addFooter(doc,doc.internal.getNumberOfPages());}});
 
     const fname=`Kanyadet_Full_Analytics_${gradeFilter.replace(/\s/g,'_')}_${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fname);
@@ -3733,7 +3913,7 @@ window.exportComparePDF=async function(){
         ...allSubjNames.map(sn=>{const sa=c.subjAvgs.find(s=>s.name===sn);return sa?sa.avg.toFixed(1):'—';})
     ]);
 
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',
         head:[['#','Grade','Students','Avg %','Pass %','EE','BE','Best Subject','Weakest Subject',...allSubjNames.map(s=>s.length>10?s.slice(0,9)+'…':s)]],
         body:rows,startY:36,
         styles:{fontSize:7.5,cellPadding:2.5},
@@ -4080,7 +4260,7 @@ window.exportTrendsPDF=async function(){
     const oNums=overallAvgs.map(v=>parseFloat(v)).filter(v=>!isNaN(v));
     tableRows.push(['OVERALL AVERAGE',...overallAvgs,oNums.length>=2?(oNums[oNums.length-1]-oNums[0]).toFixed(1):'—',oNums.length?Math.max(...oNums).toFixed(1):'—']);
     const cw=Math.min(22,Math.floor((pw-20-55-20-16)/Math.max(termKeys.length,1)));
-    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},
+    doc.autoTable({margin:{top:6,right:6,bottom:8,left:6},tableWidth:'auto',
         head:[['Learning Area',...termLabels,'Trend','Best']],
         body:tableRows,startY:bannerH+6,
         styles:{fontSize:8,cellPadding:2.5},
