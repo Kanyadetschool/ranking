@@ -924,20 +924,42 @@ doc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
         }
     } catch (e) { console.warn('QR code add failed:', e); }
 
-    // ── Aesthetic horizontal barcode — middle left ────────────────────────
-    // Uses student UPI (or Assessment No as fallback) via JsBarcode (CDN).
+    // ── Aesthetic vertical barcode — middle left (tall rectangle shape) ──
+    // Barcode is rendered on a canvas then drawn rotated 90° so the bars
+    // run horizontally producing a tall narrow rectangle on the page.
     try {
         const barcodeValue = student['UPI'] || student['Assessment No'] || 'KANYADET';
-        const bcDataURL = generateBarcodeDataURL(barcodeValue, 160, 28);
-        if (bcDataURL) {
-            const bcW = 42;  // mm wide
-            const bcH = 10;  // mm tall
-            const bcX = 15;
-            const bcY = pageHeight / 2 - 4;
+        if (typeof JsBarcode !== 'undefined') {
+            // Render barcode onto a canvas (landscape orientation)
+            const cvs = document.createElement('canvas');
+            JsBarcode(cvs, String(barcodeValue), {
+                format: 'CODE128', width: 1.8, height: 55,
+                displayValue: false, background: '#ffffff',
+                lineColor: '#1a1a1a', margin: 4,
+            });
+            // Rotate canvas 90° to make it vertical (portrait rectangle)
+            const rotCanvas = document.createElement('canvas');
+            rotCanvas.width  = cvs.height;
+            rotCanvas.height = cvs.width;
+            const ctx = rotCanvas.getContext('2d');
+            ctx.translate(rotCanvas.width / 2, rotCanvas.height / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(cvs, -cvs.width / 2, -cvs.height / 2);
+            const bcDataURL = rotCanvas.toDataURL('image/png');
+            // Place: narrow width, tall height  → rectangle shape
+            const bcW = 10;   // mm wide  (narrow)
+            const bcH = 42;   // mm tall  (tall rectangle)
+            const bcX = 7;
+            const bcY = pageHeight / 2 - bcH / 2;
+            // Thin border for clean look
+            doc.setDrawColor(180, 180, 180);
+            doc.setLineWidth(0.3);
+            doc.rect(bcX - 0.5, bcY - 0.5, bcW + 1, bcH + 1);
             doc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
-            doc.setFontSize(5.5);
+            // Tiny rotated label alongside barcode
+            doc.setFontSize(5);
             doc.setTextColor(140, 140, 140);
-            doc.text(String(barcodeValue), bcX + bcW / 2, bcY + bcH + 2.5, { align: 'center' });
+            doc.text(String(barcodeValue), bcX + bcW + 3, bcY + bcH / 2, { angle: 90, align: 'center' });
         }
     } catch (e) { console.warn('Barcode add failed:', e); }
     
@@ -1194,18 +1216,34 @@ combinedDoc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
                 }
             } catch (e) { console.warn('QR code add failed:', e); }
 
-            // ── Aesthetic horizontal barcode — middle left ────────────────
+            // ── Aesthetic vertical barcode — middle left (tall rectangle shape) ──
             try {
                 const barcodeValue = student['UPI'] || student['Assessment No'] || 'KANYADET';
-                const bcDataURL = generateBarcodeDataURL(barcodeValue, 160, 28);
-                if (bcDataURL) {
-                    const bcW = 42, bcH = 10;
-                    const bcX = 15;
-                    const bcY = pageHeight / 2 - 4;
+                if (typeof JsBarcode !== 'undefined') {
+                    const cvs = document.createElement('canvas');
+                    JsBarcode(cvs, String(barcodeValue), {
+                        format: 'CODE128', width: 1.8, height: 55,
+                        displayValue: false, background: '#ffffff',
+                        lineColor: '#1a1a1a', margin: 4,
+                    });
+                    const rotCanvas = document.createElement('canvas');
+                    rotCanvas.width  = cvs.height;
+                    rotCanvas.height = cvs.width;
+                    const ctx = rotCanvas.getContext('2d');
+                    ctx.translate(rotCanvas.width / 2, rotCanvas.height / 2);
+                    ctx.rotate(Math.PI / 2);
+                    ctx.drawImage(cvs, -cvs.width / 2, -cvs.height / 2);
+                    const bcDataURL = rotCanvas.toDataURL('image/png');
+                    const bcW = 10, bcH = 42;
+                    const bcX = 7;
+                    const bcY = pageHeight / 2 - bcH / 2;
+                    combinedDoc.setDrawColor(180, 180, 180);
+                    combinedDoc.setLineWidth(0.3);
+                    combinedDoc.rect(bcX - 0.5, bcY - 0.5, bcW + 1, bcH + 1);
                     combinedDoc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
-                    combinedDoc.setFontSize(5.5);
+                    combinedDoc.setFontSize(5);
                     combinedDoc.setTextColor(140, 140, 140);
-                    combinedDoc.text(String(barcodeValue), bcX + bcW / 2, bcY + bcH + 2.5, { align: 'center' });
+                    combinedDoc.text(String(barcodeValue), bcX + bcW + 3, bcY + bcH / 2, { angle: 90, align: 'center' });
                 }
             } catch (e) { console.warn('Barcode add failed:', e); }
             
