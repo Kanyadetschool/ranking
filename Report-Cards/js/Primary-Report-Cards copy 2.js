@@ -613,38 +613,37 @@ function drawSummary(doc, student, stats) {
 // https://api.qrserver.com/v1/create-qr-code/ (free, no-auth, CORS-friendly)
 function buildStudentResultText(student, stats) {
     const subjects = getSubjects(student);
-    // Abbreviate subject scores to short pairs — keeps QR density low and scannable
-    const scoresSummary = subjects
-        .map(subj => {
-            const sc = parseFloat(student[subj]);
-            const abbr = subj.substring(0, 6);
-            return `${abbr}:${isNaN(sc) ? '-' : sc}`;
-        })
-        .join(',');
     const lines = [
-        `KANYADET PRI & JNR SCH`,
-        `${student['Official Student Name'] || 'N/A'}`,
-        `UPI:${student['UPI'] || 'N/A'} GR:${student['Grade'] || 'N/A'} CL:${student['Class'] || 'N/A'}`,
-        `TRM:${student['Term'] || 'N/A'} YR:${new Date().getFullYear()}`,
-        `SCORES>${scoresSummary}`,
-        `AVG:${stats.average}% PTS:${stats.totalPoints}/${stats.maxPoints}`,
-        `LVL:${stats.comment}`,
-        `POS:${student['Position'] || 'N/A'}`,
+        `KANYADET PRI & JUNIOR SCHOOL`,
+        `Name: ${student['Official Student Name'] || 'N/A'}`,
+        `UPI: ${student['UPI'] || 'N/A'}`,
+        `Grade: ${student['Grade'] || 'N/A'}  Class: ${student['Class'] || 'N/A'}`,
+        `Term: ${student['Term'] || 'N/A'}  Year: ${new Date().getFullYear()}`,
+        `Assessment No: ${student['Assessment No'] || 'N/A'}`,
+        `---RESULTS---`,
     ];
+    subjects.forEach(subj => {
+        const sc = student[subj];
+        const gi = getGradeFromScore(sc);
+        lines.push(`${subj}: ${sc}% | Pts:${gi.grade} | ${gi.comment}`);
+    });
+    lines.push(`---SUMMARY---`);
+    lines.push(`Mean: ${stats.average}%  Points: ${stats.totalPoints}/${stats.maxPoints}`);
+    lines.push(`Level: ${stats.comment}`);
+    lines.push(`Position: ${student['Position'] || 'N/A'}`);
     return lines.join('\n');
 }
 
-async function loadQRCode(student, stats) {
+async function loadQRCode(student, stats, size = 120) {
     return new Promise(resolve => {
         const text = buildStudentResultText(student, stats);
         const encoded = encodeURIComponent(text);
-        // 300px image + ecc=M = good balance of density vs scan reliability
-        const url = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&ecc=M&data=${encoded}&margin=6`;
+        const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&margin=4`;
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload  = () => resolve({ loaded: true,  img });
         img.onerror = () => resolve({ loaded: false, img: null });
-        setTimeout(() => resolve({ loaded: false, img: null }), 6000);
+        setTimeout(() => resolve({ loaded: false, img: null }), 5000);
         img.src = url;
     });
 }
@@ -908,7 +907,7 @@ doc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
     // ── QR Code — bottom right ────────────────────────────────────────────
     // Encodes the full student result; scan to view all scores instantly.
     try {
-        const qrRes = await loadQRCode(student, stats);
+        const qrRes = await loadQRCode(student, stats, 120);
         if (qrRes.loaded) {
             const qrSize = 28; // mm
             const qrX = pageWidth - 15 - qrSize;
@@ -1198,7 +1197,7 @@ combinedDoc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
 
             // ── QR Code — bottom right ────────────────────────────────────
             try {
-                const qrRes = await loadQRCode(student, stats);
+                const qrRes = await loadQRCode(student, stats, 120);
                 if (qrRes.loaded) {
                     const qrSize = 28;
                     const qrX = pageWidth - 15 - qrSize;
