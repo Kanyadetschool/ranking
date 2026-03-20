@@ -4,17 +4,6 @@
  * Enhanced with search, pagination, powerful editing features, and REPORT CARD GENERATION
  */
 
-// ── JsBarcode CDN auto-loader (free library, no API key) ─────────────────
-(function loadJsBarcode() {
-    if (typeof JsBarcode === 'undefined') {
-        const s = document.createElement('script');
-        s.src = 'https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js';
-        s.async = true;
-        document.head.appendChild(s);
-    }
-})();
-// ─────────────────────────────────────────────────────────────────────────
-
 // Global variables for Firebase imports and application state
 let firebaseImports;
 let studentsData = [];
@@ -608,71 +597,6 @@ function drawSummary(doc, student, stats) {
 
 // ═══════════════════════════════════════════════════════════
 
-// ── QR Code helper (uses free QR Server API — no API key needed) ──────────
-// Builds a compact student-result string and fetches a QR code PNG via
-// https://api.qrserver.com/v1/create-qr-code/ (free, no-auth, CORS-friendly)
-function buildStudentResultText(student, stats) {
-    const subjects = getSubjects(student);
-    const lines = [
-        `KANYADET PRI & JUNIOR SCHOOL`,
-        `Name: ${student['Official Student Name'] || 'N/A'}`,
-        `UPI: ${student['UPI'] || 'N/A'}`,
-        `Grade: ${student['Grade'] || 'N/A'}  Class: ${student['Class'] || 'N/A'}`,
-        `Term: ${student['Term'] || 'N/A'}  Year: ${new Date().getFullYear()}`,
-        `Assessment No: ${student['Assessment No'] || 'N/A'}`,
-        `---RESULTS---`,
-    ];
-    subjects.forEach(subj => {
-        const sc = student[subj];
-        const gi = getGradeFromScore(sc);
-        lines.push(`${subj}: ${sc}% | Pts:${gi.grade} | ${gi.comment}`);
-    });
-    lines.push(`---SUMMARY---`);
-    lines.push(`Mean: ${stats.average}%  Points: ${stats.totalPoints}/${stats.maxPoints}`);
-    lines.push(`Level: ${stats.comment}`);
-    lines.push(`Position: ${student['Position'] || 'N/A'}`);
-    return lines.join('\n');
-}
-
-async function loadQRCode(student, stats, size = 120) {
-    return new Promise(resolve => {
-        const text = buildStudentResultText(student, stats);
-        const encoded = encodeURIComponent(text);
-        const url = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encoded}&margin=4`;
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload  = () => resolve({ loaded: true,  img });
-        img.onerror = () => resolve({ loaded: false, img: null });
-        setTimeout(() => resolve({ loaded: false, img: null }), 5000);
-        img.src = url;
-    });
-}
-
-// ── Barcode helper (uses free JsBarcode library loaded from CDN) ──────────
-// Renders an aesthetics-only CODE128 barcode for the student UPI / AssessmentNo
-// Returns a base64 PNG data-URL string.
-function generateBarcodeDataURL(value, width = 160, height = 28) {
-    try {
-        const canvas = document.createElement('canvas');
-        // JsBarcode is lazy-loaded from CDN if not already present
-        if (typeof JsBarcode === 'undefined') return null;
-        JsBarcode(canvas, String(value || 'KANYADET'), {
-            format:       'CODE128',
-            width:        1.5,
-            height:       height,
-            displayValue: false,
-            background:   '#ffffff',
-            lineColor:    '#1a1a1a',
-            margin:       2,
-        });
-        return canvas.toDataURL('image/png');
-    } catch (e) {
-        console.warn('Barcode generation failed:', e);
-        return null;
-    }
-}
-// ─────────────────────────────────────────────────────────────────────────
-
 async function generateStudentReportCard(student, includeWatermark = true) {
     if (!window.jspdf) {
         alert('PDF library not loaded. Please refresh the page.');
@@ -903,43 +827,6 @@ doc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
         align: 'center',
         angle: 45
     });
-
-    // ── QR Code — bottom right ────────────────────────────────────────────
-    // Encodes the full student result; scan to view all scores instantly.
-    try {
-        const qrRes = await loadQRCode(student, stats, 120);
-        if (qrRes.loaded) {
-            const qrSize = 28; // mm
-            const qrX = pageWidth - 15 - qrSize;
-            const qrY = pageHeight - 15 - qrSize;
-            // Subtle border frame
-            doc.setDrawColor(180, 180, 180);
-            doc.setLineWidth(0.3);
-            doc.rect(qrX - 0.5, qrY - 0.5, qrSize + 1, qrSize + 1);
-            doc.addImage(qrRes.img, 'PNG', qrX, qrY, qrSize, qrSize);
-            // Tiny label under QR
-            doc.setFontSize(5.5);
-            doc.setTextColor(120, 120, 120);
-            doc.text('Scan for full result', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-        }
-    } catch (e) { console.warn('QR code add failed:', e); }
-
-    // ── Aesthetic horizontal barcode — middle left ────────────────────────
-    // Uses student UPI (or Assessment No as fallback) via JsBarcode (CDN).
-    try {
-        const barcodeValue = student['UPI'] || student['Assessment No'] || 'KANYADET';
-        const bcDataURL = generateBarcodeDataURL(barcodeValue, 160, 28);
-        if (bcDataURL) {
-            const bcW = 42;  // mm wide
-            const bcH = 10;  // mm tall
-            const bcX = 15;
-            const bcY = pageHeight / 2 - 4;
-            doc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
-            doc.setFontSize(5.5);
-            doc.setTextColor(140, 140, 140);
-            doc.text(String(barcodeValue), bcX + bcW / 2, bcY + bcH + 2.5, { align: 'center' });
-        }
-    } catch (e) { console.warn('Barcode add failed:', e); }
     
     return doc;
 }
@@ -1176,38 +1063,6 @@ combinedDoc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
                 align: 'center',
                 angle: 45
             });
-
-            // ── QR Code — bottom right ────────────────────────────────────
-            try {
-                const qrRes = await loadQRCode(student, stats, 120);
-                if (qrRes.loaded) {
-                    const qrSize = 28;
-                    const qrX = pageWidth - 15 - qrSize;
-                    const qrY = pageHeight - 15 - qrSize;
-                    combinedDoc.setDrawColor(180, 180, 180);
-                    combinedDoc.setLineWidth(0.3);
-                    combinedDoc.rect(qrX - 0.5, qrY - 0.5, qrSize + 1, qrSize + 1);
-                    combinedDoc.addImage(qrRes.img, 'PNG', qrX, qrY, qrSize, qrSize);
-                    combinedDoc.setFontSize(5.5);
-                    combinedDoc.setTextColor(120, 120, 120);
-                    combinedDoc.text('Scan for full result', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-                }
-            } catch (e) { console.warn('QR code add failed:', e); }
-
-            // ── Aesthetic horizontal barcode — middle left ────────────────
-            try {
-                const barcodeValue = student['UPI'] || student['Assessment No'] || 'KANYADET';
-                const bcDataURL = generateBarcodeDataURL(barcodeValue, 160, 28);
-                if (bcDataURL) {
-                    const bcW = 42, bcH = 10;
-                    const bcX = 15;
-                    const bcY = pageHeight / 2 - 4;
-                    combinedDoc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
-                    combinedDoc.setFontSize(5.5);
-                    combinedDoc.setTextColor(140, 140, 140);
-                    combinedDoc.text(String(barcodeValue), bcX + bcW / 2, bcY + bcH + 2.5, { align: 'center' });
-                }
-            } catch (e) { console.warn('Barcode add failed:', e); }
             
             isFirstPage = false;
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -2922,3 +2777,4 @@ async function exportMissingDataToPdf() {
 }
 
 window.exportMissingDataToPdf = exportMissingDataToPdf;
+
