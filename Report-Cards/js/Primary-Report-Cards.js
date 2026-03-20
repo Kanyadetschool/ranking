@@ -946,20 +946,16 @@ doc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
             ctx.rotate(Math.PI / 2);
             ctx.drawImage(cvs, -cvs.width / 2, -cvs.height / 2);
             const bcDataURL = rotCanvas.toDataURL('image/png');
-            // Place: narrow width, tall height  → rectangle shape
-            const bcW = 10;   // mm wide  (narrow)
-            const bcH = 42;   // mm tall  (tall rectangle)
-            const bcX = 7;
+            // Pushed to far left edge, taller height, no border
+            const bcW = 10;   // mm wide  (same as before)
+            const bcH = 52;   // mm tall  (increased)
+            const bcX = -1;   // pushed left — sits at page edge, clear of content
             const bcY = pageHeight / 2 - bcH / 2;
-            // Thin border for clean look
-            doc.setDrawColor(180, 180, 180);
-            doc.setLineWidth(0.3);
-            doc.rect(bcX - 0.5, bcY - 0.5, bcW + 1, bcH + 1);
             doc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
             // Tiny rotated label alongside barcode
             doc.setFontSize(5);
             doc.setTextColor(140, 140, 140);
-            doc.text(String(barcodeValue), bcX + bcW + 3, bcY + bcH / 2, { angle: 90, align: 'center' });
+            doc.text(String(barcodeValue), bcX + bcW + 2.5, bcY + bcH / 2, { angle: 90, align: 'center' });
         }
     } catch (e) { console.warn('Barcode add failed:', e); }
     
@@ -1234,16 +1230,13 @@ combinedDoc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
                     ctx.rotate(Math.PI / 2);
                     ctx.drawImage(cvs, -cvs.width / 2, -cvs.height / 2);
                     const bcDataURL = rotCanvas.toDataURL('image/png');
-                    const bcW = 10, bcH = 42;
-                    const bcX = 7;
+                    const bcW = 10, bcH = 52;
+                    const bcX = -1;
                     const bcY = pageHeight / 2 - bcH / 2;
-                    combinedDoc.setDrawColor(180, 180, 180);
-                    combinedDoc.setLineWidth(0.3);
-                    combinedDoc.rect(bcX - 0.5, bcY - 0.5, bcW + 1, bcH + 1);
                     combinedDoc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
                     combinedDoc.setFontSize(5);
                     combinedDoc.setTextColor(140, 140, 140);
-                    combinedDoc.text(String(barcodeValue), bcX + bcW + 3, bcY + bcH / 2, { angle: 90, align: 'center' });
+                    combinedDoc.text(String(barcodeValue), bcX + bcW + 2.5, bcY + bcH / 2, { angle: 90, align: 'center' });
                 }
             } catch (e) { console.warn('Barcode add failed:', e); }
             
