@@ -674,6 +674,56 @@ function generateBarcodeDataURL(value, width = 160, height = 28) {
 }
 // ─────────────────────────────────────────────────────────────────────────
 
+
+// ── Shared helper: add QR code + barcode onto any report page ────────────
+async function addQRAndBarcode(doc, student, stats, pageWidth, pageHeight) {
+    // QR Code — bottom right
+    try {
+        const qrRes = await loadQRCode(student, stats);
+        if (qrRes.loaded) {
+            const qrSize = 28;
+            const qrX = pageWidth - 15 - qrSize;
+            const qrY = pageHeight - 15 - qrSize;
+            doc.setDrawColor(180, 180, 180);
+            doc.setLineWidth(0.3);
+            doc.rect(qrX - 0.5, qrY - 0.5, qrSize + 1, qrSize + 1);
+            doc.addImage(qrRes.img, 'PNG', qrX, qrY, qrSize, qrSize);
+            doc.setFontSize(5.5);
+            doc.setTextColor(120, 120, 120);
+            doc.text('Scan for full result', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
+        }
+    } catch (e) { console.warn('QR code add failed:', e); }
+
+    // Vertical barcode — middle left (tall rectangle, no border)
+    try {
+        const barcodeValue = student['UPI'] || student['Assessment No'] || 'KANYADET';
+        if (typeof JsBarcode !== 'undefined') {
+            const cvs = document.createElement('canvas');
+            JsBarcode(cvs, String(barcodeValue), {
+                format: 'CODE128', width: 1.8, height: 55,
+                displayValue: false, background: '#ffffff',
+                lineColor: '#1a1a1a', margin: 4,
+            });
+            const rotCanvas = document.createElement('canvas');
+            rotCanvas.width  = cvs.height;
+            rotCanvas.height = cvs.width;
+            const ctx = rotCanvas.getContext('2d');
+            ctx.translate(rotCanvas.width / 2, rotCanvas.height / 2);
+            ctx.rotate(Math.PI / 2);
+            ctx.drawImage(cvs, -cvs.width / 2, -cvs.height / 2);
+            const bcDataURL = rotCanvas.toDataURL('image/png');
+            const bcW = 10, bcH = 52;
+            const bcX = -1;
+            const bcY = pageHeight / 2 - bcH / 2;
+            doc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
+            doc.setFontSize(5);
+            doc.setTextColor(140, 140, 140);
+            doc.text(String(barcodeValue), bcX + bcW + 2.5, bcY + bcH / 2, { angle: 90, align: 'center' });
+        }
+    } catch (e) { console.warn('Barcode add failed:', e); }
+}
+// ─────────────────────────────────────────────────────────────────────────
+
 async function generateStudentReportCard(student, includeWatermark = true) {
     if (!window.jspdf) {
         alert('PDF library not loaded. Please refresh the page.');
@@ -905,60 +955,8 @@ doc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
         angle: 45
     });
 
-    // ── QR Code — bottom right ────────────────────────────────────────────
-    // Encodes the full student result; scan to view all scores instantly.
-    try {
-        const qrRes = await loadQRCode(student, stats);
-        if (qrRes.loaded) {
-            const qrSize = 28; // mm
-            const qrX = pageWidth - 15 - qrSize;
-            const qrY = pageHeight - 15 - qrSize;
-            // Subtle border frame
-            doc.setDrawColor(180, 180, 180);
-            doc.setLineWidth(0.3);
-            doc.rect(qrX - 0.5, qrY - 0.5, qrSize + 1, qrSize + 1);
-            doc.addImage(qrRes.img, 'PNG', qrX, qrY, qrSize, qrSize);
-            // Tiny label under QR
-            doc.setFontSize(5.5);
-            doc.setTextColor(120, 120, 120);
-            doc.text('Scan for full result', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-        }
-    } catch (e) { console.warn('QR code add failed:', e); }
-
-    // ── Aesthetic vertical barcode — middle left (tall rectangle shape) ──
-    // Barcode is rendered on a canvas then drawn rotated 90° so the bars
-    // run horizontally producing a tall narrow rectangle on the page.
-    try {
-        const barcodeValue = student['UPI'] || student['Assessment No'] || 'KANYADET';
-        if (typeof JsBarcode !== 'undefined') {
-            // Render barcode onto a canvas (landscape orientation)
-            const cvs = document.createElement('canvas');
-            JsBarcode(cvs, String(barcodeValue), {
-                format: 'CODE128', width: 1.8, height: 55,
-                displayValue: false, background: '#ffffff',
-                lineColor: '#1a1a1a', margin: 4,
-            });
-            // Rotate canvas 90° to make it vertical (portrait rectangle)
-            const rotCanvas = document.createElement('canvas');
-            rotCanvas.width  = cvs.height;
-            rotCanvas.height = cvs.width;
-            const ctx = rotCanvas.getContext('2d');
-            ctx.translate(rotCanvas.width / 2, rotCanvas.height / 2);
-            ctx.rotate(Math.PI / 2);
-            ctx.drawImage(cvs, -cvs.width / 2, -cvs.height / 2);
-            const bcDataURL = rotCanvas.toDataURL('image/png');
-            // Pushed to far left edge, taller height, no border
-            const bcW = 10;   // mm wide  (same as before)
-            const bcH = 52;   // mm tall  (increased)
-            const bcX = -1;   // pushed left — sits at page edge, clear of content
-            const bcY = pageHeight / 2 - bcH / 2;
-            doc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
-            // Tiny rotated label alongside barcode
-            doc.setFontSize(5);
-            doc.setTextColor(140, 140, 140);
-            doc.text(String(barcodeValue), bcX + bcW + 2.5, bcY + bcH / 2, { angle: 90, align: 'center' });
-        }
-    } catch (e) { console.warn('Barcode add failed:', e); }
+    // ── QR Code (bottom right) + Barcode (middle left) ─────────────────────
+    await addQRAndBarcode(doc, student, stats, pageWidth, pageHeight);
     
     return doc;
 }
@@ -1196,51 +1194,9 @@ combinedDoc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
                 angle: 45
             });
 
-            // ── QR Code — bottom right ────────────────────────────────────
-            try {
-                const qrRes = await loadQRCode(student, stats);
-                if (qrRes.loaded) {
-                    const qrSize = 28;
-                    const qrX = pageWidth - 15 - qrSize;
-                    const qrY = pageHeight - 15 - qrSize;
-                    combinedDoc.setDrawColor(180, 180, 180);
-                    combinedDoc.setLineWidth(0.3);
-                    combinedDoc.rect(qrX - 0.5, qrY - 0.5, qrSize + 1, qrSize + 1);
-                    combinedDoc.addImage(qrRes.img, 'PNG', qrX, qrY, qrSize, qrSize);
-                    combinedDoc.setFontSize(5.5);
-                    combinedDoc.setTextColor(120, 120, 120);
-                    combinedDoc.text('Scan for full result', qrX + qrSize / 2, qrY + qrSize + 3, { align: 'center' });
-                }
-            } catch (e) { console.warn('QR code add failed:', e); }
+            // ── QR Code (bottom right) + Barcode (middle left) ─────────────────
+            await addQRAndBarcode(combinedDoc, student, stats, pageWidth, pageHeight);
 
-            // ── Aesthetic vertical barcode — middle left (tall rectangle shape) ──
-            try {
-                const barcodeValue = student['UPI'] || student['Assessment No'] || 'KANYADET';
-                if (typeof JsBarcode !== 'undefined') {
-                    const cvs = document.createElement('canvas');
-                    JsBarcode(cvs, String(barcodeValue), {
-                        format: 'CODE128', width: 1.8, height: 55,
-                        displayValue: false, background: '#ffffff',
-                        lineColor: '#1a1a1a', margin: 4,
-                    });
-                    const rotCanvas = document.createElement('canvas');
-                    rotCanvas.width  = cvs.height;
-                    rotCanvas.height = cvs.width;
-                    const ctx = rotCanvas.getContext('2d');
-                    ctx.translate(rotCanvas.width / 2, rotCanvas.height / 2);
-                    ctx.rotate(Math.PI / 2);
-                    ctx.drawImage(cvs, -cvs.width / 2, -cvs.height / 2);
-                    const bcDataURL = rotCanvas.toDataURL('image/png');
-                    const bcW = 10, bcH = 52;
-                    const bcX = -1;
-                    const bcY = pageHeight / 2 - bcH / 2;
-                    combinedDoc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
-                    combinedDoc.setFontSize(5);
-                    combinedDoc.setTextColor(140, 140, 140);
-                    combinedDoc.text(String(barcodeValue), bcX + bcW + 2.5, bcY + bcH / 2, { angle: 90, align: 'center' });
-                }
-            } catch (e) { console.warn('Barcode add failed:', e); }
-            
             isFirstPage = false;
             await new Promise(resolve => setTimeout(resolve, 50));
         }
@@ -1681,6 +1637,9 @@ combinedDoc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
                 align: 'center',
                 angle: 45
             });
+
+            // ── QR Code (bottom right) + Barcode (middle left) ─────────────────
+            await addQRAndBarcode(combinedDoc, student, stats, pageWidth, pageHeight);
             
             isFirstPage = false;
             await new Promise(resolve => setTimeout(resolve, 50));
@@ -2664,13 +2623,16 @@ combinedDoc.line(20, remarkY + 7, pageWidth - 20, remarkY + 7);
             combinedDoc.setTextColor(128, 128, 128);
             combinedDoc.text(`Generated on: ${new Date().toLocaleDateString()}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
             
-            // Watermark
+            // Watermark (commented out intentionally)
             // combinedDoc.setTextColor(200, 200, 200);
             // combinedDoc.setFontSize(60);
             // combinedDoc.text(' ', pageWidth / 2, pageHeight / 2, {
             //     align: 'center',
             //     angle: 45
             // });
+
+            // ── QR Code (bottom right) + Barcode (middle left) ─────────────────
+            await addQRAndBarcode(combinedDoc, student, stats, pageWidth, pageHeight);
             
             isFirstPage = false;
             await new Promise(resolve => setTimeout(resolve, 50));
