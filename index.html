@@ -145,7 +145,10 @@
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
+        /* scroll-behavior:smooth removed from html — it fights sticky headers
+           and tsParticles fixed layers, causing the "pushed back up" jank.
+           Smooth behaviour is applied only via JS where intentional. */
+        html { overflow-y: scroll; } /* stable scrollbar gutter prevents layout shift */
         body {
             font-family: 'Plus Jakarta Sans','Poppins',sans-serif;
             background: var(--bg-body);
@@ -153,11 +156,13 @@
             min-height: 100vh;
             overflow-x: hidden;
             transition: background .4s, color .4s;
+            overscroll-behavior-y: none; /* stop iOS/Chrome rubber-band fighting sticky topbar */
         }
 
         /* ════ OBSIDIAN AURORA — Layered deep-space background ════ */
         body::before {
             content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+            will-change: opacity; /* GPU layer — prevents scroll repaints */
             background:
                 /* Top-left aurora — cyan */
                 radial-gradient(ellipse 80% 60% at -10% -5%,  rgba(0,212,255,.09)  0%, transparent 55%),
@@ -189,6 +194,7 @@
         /* ── Scanline texture overlay (subtle, dark only) ── */
         body::after {
             content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+            will-change: opacity; /* GPU layer */
             background-image: repeating-linear-gradient(
                 0deg,
                 transparent,
@@ -207,7 +213,8 @@
         /* everything sits above bg layers */
         .topbar, .main, #loader, #notif-wrap, .scroll-to-top,
         #auth-screen, #dashboard, .sched-modal-overlay,
-        .notif-panel, #heatmap-tooltip { position:relative; z-index:1; }
+        .notif-panel { position:relative; z-index:1; }
+        /* #heatmap-tooltip MUST stay position:fixed — do NOT include it here */
         #tsparticles { z-index:0 !important; }
 
         /* ════ GLASS MORPHISM — card base ════ */
@@ -769,7 +776,7 @@
         .heatmap-legend { display: flex; align-items: center; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
         .heatmap-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); font-weight: 600; }
         .heatmap-legend-box { width: 18px; height: 18px; border-radius: 4px; }
-        .heatmap-tooltip { position: fixed; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 16px; font-size: 12px; color: var(--text-primary); box-shadow: 0 8px 32px rgba(0,0,0,0.22); z-index: 9999; pointer-events: none; max-width: 240px; min-width: 160px; line-height: 1.6; }
+        .heatmap-tooltip { position: fixed !important; left: -9999px; top: -9999px; background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px 16px; font-size: 12px; color: var(--text-primary); box-shadow: 0 8px 32px rgba(0,0,0,0.35); z-index: 99999 !important; pointer-events: none; max-width: 260px; min-width: 180px; line-height: 1.6; }
         .hm-row-name { transition: color 0.15s, font-weight 0.1s, font-size 0.1s; }
 
         /* ══ SCROLLBAR ══ */
@@ -3061,7 +3068,7 @@ function toggleQuickLinks() {
             <div class="heatmap-scroll" id="heatmap-container"></div>
             <div class="heatmap-legend" id="heatmap-legend"></div>
         </div>
-        <div id="heatmap-tooltip" class="heatmap-tooltip" style="display:none;"></div>
+        <div id="heatmap-tooltip" class="heatmap-tooltip" style="display:none;left:-9999px;top:-9999px;"></div>
     </div>
 
     <!-- INSIGHTS -->
@@ -3539,9 +3546,9 @@ function _initTsParticles(){
     function buildConfig(dark){
         return {
             fullScreen:{enable:false},
-            fpsLimit:60,
+            fpsLimit: 40, /* reduced from 60 — smoother scroll, less paint pressure */
             particles:{
-                number:{ value: dark?70:40, density:{enable:true,width:1920,height:1080} },
+                number:{ value: dark?45:28, density:{enable:true,width:1920,height:1080} },
                 color:{ value: dark?darkColors:lightColors },
                 shape:{
                     type:["circle","triangle","square"],
@@ -4176,7 +4183,7 @@ function renderRankings(){
             <td class="col-weak" style="font-size:12px;color:#e74c3c;white-space:normal;word-break:break-word;">${esc(s._weakSubject||'-')}</td>
         </tr>`;
     }).join('');
-    document.getElementById('rank-pagination').innerHTML=renderPagination(total,rankPerPage,rankPage,p=>{rankPage=p;renderRankings();});
+    document.getElementById('rank-pagination').innerHTML=renderPagination(total,rankPerPage,rankPage,p=>{rankPage=p;renderRankings();},'rank');
 }
 window.sortTable=function(field){
     if(currentSort.field===field)currentSort.dir=currentSort.dir==='asc'?'desc':'asc';
@@ -4472,27 +4479,80 @@ window.renderHeatmap=function(){
 
 window.showHeatmapTooltip=function(evt,content){
     const tt=document.getElementById('heatmap-tooltip');
+    if(!tt) return;
     const [student,subject,score,grade,avg]=content.split('|');
     const scoreNum=parseFloat(score);
-    const scoreColor=!isNaN(scoreNum)?(scoreNum>=75?'#27ae60':scoreNum>=58?'#3498db':scoreNum>=41?'#f39c12':'#e74c3c'):'#95a5a6';
+    const hasScore=!isNaN(scoreNum);
+    const scoreColor=hasScore?(scoreNum>=75?'#27ae60':scoreNum>=58?'#3498db':scoreNum>=41?'#f39c12':'#e74c3c'):'#95a5a6';
+    // Performance indicator label
+    let perfLabel='', perfBg='', perfBorder='';
+    if(hasScore){
+        if(scoreNum>=75){    perfLabel='Excellent';  perfBg='rgba(39,174,96,.18)';  perfBorder='rgba(39,174,96,.5)'; }
+        else if(scoreNum>=58){perfLabel='Good';      perfBg='rgba(52,152,219,.18)'; perfBorder='rgba(52,152,219,.5)';}
+        else if(scoreNum>=41){perfLabel='Average';   perfBg='rgba(243,156,18,.18)'; perfBorder='rgba(243,156,18,.5)';}
+        else{                 perfLabel='Needs Help'; perfBg='rgba(231,76,60,.18)';  perfBorder='rgba(231,76,60,.5)'; }
+    } else {
+        perfLabel='Not Assessed'; perfBg='rgba(149,165,166,.12)'; perfBorder='rgba(149,165,166,.3)';
+    }
+    // Score bar width
+    const barW=hasScore?Math.round(scoreNum):0;
     tt.innerHTML=`
-      <div style="font-size:13px;font-weight:800;color:var(--text-primary);margin-bottom:3px;">${student}</div>
-      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">${grade} · Avg ${avg}%</div>
-      <div style="display:flex;align-items:center;gap:8px;border-top:1px solid var(--border-color);padding-top:7px;">
-        <div style="font-size:10px;color:var(--text-secondary);flex:1;">${subject}</div>
-        <div style="font-size:15px;font-weight:800;color:${scoreColor};">${score}</div>
+      <div style="font-size:13px;font-weight:900;color:var(--text-primary);margin-bottom:2px;letter-spacing:-.01em;line-height:1.2;">${student}</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-bottom:8px;">${grade} &middot; Class avg ${avg}%</div>
+      <div style="border-top:1px solid var(--border-color);padding-top:8px;margin-bottom:7px;">
+        <div style="font-size:10px;color:var(--text-secondary);font-weight:600;margin-bottom:5px;">${subject}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="font-size:18px;font-weight:900;color:${scoreColor};line-height:1;">${hasScore?scoreNum.toFixed(1)+'%':'—'}</div>
+          <div style="
+            font-size:10px;font-weight:700;
+            padding:2px 8px;border-radius:20px;
+            background:${perfBg};color:${scoreColor};
+            border:1px solid ${perfBorder};
+            letter-spacing:.02em;
+          ">${perfLabel}</div>
+        </div>
+        ${hasScore?`<div style="height:5px;background:var(--score-bar-bg);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${barW}%;background:${scoreColor};border-radius:3px;transition:width .3s;"></div>
+        </div>`:''}
       </div>
     `;
     tt.style.display='block';
-    const ttW=220,ttH=90;
-    const x=Math.min(evt.clientX+16,window.innerWidth-ttW-8);
-    const y=Math.min(evt.clientY+16,window.innerHeight-ttH-8);
+    tt.style.position='fixed';
+    // Smart positioning — keep tooltip on screen
+    const ttW=240, ttH=tt.scrollHeight||130;
+    let x=evt.clientX+16, y=evt.clientY+16;
+    if(x+ttW>window.innerWidth-8)  x=evt.clientX-ttW-8;
+    if(y+ttH>window.innerHeight-8) y=evt.clientY-ttH-8;
+    if(x<8) x=8;
+    if(y<8) y=8;
     tt.style.left=x+'px';
     tt.style.top=y+'px';
 };
 window.hideHeatmapTooltip=function(){
-    document.getElementById('heatmap-tooltip').style.display='none';
+    const tt=document.getElementById('heatmap-tooltip');
+    if(tt){ tt.style.display='none'; tt.style.left='-9999px'; tt.style.top='-9999px'; }
 };
+
+// Track mouse globally so heatmap tooltip follows cursor smoothly
+(function(){
+    let _ttVisible=false;
+    document.addEventListener('mousemove',function(e){
+        if(!_ttVisible)return;
+        const tt=document.getElementById('heatmap-tooltip');
+        if(!tt||tt.style.display==='none')return;
+        const ttW=tt.offsetWidth||240, ttH=tt.offsetHeight||130;
+        let x=e.clientX+16, y=e.clientY+16;
+        if(x+ttW>window.innerWidth-8)  x=e.clientX-ttW-8;
+        if(y+ttH>window.innerHeight-8) y=e.clientY-ttH-8;
+        if(x<8) x=8; if(y<8) y=8;
+        tt.style.left=x+'px'; tt.style.top=y+'px';
+    },{passive:true});
+    // Patch show/hide to toggle tracking flag
+    const _origShow=window.showHeatmapTooltip;
+    window.showHeatmapTooltip=function(evt,content){ _ttVisible=true; _origShow(evt,content); };
+    const _origHide=window.hideHeatmapTooltip;
+    window.hideHeatmapTooltip=function(){ _ttVisible=false; _origHide(); };
+})();
 // heatmapRowHover handled inline in renderHeatmap
 
 
@@ -4503,7 +4563,7 @@ function renderInsights(){
     const el=document.getElementById('insights-grid');
     if(!filteredStudents.length){el.innerHTML='';return;}
     const st=filteredStudents,insights=[];
-    const sA=SUBJECTS.map(subj=>{const sc=st.map(s=>parseFloat(s[subj.name])).filter(v=>!isNaN(v));return{name:subj.name,avg:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0,assessed:sc.length};}).filter(s=>s.assessed>0).sort((a,b)=>b.avg-a.avg);
+    const sA=SUBJECTS.map(subj=>{const sc=st.map(s=>readScore(s,subj.name)).filter(v=>v!==null);return{name:subj.name,avg:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0,assessed:sc.length};}).filter(s=>s.assessed>0).sort((a,b)=>b.avg-a.avg);
     if(sA.length){
         insights.push({icon:'🌟',title:'Strongest Subject',color:'#27ae60',body:`<span class="insight-highlight">${sA[0].name}</span> leads with class average <span class="insight-highlight">${sA[0].avg.toFixed(1)}%</span> (${sA[0].assessed} assessed).`});
         insights.push({icon:'⚠️',title:'Weakest Subject',color:'#e74c3c',body:`<span class="insight-highlight">${sA[sA.length-1].name}</span> has the lowest average at <span class="insight-highlight">${sA[sA.length-1].avg.toFixed(1)}%</span>. Needs attention.`});
@@ -4582,13 +4642,13 @@ function renderDetailed(){
             <td>${(s['Gender']||'').toLowerCase().startsWith('m')?'<span class="gender-m">M</span>':(s['Gender']||'').toLowerCase().startsWith('f')?'<span class="gender-f">F</span>':'—'}</td>
             <td style="font-size:11px;color:var(--text-secondary);">${esc(s['Assessment No']||'N/A')}</td>
             <td style="font-size:11px;color:var(--text-secondary);">${esc(s['UPI']||'N/A')}</td>
-            ${SUBJECTS.map(subj=>{const sc=parseFloat(s[subj.name]);if(isNaN(sc))return`<td style="color:var(--text-muted);font-size:11px;text-align:center;">—</td>`;const col=sc>=75?'#27ae60':sc>=58?'#3498db':sc>=41?'#f39c12':'#e74c3c';return`<td style="font-size:12px;font-weight:700;color:${col};text-align:center;">${sc.toFixed(0)}</td>`;}).join('')}
+            ${SUBJECTS.map(subj=>{const sc=readScore(s,subj.name);if(sc===null)return`<td style="color:var(--text-muted);font-size:11px;text-align:center;">—</td>`;const col=sc>=75?'#27ae60':sc>=58?'#3498db':sc>=41?'#f39c12':'#e74c3c';return`<td style="font-size:12px;font-weight:700;color:${col};text-align:center;">${sc.toFixed(0)}</td>`;}).join('')}
             <td style="font-weight:700;color:${s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c'};">${s._avg.toFixed(1)}</td>
             <td style="font-size:12px;font-weight:600;">${s._totalPts.toFixed(1)}</td>
             <td><span class="grade-pill grade-${s._gradeInfo.code}">${s._gradeInfo.code}</span></td>
         </tr>`;
     }).join('');
-    document.getElementById('detailed-pagination').innerHTML=renderPagination(total,detailPerPage,detailPage,p=>{detailPage=p;renderDetailed();});
+    document.getElementById('detailed-pagination').innerHTML=renderPagination(total,detailPerPage,detailPage,p=>{detailPage=p;renderDetailed();},'detail');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4762,7 +4822,7 @@ function renderProgressReport(){
                 <tr style="background:var(--bg-table-alt);font-weight:700;">
                     <td style="border-left:3px solid #3498db;font-weight:700;color:var(--text-primary);">📊 Average</td>
                     ${termsToShow.map(r=>{
-                        const sc=SUBJECTS.map(sub=>{const v=parseFloat(String(r[sub.name]||'').replace(/[-–—]+/g,''));return isNaN(v)?null:v;}).filter(v=>v!==null);
+                        const sc=SUBJECTS.map(sub=>readScore(r,sub.name)).filter(v=>v!==null);
                         const avg=sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:null;
                         const c=avg!=null?(avg>=75?'#27ae60':avg>=58?'#3498db':avg>=41?'#f39c12':'#e74c3c'):'var(--text-muted)';
                         return avg!=null?`<td style="text-align:center;color:${c};">${avg.toFixed(1)}%</td>`:`<td style="text-align:center;color:var(--text-muted);">—</td>`;
@@ -5154,11 +5214,9 @@ window.switchTab=function(tab){
     else if(tab==='dashboard')renderCustomDashboard();
     else if(tab==='photos'){ populatePhotosGradeFilter(); renderPhotos(); }
     else if(tab==='bulkprint'){ populatePrintGradeFilter(); renderBulkPrint(); }
-    // Auto-scroll to tab panel
-    setTimeout(()=>{
-        const panel=document.getElementById('tab-'+tab);
-        if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
-    },80);
+    // Scroll to top of page smoothly when switching tabs
+    // (scrollIntoView with sticky topbar causes layout jank / scroll-pushback)
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 };
 
 // ══════════════════════════════════════════════════════════════
@@ -5451,15 +5509,23 @@ window.exportComparePDF=async function(){
 // ══════════════════════════════════════════════════════════════
 // PAGINATION
 // ══════════════════════════════════════════════════════════════
-function renderPagination(total,perPage,current,onPage){
+// Global page-change dispatcher — avoids serialising arrow functions into onclick strings
+window._pageHandlers={};
+window._dispatchPage=function(key,p){ if(window._pageHandlers[key]) window._pageHandlers[key](p); };
+
+function renderPagination(total,perPage,current,onPage,handlerKey){
     const pages=Math.ceil(total/perPage);if(pages<=1)return'';
+    // Register the callback under a stable key so onclick can find it
+    const key=handlerKey||'page_'+Math.random().toString(36).slice(2);
+    window._pageHandlers[key]=onPage;
     const s=(current-1)*perPage,e=Math.min(s+perPage,total);
     let html=`<div class="pagination-info">Showing ${s+1}–${e} of ${total} students</div><div class="page-btns">`;
-    html+=`<button class="page-btn" onclick="(${onPage.toString()})(1)" ${current===1?'disabled':''}>«</button>`;
-    html+=`<button class="page-btn" onclick="(${onPage.toString()})(${current-1})" ${current===1?'disabled':''}>‹</button>`;
-    for(let p=Math.max(1,current-2);p<=Math.min(pages,current+2);p++)html+=`<button class="page-btn ${p===current?'active':''}" onclick="(${onPage.toString()})(${p})">${p}</button>`;
-    html+=`<button class="page-btn" onclick="(${onPage.toString()})(${current+1})" ${current===pages?'disabled':''}>›</button>`;
-    html+=`<button class="page-btn" onclick="(${onPage.toString()})(${pages})" ${current===pages?'disabled':''}>»</button>`;
+    html+=`<button class="page-btn" onclick="_dispatchPage('${key}',1)" ${current===1?'disabled':''}>«</button>`;
+    html+=`<button class="page-btn" onclick="_dispatchPage('${key}',${current-1})" ${current===1?'disabled':''}>‹</button>`;
+    for(let p=Math.max(1,current-2);p<=Math.min(pages,current+2);p++)
+        html+=`<button class="page-btn ${p===current?'active':''}" onclick="_dispatchPage('${key}',${p})">${p}</button>`;
+    html+=`<button class="page-btn" onclick="_dispatchPage('${key}',${current+1})" ${current===pages?'disabled':''}>›</button>`;
+    html+=`<button class="page-btn" onclick="_dispatchPage('${key}',${pages})" ${current===pages?'disabled':''}>»</button>`;
     return html+'</div>';
 }
 
@@ -5892,7 +5958,8 @@ function generateRemarkFor(s, tone){
     const allRes = (studentProfiles[aNo]||[s]).slice().sort((a,b)=>(a._termKey||'').localeCompare(b._termKey||''));
     let trendSentence = '';
     if(allRes.length>=2){
-        const prev = parseFloat(calcStats(allRes[allRes.length-2]).avg)||0;
+        const prevCopy={...allRes[allRes.length-2]};computeStats(prevCopy);
+        const prev = prevCopy._avg||0;
         const diff = avg - prev;
         if(diff >= 5)       trendSentence = ` ${name} has shown commendable improvement of ${diff.toFixed(1)}% compared to the previous term, which is truly encouraging.`;
         else if(diff <= -5) trendSentence = ` A slight dip of ${Math.abs(diff).toFixed(1)}% from last term is noted; with renewed effort, recovery is very much within reach.`;
@@ -6330,7 +6397,7 @@ document.getElementById('sched-modal-overlay').addEventListener('click',function
 // BROWSER NOTIFICATIONS
 // ══════════════════════════════════════════════════════════════
 let notifPrefs=JSON.parse(localStorage.getItem('kanyadet_notif_prefs')||'{"1d":false,"3d":true,"7d":false}');
-let notifPermission=Notification.permission;
+let notifPermission = (typeof Notification !== 'undefined') ? Notification.permission : 'default';
 
 function saveNotifPrefs(){
     notifPrefs={
@@ -6352,11 +6419,14 @@ function loadNotifPrefs(){
 function updateNotifPermissionUI(){
     const area=document.getElementById('notif-permission-area');
     const dot=document.getElementById('notif-badge-dot');
-    if(Notification.permission==='granted'){
+    const perm=(typeof Notification!=='undefined')?Notification.permission:'default';
+    if(perm==='granted'){
         area.innerHTML='<div style="font-size:12px;color:#27ae60;font-weight:600;padding:8px 0;">✅ Notifications enabled</div>';
         scheduleNotifChecks();
-    } else if(Notification.permission==='denied'){
+    } else if(perm==='denied'){
         area.innerHTML='<div style="font-size:12px;color:#e74c3c;padding:8px 0;">🚫 Notifications blocked. Enable in browser settings.</div>';
+    } else if(typeof Notification==='undefined'){
+        area.innerHTML='<div style="font-size:12px;color:#f39c12;padding:8px 0;">⚠️ Notifications not supported in this browser.</div>';
     }
     // Update upcoming events list in panel
     updateNotifUpcomingList();
@@ -6368,7 +6438,7 @@ function updateNotifPermissionUI(){
         const diff=Math.round((d-today)/(1000*60*60*24));
         return diff>=0&&diff<=7;
     });
-    dot.style.display=soon.length?'block':'none';
+    if(dot) dot.style.display=soon.length?'block':'none';
 }
 
 function updateNotifUpcomingList(){
@@ -6389,7 +6459,7 @@ function updateNotifUpcomingList(){
 }
 
 function scheduleNotifChecks(){
-    if(Notification.permission!=='granted')return;
+    if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
     const today=new Date(); today.setHours(0,0,0,0);
     const schedEvents=JSON.parse(localStorage.getItem('kanyadet_sched')||'[]');
     const thresholds=[];
@@ -6402,11 +6472,13 @@ function scheduleNotifChecks(){
         if(thresholds.includes(diff)){
             const key='notif_sent_'+e.id+'_'+diff;
             if(!sessionStorage.getItem(key)){
-                new Notification('📅 Kanyadet School Reminder',{
-                    body:`"${e.title}" is ${diff===0?'TODAY':diff===1?'tomorrow':'in '+diff+' days'}${e.grade?' ('+e.grade+')':''}`,
-                    icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="24" font-size="24">🏫</text></svg>'
-                });
-                sessionStorage.setItem(key,'1');
+                try{
+                    new Notification('📅 Kanyadet School Reminder',{
+                        body:`"${e.title}" is ${diff===0?'TODAY':diff===1?'tomorrow':'in '+diff+' days'}${e.grade?' ('+e.grade+')':''}`,
+                        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="24" font-size="24">🏫</text></svg>'
+                    });
+                    sessionStorage.setItem(key,'1');
+                }catch(err){/* silently ignore */}
             }
         }
     });
@@ -6418,6 +6490,7 @@ window.toggleNotifPanel=function(){
     if(p.classList.contains('open')){ loadNotifPrefs(); updateNotifUpcomingList(); }
 };
 window.requestNotifPermission=async function(){
+    if(typeof Notification==='undefined'){notify('Notifications not supported in this browser','warning');return;}
     const perm=await Notification.requestPermission();
     notifPermission=perm;
     updateNotifPermissionUI();
@@ -6486,32 +6559,47 @@ window.renderCustomDashboard=function(){
     const countBadge=document.getElementById('dash-widget-count');
     if(!canvas)return;
 
-    // Drag from palette
+    // Drag from palette — re-bind palette items (they may be re-rendered)
     palette.querySelectorAll('.dash-palette-item').forEach(item=>{
-        item.addEventListener('dragstart',e=>{
-            e.dataTransfer.setData('widget',item.dataset.widget);
-            item.classList.add('dragging');
+        // Clone to strip old listeners before re-adding
+        const fresh=item.cloneNode(true);
+        item.parentNode.replaceChild(fresh,item);
+        fresh.addEventListener('dragstart',e=>{
+            e.dataTransfer.setData('widget',fresh.dataset.widget);
+            fresh.classList.add('dragging');
         });
-        item.addEventListener('dragend',()=>item.classList.remove('dragging'));
-    });
-
-    canvas.addEventListener('dragover',e=>{e.preventDefault();canvas.classList.add('drag-over');});
-    canvas.addEventListener('dragleave',()=>canvas.classList.remove('drag-over'));
-    canvas.addEventListener('drop',e=>{
-        e.preventDefault();
-        canvas.classList.remove('drag-over');
-        const wType=e.dataTransfer.getData('widget');
-        if(wType&&WIDGET_DEFS[wType]){
-            if(dashWidgets.includes(wType)){notify('Widget already on dashboard','warning');return;}
-            dashWidgets.push(wType);
-            saveDashboard();
-            paintDashWidgets();
-        }
+        fresh.addEventListener('dragend',()=>fresh.classList.remove('dragging'));
     });
 
     paintDashWidgets();
-    countBadge.textContent=dashWidgets.length+' widget'+(dashWidgets.length!==1?'s':'');
+    if(countBadge)countBadge.textContent=dashWidgets.length+' widget'+(dashWidgets.length!==1?'s':'');
 };
+
+// Canvas drag listeners bound ONCE — avoids stacking listeners on every render call
+(function(){
+    const bindCanvasDrag=()=>{
+        const canvas=document.getElementById('dash-canvas');
+        if(!canvas||canvas._dragBound)return;
+        canvas._dragBound=true;
+        canvas.addEventListener('dragover',e=>{e.preventDefault();canvas.classList.add('drag-over');});
+        canvas.addEventListener('dragleave',()=>canvas.classList.remove('drag-over'));
+        canvas.addEventListener('drop',e=>{
+            e.preventDefault();
+            canvas.classList.remove('drag-over');
+            const wType=e.dataTransfer.getData('widget');
+            if(wType&&WIDGET_DEFS[wType]){
+                if(dashWidgets.includes(wType)){notify('Widget already on dashboard','warning');return;}
+                dashWidgets.push(wType);
+                saveDashboard();
+                paintDashWidgets();
+            }
+        });
+    };
+    // Bind when dashboard tab first becomes visible
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(bindCanvasDrag,500));
+    // Also bind immediately in case DOM is already ready
+    setTimeout(bindCanvasDrag,600);
+})();
 
 function paintDashWidgets(){
     const canvas=document.getElementById('dash-canvas');
