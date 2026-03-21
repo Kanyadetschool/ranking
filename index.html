@@ -2,7 +2,7 @@
 <html lang="en" data-theme="dark">
 <head>
     <meta charset="UTF-8"> 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>School Analytics & Rankings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -148,15 +148,27 @@
         /* scroll-behavior:smooth removed from html — it fights sticky headers
            and tsParticles fixed layers, causing the "pushed back up" jank.
            Smooth behaviour is applied only via JS where intentional. */
-        html { overflow-y: scroll; } /* stable scrollbar gutter prevents layout shift */
+        html {
+            /* Do NOT set overflow-y:scroll — on iOS Safari, mismatched overflow
+               on html vs body transfers scroll to body and breaks momentum scroll */
+            height: 100%;
+        }
         body {
             font-family: 'Plus Jakarta Sans','Poppins',sans-serif;
             background: var(--bg-body);
             color: var(--text-primary);
-            min-height: 100vh;
+            min-height: 100%;
             overflow-x: hidden;
+            /* overscroll-behavior-y:none removed — on iOS it suppresses momentum
+               scroll entirely on some versions, making the page feel locked */
             transition: background .4s, color .4s;
-            overscroll-behavior-y: none; /* stop iOS/Chrome rubber-band fighting sticky topbar */
+            /* Eliminate 300ms tap delay on all touch devices */
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+            /* Safe area padding for iPhone notch / Dynamic Island / home indicator */
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
         }
 
         /* ════ OBSIDIAN AURORA — Layered deep-space background ════ */
@@ -238,6 +250,9 @@
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 24px; height: 64px; flex-wrap: nowrap; gap: 8px;
             transition: var(--transition);
+            /* Account for iPhone notch/Dynamic Island */
+            padding-top: max(0px, env(safe-area-inset-top));
+            height: calc(64px + env(safe-area-inset-top, 0px));
         }
         [data-theme="dark"] .topbar {
             background: rgba(4,9,18,.82);
@@ -295,7 +310,7 @@
         .theme-toggle:hover { transform: scale(1.08); border-color: rgba(0,212,255,.4); box-shadow: 0 0 20px rgba(0,212,255,.2); }
 
         /* ══ BUTTONS ══ */
-        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; white-space: nowrap; }
+        .btn { padding: 8px 16px; border-radius: 8px; border: none; cursor: pointer; font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600; transition: all 0.2s; white-space: nowrap; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .btn-white { background: #fff; color: #2980b9; box-shadow: 0 2px 8px rgba(0,0,0,0.12); }
         .btn-white:hover { background: #f0f8ff; transform: translateY(-1px); }
         .btn-outline { background: transparent; color: #fff; border: 1px solid rgba(255,255,255,0.5); }
@@ -573,7 +588,7 @@
 
         /* ══ TABS ══ */
         .tabs { display: flex; gap: 4px; background: var(--tab-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 4px; margin-bottom: 24px; flex-wrap: wrap; box-shadow: var(--shadow-card); }
-        .tab { padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; border: none; background: transparent; font-family: 'Poppins', sans-serif; }
+        .tab { padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; white-space: nowrap; border: none; background: transparent; font-family: 'Poppins', sans-serif; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
         .tab:hover { color: var(--tab-hover-text); background: var(--tab-hover); }
         .tab.active { background: linear-gradient(135deg, #2980b9, #1a5276); color: #fff; box-shadow: 0 4px 14px rgba(41,128,185,.35); }
         [data-theme="light"] .tab.active { background: linear-gradient(135deg, #2980b9, #3498db); }
@@ -697,7 +712,7 @@
         .progress-search-bar { padding: 22px 24px; border-bottom: 1px solid var(--border-light); background: var(--bg-card2); }
         .progress-search-row { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
         .student-autocomplete { position: relative; }
-        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1.5px solid #3498db; border-top: none; border-radius: 0 0 8px 8px; max-height: 240px; overflow-y: auto; z-index: 100; box-shadow: 0 8px 24px rgba(52,152,219,0.15); }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: var(--bg-card); border: 1.5px solid #3498db; border-top: none; border-radius: 0 0 8px 8px; max-height: 240px; overflow-y: auto; -webkit-overflow-scrolling: touch; z-index: 1000; box-shadow: 0 8px 24px rgba(52,152,219,0.15); }
         .autocomplete-item { padding: 10px 14px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--border-light); transition: background 0.15s; color: var(--text-primary); }
         .autocomplete-item:hover { background: var(--tab-hover); color: #2980b9; }
         .autocomplete-item:last-child { border-bottom: none; }
@@ -777,6 +792,8 @@
             /* Custom thin scrollbars */
             scrollbar-width: thin;
             scrollbar-color: var(--border-color) transparent;
+            /* Ensure touch scroll works correctly on iOS */
+            touch-action: pan-x pan-y;
         }
         .heatmap-scroll::-webkit-scrollbar { width:5px; height:5px; }
         .heatmap-scroll::-webkit-scrollbar-track { background:transparent; }
@@ -883,6 +900,8 @@
             font-weight: 800;
             cursor: pointer;
             position: relative;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
             /* Advanced transition — spring scale + glow */
             transition:
                 transform .18s cubic-bezier(.34,1.56,.64,1),
@@ -1622,13 +1641,17 @@
         /* ── Panel: glass edge shimmer on enter ── */
         .panel {
             position:relative;
-            overflow:hidden;
+            /* overflow:hidden removed — it clips autocomplete dropdowns, tooltips,
+               and any overflow content inside panels. The shimmer ::after is now
+               clipped via clip-path on itself instead. */
         }
         .panel::after {
             content:''; position:absolute; top:0; left:-100%; width:60%; height:100%;
             background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);
             transition:none;
             pointer-events:none;
+            /* Clip the shimmer to the panel bounds without overflow:hidden on parent */
+            clip-path: inset(0);
         }
         .panel:hover::after {
             left:200%;
@@ -1955,6 +1978,9 @@
         }
 
         /* ══ RESPONSIVE ══ */
+        /* ══════════════════════════════════════════════════════
+           RESPONSIVE — TABLET (≤900px)
+           ══════════════════════════════════════════════════════ */
         @media (max-width: 900px) {
             .main { padding: 14px 12px; }
             .topbar { padding: 0 12px; }
@@ -1964,18 +1990,223 @@
             .progress-subject-grid { grid-template-columns: 1fr; padding: 14px; }
             .insights-grid { grid-template-columns: 1fr; }
             .panel-header { padding: 14px 16px; }
-            .tabs { gap: 2px; padding: 3px; }
-            .tab { padding: 8px 10px; font-size: 12px; }
+            /* Tabs: horizontal scroll on tablet instead of wrapping */
+            .tabs {
+                gap: 2px; padding: 3px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .tabs::-webkit-scrollbar { display: none; }
+            .tab { padding: 8px 10px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
             .filter-bar { padding: 14px 16px; gap: 12px; }
             .filter-group { min-width: 120px; }
+            /* Heatmap header height smaller on tablet */
+            .hm-col-header-label { font-size: 9px; }
         }
+
+        /* ══════════════════════════════════════════════════════
+           RESPONSIVE — MOBILE (≤600px)
+           ══════════════════════════════════════════════════════ */
         @media (max-width: 600px) {
-            .topbar { height: auto; min-height: 56px; padding: 8px 12px; flex-wrap: wrap; }
-            .topbar-brand { flex: 100%; }
-            .topbar-right { flex: 100%; justify-content: flex-start; padding-bottom: 6px; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .student-profile-stats { flex-direction: row; flex-wrap: wrap; gap: 8px; }
-            .profile-stat { padding: 8px 12px; }
+            /* ── Topbar ── */
+            .topbar {
+                height: auto;
+                min-height: 56px;
+                padding: 8px 12px;
+                flex-wrap: wrap;
+                gap: 6px;
+            }
+            .topbar-brand { flex: 1 1 auto; min-width: 0; }
+            .topbar-right {
+                flex: 0 0 auto;
+                gap: 6px;
+            }
+            /* Collapse brand text on very small screens */
+            .brand-name { font-size: 13px; }
+            /* Hide username in user pill on mobile — show avatar only */
+            #user-name-display { display: none; }
+            .user-pill { padding: 4px; border-radius: 50%; }
+            /* Shrink sign-out button */
+            #sign-out-btn { font-size: 11px !important; padding: 5px 8px !important; }
+            #sign-out-btn span { display: none; } /* hide text, keep icon */
+
+            /* ── Main layout ── */
+            .main { padding: 10px 8px; }
+
+            /* ── Stats grid: 2 columns ── */
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .stat-card { padding: 12px 10px; }
+            .stat-value { font-size: 20px; }
+            .stat-label { font-size: 10px; }
+
+            /* ── Filter bar: stack vertically ── */
+            .filter-bar {
+                padding: 12px;
+                gap: 10px;
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .filter-group { min-width: unset !important; width: 100% !important; }
+            .filter-group select,
+            .filter-group input { width: 100%; font-size: 14px; padding: 10px 12px; }
+            /* Tab-internal filter controls (progress, trends, AI, etc.) */
+            .trend-controls,
+            .progress-search-row,
+            .heatmap-controls,
+            .ai-search-row { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+            .trend-controls .filter-group,
+            .ai-search-row .filter-group { min-width: unset !important; width: 100% !important; }
+            /* Compare view toggle — wrap buttons on mobile */
+            .compare-view-toggle { flex-wrap: wrap; }
+
+            /* ── Tabs: full-width horizontal scroll strip ── */
+            .tabs {
+                padding: 3px;
+                gap: 2px;
+                border-radius: 10px;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+                /* Prevent tab bar from blocking page scroll when swiping vertically */
+                touch-action: pan-x;
+            }
+            .tabs::-webkit-scrollbar { display: none; }
+            .tab {
+                padding: 8px 10px;
+                font-size: 11px;
+                white-space: nowrap;
+                flex-shrink: 0;
+                border-radius: 7px;
+            }
+
+            /* ── Panels ── */
+            .panel { border-radius: 10px; }
+            .panel-header {
+                padding: 12px 14px;
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            /* Inline flex rows inside panel headers (badge + export button groups) */
+            .panel-header > div:last-child {
+                flex-wrap: wrap;
+                gap: 8px;
+                width: 100%;
+            }
+            .panel-title { font-size: 14px; }
+            .panel-sub { font-size: 11px; }
+
+            /* ── Rankings table ── */
+            .rank-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .rank-table { font-size: 12px; }
+            .rank-table th, .rank-table td { padding: 8px 6px; }
+            /* Hide less critical columns on mobile */
+            .col-strong, .col-weak { display: none; }
+
+            /* ── Detailed table ── */
+            .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+            /* ── Heatmap ── */
+            .heatmap-section { padding: 12px; }
+            .heatmap-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 8px;
+            }
+            .heatmap-controls > div { width: 100%; }
+            .heatmap-controls select { width: 100%; }
+            .heatmap-scroll { max-height: 55vh; }
+            /* Smaller cells on mobile */
+            .hm-col-header-label { font-size: 8.5px; }
+
+            /* ── Progress / Student profile ── */
+            .student-profile-card {
+                flex-direction: column;
+                padding: 14px;
+            }
+            .student-profile-stats {
+                flex-direction: row;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+            .profile-stat { padding: 8px 12px; flex: 1 1 80px; }
+            .progress-search-row { flex-direction: column; gap: 10px; }
+            .progress-search-bar { padding: 12px; }
+            .progress-search-row > * { width: 100%; }
+            .progress-summary-table { margin: 0 12px 14px; }
+
+            /* ── Subject analytics ── */
+            .subject-grid { padding: 10px; gap: 10px; }
+
+            /* ── Compare ── */
+            .compare-grid { grid-template-columns: 1fr; padding: 12px; gap: 14px; }
+            .compare-stat-row { grid-template-columns: repeat(2, 1fr); }
+
+            /* ── Insights ── */
+            .insights-grid { padding: 12px; gap: 10px; }
+
+            /* ── Gender analysis ── */
+            #gender-content > div > div:first-child { grid-template-columns: 1fr !important; }
+
+            /* ── Scheduler calendar ── */
+            .sched-section { padding: 12px !important; }
+            .sched-cal-grid { font-size: 11px; }
+            .sched-cal-day { min-height: 44px; padding: 2px 3px; font-size: 10px; }
+
+            /* ── Bulk print ── */
+            #print-preview-grid { grid-template-columns: 1fr !important; }
+
+            /* ── Trend charts ── */
+            .trend-chart-grid { grid-template-columns: 1fr !important; }
+            .trend-canvas-wrap { padding: 10px 8px 4px; }
+
+            /* ── Dashboard ── */
+            .dash-canvas { grid-template-columns: 1fr !important; }
+            .dash-widget-palette { gap: 8px; }
+
+            /* ── Subject analytics cards ── */
+            .subject-stats-row { grid-template-columns: repeat(2, 1fr) !important; gap: 6px !important; }
+
+            /* ── AI tab — bulk grid ── */
+            .ai-bulk-grid { grid-template-columns: 1fr !important; }
+            .ai-bulk-section { flex-direction: column !important; gap: 10px !important; }
+
+            /* ── Photos grid: 2 columns with breathing room ── */
+            .photos-grid, #photos-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; }
+
+            /* ── Pagination ── */
+            .pagination-info { font-size: 11px; }
+            .page-btn { padding: 5px 8px; font-size: 12px; min-width: 30px; }
+
+            /* ── Scroll-to-top button ── */
+            .scroll-to-top { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); right: calc(16px + env(safe-area-inset-right, 0px)); width: 38px; height: 38px; }
+
+            /* ── Notif wrap ── */
+            #notif-wrap { right: 8px; left: 8px; max-width: unset; }
+
+            /* ── Notif panel ── */
+            .notif-panel { left: 8px !important; right: 8px !important; transform: none !important; width: auto !important; }
+
+            /* ── Modal ── */
+            .sched-modal { max-width: calc(100vw - 32px); padding: 20px 16px; margin-top: 16px; }
+        }
+
+        /* ══════════════════════════════════════════════════════
+           RESPONSIVE — VERY SMALL (≤380px) — e.g. iPhone SE
+           ══════════════════════════════════════════════════════ */
+        @media (max-width: 380px) {
+            .stats-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+            .stat-card { padding: 10px 8px; }
+            .topbar-right .btn { padding: 6px 8px; font-size: 11px; }
+            /* Force single-column on very small screens where 2-col is too tight */
+            .photos-grid, #photos-grid { grid-template-columns: 1fr !important; }
+            .tab { font-size: 10px; padding: 7px 8px; }
+            .main { padding: 8px 6px; }
+            .panel-header { padding: 10px 12px; }
         }
 
         /* ══ CLASS COMPARISON ══ */
@@ -2100,7 +2331,7 @@
         [data-theme="dark"] .days-future { background: #0d2e1a; color: #4ade80; }
         .sched-del-btn { background: transparent; border: 1px solid var(--border-color); border-radius: 6px; color: var(--text-muted); font-size: 13px; cursor: pointer; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s; }
         .sched-del-btn:hover { border-color: #e74c3c; color: #e74c3c; background: #fdedec; }
-        .sched-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .sched-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.55); backdrop-filter: blur(4px); z-index: 1000; display: none; align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
         .sched-modal-overlay.open { display: flex; }
         .sched-modal { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 16px; padding: 28px; width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
         .sched-modal-title { font-size: 17px; font-weight: 700; color: var(--text-primary); margin-bottom: 20px; }
@@ -2880,7 +3111,9 @@
         /* ── Heatmap cells ── */
         /* ── Scroll to top ── */
         .scroll-to-top {
-            position: fixed; bottom: 24px; right: 24px;
+            position: fixed;
+            bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+            right: calc(24px + env(safe-area-inset-right, 0px));
             width: 42px; height: 42px; border-radius: 12px;
             background: rgba(0,212,255,.15);
             border: 1px solid rgba(0,212,255,.35);
@@ -2889,6 +3122,7 @@
             box-shadow: 0 0 20px rgba(0,212,255,.2);
             z-index: 500; transition: all .2s;
             backdrop-filter: blur(12px);
+            touch-action: manipulation;
         }
         .scroll-to-top::before { content: '↑'; font-size: 16px; font-weight: 700; animation: arrowBounce 1.5s ease-in-out infinite; }
         .scroll-to-top:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(0,212,255,.4); border-color: rgba(0,212,255,.6); }
@@ -2914,9 +3148,9 @@
 
 <header class="topbar">
     <div class="topbar-brand">
-        <div class="topbar-logo">🏫</div>
+        <div class="topbar-logo" id="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name"> Analytics &amp; Rankings</div>
+            <div class="brand-name">Analytics. &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -4180,16 +4414,16 @@ function populateTermFilter(){
 function populateGradeFilter(){
     const sel=document.getElementById('grade-filter');
     const grades=[...new Set(allStudents.map(s=>s._grade))].sort();
-    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
 }
 function populateDistSubjectFilter(){
     const sel=document.getElementById('dist-subject-filter');
-    sel.innerHTML='<option value="overall">Overall Average</option>'+SUBJECTS.map(s=>`<option value="${s.name}">${s.name}</option>`).join('');
+    sel.innerHTML='<option value="overall">Overall Average</option>'+SUBJECTS.map(s=>`<option value="${esc(s.name)}">${esc(s.name)}</option>`).join('');
 }
 function populateProgressGradeFilter(){
     const sel=document.getElementById('progress-grade-filter');
     const grades=[...new Set(allStudents.map(s=>s._grade))].sort();
-    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
 }
 
 window.applyFilters=function(){
@@ -5611,7 +5845,7 @@ function populateTrendGradeFilter(){
     const sel=document.getElementById('trend-grade-filter');
     if(!sel)return;
     const grades=[...new Set(allStudents.map(s=>s._grade))].sort();
-    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
 }
 
 window.renderTrends=function(){
@@ -5929,11 +6163,11 @@ let aiSelectedStudent=null;
 
 function populateAiGradeFilters(){
     const grades=[...new Set(allStudents.map(s=>s._grade))].sort();
-    const opts='<option value="">All Grades</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+    const opts='<option value="">All Grades</option>'+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
     const aig=document.getElementById('ai-grade-filter');
     const aibg=document.getElementById('ai-bulk-grade');
     if(aig)aig.innerHTML=opts;
-    if(aibg)aibg.innerHTML='<option value="">Choose a grade...</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+    if(aibg)aibg.innerHTML='<option value="">Choose a grade...</option>'+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
 }
 
 window.setAiTone=function(tone){
