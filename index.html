@@ -223,10 +223,10 @@
         [data-theme="light"] #tsparticles { opacity:.55; }
 
         /* everything sits above bg layers */
-        .topbar, .main, #loader, #notif-wrap, .scroll-to-top,
+        .topbar, .main, #loader, #notif-wrap,
         #auth-screen, #dashboard, .sched-modal-overlay,
         .notif-panel { position:relative; z-index:1; }
-        /* #heatmap-tooltip MUST stay position:fixed — do NOT include it here */
+        /* .scroll-to-top and #heatmap-tooltip MUST stay position:fixed — do NOT include here */
         #tsparticles { z-index:0 !important; }
 
         /* ════ GLASS MORPHISM — card base ════ */
@@ -3150,7 +3150,7 @@
     <div class="topbar-brand">
         <div class="topbar-logo" id="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name"> Analytics &amp; Rankings</div>
+            <div class="brand-name"> Analytics. &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
