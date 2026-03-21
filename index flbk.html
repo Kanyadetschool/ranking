@@ -759,179 +759,25 @@
         .empty-icon { font-size: 52px; margin-bottom: 14px; }
         .empty-title { font-size: 17px; font-weight: 600; color: var(--text-primary); margin-bottom: 6px; }
 
-        /* ══ HEATMAP — redesigned ══ */
+        /* ══ HEATMAP ══ */
         .heatmap-section { padding: 22px; overflow: visible; }
-        .heatmap-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; }
-        .heatmap-controls label { font-size:10px; text-transform:uppercase; letter-spacing:.08em; color:var(--text-secondary); font-weight:700; display:block; margin-bottom:5px; }
+        .heatmap-title { font-size: 14px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+        .heatmap-sub { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; }
+        .heatmap-controls { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
         .heatmap-controls select { background: var(--bg-input); border: 1.5px solid var(--border-input); border-radius: 8px; color: var(--text-primary); padding: 8px 12px; font-family: 'Poppins', sans-serif; font-size: 13px; outline: none; transition: border-color 0.2s; cursor: pointer; }
         .heatmap-controls select:focus { border-color: #3498db; }
         .heatmap-controls select option { background: var(--bg-card); color: var(--text-primary); }
-
-        /* Outer scroll wrapper — both axes, natural scroll */
-        .heatmap-scroll {
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            max-height: 70vh;
-            /* Custom thin scrollbars */
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-color) transparent;
-        }
-        .heatmap-scroll::-webkit-scrollbar { width:5px; height:5px; }
-        .heatmap-scroll::-webkit-scrollbar-track { background:transparent; }
-        .heatmap-scroll::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
-
-        /* The inner grid wrapper — min-width prevents wrap */
-        .hm-grid-wrap { display:inline-block; min-width:max-content; padding: 0; }
-
-        /* ── Subject header row ── */
-        .hm-header-row {
-            display: flex;
-            align-items: stretch;
-            border-bottom: 2px solid var(--border-color);
-            background: var(--bg-panel);
-            position: relative; /* scrolls naturally — no sticky */
-            box-shadow: 0 2px 8px rgba(0,0,0,.08);
-        }
-        [data-theme="dark"] .hm-header-row {
-            box-shadow: 0 2px 12px rgba(0,0,0,.35);
-        }
-        .hm-corner {
-            flex-shrink: 0;
-            border-right: 2px solid var(--border-color);
-            background: var(--bg-panel);
-        }
-        .hm-col-header {
-            flex-shrink: 0;
-            display: flex;
-            align-items: flex-end;
-            justify-content: center;
-            padding-bottom: 8px;
-            position: relative;
-            cursor: default;
-        }
-        .hm-col-header-label {
-            font-size: 9.5px;
-            font-weight: 700;
-            color: var(--text-secondary);
-            white-space: nowrap;
-            writing-mode: vertical-rl;
-            text-orientation: mixed;
-            transform: rotate(180deg);
-            max-height: 110px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            letter-spacing: .02em;
-            transition: color .15s;
-            padding: 0 2px;
-        }
-        .hm-col-header:hover .hm-col-header-label { color: var(--text-primary); }
-
-        /* ── Data rows ── */
-        .hm-data-row {
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid var(--border-light);
-            transition: background .12s;
-            background: var(--bg-panel);
-        }
-        .hm-data-row:last-child { border-bottom: none; }
-        .hm-data-row:nth-child(odd) { background: var(--bg-table-alt); }
-        .hm-data-row:hover { background: var(--bg-table-hover) !important; }
-        .hm-data-row:hover .hm-name-cell { color: var(--text-primary) !important; font-weight: 800 !important; }
-
-        /* Sticky name column — only left-sticky, scrolls vertically with rows */
-        .hm-name-col {
-            flex-shrink: 0;
-            border-right: 2px solid var(--border-color);
-            background: inherit;
-            padding: 5px 10px 5px 10px;
-            display: flex;
-            align-items: center;
-        }
-        .hm-name-cell {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            cursor: pointer;
-            line-height: 1.3;
-            transition: color .15s, font-weight .1s;
-            white-space: normal;
-            word-break: break-word;
-        }
-        .hm-name-meta {
-            display: block;
-            font-size: 9.5px;
-            color: var(--text-muted);
-            font-weight: 500;
-            margin-top: 1px;
-        }
-
-        /* ── Score cells ── */
-        .hm-cell-wrap {
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .hm-cell {
-            border-radius: 7px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 800;
-            cursor: pointer;
-            position: relative;
-            /* Advanced transition — spring scale + glow */
-            transition:
-                transform .18s cubic-bezier(.34,1.56,.64,1),
-                box-shadow .18s ease,
-                filter .18s ease,
-                outline .1s ease;
-            outline: 2px solid transparent;
-            outline-offset: 1px;
-        }
-        .hm-cell::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            border-radius: inherit;
-            background: rgba(255,255,255,0);
-            transition: background .15s;
-            pointer-events: none;
-        }
-        .hm-cell:hover {
-            transform: scale(1.30) !important;
-            z-index: 50;
-            filter: brightness(1.15) saturate(1.3);
-        }
-        .hm-cell:hover::after {
-            background: rgba(255,255,255,0.12);
-        }
-        [data-theme="dark"] .hm-cell:hover {
-            box-shadow:
-                0 0 0 2px rgba(255,255,255,0.25),
-                0 6px 20px rgba(0,0,0,0.55),
-                0 0 24px currentColor !important;
-        }
-        [data-theme="light"] .hm-cell:hover {
-            box-shadow:
-                0 0 0 2px rgba(0,0,0,0.18),
-                0 4px 14px rgba(0,0,0,0.22) !important;
-        }
-        .hm-cell:active {
-            transform: scale(1.10) !important;
-            transition-duration: .08s !important;
-        }
-
-        /* Legend */
-        .heatmap-legend { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+        .heatmap-scroll { overflow-x: auto; overflow-y: visible; -webkit-overflow-scrolling: touch; padding-top: 8px; }
+        .heatmap-grid { display: grid; gap: 3px; min-width: fit-content; }
+        .heatmap-cell { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; border: 1px solid transparent; position: relative; }
+        .heatmap-cell:hover { transform: scale(1.2); box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 10; border-color: rgba(255,255,255,0.3); }
+        .heatmap-row-label { font-size: 11px; color: var(--text-secondary); font-weight: 700; white-space: nowrap; display: flex; align-items: center; padding-right: 8px; max-width: 140px; overflow: hidden; text-overflow: ellipsis; }
+        .heatmap-col-label { font-size: 10px; color: var(--text-secondary); font-weight: 700; text-align: center; transform: rotate(-40deg); transform-origin: center; white-space: nowrap; height: 60px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 6px; overflow: hidden; max-width: 36px; }
+        .heatmap-legend { display: flex; align-items: center; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
         .heatmap-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-secondary); font-weight: 600; }
-        .heatmap-legend-box { width: 16px; height: 16px; border-radius: 4px; }
-
-        /* Tooltip */
-        .heatmap-tooltip { position: fixed !important; left: -9999px; top: -9999px; background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 12px; padding: 13px 16px; font-size: 12px; color: var(--text-primary); box-shadow: 0 12px 40px rgba(0,0,0,0.38); z-index: 99999 !important; pointer-events: none; max-width: 270px; min-width: 190px; line-height: 1.6; }
+        .heatmap-legend-box { width: 18px; height: 18px; border-radius: 4px; }
+        .heatmap-tooltip { position: fixed !important; left: -9999px; top: -9999px; background: var(--bg-card); border: 1px solid var(--border-strong); border-radius: 10px; padding: 12px 16px; font-size: 12px; color: var(--text-primary); box-shadow: 0 8px 32px rgba(0,0,0,0.35); z-index: 99999 !important; pointer-events: none; max-width: 260px; min-width: 180px; line-height: 1.6; }
+        .hm-row-name { transition: color 0.15s, font-weight 0.1s, font-size 0.1s; }
 
         /* ══ SCROLLBAR ══ */
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -1057,6 +903,8 @@
         [data-theme="dark"] .btn-purple  { box-shadow: 0 4px 16px rgba(139,92,246,.2); }
         /* Compare view toggle aurora */
         [data-theme="dark"] .compare-view-btn.active { color:#00d4ff; }
+        /* Heatmap cells glow */
+        [data-theme="dark"] .heatmap-cell:hover { box-shadow: 0 0 16px currentColor; }
         /* Auth screen glow bg */
         [data-theme="dark"] #auth-screen::before {
             content:''; position:fixed; inset:0; pointer-events:none;
@@ -1366,6 +1214,9 @@
         /* ── Grade filter info ── */
         [data-theme="light"] .grade-filter-info { background:linear-gradient(135deg,rgba(41,128,185,.07),rgba(41,128,185,.04)) !important; border-color:rgba(41,128,185,.18) !important; color:#1a5276 !important; }
 
+        /* ── Heatmap ── */
+        [data-theme="light"] .heatmap-cell:hover { box-shadow:0 2px 8px rgba(0,0,0,.18) !important; }
+
         /* ── Scrollbar ── */
         [data-theme="light"]::-webkit-scrollbar-track { background:#f0f6fb; }
         [data-theme="light"]::-webkit-scrollbar-thumb { background:rgba(41,128,185,.25); border-radius:3px; }
@@ -1532,6 +1383,11 @@
         .compare-class-card {
             animation: cardRise .4s cubic-bezier(.34,1.56,.64,1) both;
         }
+
+        /* Heatmap cells pulse on hover */
+        .heatmap-cell { transition: transform .15s cubic-bezier(.34,1.56,.64,1),
+                                    box-shadow .15s ease !important; }
+        .heatmap-cell:hover { transform:scale(1.18) !important; }
 
         /* Score bars in progress subject cards */
         .exam-score-fill {
@@ -1800,6 +1656,11 @@
             50%     { opacity:1; box-shadow:0 0 12px var(--ic,#3498db); }
         }
 
+        /* ── Heatmap cells: colour-matched glow on hover ── */
+        [data-theme="dark"] .heatmap-section table td div:hover {
+            box-shadow: 0 4px 20px rgba(0,0,0,.5) !important;
+        }
+
         /* ── Photo card avatar: initials letter pop ── */
         .photo-avatar-initials {
             animation: initialsFloat 4s ease-in-out infinite;
@@ -1968,6 +1829,7 @@
             .tab { padding: 8px 10px; font-size: 12px; }
             .filter-bar { padding: 14px 16px; gap: 12px; }
             .filter-group { min-width: 120px; }
+            .heatmap-cell { width: 28px; height: 28px; font-size: 9px; }
         }
         @media (max-width: 600px) {
             .topbar { height: auto; min-height: 56px; padding: 8px 12px; flex-wrap: wrap; }
@@ -2878,6 +2740,8 @@
         [data-theme="light"] .notif-text { color:#0d2035 !important; }
 
         /* ── Heatmap cells ── */
+        [data-theme="dark"] .heatmap-cell:hover { box-shadow: 0 0 18px currentColor !important; }
+
         /* ── Scroll to top ── */
         .scroll-to-top {
             position: fixed; bottom: 24px; right: 24px;
@@ -2916,7 +2780,7 @@
     <div class="topbar-brand">
         <div class="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name"> Analytics &amp; Rankings</div>
+            <div class="brand-name"> Analytics &amp; Rankings</div>..
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -3163,13 +3027,13 @@ function toggleQuickLinks() {
     <!-- HEATMAP TAB -->
     <div id="tab-heatmap" class="panel" style="display:none;">
         <div class="panel-header">
-            <div><div class="panel-title">🔥 Performance Heatmap</div><div class="panel-sub">Visual grid of student scores across all subjects — coloured by performance level</div></div>
+            <div><div class="panel-title">🔥 Performance Heatmap</div><div class="panel-sub">Visual grid of student scores across subjects – coloured by performance level</div></div>
             <span class="panel-badge" id="heatmap-badge">Loading...</span>
         </div>
         <div class="heatmap-section">
             <div class="heatmap-controls">
                 <div>
-                    <label>Sort By</label>
+                    <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);font-weight:700;display:block;margin-bottom:5px;">Sort Students By</label>
                     <select id="heatmap-sort" onchange="renderHeatmap()">
                         <option value="avg_desc">Average ↓ (Highest first)</option>
                         <option value="avg_asc">Average ↑ (Lowest first)</option>
@@ -3178,14 +3042,14 @@ function toggleQuickLinks() {
                     </select>
                 </div>
                 <div>
-                    <label>Colour By</label>
+                    <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);font-weight:700;display:block;margin-bottom:5px;">Colour By</label>
                     <select id="heatmap-colour" onchange="renderHeatmap()">
                         <option value="score">Actual Score</option>
                         <option value="grade">Grade Level (EE/ME/AE/BE)</option>
                     </select>
                 </div>
                 <div>
-                    <label>Labels</label>
+                    <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);font-weight:700;display:block;margin-bottom:5px;">Show Labels</label>
                     <select id="heatmap-labels" onchange="renderHeatmap()">
                         <option value="score">Score</option>
                         <option value="grade">Grade Code</option>
@@ -3193,7 +3057,7 @@ function toggleQuickLinks() {
                     </select>
                 </div>
                 <div>
-                    <label>Cell Size</label>
+                    <label style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);font-weight:700;display:block;margin-bottom:5px;">Cell Size</label>
                     <select id="heatmap-size" onchange="renderHeatmap()">
                         <option value="36">Medium</option>
                         <option value="28">Small</option>
@@ -4454,41 +4318,101 @@ window.renderHeatmap=function(){
     }
 
     const gap=3;
-    const nameColW=172;
+    const nameColW=170;
+    // Header height: enough vertical space for rotated label to be fully above the data row
+    // At -45deg a label of N chars is approximately N * 5.5px tall when projected vertically
+    const maxSubjLen=Math.max(...activeSubjs.map(s=>s.name.length),8);
+    const labelProjH=Math.ceil(maxSubjLen * 5.5);          // projected height at -45°
+    const headerH=Math.max(80, Math.min(160, labelProjH + 16)); // +16px bottom padding
+
     const colW=cellSize;
-    const rowH=Math.max(cellSize+gap*2, 36);
-    // Header height: vertical writing-mode label, cap at 120px
-    const maxLen=Math.max(...activeSubjs.map(s=>s.name.length),6);
-    const headerH=Math.min(Math.max(maxLen*7+14, 80), 130);
 
-    // ── Header row ──
-    let html=`<div class="hm-grid-wrap">`;
-    html+=`<div class="hm-header-row" style="height:${headerH}px;">`;
-    // Corner cell
-    html+=`<div class="hm-corner" style="width:${nameColW}px;min-width:${nameColW}px;height:${headerH}px;"></div>`;
-    // Subject column headers — vertical label, no rotation needed
-    activeSubjs.forEach(subj=>{
-        html+=`<div class="hm-col-header" style="width:${colW+gap}px;min-width:${colW+gap}px;height:${headerH}px;" title="${esc(subj.name)}">
-            <span class="hm-col-header-label" style="max-height:${headerH-14}px;">${esc(subj.name)}</span>
-        </div>`;
+    let tbl=`<div style="overflow:auto;max-height:72vh;border-radius:10px;border:1px solid var(--border-color);">
+    <table style="border-collapse:separate;border-spacing:0;min-width:max-content;">
+    <thead>
+      <tr>
+        <th style="
+          position:sticky;left:0;top:0;z-index:30;
+          background:var(--bg-panel);
+          min-width:${nameColW}px;max-width:${nameColW}px;
+          border-right:2px solid var(--border-color);
+          border-bottom:2px solid var(--border-color);
+          padding:0;height:${headerH}px;
+        "></th>`;
+
+    // Subject header cells:
+    // Key fix — labels are positioned so the BOTTOM of the rotated text
+    // sits exactly AT the bottom border, never below it.
+    // We use a wrapping div with overflow:hidden so nothing escapes downward.
+    activeSubjs.forEach((subj,si)=>{
+        tbl+=`<th style="
+          position:sticky;top:0;z-index:20;
+          background:var(--bg-panel);
+          border-bottom:2px solid var(--border-color);
+          padding:0;
+          width:${colW+gap}px;min-width:${colW+gap}px;
+          height:${headerH}px;
+          vertical-align:bottom;
+          text-align:left;
+          overflow:visible;
+        ">
+          <!-- Clip container — nothing bleeds below the th border -->
+          <div style="
+            position:relative;
+            width:${colW+gap}px;
+            height:${headerH}px;
+            overflow:hidden;
+          ">
+            <!-- The label: anchored to bottom-left, rotated -45° upward -->
+            <span style="
+              font-size:10px;font-weight:700;
+              color:var(--text-primary);
+              white-space:nowrap;
+              display:inline-block;
+              position:absolute;
+              bottom:8px;
+              left:50%;
+              transform-origin:left bottom;
+              transform:translateX(-50%) rotate(-45deg);
+              letter-spacing:0.2px;
+              line-height:1;
+            " title="${esc(subj.name)}">${esc(subj.name)}</span>
+          </div>
+        </th>`;
     });
-    html+=`</div>`; // end header row
+    tbl+=`</tr></thead><tbody>`;
 
-    // ── Data rows ──
+    // Data rows
     students.forEach((s,si)=>{
         const fullName=s['Official Student Name']||'N/A';
         const avg=s._avg.toFixed(1);
+        const gi=s._gradeInfo;
         const aNo=esc(s._assessmentNo||s['Assessment No']||s._firebaseId||'');
-        const avgColor=s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c';
+        const rowBg=si%2===0?'var(--bg-body)':'var(--bg-table-alt)';
 
-        html+=`<div class="hm-data-row" style="min-height:${rowH}px;">`;
-        // Name cell
-        html+=`<div class="hm-name-col" style="width:${nameColW}px;min-width:${nameColW}px;min-height:${rowH}px;">
-            <div class="hm-name-cell" onclick="jumpToProgress('${aNo}')" title="${esc(fullName)} · ${esc(s._grade)} · Avg ${avg}%">
-                ${esc(fullName)}
-                <span class="hm-name-meta">${esc(s._grade)} · <span style="color:${avgColor};font-weight:700;">${avg}%</span></span>
-            </div>
-        </div>`;
+        tbl+=`<tr class="hm-data-row" data-rowid="${aNo}"
+          onmouseenter="this.querySelectorAll('td').forEach(td=>td.style.background='var(--bg-table-hover)');this.querySelector('.hm-name-cell').style.color='var(--text-primary)';this.querySelector('.hm-name-cell').style.fontWeight='800';"
+          onmouseleave="this.querySelectorAll('td').forEach((td,i)=>td.style.background=i===0?'var(--bg-panel)':'${rowBg}');this.querySelector('.hm-name-cell').style.color='var(--text-secondary)';this.querySelector('.hm-name-cell').style.fontWeight='600';">`;
+
+        // Sticky name column
+        tbl+=`<td style="
+          position:sticky;left:0;z-index:10;
+          background:var(--bg-panel);
+          min-width:${nameColW}px;max-width:${nameColW}px;
+          border-right:2px solid var(--border-color);
+          padding:0 10px 0 8px;
+          vertical-align:middle;
+        ">
+          <div class="hm-name-cell" style="
+            font-size:11px;font-weight:600;color:var(--text-secondary);
+            cursor:pointer;transition:color 0.15s,font-weight 0.1s;
+            white-space:normal;word-break:break-word;line-height:1.3;
+          "
+          onclick="jumpToProgress('${aNo}')"
+          title="${esc(fullName)} · ${esc(s._grade)} · Avg ${avg}%"
+          >${esc(fullName)}<span style="display:block;font-size:9.5px;color:var(--text-muted);margin-top:1px;">${esc(s._grade)} · ${avg}%</span>
+          </div>
+        </td>`;
 
         // Score cells
         activeSubjs.forEach(subj=>{
@@ -4498,28 +4422,44 @@ window.renderHeatmap=function(){
             const textCol=score!==null?'rgba(255,255,255,0.95)':'var(--text-muted)';
             const ttScore=score!==null?`${score.toFixed(1)}% · ${getGradeInfo(score).code}`:'Not assessed';
             const tooltipContent=`${esc(fullName)}|${esc(subj.name)}|${ttScore}|${esc(s._grade)}|${avg}`;
-            const fontSize=colW<=28?8:colW<=36?9:10;
-
-            html+=`<div class="hm-cell-wrap" style="width:${colW+gap}px;min-width:${colW+gap}px;height:${rowH}px;padding:${gap/2}px;">
-                <div class="hm-cell" style="
-                    width:${colW}px;height:${colW}px;
-                    background:${bg};
-                    color:${textCol};
-                    font-size:${fontSize}px;
-                    box-shadow:inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.15);
-                "
-                onmouseenter="showHeatmapTooltip(event,'${tooltipContent}')"
-                onmouseleave="hideHeatmapTooltip()"
-                >${label}</div>
-            </div>`;
+            tbl+=`<td style="
+              background:${rowBg};
+              padding:${gap/2}px ${gap/2}px;
+              border:none;
+              transition:background 0.12s;
+            ">
+              <div style="
+                width:${colW}px;height:${colW}px;border-radius:6px;
+                background:${bg};
+                display:flex;align-items:center;justify-content:center;
+                font-size:${colW<=28?8:colW<=36?9:10}px;font-weight:700;
+                color:${textCol};
+                cursor:pointer;
+                transition:transform 0.15s cubic-bezier(.34,1.56,.64,1), box-shadow 0.15s;
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.15);
+              "
+              onmouseenter="
+                this.style.transform='scale(1.22)';
+                this.style.zIndex='50';
+                this.style.boxShadow='0 4px 16px rgba(0,0,0,0.4)';
+                showHeatmapTooltip(event,'${tooltipContent}');
+              "
+              onmouseleave="
+                this.style.transform='scale(1)';
+                this.style.zIndex='1';
+                this.style.boxShadow='inset 0 1px 0 rgba(255,255,255,0.15)';
+                hideHeatmapTooltip();
+              "
+              >${label}</div>
+            </td>`;
         });
-        html+=`</div>`; // end row
+        tbl+=`</tr>`;
     });
 
-    html+=`</div>`; // end hm-grid-wrap
-    container.innerHTML=html;
+    tbl+=`</tbody></table></div>`;
+    container.innerHTML=tbl;
 
-    // ── Legend ──
+    // Legend
     if(colourMode==='grade'){
         legend.innerHTML=`<span style="font-size:11px;color:var(--text-secondary);font-weight:700;margin-right:8px;">Grade:</span>`+
             Object.entries(GRADE_COLORS).filter(([k])=>k!=='NA').map(([code,color])=>
