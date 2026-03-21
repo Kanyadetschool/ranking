@@ -230,7 +230,6 @@
         #tsparticles { z-index:0 !important; }
 
         /* ════ GLASS MORPHISM — card base ════ */
-        [data-theme="dark"] .panel,
         [data-theme="dark"] .auth-card,
         [data-theme="dark"] .stat-card,
         [data-theme="dark"] .filter-bar,
@@ -238,6 +237,10 @@
             backdrop-filter: blur(12px) saturate(160%);
             -webkit-backdrop-filter: blur(12px) saturate(160%);
         }
+        /* .panel intentionally excluded from backdrop-filter —
+           backdrop-filter creates a stacking context that traps
+           position:fixed children, making the scroll-to-top button
+           flicker/disappear whenever the panel repaints during scroll. */
 
         /* ══ TOPBAR — Aurora glass ══ */
         .topbar {
