@@ -3150,7 +3150,7 @@
     <div class="topbar-brand">
         <div class="topbar-logo" id="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name">Analytics. &amp; Rankings</div>
+            <div class="brand-name"> Analytics &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -5508,9 +5508,9 @@ window.switchTab=function(tab){
     else if(tab==='dashboard')renderCustomDashboard();
     else if(tab==='photos'){ populatePhotosGradeFilter(); renderPhotos(); }
     else if(tab==='bulkprint'){ populatePrintGradeFilter(); renderBulkPrint(); }
-    // Scroll to top of page smoothly when switching tabs
-    // (scrollIntoView with sticky topbar causes layout jank / scroll-pushback)
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Intentionally NOT scrolling to top on tab switch — let the user stay at
+    // their current scroll position. The old window.scrollTo({top:0}) was
+    // causing the scroll-to-top button to vanish mid-scroll and was frustrating.
 };
 
 // ══════════════════════════════════════════════════════════════
