@@ -3218,7 +3218,7 @@
 <div id="tsparticles" style="position:fixed;inset:0;z-index:0;pointer-events:none;"></div>
 
 <!-- SCROLL TO TOP BUTTON -->
-<button class="scroll-to-top" id="scroll-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+<button class="scroll-to-top visible" id="scroll-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
 
 <!-- AUTH -->
 <div id="auth-screen" class="main" style="display:none;">
@@ -4018,12 +4018,9 @@ if(document.readyState==='loading'){
 }
 
 // ══════════════════════════════════════════════════════════════
-// SCROLL TO TOP
+// SCROLL TO TOP — always visible
 // ══════════════════════════════════════════════════════════════
-window.addEventListener('scroll',()=>{
-    const btn=document.getElementById('scroll-to-top');
-    btn.classList.toggle('visible',window.scrollY>300);
-});
+window.addEventListener('scroll',()=>{}); // kept as stub if needed
 
 // ── RIPPLE effect on all .btn elements ──────────────────────
 document.addEventListener('click',e=>{
