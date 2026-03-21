@@ -2428,9 +2428,8 @@
         }
         #print-output { display: none; }
         /* ══ AUTO SCROLL BUTTON ══ */
-        .scroll-to-top { position: fixed; bottom: 24px; right: 24px; width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #2980b9, #3498db); color: #fff; border: none; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 16px rgba(52,152,219,0.4); z-index: 9000; opacity:0; visibility:hidden; pointer-events:none; transform:translateY(8px); transition: opacity .22s ease, transform .22s ease, visibility .22s; }
-        .scroll-to-top:hover { transform: scale(1.1); box-shadow: 0 6px 20px rgba(52,152,219,0.6); }
-        .scroll-to-top.visible { opacity:1; visibility:visible; pointer-events:auto; transform:translateY(0); }
+        /* scroll-to-top styles defined in aurora block below */
+        /* (no .visible rule needed — button is always shown) */
 
         /* ══════════════════════════════════════════════════════════
            🎛️ DASHBOARD INTERIOR REDESIGN — World-class analytics UI
@@ -3119,30 +3118,19 @@
             border: 1px solid rgba(0,212,255,.35);
             color: #00d4ff; font-size: 0;
             cursor: pointer;
-            /* Always display:flex — use opacity+visibility to show/hide smoothly.
-               display:none + transition:all causes flicker because display
-               is not an animatable property. */
             display: flex;
             align-items: center; justify-content: center;
             box-shadow: 0 0 20px rgba(0,212,255,.2);
             z-index: 9000;
-            /* Only transition opacity and transform — never transition:all */
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-            transform: translateY(8px) scale(0.9);
-            transition: opacity .22s ease, transform .22s ease, visibility .22s;
+            opacity: 1;
+            visibility: visible;
+            pointer-events: auto;
+            transition: transform .2s ease, box-shadow .2s ease;
             backdrop-filter: blur(12px);
             touch-action: manipulation;
         }
         .scroll-to-top::before { content: '↑'; font-size: 16px; font-weight: 700; animation: arrowBounce 1.5s ease-in-out infinite; }
-        .scroll-to-top:hover { transform: translateY(0) scale(1.1); box-shadow: 0 0 30px rgba(0,212,255,.4); border-color: rgba(0,212,255,.6); }
-        .scroll-to-top.visible {
-            opacity: 1;
-            visibility: visible;
-            pointer-events: auto;
-            transform: translateY(0) scale(1);
-        }
+        .scroll-to-top:hover { transform: scale(1.1); box-shadow: 0 0 30px rgba(0,212,255,.4); border-color: rgba(0,212,255,.6); }
         [data-theme="light"] .scroll-to-top { background:linear-gradient(135deg,#2980b9,#3498db) !important; border:none !important; color:#fff !important; box-shadow:0 4px 14px rgba(41,128,185,.35) !important; }
 
         /* ── Exam tabs (progress report term switcher) ── */
@@ -3166,7 +3154,7 @@
     <div class="topbar-brand">
         <div class="topbar-logo" id="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name"> Analytics. &amp; Rankings</div>
+            <div class="brand-name"> Analytics &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -4018,9 +4006,8 @@ if(document.readyState==='loading'){
 }
 
 // ══════════════════════════════════════════════════════════════
-// SCROLL TO TOP — always visible
+// SCROLL TO TOP — button is always visible (no hide/show logic)
 // ══════════════════════════════════════════════════════════════
-window.addEventListener('scroll',()=>{}); // kept as stub if needed
 
 // ── RIPPLE effect on all .btn elements ──────────────────────
 document.addEventListener('click',e=>{
