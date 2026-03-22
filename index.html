@@ -760,18 +760,27 @@
             border: 1px solid var(--border-color);
             border-radius: 12px;
             max-height: 70vh;
-            /* Custom thin scrollbars */
             scrollbar-width: thin;
             scrollbar-color: var(--border-color) transparent;
-            /* Ensure touch scroll works correctly on iOS */
             touch-action: pan-x pan-y;
+            /* Establish a containing block so position:sticky works inside */
+            position: relative;
         }
         .heatmap-scroll::-webkit-scrollbar { width:5px; height:5px; }
         .heatmap-scroll::-webkit-scrollbar-track { background:transparent; }
         .heatmap-scroll::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
 
-        /* The inner grid wrapper — block so vertical scroll works; min-width prevents column wrap */
+        /* The inner grid wrapper — block so vertical scroll works */
         .hm-grid-wrap { display: block; min-width: max-content; padding: 0; }
+
+        /* Name corner and name cells are sticky-left within the scroll container */
+        .hm-corner,
+        .hm-name-col {
+            position: sticky;
+            left: 0;
+            z-index: 5;
+        }
+        .hm-corner { z-index: 6; } /* above name cells so header corner is always on top */
 
         /* ── Subject header row ── */
         .hm-header-row {
@@ -829,15 +838,19 @@
         .hm-data-row:hover { background: var(--bg-table-hover) !important; }
         .hm-data-row:hover .hm-name-cell { color: var(--text-primary) !important; font-weight: 800 !important; }
 
-        /* Sticky name column — only left-sticky, scrolls vertically with rows */
+        /* Sticky name column — pinned to left edge while scrolling horizontally */
         .hm-name-col {
             flex-shrink: 0;
             border-right: 2px solid var(--border-color);
-            background: inherit;
+            /* Solid background required for sticky — inherit renders transparent */
+            background: var(--bg-panel);
             padding: 5px 10px 5px 10px;
             display: flex;
             align-items: center;
         }
+        /* Zebra stripe: odd rows need matching background on name col */
+        .hm-data-row:nth-child(odd) .hm-name-col { background: var(--bg-table-alt); }
+        .hm-data-row:hover .hm-name-col { background: var(--bg-table-hover) !important; }
         .hm-name-cell {
             font-size: 11px;
             font-weight: 600;
@@ -2948,7 +2961,7 @@
     <div class="topbar-brand">
         <div class="topbar-logo" id="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name">Analytics &amp; Rankings..</div>
+            <div class="brand-name"> Analytics &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -3119,21 +3132,21 @@ function toggleQuickLinks() {
     <div class="stats-grid" id="stats-grid"></div>
 
     <div class="tabs" id="main-tabs">
-        <button class="tab active" onclick="switchTab('rankings')">🏆 Overall Rankings</button>
-        <button class="tab" onclick="switchTab('subjects')">📐 Subject Analytics</button>
-        <button class="tab" onclick="switchTab('distribution')">📊 Grade Distribution</button>
-        <button class="tab" onclick="switchTab('heatmap')">🔥 Heatmap</button>
-        <button class="tab" onclick="switchTab('insights')">💡 Insights</button>
-        <button class="tab" onclick="switchTab('gender')">⚤ Gender Analysis</button>
-        <button class="tab" onclick="switchTab('detailed')">📋 Detailed Records</button>
-        <button class="tab" onclick="switchTab('compare')" style="border:1.5px solid #16a085;">🏫 Class Comparison</button>
-        <button class="tab" onclick="switchTab('progress')" style="border:1.5px solid #9b59b6;">📈 Student Progress</button>
-        <button class="tab" onclick="switchTab('trends')" style="border:1.5px solid #1abc9c;">📉 Trend Charts</button>
-        <button class="tab" onclick="switchTab('ai')" style="border:1.5px solid #8e44ad;">🤖 AI Reports</button>
-        <button class="tab" onclick="switchTab('scheduler')" style="border:1.5px solid #27ae60;">📅 Exam Schedule</button>
-        <button class="tab" onclick="switchTab('dashboard')" style="border:1.5px solid #e67e22;">🎛️ My Dashboard</button>
-        <button class="tab" onclick="switchTab('photos')" style="border:1.5px solid #e91e63;">📸 Photo Profiles</button>
-        <button class="tab" onclick="switchTab('bulkprint')" style="border:1.5px solid #16a085;">🖨️ Bulk Print</button>
+        <button class="tab active" onclick="switchTab('rankings',event)">🏆 Overall Rankings</button>
+        <button class="tab" onclick="switchTab('subjects',event)">📐 Subject Analytics</button>
+        <button class="tab" onclick="switchTab('distribution',event)">📊 Grade Distribution</button>
+        <button class="tab" onclick="switchTab('heatmap',event)">🔥 Heatmap</button>
+        <button class="tab" onclick="switchTab('insights',event)">💡 Insights</button>
+        <button class="tab" onclick="switchTab('gender',event)">⚤ Gender Analysis</button>
+        <button class="tab" onclick="switchTab('detailed',event)">📋 Detailed Records</button>
+        <button class="tab" onclick="switchTab('compare',event)" style="border:1.5px solid #16a085;">🏫 Class Comparison</button>
+        <button class="tab" onclick="switchTab('progress',event)" style="border:1.5px solid #9b59b6;">📈 Student Progress</button>
+        <button class="tab" onclick="switchTab('trends',event)" style="border:1.5px solid #1abc9c;">📉 Trend Charts</button>
+        <button class="tab" onclick="switchTab('ai',event)" style="border:1.5px solid #8e44ad;">🤖 AI Reports</button>
+        <button class="tab" onclick="switchTab('scheduler',event)" style="border:1.5px solid #27ae60;">📅 Exam Schedule</button>
+        <button class="tab" onclick="switchTab('dashboard',event)" style="border:1.5px solid #e67e22;">🎛️ My Dashboard</button>
+        <button class="tab" onclick="switchTab('photos',event)" style="border:1.5px solid #e91e63;">📸 Photo Profiles</button>
+        <button class="tab" onclick="switchTab('bulkprint',event)" style="border:1.5px solid #16a085;">🖨️ Bulk Print</button>
     </div>
 
     <!-- RANKINGS -->
@@ -5264,7 +5277,9 @@ window.exportAllDataPDF=async function(){
 // ══════════════════════════════════════════════════════════════
 // TABS
 // ══════════════════════════════════════════════════════════════
-window.switchTab=function(tab){
+window.switchTab=function(tab,evt){
+    // Prevent the focused tab button from causing the page to scroll
+    if(evt && evt.currentTarget) evt.currentTarget.blur();
     currentTab=tab;
     const tabMap=['rankings','subjects','distribution','heatmap','compare','insights','gender','detailed','progress','trends','ai','scheduler','dashboard','photos','bulkprint'];
     document.querySelectorAll('#main-tabs .tab').forEach((t,i)=>t.classList.toggle('active',tabMap[i]===tab));
