@@ -6302,4 +6302,894 @@ function generateRemarkFor(s, tone){
                 ME2:[`${name} is advised to dedicate additional study time to identified areas of weakness ahead of next term.`],
                 AE1:[`It is strongly recommended that ${name} seeks additional support and increases study commitment for next term.`],
                 AE2:[`Intervention and additional academic support are recommended for ${name} ahead of the next term.`],
-                BE1:[`Urgent remedial support is advised; the school will work closely with ${name} and 
+                BE1:[`Urgent remedial support is advised; the school will work closely with ${name} and ${pronoun2} guardians toward improvement.`],
+                BE2:[`A meeting with parents or guardians is recommended to discuss a structured improvement plan for next term.`],
+            }
+        },
+        concise:{
+            openers:{
+                EE1:[`${name} achieved an outstanding ${avg.toFixed(1)}% average this term — exceptional work.`],
+                EE2:[`Excellent term for ${name}: ${avg.toFixed(1)}% overall, demonstrating strong competence.`],
+                ME1:[`${name} performed well this term with a ${avg.toFixed(1)}% average — good effort.`],
+                ME2:[`${name} attained ${avg.toFixed(1)}% this term, meeting foundational expectations.`],
+                AE1:[`${name} scored ${avg.toFixed(1)}% this term; improvement is needed in several areas.`],
+                AE2:[`${name} achieved ${avg.toFixed(1)}% this term and must put in significantly more effort next term.`],
+                BE1:[`${name} scored ${avg.toFixed(1)}% this term — below expectation; urgent improvement is needed.`],
+                BE2:[`${name} attained ${avg.toFixed(1)}% this term and requires immediate academic support.`],
+            },
+            closers:{
+                EE1:[`Keep it up next term!`],
+                EE2:[`Looking forward to continued excellence next term.`],
+                ME1:[`Keep pushing higher next term.`],
+                ME2:[`More focused effort next term will yield better results.`],
+                AE1:[`A concerted effort next term is strongly encouraged.`],
+                AE2:[`Dedicated revision and support are key next term.`],
+                BE1:[`Remedial support and extra practice are essential next term.`],
+                BE2:[`Urgent support and parental involvement are advised for next term.`],
+            }
+        },
+        detailed:{
+            openers:{
+                EE1:[`${name} has delivered a truly exceptional academic performance this term, attaining an overall average of ${avg.toFixed(1)}% and earning the highest performance classification of ${gi.code} — ${gi.label}.`],
+                EE2:[`${name} has performed excellently this term with an overall average of ${avg.toFixed(1)}%, classified at ${gi.code} — ${gi.label}, reflecting deep understanding and consistent effort across the learning areas.`],
+                ME1:[`${name} has achieved a commendable overall average of ${avg.toFixed(1)}% this term, attaining a ${gi.code} — ${gi.label} classification, which indicates a solid and growing academic foundation.`],
+                ME2:[`${name} has recorded an overall average of ${avg.toFixed(1)}% this term, classified at ${gi.code} — ${gi.label}, showing adequate competence but indicating clear room for growth in several areas.`],
+                AE1:[`${name} has recorded an overall average of ${avg.toFixed(1)}% this term, falling in the ${gi.code} — ${gi.label} category, which indicates that learning objectives are not yet being fully met across the required competencies.`],
+                AE2:[`${name} attained an overall average of ${avg.toFixed(1)}% this term, classified at ${gi.code} — ${gi.label}, indicating that significant gaps in understanding exist and must be addressed urgently.`],
+                BE1:[`${name} achieved an overall average of ${avg.toFixed(1)}% this term, classified at ${gi.code} — ${gi.label}, which is significantly below the expected standard and requires a structured and targeted intervention plan.`],
+                BE2:[`${name} recorded an overall average of ${avg.toFixed(1)}% this term, which falls in the ${gi.code} — ${gi.label} band, indicating critical academic need that requires immediate and sustained remedial support.`],
+            },
+            closers:{
+                EE1:[`It is recommended that ${name} maintains this exceptional momentum into the next term by continuing to challenge ${pronoun2}self and supporting ${pronoun2} peers.`],
+                EE2:[`It is recommended that ${name} continues to build on these excellent foundations by setting even higher personal targets next term.`],
+                ME1:[`It is recommended that ${name} targets the higher performance bands by strengthening identified weak areas and sustaining ${pronoun2} positive study habits into next term.`],
+                ME2:[`It is recommended that ${name} engages in focused revision of weaker subjects and seeks teacher support where necessary to achieve stronger outcomes next term.`],
+                AE1:[`It is strongly recommended that ${name} engages in targeted revision, attends extra support sessions, and seeks consistent guidance from ${pronoun2} subject teachers ahead of next term.`],
+                AE2:[`An urgent academic recovery plan — including additional support sessions, structured revision, and close parental involvement — is recommended for ${name} ahead of next term.`],
+                BE1:[`A comprehensive intervention plan involving the class teacher, subject specialists, and parents is strongly recommended to support ${name}'s learning recovery ahead of next term.`],
+                BE2:[`Immediate, intensive academic support — including daily remedial sessions, parental engagement, and a personalised learning plan — is critical for ${name} ahead of the next term.`],
+            }
+        },
+        improvement:{
+            openers:{
+                EE1:[`${name} has achieved an outstanding average of ${avg.toFixed(1)}% this term; to maintain this level, the focus should now shift to broadening depth and mentoring peers.`],
+                EE2:[`${name} performed excellently with ${avg.toFixed(1)}% this term; the next step is to target the highest performance band by refining areas that are not yet at the very top level.`],
+                ME1:[`${name} achieved ${avg.toFixed(1)}% this term — a solid result; however, targeted improvement in selected learning areas could elevate ${pronoun3} to the Exceeding Expectation level.`],
+                ME2:[`${name} attained ${avg.toFixed(1)}% this term; there is clear potential to reach the Meeting Expectation upper band with focused effort on specific competency gaps.`],
+                AE1:[`${name} scored ${avg.toFixed(1)}% this term; meaningful improvement is achievable next term through consistent daily practice and targeted revision.`],
+                AE2:[`${name} attained ${avg.toFixed(1)}% this term; to reach the passing threshold next term, a structured daily study plan with teacher support is essential.`],
+                BE1:[`${name} scored ${avg.toFixed(1)}% this term; significant improvement is urgently needed, and specific, measurable steps must be taken starting immediately.`],
+                BE2:[`${name} recorded ${avg.toFixed(1)}% this term; a complete reset of study habits, daily practice, and close teacher mentorship are the three pillars of improvement needed now.`],
+            },
+            closers:{
+                EE1:[`Setting clear personal goals and taking on leadership roles in class will be key to continued growth for ${name} next term.`],
+                EE2:[`Targeting 90%+ in ${pronoun2} weakest subject next term would be a meaningful and achievable growth goal for ${name}.`],
+                ME1:[`Dedicating an extra 20 minutes daily to ${pronoun2} weakest learning area would be a powerful step toward the next performance level.`],
+                ME2:[`A focused study schedule prioritising ${weak||'identified weak subjects'} could unlock a significant improvement for ${name} next term.`],
+                AE1:[`Joining available study groups and committing to teacher-guided revision in ${weak||'weaker subjects'} will be transformative for ${name} next term.`],
+                AE2:[`Daily revision of at least 30 minutes across all learning areas, with particular attention to ${weak||'identified areas'}, is the most actionable path forward for ${name}.`],
+                BE1:[`Systematic daily practice, regular teacher check-ins, and parental oversight of homework completion are the most critical next steps for ${name}.`],
+                BE2:[`Immediate enrolment in available remedial classes and daily one-on-one support sessions with ${pronoun2} teacher are strongly recommended for ${name}.`],
+            }
+        }
+    };
+
+    // Determine level bucket
+    const code = gi.code;
+    const bucket = code==='EE1'?'EE1':code==='EE2'?'EE2':code==='ME1'?'ME1':code==='ME2'?'ME2':
+                   (code==='AE1'||code==='AE2')?code:(code==='BE1'||code==='BE2')?code:'ME2';
+
+    const tObj  = T[tone]||T.encouraging;
+    const opArr = tObj.openers[bucket]||tObj.openers['ME2'];
+    const clArr = tObj.closers[bucket]||tObj.closers['ME2'];
+
+    // Pick randomly from arrays
+    const opener = opArr[Math.floor(Math.random()*opArr.length)];
+    const closer = clArr[Math.floor(Math.random()*clArr.length)];
+
+    // Assemble final remark
+    return [opener, subjSentence, trendSentence, rankSentence, closer]
+        .filter(Boolean)
+        .join(' ')
+        .replace(/\s{2,}/g,' ')
+        .trim();
+}
+
+window.renderAiTab=function(){
+    // just ensure grade filters are up to date
+    populateAiGradeFilters();
+};
+
+window.generateSingleAiReport=async function(){
+    if(!aiSelectedStudent){notify('Please search and select a student first','warning');return;}
+    const s=aiSelectedStudent;
+    const btn=document.getElementById('ai-gen-btn');
+    btn.disabled=true; btn.innerHTML='<span class="ai-spin">⚙️</span> Generating...';
+
+    const card=document.getElementById('ai-single-output');
+    card.style.display='block';
+    document.getElementById('ai-report-student-name').textContent=s['Official Student Name']||'N/A';
+    document.getElementById('ai-report-student-meta').textContent=`${s._grade} · Avg: ${s._avg.toFixed(1)}% · ${s._gradeInfo.code} · Rank #${s._rank||'N/A'}`;
+    const content=document.getElementById('ai-report-content');
+    content.innerHTML=`<div class="ai-placeholder"><div class="ai-placeholder-icon ai-spin">🤖</div><div>Generating report...</div></div>`;
+
+    // Small delay so spinner shows
+    await new Promise(r=>setTimeout(r,320));
+
+    try{
+        const text = generateRemarkFor(s, aiTone);
+        content.innerHTML=`<div class="ai-report-text">${esc(text)}</div>`;
+        window._lastAiReport={student:s['Official Student Name'],text};
+        notify('✅ Report generated for '+s['Official Student Name'],'success');
+    }catch(e){
+        content.innerHTML=`<div class="ai-placeholder"><div style="font-size:13px;color:var(--text-primary);">⚠️ ${esc(e.message)}</div></div>`;
+        notify('Error: '+e.message,'error');
+    }
+    btn.disabled=false; btn.innerHTML='🤖 Generate Report';
+};
+
+window.copyAiReport=function(){
+    if(!window._lastAiReport)return;
+    navigator.clipboard.writeText(window._lastAiReport.text).then(()=>notify('📋 Report copied to clipboard!','success'));
+};
+
+window.exportSingleAiPDF=async function(){
+    if(!window._lastAiReport||!window.jspdf){notify('No report to export','warning');return;}
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF('portrait');
+    const pw=doc.internal.pageSize.width;
+    doc.setFillColor(142,68,173);doc.rect(0,0,pw,28,'F');
+    const _aiLogo=await _loadLogoPDF();
+    _drawPDFLogo(doc,_aiLogo,20,28);
+    doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
+    doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,10,{align:'center'});
+    doc.setFontSize(10);doc.setFont(undefined,'normal');
+    doc.text('AI-Generated Teacher Remarks',pw/2,18,{align:'center'});
+    doc.setFontSize(8);doc.setTextColor(220,200,240);
+    doc.text(`Generated: ${new Date().toLocaleDateString()} | Tone: ${aiTone}`,pw/2,24,{align:'center'});
+    const s=aiSelectedStudent;
+    if(s){
+        doc.setTextColor(0,0,0);doc.setFontSize(10);doc.setFont(undefined,'bold');
+        doc.text(`${s['Official Student Name']||'N/A'} — ${s._grade} — Avg: ${s._avg.toFixed(1)}% (${s._gradeInfo.code})`,14,36);
+    }
+    doc.setFontSize(11);doc.setFont(undefined,'normal');doc.setTextColor(40,40,40);
+    const lines=doc.splitTextToSize(window._lastAiReport.text,pw-28);
+    doc.text(lines,14,46);
+    doc.setFontSize(7);doc.setTextColor(150,150,150);
+    doc.text('This remark was AI-generated and should be reviewed by the class teacher before use in official documents.',14,doc.internal.pageSize.height-10,{maxWidth:pw-28});
+    doc.save(`AI_Remark_${(s?.['Official Student Name']||'student').replace(/\s+/g,'_')}.pdf`);
+    notify('📥 PDF saved!','success');
+};
+
+window.generateBulkAiReports=async function(){
+    const gradeVal=document.getElementById('ai-bulk-grade').value;
+    if(!gradeVal){notify('Please select a grade first','warning');return;}
+    const students=allStudents.filter(s=>s._grade===gradeVal);
+    if(!students.length){notify('No students found for this grade','warning');return;}
+
+    const btn=document.getElementById('ai-bulk-btn');
+    btn.disabled=true;
+    const grid=document.getElementById('ai-bulk-output');
+    grid.innerHTML=`<div style="grid-column:1/-1;text-align:center;padding:20px;color:var(--text-secondary);"><span class="ai-spin">⚙️</span> Generating ${students.length} reports...</div>`;
+
+    await new Promise(r=>setTimeout(r,200));
+
+    const results = students.map(s=>({s, text:generateRemarkFor(s, aiTone)}));
+
+    grid.innerHTML=results.map(({s,text})=>`
+        <div class="ai-bulk-card">
+            <div class="ai-bulk-name">${esc(s['Official Student Name']||'N/A')} <span style="font-weight:400;font-size:11px;color:var(--text-secondary);">· ${esc(s._grade)} · ${s._avg.toFixed(1)}% · ${s._gradeInfo.code}</span></div>
+            <div class="ai-bulk-remark">${esc(text)}</div>
+            <button onclick="navigator.clipboard.writeText(${JSON.stringify(text)}).then(()=>notify('Copied!','success'))" style="margin-top:8px;background:transparent;border:1px solid var(--border-color);border-radius:6px;color:var(--text-secondary);font-size:11px;font-family:'Poppins',sans-serif;padding:4px 10px;cursor:pointer;">📋 Copy</button>
+        </div>`).join('');
+
+    btn.disabled=false; btn.innerHTML='🤖 Generate All';
+    notify(`✅ Generated ${results.length} reports for ${gradeVal}!`,'success');
+};
+
+// ══════════════════════════════════════════════════════════════
+// EXAM SCHEDULE & DEADLINE TRACKER
+// ══════════════════════════════════════════════════════════════
+let schedEvents=JSON.parse(localStorage.getItem('kanyadet_sched')||'[]');
+let schedCurrentDate=new Date();
+let schedFilter='all';
+
+function saveSchedEvents(){
+    localStorage.setItem('kanyadet_sched',JSON.stringify(schedEvents));
+}
+
+window.renderScheduler=function(){
+    renderSchedCalendar();
+    renderSchedList();
+    document.getElementById('sched-badge').textContent=schedEvents.length+' event'+(schedEvents.length!==1?'s':'');
+};
+
+function renderSchedCalendar(){
+    const cal=document.getElementById('sched-calendar');
+    const label=document.getElementById('sched-month-label');
+    const yr=schedCurrentDate.getFullYear();
+    const mo=schedCurrentDate.getMonth();
+    const monthNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+    label.textContent=`${monthNames[mo]} ${yr}`;
+
+    const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const today=new Date(); today.setHours(0,0,0,0);
+    const firstDay=new Date(yr,mo,1).getDay();
+    const daysInMonth=new Date(yr,mo+1,0).getDate();
+    const daysInPrev=new Date(yr,mo,0).getDate();
+
+    let html=days.map(d=>`<div class="sched-cal-hdr">${d}</div>`).join('');
+
+    // Prev month filler
+    for(let i=0;i<firstDay;i++){
+        const d=daysInPrev-firstDay+1+i;
+        html+=`<div class="sched-cal-day other-month"><div class="sched-day-num">${d}</div></div>`;
+    }
+    // Current month
+    for(let d=1;d<=daysInMonth;d++){
+        const dateStr=`${yr}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const dayDate=new Date(yr,mo,d); dayDate.setHours(0,0,0,0);
+        const isToday=dayDate.getTime()===today.getTime();
+        const events=schedEvents.filter(e=>e.date===dateStr&&(schedFilter==='all'||e.type===schedFilter));
+        html+=`<div class="sched-cal-day ${isToday?'today':''} ${events.length?'has-event':''}" onclick="openSchedModalForDate('${dateStr}')">
+            <div class="sched-day-num">${d}</div>
+            ${events.slice(0,2).map(e=>`<span class="sched-event-chip chip-${e.type}">${esc(e.title)}</span>`).join('')}
+            ${events.length>2?`<span style="font-size:9px;color:var(--text-secondary);">+${events.length-2} more</span>`:''}
+        </div>`;
+    }
+    // Next month filler
+    const totalCells=firstDay+daysInMonth;
+    const remaining=(7-totalCells%7)%7;
+    for(let i=1;i<=remaining;i++){
+        html+=`<div class="sched-cal-day other-month"><div class="sched-day-num">${i}</div></div>`;
+    }
+    cal.innerHTML=html;
+}
+
+function renderSchedList(){
+    const list=document.getElementById('sched-event-list');
+    const title=document.getElementById('sched-list-title');
+    const today=new Date(); today.setHours(0,0,0,0);
+    const filtered=schedEvents
+        .filter(e=>schedFilter==='all'||e.type===schedFilter)
+        .sort((a,b)=>a.date.localeCompare(b.date));
+
+    const upcoming=filtered.filter(e=>new Date(e.date+'T00:00:00')>=today);
+    const past=filtered.filter(e=>new Date(e.date+'T00:00:00')<today);
+    const display=[...upcoming,...past.slice(0,5)];
+
+    title.textContent=`Upcoming Events (${upcoming.length}) — Past (${past.length})`;
+
+    if(!display.length){
+        list.innerHTML=`<div style="text-align:center;padding:40px;color:var(--text-secondary);">
+            <div style="font-size:42px;margin-bottom:12px;opacity:0.4;">📅</div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary);">No events yet</div>
+            <div style="font-size:12px;margin-top:6px;">Click <strong>+ Add Event</strong> to schedule an exam, deadline, or school event.</div>
+        </div>`;
+        return;
+    }
+
+    const typeIcons={exam:'📝',deadline:'⏰',holiday:'🌴',other:'📌'};
+    const typeColors={exam:'#e74c3c',deadline:'#f39c12',holiday:'#27ae60',other:'#3498db'};
+
+    list.innerHTML=display.map(e=>{
+        const eDate=new Date(e.date+'T00:00:00');
+        const diffMs=eDate-today;
+        const diffDays=Math.round(diffMs/(1000*60*60*24));
+        let daysChip='';
+        if(diffDays<0)daysChip=`<span class="sched-days-chip days-past">${Math.abs(diffDays)}d ago</span>`;
+        else if(diffDays===0)daysChip=`<span class="sched-days-chip days-urgent">TODAY</span>`;
+        else if(diffDays<=3)daysChip=`<span class="sched-days-chip days-urgent">In ${diffDays}d</span>`;
+        else if(diffDays<=7)daysChip=`<span class="sched-days-chip days-soon">In ${diffDays}d</span>`;
+        else daysChip=`<span class="sched-days-chip days-future">In ${diffDays}d</span>`;
+        const dateLabel=eDate.toLocaleDateString('en-KE',{weekday:'short',year:'numeric',month:'short',day:'numeric'});
+        return`<div class="sched-item" style="--ic2:${typeColors[e.type]||'#3498db'}">
+            <div class="sched-item-icon">${typeIcons[e.type]||'📌'}</div>
+            <div class="sched-item-info">
+                <div class="sched-item-title">${esc(e.title)}</div>
+                <div class="sched-item-meta">${dateLabel}${e.grade?' · '+esc(e.grade):''}${e.notes?' · '+esc(e.notes):''}</div>
+            </div>
+            ${daysChip}
+            <button class="sched-del-btn" onclick="deleteSchedEvent('${e.id}')" title="Delete">✕</button>
+        </div>`;
+    }).join('');
+}
+
+window.schedPrevMonth=function(){
+    schedCurrentDate=new Date(schedCurrentDate.getFullYear(),schedCurrentDate.getMonth()-1,1);
+    renderSchedCalendar();
+};
+window.schedNextMonth=function(){
+    schedCurrentDate=new Date(schedCurrentDate.getFullYear(),schedCurrentDate.getMonth()+1,1);
+    renderSchedCalendar();
+};
+window.toggleSchedFilter=function(type){
+    schedFilter=type;
+    document.querySelectorAll('.sched-type-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.sched-type-btn').forEach(b=>{if(b.textContent.toLowerCase().includes(type==='all'?'all':type.slice(0,4)))b.classList.add('active');});
+    renderSchedCalendar();renderSchedList();
+};
+window.openSchedModal=function(){
+    document.getElementById('sched-input-title').value='';
+    document.getElementById('sched-input-date').value=new Date().toISOString().split('T')[0];
+    document.getElementById('sched-input-type').value='exam';
+    document.getElementById('sched-input-grade').value='';
+    document.getElementById('sched-input-notes').value='';
+    document.getElementById('sched-modal-overlay').classList.add('open');
+};
+window.openSchedModalForDate=function(dateStr){
+    openSchedModal();
+    document.getElementById('sched-input-date').value=dateStr;
+};
+window.closeSchedModal=function(){
+    document.getElementById('sched-modal-overlay').classList.remove('open');
+};
+window.saveSchedEvent=function(){
+    const title=document.getElementById('sched-input-title').value.trim();
+    const date=document.getElementById('sched-input-date').value;
+    if(!title){notify('Please enter an event title','warning');return;}
+    if(!date){notify('Please select a date','warning');return;}
+    const ev={
+        id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),
+        title,date,
+        type:document.getElementById('sched-input-type').value,
+        grade:document.getElementById('sched-input-grade').value.trim(),
+        notes:document.getElementById('sched-input-notes').value.trim()
+    };
+    schedEvents.push(ev);
+    saveSchedEvents();
+    closeSchedModal();
+    renderScheduler();
+    document.getElementById('sched-badge').textContent=schedEvents.length+' event'+(schedEvents.length!==1?'s':'');
+    notify(`📅 Event "${title}" added!`,'success');
+};
+window.deleteSchedEvent=function(id){
+    schedEvents=schedEvents.filter(e=>e.id!==id);
+    saveSchedEvents();
+    renderScheduler();
+    document.getElementById('sched-badge').textContent=schedEvents.length+' event'+(schedEvents.length!==1?'s':'');
+    notify('Event deleted','info');
+};
+// Close modal on overlay click
+document.getElementById('sched-modal-overlay').addEventListener('click',function(e){if(e.target===this)closeSchedModal();});
+
+
+// ══════════════════════════════════════════════════════════════
+// BROWSER NOTIFICATIONS
+// ══════════════════════════════════════════════════════════════
+let notifPrefs=JSON.parse(localStorage.getItem('kanyadet_notif_prefs')||'{"1d":false,"3d":true,"7d":false}');
+let notifPermission = (typeof Notification !== 'undefined') ? Notification.permission : 'default';
+
+function saveNotifPrefs(){
+    notifPrefs={
+        '1d':document.getElementById('notif-1d').checked,
+        '3d':document.getElementById('notif-3d').checked,
+        '7d':document.getElementById('notif-7d').checked
+    };
+    localStorage.setItem('kanyadet_notif_prefs',JSON.stringify(notifPrefs));
+    scheduleNotifChecks();
+}
+
+function loadNotifPrefs(){
+    document.getElementById('notif-1d').checked=!!notifPrefs['1d'];
+    document.getElementById('notif-3d').checked=!!notifPrefs['3d'];
+    document.getElementById('notif-7d').checked=!!notifPrefs['7d'];
+    updateNotifPermissionUI();
+}
+
+function updateNotifPermissionUI(){
+    const area=document.getElementById('notif-permission-area');
+    const dot=document.getElementById('notif-badge-dot');
+    const perm=(typeof Notification!=='undefined')?Notification.permission:'default';
+    if(perm==='granted'){
+        area.innerHTML='<div style="font-size:12px;color:#27ae60;font-weight:600;padding:8px 0;">✅ Notifications enabled</div>';
+        scheduleNotifChecks();
+    } else if(perm==='denied'){
+        area.innerHTML='<div style="font-size:12px;color:#e74c3c;padding:8px 0;">🚫 Notifications blocked. Enable in browser settings.</div>';
+    } else if(typeof Notification==='undefined'){
+        area.innerHTML='<div style="font-size:12px;color:#f39c12;padding:8px 0;">⚠️ Notifications not supported in this browser.</div>';
+    }
+    // Update upcoming events list in panel
+    updateNotifUpcomingList();
+    // Show dot if there are upcoming events in next 7 days
+    const today=new Date(); today.setHours(0,0,0,0);
+    const schedEvents=JSON.parse(localStorage.getItem('kanyadet_sched')||'[]');
+    const soon=schedEvents.filter(e=>{
+        const d=new Date(e.date+'T00:00:00');
+        const diff=Math.round((d-today)/(1000*60*60*24));
+        return diff>=0&&diff<=7;
+    });
+    if(dot) dot.style.display=soon.length?'block':'none';
+}
+
+function updateNotifUpcomingList(){
+    const el=document.getElementById('notif-upcoming-list');
+    if(!el)return;
+    const today=new Date(); today.setHours(0,0,0,0);
+    const schedEvents=JSON.parse(localStorage.getItem('kanyadet_sched')||'[]');
+    const upcoming=schedEvents
+        .map(e=>({...e,diff:Math.round((new Date(e.date+'T00:00:00')-today)/(1000*60*60*24))}))
+        .filter(e=>e.diff>=0&&e.diff<=30)
+        .sort((a,b)=>a.diff-b.diff)
+        .slice(0,5);
+    if(!upcoming.length){el.textContent='No events in next 30 days.';return;}
+    el.innerHTML=upcoming.map(e=>`<div style="padding:4px 0;border-bottom:1px solid var(--border-light);display:flex;justify-content:space-between;align-items:center;">
+        <span>${e.type==='exam'?'📝':e.type==='deadline'?'⏰':e.type==='holiday'?'🌴':'📌'} ${e.title}</span>
+        <span style="font-weight:700;color:${e.diff===0?'#e74c3c':e.diff<=3?'#e67e22':'#27ae60'};">${e.diff===0?'TODAY':'In '+e.diff+'d'}</span>
+    </div>`).join('');
+}
+
+function scheduleNotifChecks(){
+    if(typeof Notification==='undefined'||Notification.permission!=='granted')return;
+    const today=new Date(); today.setHours(0,0,0,0);
+    const schedEvents=JSON.parse(localStorage.getItem('kanyadet_sched')||'[]');
+    const thresholds=[];
+    if(notifPrefs['1d'])thresholds.push(1);
+    if(notifPrefs['3d'])thresholds.push(3);
+    if(notifPrefs['7d'])thresholds.push(7);
+    schedEvents.forEach(e=>{
+        const d=new Date(e.date+'T00:00:00');
+        const diff=Math.round((d-today)/(1000*60*60*24));
+        if(thresholds.includes(diff)){
+            const key='notif_sent_'+e.id+'_'+diff;
+            if(!sessionStorage.getItem(key)){
+                try{
+                    new Notification('📅 Kanyadet School Reminder',{
+                        body:`"${e.title}" is ${diff===0?'TODAY':diff===1?'tomorrow':'in '+diff+' days'}${e.grade?' ('+e.grade+')':''}`,
+                        icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="24" font-size="24">🏫</text></svg>'
+                    });
+                    sessionStorage.setItem(key,'1');
+                }catch(err){/* silently ignore */}
+            }
+        }
+    });
+}
+
+window.toggleNotifPanel=function(){
+    const p=document.getElementById('notif-panel');
+    p.classList.toggle('open');
+    if(p.classList.contains('open')){ loadNotifPrefs(); updateNotifUpcomingList(); }
+};
+window.requestNotifPermission=async function(){
+    if(typeof Notification==='undefined'){notify('Notifications not supported in this browser','warning');return;}
+    const perm=await Notification.requestPermission();
+    notifPermission=perm;
+    updateNotifPermissionUI();
+    if(perm==='granted')notify('🔔 Notifications enabled!','success');
+    else notify('Notifications not granted','warning');
+};
+
+// Close notif panel on outside click
+document.addEventListener('click',e=>{
+    const p=document.getElementById('notif-panel');
+    const btn=document.getElementById('notif-bell-btn');
+    if(p&&p.classList.contains('open')&&!p.contains(e.target)&&!btn.contains(e.target))p.classList.remove('open');
+});
+// Run check on load
+setTimeout(()=>{ loadNotifPrefs(); scheduleNotifChecks(); updateNotifPermissionUI(); },1500);
+
+// ══════════════════════════════════════════════════════════════
+// CUSTOM DASHBOARD BUILDER
+// ══════════════════════════════════════════════════════════════
+let dashWidgets=JSON.parse(localStorage.getItem('kanyadet_dashboard')||'[]');
+
+const WIDGET_DEFS={
+    total_students:{ label:'Total Students', icon:'👥', color:'#3498db',
+        value:()=>filteredStudents.length, sub:()=>[...new Set(filteredStudents.map(s=>s._grade))].length+' grades' },
+    class_avg:{ label:'Class Average', icon:'📊', color:'#2980b9',
+        value:()=>filteredStudents.length?(filteredStudents.reduce((a,b)=>a+b._avg,0)/filteredStudents.length).toFixed(1)+'%':'—',
+        bar:()=>filteredStudents.length?(filteredStudents.reduce((a,b)=>a+b._avg,0)/filteredStudents.length):0 },
+    pass_rate:{ label:'Pass Rate', icon:'✅', color:'#27ae60',
+        value:()=>filteredStudents.length?(filteredStudents.filter(s=>s._avg>=41).length/filteredStudents.length*100).toFixed(1)+'%':'—',
+        bar:()=>filteredStudents.length?(filteredStudents.filter(s=>s._avg>=41).length/filteredStudents.length*100):0,
+        sub:()=>`${filteredStudents.filter(s=>s._avg>=41).length} of ${filteredStudents.length} passing` },
+    top_student:{ label:'Top Student', icon:'🏆', color:'#f39c12',
+        value:()=>filteredStudents.length?([...filteredStudents].sort((a,b)=>b._avg-a._avg)[0]['Official Student Name']||'N/A').split(' ')[0]:'—',
+        sub:()=>filteredStudents.length?([...filteredStudents].sort((a,b)=>b._avg-a._avg)[0]._avg.toFixed(1)+'%'):'—' },
+    ee_count:{ label:'Exceeding Expectation', icon:'🌟', color:'#27ae60',
+        value:()=>filteredStudents.filter(s=>s._gradeInfo.code.startsWith('EE')).length,
+        sub:()=>filteredStudents.length?(filteredStudents.filter(s=>s._gradeInfo.code.startsWith('EE')).length/filteredStudents.length*100).toFixed(0)+'% of class':'',
+        bar:()=>filteredStudents.length?(filteredStudents.filter(s=>s._gradeInfo.code.startsWith('EE')).length/filteredStudents.length*100):0 },
+    be_count:{ label:'Below Expectation', icon:'⚠️', color:'#e74c3c',
+        value:()=>filteredStudents.filter(s=>s._gradeInfo.code.startsWith('BE')).length,
+        sub:()=>filteredStudents.length?(filteredStudents.filter(s=>s._gradeInfo.code.startsWith('BE')).length/filteredStudents.length*100).toFixed(0)+'% need support':'',
+        bar:()=>filteredStudents.length?(filteredStudents.filter(s=>s._gradeInfo.code.startsWith('BE')).length/filteredStudents.length*100):0 },
+    best_subject:{ label:'Best Subject', icon:'💪', color:'#16a085',
+        value:()=>{ const sa=SUBJECTS.map(s=>{const sc=filteredStudents.map(x=>readScore(x,s.name)).filter(v=>v!==null);return{n:s.name,a:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0};}).sort((a,b)=>b.a-a.a);return sa[0]?sa[0].n.split(' ')[0]:'—'; },
+        sub:()=>{ const sa=SUBJECTS.map(s=>{const sc=filteredStudents.map(x=>readScore(x,s.name)).filter(v=>v!==null);return{n:s.name,a:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0};}).sort((a,b)=>b.a-a.a);return sa[0]?sa[0].a.toFixed(1)+'% avg':''; } },
+    weak_subject:{ label:'Weakest Subject', icon:'📌', color:'#e67e22',
+        value:()=>{ const sa=SUBJECTS.map(s=>{const sc=filteredStudents.map(x=>readScore(x,s.name)).filter(v=>v!==null);return{n:s.name,a:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0};}).filter(x=>x.a>0).sort((a,b)=>a.a-b.a);return sa[0]?sa[0].n.split(' ')[0]:'—'; },
+        sub:()=>{ const sa=SUBJECTS.map(s=>{const sc=filteredStudents.map(x=>readScore(x,s.name)).filter(v=>v!==null);return{n:s.name,a:sc.length?sc.reduce((a,b)=>a+b,0)/sc.length:0};}).filter(x=>x.a>0).sort((a,b)=>a.a-b.a);return sa[0]?sa[0].a.toFixed(1)+'% avg':''; } },
+    gender_gap:{ label:'Gender Gap', icon:'⚤', color:'#8e44ad',
+        value:()=>{ const m=filteredStudents.filter(s=>(s['Gender']||'').toLowerCase().startsWith('m'));const f=filteredStudents.filter(s=>(s['Gender']||'').toLowerCase().startsWith('f'));if(!m.length||!f.length)return'N/A';const ma=m.reduce((a,b)=>a+b._avg,0)/m.length,fa=f.reduce((a,b)=>a+b._avg,0)/f.length;return Math.abs(ma-fa).toFixed(1)+'%'; },
+        sub:()=>{ const m=filteredStudents.filter(s=>(s['Gender']||'').toLowerCase().startsWith('m'));const f=filteredStudents.filter(s=>(s['Gender']||'').toLowerCase().startsWith('f'));if(!m.length||!f.length)return'';const ma=m.reduce((a,b)=>a+b._avg,0)/m.length,fa=f.reduce((a,b)=>a+b._avg,0)/f.length;return (ma>fa?'Male':'Female')+' lead'; } },
+    avg_pts:{ label:'Avg Total Points', icon:'📐', color:'#1abc9c',
+        value:()=>filteredStudents.length?(filteredStudents.reduce((a,b)=>a+b._totalPts,0)/filteredStudents.length).toFixed(1):'—',
+        sub:()=>`of ${SUBJECTS.length*8} possible` },
+    total_grades:{ label:'Active Grades', icon:'📚', color:'#e67e22',
+        value:()=>[...new Set(filteredStudents.map(s=>s._grade))].length,
+        sub:()=>[...new Set(filteredStudents.map(s=>s._grade))].sort().join(', ') },
+    upcoming_exam:{ label:'Next Exam', icon:'📅', color:'#27ae60',
+        value:()=>{ const today=new Date();today.setHours(0,0,0,0);const evs=JSON.parse(localStorage.getItem('kanyadet_sched')||'[]').filter(e=>e.type==='exam'&&new Date(e.date+'T00:00:00')>=today).sort((a,b)=>a.date.localeCompare(b.date));return evs[0]?evs[0].title.slice(0,14)+(evs[0].title.length>14?'…':''):'None scheduled'; },
+        sub:()=>{ const today=new Date();today.setHours(0,0,0,0);const evs=JSON.parse(localStorage.getItem('kanyadet_sched')||'[]').filter(e=>e.type==='exam'&&new Date(e.date+'T00:00:00')>=today).sort((a,b)=>a.date.localeCompare(b.date));if(!evs[0])return'';const d=Math.round((new Date(evs[0].date+'T00:00:00')-today)/(1000*60*60*24));return d===0?'TODAY':d===1?'Tomorrow':'In '+d+' days'; } }
+};
+
+window.renderCustomDashboard=function(){
+    const canvas=document.getElementById('dash-canvas');
+    const palette=document.getElementById('dash-palette');
+    const countBadge=document.getElementById('dash-widget-count');
+    if(!canvas)return;
+
+    // Drag from palette — re-bind palette items (they may be re-rendered)
+    palette.querySelectorAll('.dash-palette-item').forEach(item=>{
+        // Clone to strip old listeners before re-adding
+        const fresh=item.cloneNode(true);
+        item.parentNode.replaceChild(fresh,item);
+        fresh.addEventListener('dragstart',e=>{
+            e.dataTransfer.setData('widget',fresh.dataset.widget);
+            fresh.classList.add('dragging');
+        });
+        fresh.addEventListener('dragend',()=>fresh.classList.remove('dragging'));
+    });
+
+    paintDashWidgets();
+    if(countBadge)countBadge.textContent=dashWidgets.length+' widget'+(dashWidgets.length!==1?'s':'');
+};
+
+// Canvas drag listeners bound ONCE — avoids stacking listeners on every render call
+(function(){
+    const bindCanvasDrag=()=>{
+        const canvas=document.getElementById('dash-canvas');
+        if(!canvas||canvas._dragBound)return;
+        canvas._dragBound=true;
+        canvas.addEventListener('dragover',e=>{e.preventDefault();canvas.classList.add('drag-over');});
+        canvas.addEventListener('dragleave',()=>canvas.classList.remove('drag-over'));
+        canvas.addEventListener('drop',e=>{
+            e.preventDefault();
+            canvas.classList.remove('drag-over');
+            const wType=e.dataTransfer.getData('widget');
+            if(wType&&WIDGET_DEFS[wType]){
+                if(dashWidgets.includes(wType)){notify('Widget already on dashboard','warning');return;}
+                dashWidgets.push(wType);
+                saveDashboard();
+                paintDashWidgets();
+            }
+        });
+    };
+    // Bind when dashboard tab first becomes visible
+    document.addEventListener('DOMContentLoaded',()=>setTimeout(bindCanvasDrag,500));
+    // Also bind immediately in case DOM is already ready
+    setTimeout(bindCanvasDrag,600);
+})();
+
+function paintDashWidgets(){
+    const canvas=document.getElementById('dash-canvas');
+    if(!canvas)return;
+    canvas.classList.toggle('empty',dashWidgets.length===0);
+    canvas.innerHTML=dashWidgets.map(wt=>{
+        const def=WIDGET_DEFS[wt];if(!def)return'';
+        const val=def.value();
+        const sub=def.sub?def.sub():'';
+        const barPct=def.bar?def.bar():null;
+        return`<div class="dash-widget" style="border-top:4px solid ${def.color};">
+            <button class="dash-widget-close" onclick="removeDashWidget('${wt}')">✕</button>
+            <div class="dash-widget-label">${def.icon} ${def.label}</div>
+            <div class="dash-widget-val" style="color:${def.color};">${val}</div>
+            ${sub?`<div class="dash-widget-sub">${sub}</div>`:''}
+            ${barPct!==null?`<div class="dash-widget-bar"><div class="dash-widget-bar-fill" style="width:${Math.min(barPct,100)}%;background:${def.color};"></div></div>`:''}
+        </div>`;
+    }).join('');
+    const countBadge=document.getElementById('dash-widget-count');
+    if(countBadge)countBadge.textContent=dashWidgets.length+' widget'+(dashWidgets.length!==1?'s':'');
+}
+
+window.removeDashWidget=function(wt){
+    dashWidgets=dashWidgets.filter(w=>w!==wt);
+    saveDashboard();
+    paintDashWidgets();
+};
+window.clearDashboard=function(){
+    if(!dashWidgets.length)return;
+    dashWidgets=[];
+    saveDashboard();
+    paintDashWidgets();
+    notify('Dashboard cleared','info');
+};
+function saveDashboard(){
+    localStorage.setItem('kanyadet_dashboard',JSON.stringify(dashWidgets));
+}
+window.exportDashPDF=async function(){
+    if(!dashWidgets.length){notify('Add some widgets first','warning');return;}
+    if(!window.jspdf){notify('PDF library not ready','error');return;}
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF('portrait');
+    const pw=doc.internal.pageSize.width;
+    doc.setFillColor(41,128,185);doc.rect(0,0,pw,28,'F');
+    const _dashLogo=await _loadLogoPDF();
+    _drawPDFLogo(doc,_dashLogo,20,28);
+    doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
+    doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',pw/2,10,{align:'center'});
+    doc.setFontSize(10);doc.setFont(undefined,'normal');
+    doc.text('Custom Dashboard Export',pw/2,18,{align:'center'});
+    doc.setFontSize(7);doc.setTextColor(200,235,255);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`,pw/2,24,{align:'center'});
+    const rows=dashWidgets.map(wt=>{
+        const def=WIDGET_DEFS[wt];if(!def)return null;
+        return[def.icon+' '+def.label,String(def.value()),def.sub?String(def.sub()):''];
+    }).filter(Boolean);
+    doc.autoTable({margin:{top:10,right:14,bottom:10,left:14},
+        head:[['Metric','Value','Detail']],body:rows,startY:36,
+        styles:{fontSize:10,cellPadding:4},
+        headStyles:{fillColor:[41,128,185],textColor:[255,255,255],fontStyle:'bold'},
+        alternateRowStyles:{fillColor:[240,248,255]},
+        columnStyles:{0:{cellWidth:80,fontStyle:'bold'},1:{cellWidth:40,halign:'center',fontStyle:'bold'},2:{}}
+    });
+    doc.save(`Dashboard_${new Date().toISOString().split('T')[0]}.pdf`);
+    notify('📥 Dashboard PDF exported!','success');
+};
+
+// ══════════════════════════════════════════════════════════════
+// STUDENT PHOTO PROFILES
+// ══════════════════════════════════════════════════════════════
+// Photos are fetched from server only — no upload needed
+let photoUploadTarget=null; // kept as stub to avoid reference errors in old PDF code
+
+function populatePhotosGradeFilter(){
+    const sel=document.getElementById('photos-grade-filter');
+    if(!sel)return;
+    const grades=[...new Set(allStudents.map(s=>s._grade))].sort();
+    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+}
+
+window.renderPhotos=function(){
+    const grid=document.getElementById('photos-grid');
+    const badge=document.getElementById('photos-badge');
+    if(!grid)return;
+    const q=(document.getElementById('photos-search')?.value||'').toLowerCase();
+    const gf=document.getElementById('photos-grade-filter')?.value||'';
+    const sort=document.getElementById('photos-sort')?.value||'name';
+    if(!allStudents.length){
+        grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">📸</div><div class="empty-title">No students loaded</div></div>`;
+        return;
+    }
+
+    let pool=[...allStudents];
+    if(gf)pool=pool.filter(s=>s._grade===gf);
+    if(q)pool=pool.filter(s=>((s['Official Student Name']||'')+(s['Assessment No']||'')).toLowerCase().includes(q));
+    if(sort==='avg_desc')pool.sort((a,b)=>b._avg-a._avg);
+    else if(sort==='avg_asc')pool.sort((a,b)=>a._avg-b._avg);
+    else if(sort==='grade')pool.sort((a,b)=>(a._grade||'').localeCompare(b._grade||''));
+    else pool.sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
+
+    const photoCount=pool.length;
+    if(badge)badge.textContent=photoCount+' student'+(photoCount!==1?'s':'');
+
+    const fc=s=>s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c';
+
+    // Build grid — initials as instant placeholder, server photo loads async
+    grid.innerHTML=pool.map(s=>{
+        const aNo=s._assessmentNo||s['Assessment No']||s._firebaseId||'';
+        const initials=(s['Official Student Name']||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2);
+        const shortName=(s['Official Student Name']||'N/A');
+        const cardId='phcard_'+aNo.replace(/[^a-z0-9]/gi,'_');
+        return`<div class="photo-card" id="${cardId}" onclick="jumpToProgress('${esc(aNo)}')" style="cursor:pointer;" title="View ${esc(shortName)}'s progress">
+            <div class="photo-avatar-wrap" id="av_${cardId}">
+                <div class="photo-avatar-initials" id="init_${cardId}">${initials}</div>
+            </div>
+            <div class="photo-card-body">
+                <div class="photo-card-name" title="${esc(s['Official Student Name']||'N/A')}">${esc(shortName)}</div>
+                <div class="photo-card-meta">${esc(s._grade)} · ${s['Gender']||'N/A'}</div>
+                <div class="photo-card-score" style="color:${fc(s)};">${s._avg.toFixed(1)}% · ${s._gradeInfo.code}</div>
+            </div>
+        </div>`;
+    }).join('');
+
+    // Async: fetch server photos from ./Report-Cards/student_images/{grade}/{name}.jpg
+    pool.forEach(async s=>{
+        const aNo=s._assessmentNo||s['Assessment No']||s._firebaseId||'';
+        const cardId='phcard_'+aNo.replace(/[^a-z0-9]/gi,'_');
+        const avWrap=document.getElementById('av_'+cardId);
+        const initEl=document.getElementById('init_'+cardId);
+        if(!avWrap) return;
+        const res=await loadStudentImg(s['Official Student Name']||'',s._grade||s['Grade']||'');
+        if(!res.ok) return; // no server photo — keep initials
+        if(initEl) initEl.remove();
+        const img=document.createElement('img');
+        img.className='photo-avatar-img';
+        img.alt=s['Official Student Name']||'';
+        img.style.cssText='width:100%;height:100%;object-fit:cover;';
+        img.src=res.img.src;
+        avWrap.insertBefore(img, avWrap.firstChild);
+    });
+};
+
+window.exportPhotosPDF=async function(){
+    if(!filteredStudents.length){notify('No students','warning');return;}
+    if(!window.jspdf){notify('PDF library not ready','error');return;}
+    const{jsPDF}=window.jspdf;
+    const doc=new jsPDF('portrait');
+    const pw=doc.internal.pageSize.width,ph=doc.internal.pageSize.height;
+    doc.setFillColor(41,128,185);doc.rect(0,0,pw,24,'F');
+    const _photosLogo=await _loadLogoPDF();
+    _drawPDFLogo(doc,_photosLogo,18,24);
+    doc.setTextColor(255,255,255);doc.setFontSize(12);doc.setFont(undefined,'bold');
+    doc.text('KANYADET — Student Photo Directory',pw/2,15,{align:'center'});
+    const cols=4,cellW=(pw-28)/cols,cellH=36;
+    const students=[...allStudents].sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
+    students.forEach((s,i)=>{
+        const col=i%cols,row=Math.floor(i/cols);
+        const pageBreak=Math.floor(cols*(Math.floor((ph-30)/cellH)));
+        if(i>0&&i%pageBreak===0)doc.addPage();
+        const x=14+col*cellW,y=28+((i%pageBreak)%Math.floor((ph-30)/cellH))*cellH;
+        // No photoStore — photos are server-fetched, not stored locally
+        doc.setFontSize(8);doc.setTextColor(40,40,40);doc.setFont(undefined,'bold');
+        doc.text(s['Official Student Name']||'N/A',x,y+6,{maxWidth:cellW-4});
+        doc.setFont(undefined,'normal');doc.setFontSize(7);doc.setTextColor(100,100,100);
+        doc.text(s._grade+' · '+s._avg.toFixed(1)+'% · '+s._gradeInfo.code,x,y+11);
+    });
+    doc.save(`Photo_Directory_${new Date().toISOString().split('T')[0]}.pdf`);
+    notify('📥 Photo directory PDF exported!','success');
+};
+
+// ══════════════════════════════════════════════════════════════
+// BULK PRINT REPORT CARDS
+// ══════════════════════════════════════════════════════════════
+let printSelected=new Set();
+
+function populatePrintGradeFilter(){
+    const sel=document.getElementById('print-grade-filter');
+    if(!sel)return;
+    const grades=[...new Set(allStudents.map(s=>s._grade))].sort();
+    sel.innerHTML='<option value="">All Grades</option>'+grades.map(g=>`<option value="${g}">${g}</option>`).join('');
+}
+
+window.renderBulkPrint=function(){
+    const gf=document.getElementById('print-grade-filter')?.value||'';
+    const grid=document.getElementById('print-preview-grid');
+    if(!grid)return;
+    let pool=[...filteredStudents];
+    if(gf)pool=pool.filter(s=>s._grade===gf);
+    pool.sort((a,b)=>b._avg-a._avg);
+
+    // Sync printSelected to current pool
+    printSelected=new Set([...printSelected].filter(id=>pool.some(s=>(s._assessmentNo||s['Assessment No']||s._firebaseId)===id)));
+    updatePrintBadge();
+
+    if(!pool.length){grid.innerHTML=`<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🖨️</div><div class="empty-title">No students match filter</div></div>`;return;}
+
+    const dynSubj=SUBJECTS.filter(subj=>pool.some(s=>readScore(s,subj.name)!==null));
+    const fc=v=>v>=75?'#27ae60':v>=58?'#3498db':v>=41?'#f39c12':'#e74c3c';
+
+    grid.innerHTML=pool.map((s,i)=>{
+        const aNo=s._assessmentNo||s['Assessment No']||s._firebaseId||'';
+        const checked=printSelected.has(aNo);
+        const subjBars=dynSubj.slice(0,6).map(subj=>{
+            const v=readScore(s,subj.name);
+            if(v===null)return'';
+            const col=fc(v);
+            const shortN=subj.name.length>16?subj.name.slice(0,15)+'…':subj.name;
+            return`<div class="print-subj-row">
+                <span class="print-subj-name" title="${esc(subj.name)}">${esc(shortN)}</span>
+                <div class="print-subj-bar"><div class="print-subj-fill" style="width:${v}%;background:${col};"></div></div>
+                <span class="print-subj-val" style="color:${col};">${v.toFixed(0)}</span>
+            </div>`;
+        }).join('');
+        return`<div class="print-card-preview" style="border-top:4px solid ${checked?'#3498db':s._avg>=75?'#27ae60':s._avg>=41?'#f39c12':'#e74c3c'};">
+            <div class="print-card-top" style="background:linear-gradient(135deg,${checked?'#2980b9,#3498db':'#7f8c8d,#95a5a6'});">
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                    <div>
+                        <div class="print-card-name">${esc(s['Official Student Name']||'N/A')}</div>
+                        <div class="print-card-sub">${esc(s._grade)} · ${s['Gender']||'N/A'} · Rank #${s._rank||'N/A'}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:22px;font-weight:700;">${s._avg.toFixed(1)}%</div>
+                        <div style="font-size:10px;opacity:0.8;">${s._gradeInfo.code}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="print-card-body">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                    <input type="checkbox" class="print-select-cb" ${checked?'checked':''} onchange="togglePrintSelect('${esc(aNo)}',this.checked)">
+                    <span style="font-size:11px;color:var(--text-secondary);">Include in print</span>
+                    <span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:8px;background:${fc(s._avg)}22;color:${fc(s._avg)};border:1px solid ${fc(s._avg)}55;">${s._gradeInfo.code}</span>
+                </div>
+                ${subjBars}
+                ${dynSubj.length>6?`<div style="font-size:10px;color:var(--text-muted);margin-top:4px;">+${dynSubj.length-6} more subjects</div>`:''}
+            </div>
+        </div>`;
+    }).join('');
+};
+
+window.togglePrintSelect=function(aNo,checked){
+    if(checked)printSelected.add(aNo);else printSelected.delete(aNo);
+    updatePrintBadge();
+};
+window.selectAllPrint=function(sel){
+    const gf=document.getElementById('print-grade-filter')?.value||'';
+    let pool=[...filteredStudents];
+    if(gf)pool=pool.filter(s=>s._grade===gf);
+    if(sel)pool.forEach(s=>printSelected.add(s._assessmentNo||s['Assessment No']||s._firebaseId||''));
+    else printSelected.clear();
+    updatePrintBadge();
+    renderBulkPrint();
+};
+function updatePrintBadge(){
+    const b=document.getElementById('print-selected-badge');
+    if(b)b.textContent=printSelected.size+' selected';
+}
+
+function buildPrintHTML(students){
+    const style=document.getElementById('print-style')?.value||'detailed';
+    const showHeader=document.getElementById('print-header')?.value!=='0';
+    const dynSubj=SUBJECTS.filter(subj=>students.some(s=>readScore(s,subj.name)!==null));
+    const fc=v=>v>=75?'#27ae60':v>=58?'#3498db':v>=41?'#f39c12':'#e74c3c';
+    const schoolHeader=showHeader?`<div style="text-align:center;border-bottom:2px solid #2980b9;padding-bottom:10px;margin-bottom:14px;">
+        <div style="font-size:18px;font-weight:700;color:#2c3e50;">KANYADET PRIMARY & JUNIOR SCHOOL</div>
+        <div style="font-size:11px;color:#7f8c8d;margin-top:3px;">Student Report Card · ${new Date().toLocaleDateString('en-KE',{year:'numeric',month:'long'})}</div>
+    </div>`:'';
+    return students.map(s=>{
+        const aNo=s._assessmentNo||s['Assessment No']||s._firebaseId||'';
+        // Build server-image path (same as loadStudentImg logic)
+        const g=(s._grade||'').match(/^Grade\s*\d+/i)?.[0]||(s._grade||'');
+        const cleanName=(s['Official Student Name']||'').trim();
+        const photoSrc=`./Report-Cards/student_images/${g}/${encodeURIComponent(cleanName)}.jpg`;
+        const subjRows=dynSubj.map(subj=>{
+            const v=readScore(s,subj.name);
+            if(v===null)return style==='summary'?'':'<tr><td style="padding:4px 8px;font-size:11px;">'+subj.name+'</td><td style="text-align:center;font-size:11px;color:#7f8c8d;">—</td><td style="text-align:center;font-size:11px;color:#7f8c8d;">—</td></tr>';
+            const gi=getGradeInfo(v);
+            return`<tr><td style="padding:4px 8px;font-size:11px;font-weight:600;">${subj.name}</td><td style="text-align:center;font-size:12px;font-weight:700;color:${fc(v)};">${v.toFixed(1)}%</td><td style="text-align:center;font-size:11px;font-weight:700;color:${fc(v)};">${gi.code}</td></tr>`;
+        }).join('');
+        return`<div class="print-page">
+            ${schoolHeader}
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:16px;">
+                <div>
+                    <div style="font-size:16px;font-weight:700;color:#2c3e50;">${esc(s['Official Student Name']||'N/A')}</div>
+                    <div style="font-size:11px;color:#7f8c8d;margin-top:3px;">${esc(s._grade)} · ${s['Gender']||'N/A'} · UPI: ${esc(s['UPI']||'N/A')} · Assess No: ${esc(aNo)}</div>
+                    <div style="margin-top:8px;display:flex;gap:12px;flex-wrap:wrap;">
+                        <div style="background:#ebf5fb;border-radius:8px;padding:6px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#2980b9;">${s._avg.toFixed(1)}%</div><div style="font-size:9px;color:#7f8c8d;text-transform:uppercase;">Overall Avg</div></div>
+                        <div style="background:#eafaf1;border-radius:8px;padding:6px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:${fc(s._avg)};">${s._gradeInfo.code}</div><div style="font-size:9px;color:#7f8c8d;text-transform:uppercase;">Level</div></div>
+                        <div style="background:#f8fafc;border-radius:8px;padding:6px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#2c3e50;">#${s._rank||'N/A'}</div><div style="font-size:9px;color:#7f8c8d;text-transform:uppercase;">Class Rank</div></div>
+                        <div style="background:#f8fafc;border-radius:8px;padding:6px 12px;text-align:center;"><div style="font-size:20px;font-weight:700;color:#2c3e50;">${s._totalPts.toFixed(1)}</div><div style="font-size:9px;color:#7f8c8d;text-transform:uppercase;">Total Pts</div></div>
+                    </div>
+                </div>
+                ${`<img src="${photoSrc}" style="width:64px;height:64px;object-fit:cover;border-radius:8px;border:2px solid #dde3ec;flex-shrink:0;" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">`}<div style="width:64px;height:64px;background:#f0f4f8;border-radius:8px;border:2px solid #dde3ec;display:none;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#7f8c8d;flex-shrink:0;">${(s['Official Student Name']||'?')[0].toUpperCase()}</div>
+            </div>
+            ${style==='detailed'?`<table style="width:100%;border-collapse:collapse;border:1px solid #dde3ec;border-radius:8px;overflow:hidden;">
+                <thead><tr style="background:#2980b9;"><th style="padding:6px 8px;text-align:left;color:#fff;font-size:10px;">Learning Area</th><th style="padding:6px 8px;text-align:center;color:#fff;font-size:10px;">Score</th><th style="padding:6px 8px;text-align:center;color:#fff;font-size:10px;">Level</th></tr></thead>
+                <tbody>${subjRows}</tbody>
+            </table>`:
+            `<div style="font-size:12px;color:#7f8c8d;">Strongest: <strong style="color:#27ae60;">${esc(s._topSubject||'N/A')}</strong> · Needs attention: <strong style="color:#e74c3c;">${esc(s._weakSubject||'N/A')}</strong></div>`}
+            <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div style="border-top:1px solid #dde3ec;padding-top:8px;"><div style="font-size:10px;text-transform:uppercase;color:#7f8c8d;margin-bottom:20px;">Class Teacher's Signature</div><div style="border-bottom:1px solid #2c3e50;width:140px;"></div></div>
+                <div style="border-top:1px solid #dde3ec;padding-top:8px;"><div style="font-size:10px;text-transform:uppercase;color:#7f8c8d;margin-bottom:20px;">Head Teacher / Stamp</div><div style="border-bottom:1px solid #2c3e50;width:140px;"></div></div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+window.bulkPrintSelected=function(){
+    if(!printSelected.size){notify('No students selected — check the boxes on the preview cards','warning');return;}
+    const gf=document.getElementById('print-grade-filter')?.value||'';
+    let pool=[...filteredStudents];
+    if(gf)pool=pool.filter(s=>s._grade===gf);
+    const toPrint=pool.filter(s=>printSelected.has(s._assessmentNo||s['Assessment No']||s._firebaseId||''));
+    doPrint(toPrint);
+};
+window.bulkPrintAll=function(){
+    const gf=document.getElementById('print-grade-filter')?.value||'';
+    let pool=[...filteredStudents];
+    if(gf)pool=pool.filter(s=>s._grade===gf);
+    if(!pool.length){notify('No students to print','warning');return;}
+    doPrint(pool);
+};
+function doPrint(students){
+    const out=document.getElementById('print-output');
+    out.innerHTML=buildPrintHTML(students);
+    notify(`🖨️ Opening print dialog for ${students.length} report card${students.length!==1?'s':''}...`,'info');
+    setTimeout(()=>window.print(),400);
+}
+
+
+</script>
+</body>
+</html>
