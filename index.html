@@ -4592,8 +4592,11 @@ let _hmPage=1, _hmPool=[];
 function populateHeatmapGradeFilter(){
     const sel=document.getElementById('heatmap-grade-filter');
     if(!sel) return;
-    const grades=[...new Set(filteredStudents.map(s=>s._grade).filter(Boolean))].sort();
+    // Use allStudents — this is called before applyFilters() populates filteredStudents
+    const grades=[...new Set(allStudents.map(s=>s._grade).filter(Boolean))].sort();
+    const current=sel.value; // preserve selection if re-populating
     sel.innerHTML='<option value="">All Classes</option>'+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+    if(current) sel.value=current; // restore previous selection
 }
 
 window.hmSearch=function(){
