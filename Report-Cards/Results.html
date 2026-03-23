@@ -1694,7 +1694,7 @@ deleteGradeBtn.addEventListener('click', async () => {
 
             // Fixed meta columns (only those present in data)
             const META_BEFORE = ['Assessment No', 'UPI', 'Official Student Name', 'Gender'];
-            const META_AFTER  = ['Grade', 'Term', 'Class'];
+            const META_AFTER  = ['Grade', 'Term'];
             const allKeys = new Set();
             students.forEach(s => Object.keys(s).forEach(k => allKeys.add(k)));
 
@@ -1702,21 +1702,22 @@ deleteGradeBtn.addEventListener('click', async () => {
             const metaAfter  = META_AFTER.filter(k => allKeys.has(k));
 
             // Extra non-subject, non-meta columns (custom fields)
-            const knownCols = new Set([...META_BEFORE, ...META_AFTER, ...subjectCols,
+            const knownCols = new Set([...META_BEFORE, ...META_AFTER, 'Class', ...subjectCols,
                 'id', 'Image', 'Total Marks', 'Perc Avrg', 'Level', 'deletedAt', 'deletedBy',
                 'Closing Date', 'Opening Date']);
             const extraCols = Array.from(allKeys).filter(k => !knownCols.has(k)).sort();
 
-            // Final column order: No. | meta | subjects | Total | Avg | Level | extra
+            // Final column order: No. | meta | subjects | extra | Total Marks | Avg | Level | Class
             const exportHeaders = [
                 'No.',
                 ...metaBefore,
                 ...subjectCols,
+                ...extraCols,
                 'Total Marks',
                 'Average (%)',
                 'Level',
+                ...(allKeys.has('Class') ? ['Class'] : []),
                 ...metaAfter,
-                ...extraCols
             ];
 
             const exportRows = students.map((student, idx) => {
