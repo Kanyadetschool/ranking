@@ -2976,7 +2976,7 @@
     <div class="topbar-brand">
         <div class="topbar-logo" id="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name"> Analytics &amp; Rankings...ht</div>
+            <div class="brand-name"> Analytics &amp; Rankings</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -3229,10 +3229,26 @@ function toggleQuickLinks() {
             <span class="panel-badge" id="heatmap-badge">Loading...</span>
         </div>
         <div class="heatmap-section">
-            <div class="heatmap-controls">
+            <!-- Row 1: search + class filter -->
+            <div class="heatmap-controls" style="margin-bottom:10px;">
+                <div style="flex:1;min-width:180px;">
+                    <label>🔍 Search Student</label>
+                    <input type="text" id="heatmap-search" placeholder="Name or assessment no..." autocomplete="off"
+                        style="width:100%;background:var(--bg-input);border:1.5px solid var(--border-input);border-radius:8px;color:var(--text-primary);padding:8px 12px;font-family:'Poppins',sans-serif;font-size:13px;outline:none;box-sizing:border-box;"
+                        oninput="hmSearch()">
+                </div>
+                <div>
+                    <label>📚 Class / Grade</label>
+                    <select id="heatmap-grade-filter" onchange="hmSearch()" style="background:var(--bg-input);border:1.5px solid var(--border-input);border-radius:8px;color:var(--text-primary);padding:8px 12px;font-family:'Poppins',sans-serif;font-size:13px;outline:none;cursor:pointer;">
+                        <option value="">All Classes</option>
+                    </select>
+                </div>
+            </div>
+            <!-- Row 2: sort/colour/label/size controls -->
+            <div class="heatmap-controls" style="margin-bottom:16px;">
                 <div>
                     <label>Sort By</label>
-                    <select id="heatmap-sort" onchange="renderHeatmap()">
+                    <select id="heatmap-sort" onchange="hmSearch()">
                         <option value="avg_desc">Average ↓ (Highest first)</option>
                         <option value="avg_asc">Average ↑ (Lowest first)</option>
                         <option value="name_asc">Name A→Z</option>
@@ -3241,14 +3257,14 @@ function toggleQuickLinks() {
                 </div>
                 <div>
                     <label>Colour By</label>
-                    <select id="heatmap-colour" onchange="renderHeatmap()">
+                    <select id="heatmap-colour" onchange="hmSearch()">
                         <option value="score">Actual Score</option>
                         <option value="grade">Grade Level (EE/ME/AE/BE)</option>
                     </select>
                 </div>
                 <div>
                     <label>Labels</label>
-                    <select id="heatmap-labels" onchange="renderHeatmap()">
+                    <select id="heatmap-labels" onchange="hmSearch()">
                         <option value="score">Score</option>
                         <option value="grade">Grade Code</option>
                         <option value="none">None</option>
@@ -3256,14 +3272,30 @@ function toggleQuickLinks() {
                 </div>
                 <div>
                     <label>Cell Size</label>
-                    <select id="heatmap-size" onchange="renderHeatmap()">
+                    <select id="heatmap-size" onchange="hmSearch()">
                         <option value="36">Medium</option>
                         <option value="28">Small</option>
                         <option value="44">Large</option>
                     </select>
                 </div>
+                <div>
+                    <label>Rows / Page</label>
+                    <select id="heatmap-per-page" onchange="hmGoPage(1)">
+                        <option value="25">25</option>
+                        <option value="50" selected>50</option>
+                        <option value="100">100</option>
+                        <option value="0">All</option>
+                    </select>
+                </div>
             </div>
-            <div class="heatmap-scroll" id="heatmap-container"></div>
+            <!-- Scroll container — pointer-events isolation prevents page scroll bleed -->
+            <div class="heatmap-scroll" id="heatmap-container"
+                onwheel="event.stopPropagation();"
+                ontouchstart="this._tsy=event.touches[0].clientY;this._tsx=event.touches[0].clientX;"
+                ontouchmove="hmTouchMove(event,this);"
+            ></div>
+            <!-- Pagination bar -->
+            <div id="heatmap-pagination" style="display:flex;align-items:center;justify-content:space-between;padding:10px 4px 0;flex-wrap:wrap;gap:8px;"></div>
             <div class="heatmap-legend" id="heatmap-legend"></div>
         </div>
         <div id="heatmap-tooltip" class="heatmap-tooltip" style="display:none;left:-9999px;top:-9999px;"></div>
@@ -4138,7 +4170,7 @@ function processStudentData(raw){
         allTerms=Object.keys(termMap).sort();
         allTermLabels=termMap;
 
-        populateGradeFilter(); populateDistSubjectFilter(); populateProgressGradeFilter(); populateTermFilter(); populateTrendGradeFilter(); populateAiGradeFilters(); populatePhotosGradeFilter(); populatePrintGradeFilter();
+        populateGradeFilter(); populateDistSubjectFilter(); populateProgressGradeFilter(); populateTermFilter(); populateTrendGradeFilter(); populateAiGradeFilters(); populatePhotosGradeFilter(); populatePrintGradeFilter(); populateHeatmapGradeFilter();
         applyFilters(); hideLoader();
         document.getElementById('dashboard').style.display='block';
         notify(`✅ Loaded ${allStudents.length} students (${rawRows.length} results, ${allTerms.length} assessment${allTerms.length!==1?'s':''})`, 'success');
@@ -4253,6 +4285,7 @@ function populateProgressGradeFilter(){
 
 window.applyFilters=function(){
     window._hmLastKey=null; // invalidate heatmap cache — filtered student list changed
+    _hmPage=1;              // reset heatmap to first page on filter change
     const grade=document.getElementById('grade-filter').value;
     const gender=document.getElementById('gender-filter').value;
     const search=document.getElementById('search-input').value.toLowerCase().trim();
@@ -4552,42 +4585,89 @@ window.renderDistribution=function(){
 };
 
 // ══════════════════════════════════════════════════════════════
-// HEATMAP
+// HEATMAP — paginated, searchable, class-filterable
 // ══════════════════════════════════════════════════════════════
+let _hmPage=1, _hmPool=[];
+
+function populateHeatmapGradeFilter(){
+    const sel=document.getElementById('heatmap-grade-filter');
+    if(!sel) return;
+    const grades=[...new Set(filteredStudents.map(s=>s._grade).filter(Boolean))].sort();
+    sel.innerHTML='<option value="">All Classes</option>'+grades.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+}
+
+window.hmSearch=function(){
+    _hmPage=1; window._hmLastKey=null; renderHeatmap();
+};
+
+window.hmGoPage=function(p){
+    _hmPage=p; window._hmLastKey=null;
+    const el=document.getElementById('heatmap-container');
+    if(el){ el.scrollTop=0; el.scrollLeft=0; }
+    renderHeatmap();
+};
+
+window.hmTouchMove=function(e,el){
+    const dy=e.touches[0].clientY-(el._tsy||0);
+    const dx=e.touches[0].clientX-(el._tsx||0);
+    const canV=(el.scrollHeight>el.clientHeight);
+    const canH=(el.scrollWidth>el.clientWidth);
+    if((canV&&Math.abs(dy)>Math.abs(dx))||(canH&&Math.abs(dx)>Math.abs(dy))) e.stopPropagation();
+};
+
 window.renderHeatmap=function(){
     const container=document.getElementById('heatmap-container');
     const legend=document.getElementById('heatmap-legend');
     const badge=document.getElementById('heatmap-badge');
+    const paginationEl=document.getElementById('heatmap-pagination');
 
     if(!filteredStudents.length){
         container.innerHTML=`<div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-title">No data available</div></div>`;
-        window._hmLastKey=null;
-        return;
+        if(paginationEl) paginationEl.innerHTML='';
+        window._hmLastKey=null; return;
     }
 
     const sortMode=document.getElementById('heatmap-sort').value;
     const colourMode=document.getElementById('heatmap-colour').value;
     const labelMode=document.getElementById('heatmap-labels').value;
     const cellSize=parseInt(document.getElementById('heatmap-size').value)||36;
+    const gradeFilter=document.getElementById('heatmap-grade-filter')?.value||'';
+    const searchQ=(document.getElementById('heatmap-search')?.value||'').toLowerCase().trim();
+    const perPage=parseInt(document.getElementById('heatmap-per-page')?.value)||50;
 
     const activeSubjs=SUBJECTS.filter(subj=>filteredStudents.some(s=>readScore(s,subj.name)!==null));
-    if(!activeSubjs.length){container.innerHTML=`<div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-title">No subject data</div></div>`;window._hmLastKey=null;return;}
-
-    // ── Dirty check — skip full DOM rebuild if nothing changed ──
-    const cacheKey=`${sortMode}|${colourMode}|${labelMode}|${cellSize}|${filteredStudents.map(s=>s._firebaseId||'').join(',')}`;
-    if(cacheKey===window._hmLastKey){
-        badge.textContent=`${filteredStudents.length} students × ${activeSubjs.length} subjects`;
-        return; // nothing changed — skip re-render
+    if(!activeSubjs.length){
+        container.innerHTML=`<div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-title">No subject data</div></div>`;
+        if(paginationEl) paginationEl.innerHTML=''; window._hmLastKey=null; return;
     }
+
+    let pool=[...filteredStudents];
+    if(gradeFilter) pool=pool.filter(s=>s._grade===gradeFilter);
+    if(searchQ) pool=pool.filter(s=>{
+        const hay=((s['Official Student Name']||'')+(s['Assessment No']||'')+(s._assessmentNo||'')).toLowerCase();
+        return hay.includes(searchQ);
+    });
+    if(sortMode==='avg_desc') pool.sort((a,b)=>b._avg-a._avg);
+    else if(sortMode==='avg_asc') pool.sort((a,b)=>a._avg-b._avg);
+    else if(sortMode==='name_asc') pool.sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
+    else if(sortMode==='grade_asc') pool.sort((a,b)=>(a._grade||'').localeCompare(b._grade||''));
+
+    _hmPool=pool;
+    const total=pool.length;
+    if(!total){
+        container.innerHTML=`<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No students match the filter</div></div>`;
+        if(paginationEl) paginationEl.innerHTML=''; return;
+    }
+
+    const totalPages=perPage===0?1:Math.ceil(total/perPage);
+    if(_hmPage>totalPages) _hmPage=totalPages;
+    const start=perPage===0?0:(_hmPage-1)*perPage;
+    const students=perPage===0?pool:pool.slice(start,start+perPage);
+
+    const cacheKey=`${sortMode}|${colourMode}|${labelMode}|${cellSize}|${gradeFilter}|${searchQ}|${_hmPage}|${perPage}|${students.map(s=>s._firebaseId||'').join(',')}`;
+    badge.textContent=`${total} students × ${activeSubjs.length} subjects${total<filteredStudents.length?' (filtered)':''}`;
+    if(cacheKey===window._hmLastKey) return;
     window._hmLastKey=cacheKey;
-
-    let students=[...filteredStudents];
-    if(sortMode==='avg_desc') students.sort((a,b)=>b._avg-a._avg);
-    else if(sortMode==='avg_asc') students.sort((a,b)=>a._avg-b._avg);
-    else if(sortMode==='name_asc') students.sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
-    else if(sortMode==='grade_asc') students.sort((a,b)=>(a._grade||'').localeCompare(b._grade||''));
-
-    badge.textContent=`${students.length} students × ${activeSubjs.length} subjects`;
 
     function getColor(score){
         if(score===null) return getComputedStyle(document.documentElement).getPropertyValue('--heatmap-empty').trim()||'#1a2a3a';
@@ -4595,7 +4675,7 @@ window.renderHeatmap=function(){
         if(score>=75) return `hsl(${120*(score-75)/25+90},68%,38%)`;
         if(score>=58) return `hsl(${90*(score-58)/17+30},68%,40%)`;
         if(score>=41) return `hsl(${30*(score-41)/17},68%,44%)`;
-        if(score>=21) return `hsl(10,68%,38%)`;
+        if(score>=21) return 'hsl(10,68%,38%)';
         return '#a93226';
     }
     function getLabelText(score){
@@ -4604,75 +4684,80 @@ window.renderHeatmap=function(){
         return Math.round(score);
     }
 
-    const gap=3;
-    const nameColW=172;
-    const colW=cellSize;
-    const rowH=Math.max(cellSize+gap*2, 36);
-    // Header height: vertical writing-mode label, cap at 120px
+    const gap=3,nameColW=172,colW=cellSize,rowH=Math.max(cellSize+gap*2,36);
     const maxLen=Math.max(...activeSubjs.map(s=>s.name.length),6);
-    const headerH=Math.min(Math.max(maxLen*7+14, 80), 130);
+    const headerH=Math.min(Math.max(maxLen*7+14,80),130);
 
-    // ── Header row ──
     let html=`<div class="hm-grid-wrap">`;
     html+=`<div class="hm-header-row" style="height:${headerH}px;">`;
-    // Corner cell
     html+=`<div class="hm-corner" style="width:${nameColW}px;min-width:${nameColW}px;height:${headerH}px;"></div>`;
-    // Subject column headers — vertical label, no rotation needed
     activeSubjs.forEach(subj=>{
         html+=`<div class="hm-col-header" style="width:${colW+gap}px;min-width:${colW+gap}px;height:${headerH}px;" title="${esc(subj.name)}">
             <span class="hm-col-header-label" style="max-height:${headerH-14}px;">${esc(subj.name)}</span>
         </div>`;
     });
-    html+=`</div>`; // end header row
+    html+=`</div>`;
 
-    // ── Data rows ──
-    students.forEach((s,si)=>{
+    students.forEach(s=>{
         const fullName=s['Official Student Name']||'N/A';
         const avg=s._avg.toFixed(1);
-        const aNo=esc(s._assessmentNo||s['Assessment No']||s._firebaseId||'');
+        const aNo=esc(s._assessmentNo||s['Assessment No']||s._firebaseId||''  );
         const avgColor=s._avg>=75?'#27ae60':s._avg>=58?'#3498db':s._avg>=41?'#f39c12':'#e74c3c';
-
         html+=`<div class="hm-data-row" style="min-height:${rowH}px;">`;
-        // Name cell
         html+=`<div class="hm-name-col" style="width:${nameColW}px;min-width:${nameColW}px;min-height:${rowH}px;">
             <div class="hm-name-cell" onclick="jumpToProgress('${aNo}')" title="${esc(fullName)} · ${esc(s._grade)} · Avg ${avg}%">
                 ${esc(fullName)}
                 <span class="hm-name-meta">${esc(s._grade)} · <span style="color:${avgColor};font-weight:700;">${avg}%</span></span>
             </div>
         </div>`;
-
-        // Score cells
         activeSubjs.forEach(subj=>{
             const score=readScore(s,subj.name);
             const bg=getColor(score);
             const label=getLabelText(score);
             const textCol=score!==null?'rgba(255,255,255,0.95)':'var(--text-muted)';
-            // Pass raw numeric score + assessment no for photo lookup in tooltip
             const ttScore=score!==null?score.toFixed(2):'null';
             const rawAno=s._assessmentNo||s['Assessment No']||s._firebaseId||'';
             const tooltipContent=`${esc(fullName)}|${esc(subj.name)}|${ttScore}|${esc(s._grade)}|${avg}|${esc(rawAno)}`;
             const fontSize=colW<=28?8:colW<=36?9:10;
-
             html+=`<div class="hm-cell-wrap" style="width:${colW+gap}px;min-width:${colW+gap}px;height:${rowH}px;padding:${gap/2}px;">
-                <div class="hm-cell" style="
-                    width:${colW}px;height:${colW}px;
-                    background:${bg};
-                    color:${textCol};
-                    font-size:${fontSize}px;
-                    box-shadow:inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -1px 0 rgba(0,0,0,0.15);
-                "
+                <div class="hm-cell" style="width:${colW}px;height:${colW}px;background:${bg};color:${textCol};font-size:${fontSize}px;box-shadow:inset 0 1px 0 rgba(255,255,255,0.18),inset 0 -1px 0 rgba(0,0,0,0.15);"
                 onmouseenter="showHeatmapTooltip(event,'${tooltipContent}')"
                 onmouseleave="hideHeatmapTooltip()"
                 >${label}</div>
             </div>`;
         });
-        html+=`</div>`; // end row
+        html+='</div>';
     });
-
-    html+=`</div>`; // end hm-grid-wrap
+    html+='</div>';
     container.innerHTML=html;
 
-    // ── Legend ──
+    if(paginationEl){
+        const btnS='style="background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:6px;color:var(--text-secondary);padding:5px 11px;font-size:12px;font-weight:600;cursor:pointer;font-family:Poppins,sans-serif;"';
+        const actS='style="background:#3498db;border:1.5px solid #3498db;border-radius:6px;color:#fff;padding:5px 11px;font-size:12px;font-weight:700;cursor:pointer;font-family:Poppins,sans-serif;"';
+        const disS='style="opacity:.4;cursor:default;background:var(--bg-card);border:1.5px solid var(--border-color);border-radius:6px;color:var(--text-muted);padding:5px 11px;font-size:12px;font-family:Poppins,sans-serif;"';
+        if(perPage===0||totalPages<=1){
+            paginationEl.innerHTML=`<span style="font-size:12px;color:var(--text-secondary);">Showing all ${total} students</span>`;
+        } else {
+            const showing=`${start+1}–${Math.min(start+perPage,total)} of ${total}`;
+            let btns=`<button ${_hmPage===1?disS:btnS} onclick="hmGoPage(${_hmPage-1})">‹ Prev</button>`;
+            const pages=[];
+            if(totalPages<=7){for(let i=1;i<=totalPages;i++)pages.push(i);}
+            else{
+                pages.push(1);
+                if(_hmPage>3)pages.push('…');
+                for(let i=Math.max(2,_hmPage-1);i<=Math.min(totalPages-1,_hmPage+1);i++)pages.push(i);
+                if(_hmPage<totalPages-2)pages.push('…');
+                pages.push(totalPages);
+            }
+            pages.forEach(p=>{
+                if(p==='…')btns+=`<span style="padding:5px 4px;color:var(--text-muted);font-size:12px;">…</span>`;
+                else btns+=`<button ${p===_hmPage?actS:btnS} onclick="hmGoPage(${p})">${p}</button>`;
+            });
+            btns+=`<button ${_hmPage===totalPages?disS:btnS} onclick="hmGoPage(${_hmPage+1})">Next ›</button>`;
+            paginationEl.innerHTML=`<span style="font-size:12px;color:var(--text-secondary);">Showing ${showing}</span><div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">${btns}</div>`;
+        }
+    }
+
     if(colourMode==='grade'){
         legend.innerHTML=`<span style="font-size:11px;color:var(--text-secondary);font-weight:700;margin-right:8px;">Grade:</span>`+
             Object.entries(GRADE_COLORS).filter(([k])=>k!=='NA').map(([code,color])=>
