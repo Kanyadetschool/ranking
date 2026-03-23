@@ -1842,8 +1842,8 @@ const exportToPdf = async () => {
         'English'                            : 'Eng',
         'Kiswahili'                          : 'Kisw',
         'Integrated Science'                 : 'Int.Sci',
-        'Creative Arts & Social studies'     : 'Cre.Arts',
-        'Creative Arts & Sports'             : 'Cre.Arts',
+        'Creative Arts & Social studies'     : 'CrArts&SS',
+        'Creative Arts & Sports'             : 'CrArts&Sp',
         'Creative Arts'                      : 'Cre.Arts',
         'Social studies'                     : 'SST',
         'Agriculture'                        : 'Agri',
@@ -1855,15 +1855,13 @@ const exportToPdf = async () => {
 
     // For PDF: exclude Grade, Term & Class (shown in subtitle/header), apply abbreviations
     const PDF_EXCLUDE = new Set(['Grade', 'Term', 'Class']);
-    const headers = exportHeaders
-        .filter(h => !PDF_EXCLUDE.has(h))
-        .map(h => PDF_ABBREV[h] || h);
+    const filteredHeaders = exportHeaders.filter(h => !PDF_EXCLUDE.has(h));
 
-    // Map abbreviated header back to original key for data lookup
+    // Map abbreviated header → original key BEFORE any duplicates can occur
     const headerKeyMap = {};
-    exportHeaders
-        .filter(h => !PDF_EXCLUDE.has(h))
-        .forEach(h => { headerKeyMap[PDF_ABBREV[h] || h] = h; });
+    filteredHeaders.forEach(h => { headerKeyMap[PDF_ABBREV[h] || h] = h; });
+
+    const headers = filteredHeaders.map(h => PDF_ABBREV[h] || h);
 
     const body = exportRows.map(row => {
         return headers.map(h => {
