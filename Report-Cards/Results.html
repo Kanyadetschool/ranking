@@ -1826,33 +1826,84 @@ const exportToPdf = async () => {
     // ── Dynamic columns: detect subjects from DB data, compute totals/averages ──
     const { exportHeaders, exportRows } = computeExportData(dataToExport);
 
-    // For PDF: exclude Grade & Term (already shown in subtitle), swap 'Average (%)' → 'Avg%'
-    const PDF_EXCLUDE = new Set(['Grade', 'Term']);
+    // Subject abbreviations for PDF headers only (full names kept in Excel/Word)
+    const PDF_ABBREV = {
+        'Mathematics'                        : 'Math',
+        'English'                            : 'Eng',
+        'Kiswahili'                          : 'Kisw',
+        'Integrated Science'                 : 'Int.Sci',
+        'Creative Arts & Social studies'     : 'Cre.Arts',
+        'Creative Arts & Sports'             : 'Cre.Arts',
+        'Creative Arts'                      : 'Cre.Arts',
+        'Social studies'                     : 'SST',
+        'Agriculture'                        : 'Agri',
+        'CRE'                                : 'CRE',
+        'Pre-Technical Studies'              : 'Pre-Tech',
+        'Integrated Learning Area'           : 'Int.Learn',
+        'Average (%)'                        : 'Avg%',
+    };
+
+    // For PDF: exclude Grade, Term & Class (shown in subtitle/header), apply abbreviations
+    const PDF_EXCLUDE = new Set(['Grade', 'Term', 'Class']);
     const headers = exportHeaders
         .filter(h => !PDF_EXCLUDE.has(h))
-        .map(h => h === 'Average (%)' ? 'Avg%' : h);
+        .map(h => PDF_ABBREV[h] || h);
+
+    // Map abbreviated header back to original key for data lookup
+    const headerKeyMap = {};
+    exportHeaders
+        .filter(h => !PDF_EXCLUDE.has(h))
+        .forEach(h => { headerKeyMap[PDF_ABBREV[h] || h] = h; });
 
     const body = exportRows.map(row => {
         return headers.map(h => {
-            const key = h === 'Avg%' ? 'Average (%)' : h;
+            const key = headerKeyMap[h] || h;
             const val = row[key];
             return val !== undefined && val !== null ? String(val) : '-';
         });
     });
 
+    // ── Column widths: fixed narrow for meta/summary, equal share for subjects ──
+    const pageWidth = doc.internal.pageSize.width;
+    const margins = 20; // left + right margins
+    const usableWidth = pageWidth - margins;
+
+    // Fixed widths for known short columns (mm)
+    const FIXED_WIDTHS = {
+        'No.'              : 8,
+        'Assessment No'    : 20,
+        'UPI'              : 18,
+        'Gender'           : 14,
+        'Total Marks'      : 18,
+        'Avg%'             : 14,
+        'Level'            : 12,
+        'Official Student Name': 32,
+    };
+
+    // Calculate how much width is left for subject columns
+    const fixedTotal = headers.reduce((sum, h) => sum + (FIXED_WIDTHS[h] || 0), 0);
+    const subjectHeaders = headers.filter(h => !FIXED_WIDTHS[h]);
+    const subjectWidth = subjectHeaders.length > 0
+        ? parseFloat(((usableWidth - fixedTotal) / subjectHeaders.length).toFixed(1))
+        : 20;
+
+    // Build columnStyles object keyed by column index
+    const columnStyles = {};
+    headers.forEach((h, i) => {
+        columnStyles[i] = { cellWidth: FIXED_WIDTHS[h] || subjectWidth };
+    });
+
     // Premium Header Function
     const addHeader = (data) => {
-        const pageWidth = doc.internal.pageSize.width;
+        const hPageWidth = doc.internal.pageSize.width;
         
         // Add Kenya Ministry of Education logo as watermark background (centered on page)
         const pageHeight = doc.internal.pageSize.height;
         try {
             if (ministryLogoImg.complete && ministryLogoImg.naturalHeight !== 0) {
-                const watermarkSize = 80; // Large background logo
-                const watermarkX = (pageWidth - watermarkSize) / 2;
-                const watermarkY = (pageHeight - watermarkSize) / 2; // Center vertically
-                
-                // Set very low opacity for watermark effect
+                const watermarkSize = 80;
+                const watermarkX = (hPageWidth - watermarkSize) / 2;
+                const watermarkY = (pageHeight - watermarkSize) / 2;
                 doc.saveGraphicsState();
                 doc.setGState(new doc.GState({ opacity: 0.08 }));
                 doc.addImage(ministryLogoImg, 'PNG', watermarkX, watermarkY, watermarkSize, watermarkSize);
@@ -1862,44 +1913,35 @@ const exportToPdf = async () => {
             console.log('Ministry logo not available for watermark');
         }
         
-        // Header background with same color as table header [41, 128, 185]
         doc.setFillColor(41, 128, 185);
-        doc.rect(0, 0, pageWidth, 20, 'F');
+        doc.rect(0, 0, hPageWidth, 20, 'F');
         
-        // Add white logo (left side)
         const logoWidth = 15;
         const logoHeight = 15;
         const logoX = 14;
         const logoY = 2.5;
         doc.addImage(logoImg, 'PNG', logoX, logoY, logoWidth, logoHeight);
         
-        // School/Organization Name (adjusted for logo)
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
         doc.text('KANYADET PRI & JUNIOR SCHOOL', logoX + logoWidth + 5, 10);
         
-        // Report Title (adjusted for logo)
         doc.setFontSize(12);
         doc.text(title, logoX + logoWidth + 5, 16);
         
-        // Date and Grade Info (Right aligned)
         doc.setFontSize(9);
         doc.setFont(undefined, 'normal');
         const dateText = `Date: ${new Date().toLocaleDateString()}`;
         const gradeText = subtitle;
         const studentCount = `Assessment Outcome: Total Students: ${totalStudents}`;
-        doc.text(dateText, pageWidth - 14, 8, { align: 'right' });
-        doc.text(gradeText, pageWidth - 14, 13, { align: 'right' });
-        doc.text(studentCount, pageWidth - 14, 18, { align: 'right' });
-
-
-
+        doc.text(dateText, hPageWidth - 14, 8, { align: 'right' });
+        doc.text(gradeText, hPageWidth - 14, 13, { align: 'right' });
+        doc.text(studentCount, hPageWidth - 14, 18, { align: 'right' });
         
-        // Decorative line under header
         doc.setDrawColor(41, 128, 185);
         doc.setLineWidth(0.5);
-        doc.line(0, 20, pageWidth, 20);
+        doc.line(0, 20, hPageWidth, 20);
     };
 
     // Premium Footer Function (now accepts totalPages parameter)
@@ -1959,23 +2001,23 @@ const exportToPdf = async () => {
         body: body,
         startY: 25,
         styles: { 
-            fontSize: 9,
-            cellPadding: 3,
+            fontSize: 8,
+            cellPadding: 2,
             overflow: 'linebreak',
-            cellWidth: 'auto'
-        },
-        columnStyles: {
-            0: { cellWidth: 15 } // Fixed width for No. column
+            halign: 'center',
+            valign: 'middle',
         },
         headStyles: { 
             fillColor: [41, 128, 185], 
             textColor: [255, 255, 255],
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            fontSize: 7,
+            halign: 'center',
         },
+        columnStyles,
         alternateRowStyles: { fillColor: [245, 245, 245] },
         margin: { top: 25, right: 10, bottom: 20, left: 10 },
         didDrawPage: function(data) {
-            // Only add header during generation
             addHeader(data);
         }
     });
