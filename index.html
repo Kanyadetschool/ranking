@@ -6,12 +6,7 @@
     <title>School Analytics & Rankings</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-    <script src="./image-popup.js"></script>
-
-    <link rel="stylesheet" href="./Report-Cards/css/swalOnly.css">
-        <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-                      
+    
     <style>
         /* ════════════════════════════════════════════════════════
            🌌 OBSIDIAN AURORA — World-Class Dark Theme
@@ -163,29 +158,28 @@
             background: var(--bg-body);
             color: var(--text-primary);
             min-height: 100%;
-            overflow-x: hidden;
-            /* overscroll-behavior-y:none removed — on iOS it suppresses momentum
-               scroll entirely on some versions, making the page feel locked */
+            /* overflow-x:hidden removed — it propagates to viewport and kills
+               horizontal scrolling inside child containers like the heatmap.
+               Any horizontal overflow is naturally contained by the dashboard layout. */
             transition: background .4s, color .4s;
-            /* Eliminate 300ms tap delay on all touch devices */
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
-            /* Safe area padding for iPhone notch / Dynamic Island / home indicator */
             padding-bottom: env(safe-area-inset-bottom);
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
         }
 
-        /* ════ OBSIDIAN AURORA — Layered deep-space background ════ */
+        /* ════ OBSIDIAN AURORA — simplified background ════ */
         body::before {
             content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
-            background:
-                radial-gradient(ellipse 80% 60% at -10% -5%,  rgba(0,212,255,.09)  0%, transparent 55%),
-                radial-gradient(ellipse 70% 55% at 110% 105%, rgba(139,92,246,.08)  0%, transparent 55%),
-                radial-gradient(ellipse 55% 45% at 50% 50%,   rgba(41,128,185,.05)  0%, transparent 65%),
-                radial-gradient(ellipse 40% 35% at 100% 0%,   rgba(20,184,166,.05)  0%, transparent 50%),
-                radial-gradient(ellipse 35% 30% at 0% 100%,   rgba(245,158,11,.04)  0%, transparent 50%);
-            /* auroraDrift animation removed — caused constant GPU repaints */
+            /* Single diagonal gradient instead of 5 radial-gradients — same feel, ~5× less paint cost */
+            background: linear-gradient(
+                135deg,
+                rgba(0,212,255,.06) 0%,
+                transparent 40%,
+                rgba(139,92,246,.05) 70%,
+                rgba(20,184,166,.04) 100%
+            );
         }
         [data-theme="light"] body::before {
             animation: none;
@@ -207,13 +201,23 @@
         /* #heatmap-tooltip MUST stay position:fixed — do NOT include here */
         #tsparticles { z-index:0 !important; }
 
-        /* ════ GLASS MORPHISM — card base ════ */
+        /* ════ GLASS MORPHISM — card base (desktop only) ════ */
         [data-theme="dark"] .auth-card,
         [data-theme="dark"] .stat-card,
         [data-theme="dark"] .filter-bar,
         [data-theme="dark"] .tabs {
             backdrop-filter: blur(12px) saturate(160%);
             -webkit-backdrop-filter: blur(12px) saturate(160%);
+        }
+        /* Disable backdrop-filter on mobile — GPU layer promotion on every scroll frame
+           tanks performance. Solid backgrounds look fine on small screens. */
+        @media (max-width: 768px) {
+            [data-theme="dark"] .stat-card,
+            [data-theme="dark"] .filter-bar,
+            [data-theme="dark"] .tabs {
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
         }
         /* .panel intentionally excluded from backdrop-filter —
            backdrop-filter creates a stacking context that traps
@@ -573,7 +577,7 @@
         [data-theme="light"] .tab.active { background: linear-gradient(135deg, #2980b9, #3498db); }
 
         /* ══ PANEL ══ */
-        .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 14px; overflow: visible; box-shadow: var(--shadow-card); transition: var(--transition); }
+        .panel { background: var(--bg-panel); border: 1px solid var(--border-color); border-radius: 14px; overflow: visible; box-shadow: var(--shadow-card); transition: background .3s, border-color .3s, box-shadow .3s; }
         [data-theme="dark"] .panel { box-shadow: 0 4px 20px rgba(0,0,0,.35), 0 0 0 1px rgba(41,128,185,.08); }
         #tab-heatmap { overflow: visible; }
         .panel-header { padding: 18px 24px; border-bottom: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; background: var(--bg-header-grad); }
@@ -763,19 +767,24 @@
 
         /* Outer scroll wrapper — both axes, natural scroll */
         .heatmap-scroll {
-            overflow: auto;  /* auto = scrollbars only when needed; scroll = always shown */
+            overflow: scroll;  /* always show scrollbars — auto hides them until content overflows which confused users */
             -webkit-overflow-scrolling: touch;
             border: 1px solid var(--border-color);
             border-radius: 12px;
-            max-height: 70vh;
-            scrollbar-width: thin;
-            scrollbar-color: var(--border-color) transparent;
+            max-height: 65vh;
+            height: 65vh; /* explicit height so vertical scroll always has room */
+            /* Visible scrollbars */
+            scrollbar-width: auto;
+            scrollbar-color: var(--border-color) rgba(0,0,0,.1);
             touch-action: pan-x pan-y;
             position: relative;
         }
-        .heatmap-scroll::-webkit-scrollbar { width:5px; height:5px; }
-        .heatmap-scroll::-webkit-scrollbar-track { background:transparent; }
-        .heatmap-scroll::-webkit-scrollbar-thumb { background:var(--border-color); border-radius:3px; }
+        /* Webkit scrollbars — visible and grabbable */
+        .heatmap-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+        .heatmap-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,.06); border-radius: 4px; }
+        .heatmap-scroll::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; min-height: 40px; min-width: 40px; }
+        .heatmap-scroll::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        .heatmap-scroll::-webkit-scrollbar-corner { background: transparent; }
 
         /* The inner grid wrapper — block so vertical scroll works */
         .hm-grid-wrap { display: block; min-width: max-content; padding: 0; }
@@ -1967,7 +1976,7 @@
             }
             .heatmap-controls > div { width: 100%; }
             .heatmap-controls select { width: 100%; }
-            .heatmap-scroll { max-height: 55vh; }
+            .heatmap-scroll { max-height: 50vh; height: 50vh; }
             /* Smaller cells on mobile */
             .hm-col-header-label { font-size: 8.5px; }
 
@@ -2967,7 +2976,7 @@
     <div class="topbar-brand">
         <div class="topbar-logo" id="topbar-logo">🏫</div>
         <div>
-            <div class="brand-name"> Analytics &amp; Rankings</div>
+            <div class="brand-name"> Analytics &amp; Rankings...ht</div>
             <div class="brand-sub">Kanyadet Primary &amp; Junior School - 🎓 Track student performance with ease</div>
         </div>
     </div>
@@ -4243,6 +4252,7 @@ function populateProgressGradeFilter(){
 }
 
 window.applyFilters=function(){
+    window._hmLastKey=null; // invalidate heatmap cache — filtered student list changed
     const grade=document.getElementById('grade-filter').value;
     const gender=document.getElementById('gender-filter').value;
     const search=document.getElementById('search-input').value.toLowerCase().trim();
@@ -4551,6 +4561,7 @@ window.renderHeatmap=function(){
 
     if(!filteredStudents.length){
         container.innerHTML=`<div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-title">No data available</div></div>`;
+        window._hmLastKey=null;
         return;
     }
 
@@ -4560,7 +4571,15 @@ window.renderHeatmap=function(){
     const cellSize=parseInt(document.getElementById('heatmap-size').value)||36;
 
     const activeSubjs=SUBJECTS.filter(subj=>filteredStudents.some(s=>readScore(s,subj.name)!==null));
-    if(!activeSubjs.length){container.innerHTML=`<div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-title">No subject data</div></div>`;return;}
+    if(!activeSubjs.length){container.innerHTML=`<div class="empty-state"><div class="empty-icon">🔥</div><div class="empty-title">No subject data</div></div>`;window._hmLastKey=null;return;}
+
+    // ── Dirty check — skip full DOM rebuild if nothing changed ──
+    const cacheKey=`${sortMode}|${colourMode}|${labelMode}|${cellSize}|${filteredStudents.map(s=>s._firebaseId||'').join(',')}`;
+    if(cacheKey===window._hmLastKey){
+        badge.textContent=`${filteredStudents.length} students × ${activeSubjs.length} subjects`;
+        return; // nothing changed — skip re-render
+    }
+    window._hmLastKey=cacheKey;
 
     let students=[...filteredStudents];
     if(sortMode==='avg_desc') students.sort((a,b)=>b._avg-a._avg);
