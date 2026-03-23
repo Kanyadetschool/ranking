@@ -1658,6 +1658,92 @@ deleteGradeBtn.addEventListener('click', async () => {
         }
     }
 });
+        // ─── SHARED HELPER: detect learning areas & compute totals/averages ────────
+        const NON_SUBJECT_KEYS = new Set([
+            'id', 'Image', 'Grade', 'Term', 'Assessment No', 'Official Student Name',
+            'UPI', 'Gender', 'Class', 'Total Marks', 'Perc Avrg', 'Level',
+            'deletedAt', 'deletedBy', 'Closing Date', 'Opening Date'
+        ]);
+
+        const getSubjectColumns = (students) => {
+            const subjectSet = new Set();
+            students.forEach(student => {
+                Object.keys(student).forEach(key => {
+                    if (!NON_SUBJECT_KEYS.has(key)) {
+                        const val = student[key];
+                        // Only treat as a subject if value is a number or numeric string
+                        if (val !== undefined && val !== '' && !isNaN(parseFloat(val))) {
+                            subjectSet.add(key);
+                        }
+                    }
+                });
+            });
+            return Array.from(subjectSet).sort();
+        };
+
+        const getLevelFromAverage = (avg) => {
+            if (avg >= 75) return 'EE';   // Exceeds Expectation
+            if (avg >= 50) return 'ME';   // Meets Expectation
+            if (avg >= 25) return 'AE';   // Approaches Expectation
+            return 'BE';                  // Below Expectation
+        };
+
+        const computeExportData = (students) => {
+            const subjectCols = getSubjectColumns(students);
+
+            // Fixed meta columns (only those present in data)
+            const META_BEFORE = ['Assessment No', 'UPI', 'Official Student Name', 'Gender'];
+            const META_AFTER  = ['Grade', 'Term', 'Class'];
+            const allKeys = new Set();
+            students.forEach(s => Object.keys(s).forEach(k => allKeys.add(k)));
+
+            const metaBefore = META_BEFORE.filter(k => allKeys.has(k));
+            const metaAfter  = META_AFTER.filter(k => allKeys.has(k));
+
+            // Extra non-subject, non-meta columns (custom fields)
+            const knownCols = new Set([...META_BEFORE, ...META_AFTER, ...subjectCols,
+                'id', 'Image', 'Total Marks', 'Perc Avrg', 'Level', 'deletedAt', 'deletedBy',
+                'Closing Date', 'Opening Date']);
+            const extraCols = Array.from(allKeys).filter(k => !knownCols.has(k)).sort();
+
+            // Final column order: No. | meta | subjects | Total | Avg | Level | extra
+            const exportHeaders = [
+                'No.',
+                ...metaBefore,
+                ...subjectCols,
+                'Total Marks',
+                'Average (%)',
+                'Level',
+                ...metaAfter,
+                ...extraCols
+            ];
+
+            const exportRows = students.map((student, idx) => {
+                // Calculate total from raw subject scores
+                let total = 0;
+                let scoredCount = 0;
+                subjectCols.forEach(col => {
+                    const v = parseFloat(student[col]);
+                    if (!isNaN(v)) { total += v; scoredCount++; }
+                });
+                const average  = scoredCount > 0 ? parseFloat((total / scoredCount).toFixed(1)) : 0;
+                const level    = getLevelFromAverage(average);
+
+                const row = {};
+                exportHeaders.forEach(h => {
+                    if (h === 'No.')           row[h] = idx + 1;
+                    else if (h === 'Total Marks')  row[h] = scoredCount > 0 ? total : '-';
+                    else if (h === 'Average (%)')  row[h] = scoredCount > 0 ? average : '-';
+                    else if (h === 'Level')        row[h] = scoredCount > 0 ? level : '-';
+                    else row[h] = student[h] !== undefined && student[h] !== '' ? student[h] : '-';
+                });
+                return row;
+            });
+
+            return { exportHeaders, exportRows, subjectCols };
+        };
+        // ────────────────────────────────────────────────────────────────────────────
+
         const exportToExcel = () => {
             const selectedGrade = gradeFilterSelect.value;
             const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
@@ -1667,19 +1753,12 @@ deleteGradeBtn.addEventListener('click', async () => {
                 return;
             }
 
-            const headers = getOrderedHeaders(dataToExport).filter(header => header !== 'Image');
-            const formattedData = dataToExport.map(student => {
-                const row = {};
-                headers.forEach(header => {
-                    row[header] = student[header] !== undefined ? student[header] : '';
-                });
-                return row;
-            });
+            const { exportHeaders, exportRows } = computeExportData(dataToExport);
 
-            const worksheet = XLSX.utils.json_to_sheet(formattedData, { header: headers });
+            const worksheet = XLSX.utils.json_to_sheet(exportRows, { header: exportHeaders });
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-            XLSX.writeFile(workbook, `student_Assessment_Outcome${selectedGrade || 'all'}.xlsx`);
+            XLSX.writeFile(workbook, `student_Assessment_Outcome_${selectedGrade || 'all'}_${new Date().toISOString().split('T')[0]}.xlsx`);
             printModal.classList.add('hidden');
         };
 
@@ -1689,15 +1768,20 @@ const exportToPdf = async () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape');
 
-const selectedGrade = gradeFilterSelect.value;
-const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
+    const selectedGrade = gradeFilterSelect.value;
+    const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
 
-// Get term from the first student
-const term = dataToExport.length > 0 ? (dataToExport[0]['Term'] || 'N/A') : 'N/A';
+    if (dataToExport.length === 0) {
+        showModal('No data to export.');
+        return;
+    }
 
-const title = `P O BOX 45 - 40139, AKALA, KENYA`;
-const subtitle = `LEVEL: ${selectedGrade || 'All Grades'} | Term: ${term} | Academic Year: ${new Date().getFullYear()}`;
-const totalStudents = dataToExport.length;
+    // Get term from the first student
+    const term = dataToExport.length > 0 ? (dataToExport[0]['Term'] || 'N/A') : 'N/A';
+
+    const title = `P O BOX 45 - 40139, AKALA, KENYA`;
+    const subtitle = `LEVEL: ${selectedGrade || 'All Grades'} | Term: ${term} | Academic Year: ${new Date().getFullYear()}`;
+    const totalStudents = dataToExport.length;
     
     // Load and process logo image to make it completely white
     const logoImg = new Image();
@@ -1712,34 +1796,19 @@ const totalStudents = dataToExport.length;
     // Wait for logo to load and apply 100% white filter
     await new Promise((resolve, reject) => {
         logoImg.onload = () => {
-            // Create canvas to apply white filter
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = logoImg.width;
             canvas.height = logoImg.height;
-            
-            // Draw original image
             ctx.drawImage(logoImg, 0, 0);
-            
-            // Get image data
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imageData.data;
-            
-            // Apply 100% white saturation (keep only alpha channel)
             for (let i = 0; i < data.length; i += 4) {
-                // Make all non-transparent pixels completely white
-                if (data[i + 3] > 0) { // If pixel has any opacity
-                    data[i] = 255;     // Red = white
-                    data[i + 1] = 255; // Green = white
-                    data[i + 2] = 255; // Blue = white
-                    // Keep original alpha channel (data[i + 3])
+                if (data[i + 3] > 0) {
+                    data[i] = 255; data[i + 1] = 255; data[i + 2] = 255;
                 }
             }
-            
-            // Put modified image data back
             ctx.putImageData(imageData, 0, 0);
-            
-            // Update logoImg with white version
             logoImg.src = canvas.toDataURL();
             resolve();
         };
@@ -1749,35 +1818,21 @@ const totalStudents = dataToExport.length;
     // Wait for ministry logo to load (no filter needed)
     await new Promise((resolve, reject) => {
         ministryLogoImg.onload = resolve;
-        ministryLogoImg.onerror = () => resolve(); // Continue even if ministry logo fails
+        ministryLogoImg.onerror = () => resolve();
     });
-    
-    // Select only essential columns (now with No. column)
-    const essentialColumns = [
-           'No.',
-           'Assessment No',
-           'UPI',
-           'Official Student Name', 
-           'Gender',
-           'Mathematics',
-           'English',
-           'Kiswahili',
-           'Integrated Science',
-           'Creative Arts & Social studies',
-           'Total Marks',
-           'Perc Avrg',
-           'Level'
-        ];
-    
-    const headers = essentialColumns;
-    const body = dataToExport.map((student, index) => {
-        const row = headers.map(header => {
-            if (header === 'No.') {
-                return String(index + 1); // Sequential numbering
-            }
-            return String(student[header] || '-');
+
+    // ── Dynamic columns: detect subjects from DB data, compute totals/averages ──
+    const { exportHeaders, exportRows } = computeExportData(dataToExport);
+
+    // For PDF we want the column headers as display labels (swap 'Average (%)' → 'Avg%')
+    const headers = exportHeaders.map(h => h === 'Average (%)' ? 'Avg%' : h);
+
+    const body = exportRows.map(row => {
+        return headers.map(h => {
+            const key = h === 'Avg%' ? 'Average (%)' : h;
+            const val = row[key];
+            return val !== undefined && val !== null ? String(val) : '-';
         });
-        return row;
     });
 
     // Premium Header Function
@@ -1944,17 +1999,18 @@ const totalStudents = dataToExport.length;
                 return;
             }
 
-            const headers = getOrderedHeaders(dataToExport).filter(header => header !== 'Image');
+            const { exportHeaders, exportRows } = computeExportData(dataToExport);
+
             const headerRow = new TableRow({
-                children: headers.map(header => new TableCell({ 
+                children: exportHeaders.map(header => new TableCell({ 
                     children: [new Paragraph({ text: header, bold: true })] 
                 })),
             });
 
-            const dataRows = dataToExport.map(student => {
+            const dataRows = exportRows.map(row => {
                 return new TableRow({
-                    children: headers.map(header => new TableCell({ 
-                        children: [new Paragraph(String(student[header] || '-'))] 
+                    children: exportHeaders.map(header => new TableCell({ 
+                        children: [new Paragraph(String(row[header] !== undefined ? row[header] : '-'))] 
                     })),
                 });
             });
@@ -1967,7 +2023,7 @@ const totalStudents = dataToExport.length;
                 sections: [{
                     children: [
                         new Paragraph({ 
-                            text: `Student Data (${selectedGrade || 'All Grades'})`, 
+                            text: `Student Assessment Outcome (${selectedGrade || 'All Grades'})`, 
                             heading: 'Heading1',
                             alignment: 'center'
                         }),
@@ -1981,7 +2037,7 @@ const totalStudents = dataToExport.length;
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `student_Assessment_Outcome${selectedGrade || 'all'}.docx`;
+                a.download = `student_Assessment_Outcome_${selectedGrade || 'all'}_${new Date().toISOString().split('T')[0]}.docx`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
