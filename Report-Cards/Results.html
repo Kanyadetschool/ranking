@@ -1733,7 +1733,7 @@ deleteGradeBtn.addEventListener('click', async () => {
 
                 const row = {};
                 exportHeaders.forEach(h => {
-                    if (h === 'No.')           row[h] = idx + 1;
+                    if (h === 'No.')           row[h] = idx + 1; // placeholder, renumbered below
                     else if (h === 'Total Marks')  row[h] = scoredCount > 0 ? total : '-';
                     else if (h === 'Average (%)')  row[h] = scoredCount > 0 ? average : '-';
                     else if (h === 'Level')        row[h] = scoredCount > 0 ? level : '-';
@@ -1741,6 +1741,16 @@ deleteGradeBtn.addEventListener('click', async () => {
                 });
                 return row;
             });
+
+            // Sort descending by Total Marks (students with no scores go to the bottom)
+            exportRows.sort((a, b) => {
+                const aTotal = typeof a['Total Marks'] === 'number' ? a['Total Marks'] : -Infinity;
+                const bTotal = typeof b['Total Marks'] === 'number' ? b['Total Marks'] : -Infinity;
+                return bTotal - aTotal;
+            });
+
+            // Re-number after sorting
+            exportRows.forEach((row, i) => { row['No.'] = i + 1; });
 
             return { exportHeaders, exportRows, subjectCols };
         };
