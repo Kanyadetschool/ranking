@@ -1836,32 +1836,19 @@ const exportToPdf = async () => {
     // ── Dynamic columns: detect subjects from DB data, compute totals/averages ──
     const { exportHeaders, exportRows } = computeExportData(dataToExport);
 
-    // Subject abbreviations for PDF headers only (full names kept in Excel/Word)
-    const PDF_ABBREV = {
-        'Mathematics'                        : 'Math',
-        'English'                            : 'Eng',
-        'Kiswahili'                          : 'Kisw',
-        'Integrated Science'                 : 'Int.Sci',
-        'Creative Arts & Social studies'     : 'CrArts&SS',
-        'Creative Arts & Sports'             : 'CrArts&Sp',
-        'Creative Arts'                      : 'Cre.Arts',
-        'Social studies'                     : 'SST',
-        'Agriculture'                        : 'Agri',
-        'CRE'                                : 'CRE',
-        'Pre-Technical Studies'              : 'Pre-Tech',
-        'Integrated Learning Area'           : 'Int.Learn',
-        'Average (%)'                        : 'Avg%',
-    };
 
-    // For PDF: exclude Grade, Term & Class (shown in subtitle/header), apply abbreviations
+    // For PDF: exclude Grade, Term & Class, truncate long headers with ellipsis
     const PDF_EXCLUDE = new Set(['Grade', 'Term', 'Class']);
+    const PDF_MAX_LEN = 9; // max chars before ellipsis
+    const truncate = (s) => s.length > PDF_MAX_LEN ? s.slice(0, PDF_MAX_LEN - 1) + '…' : s;
+
     const filteredHeaders = exportHeaders.filter(h => !PDF_EXCLUDE.has(h));
 
-    // Map abbreviated header → original key BEFORE any duplicates can occur
+    // Map truncated header → original key (truncated header used only for display)
     const headerKeyMap = {};
-    filteredHeaders.forEach(h => { headerKeyMap[PDF_ABBREV[h] || h] = h; });
+    filteredHeaders.forEach(h => { headerKeyMap[truncate(h)] = h; });
 
-    const headers = filteredHeaders.map(h => PDF_ABBREV[h] || h);
+    const headers = filteredHeaders.map(h => truncate(h));
 
     const body = exportRows.map(row => {
         return headers.map(h => {
