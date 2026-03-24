@@ -2046,29 +2046,41 @@ const exportToPdf = async () => {
     const margins = 20; // left + right margins
     const usableWidth = pageWidth - margins;
 
-    // Fixed widths for known short columns (mm)
-    const FIXED_WIDTHS = {
-        'Rank'                 : 10,
-        'Assessment No'        : 20,
-        'UPI'                  : 18,
-        'Gender'               : 14,
-        'Total Marks'          : 18,
-        'Avg%'                 : 14,
-        'Level'                : 12,
-        'Official Student Name': 32,
+    // Fixed widths keyed by ORIGINAL (pre-truncation) column name
+    const FIXED_WIDTHS_ORIG = {
+        'Rank'                 :  9,
+        'Assessment No'        : 18,
+        'UPI'                  : 16,
+        'Gender'               : 11,
+        'Total Marks'          : 15,
+        'Average (%)'          : 13,
+        'Level'                : 13,
+        'Official Student Name': 44,
     };
 
-    // Calculate how much width is left for subject columns
-    const fixedTotal = headers.reduce((sum, h) => sum + (FIXED_WIDTHS[h] || 0), 0);
-    const subjectHeaders = headers.filter(h => !FIXED_WIDTHS[h]);
-    const subjectWidth = subjectHeaders.length > 0
+    // Build a display-header → fixed-width map using the original key lookup
+    const displayFixedWidths = {};
+    filteredHeaders.forEach(origH => {
+        const dispH = truncate(origH);
+        if (FIXED_WIDTHS_ORIG[origH] !== undefined) {
+            displayFixedWidths[dispH] = FIXED_WIDTHS_ORIG[origH];
+        }
+    });
+
+    // Calculate how much width is left for subject/learning-area columns.
+    // Cap at 12 mm so Level and other fixed cols always have room no matter
+    // how many learning areas are present.
+    const fixedTotal = headers.reduce((sum, h) => sum + (displayFixedWidths[h] || 0), 0);
+    const subjectHeaders = headers.filter(h => !displayFixedWidths[h]);
+    const subjectWidthCalc = subjectHeaders.length > 0
         ? parseFloat(((usableWidth - fixedTotal) / subjectHeaders.length).toFixed(1))
-        : 20;
+        : 12;
+    const subjectWidth = Math.min(subjectWidthCalc, 12);
 
     // Build columnStyles object keyed by column index
     const columnStyles = {};
     headers.forEach((h, i) => {
-        columnStyles[i] = { cellWidth: FIXED_WIDTHS[h] || subjectWidth };
+        columnStyles[i] = { cellWidth: displayFixedWidths[h] || subjectWidth };
     });
 
     // Premium Header Function
@@ -2211,7 +2223,7 @@ const exportToPdf = async () => {
             if (origKey === 'Official Student Name') {
                 data.cell.styles.halign = 'left';
                 data.cell.styles.overflow = 'linebreak';
-                data.cell.styles.cellWidth = 48;
+                data.cell.styles.cellWidth = 44;
             } else {
                 data.cell.styles.halign = 'center';
             }
