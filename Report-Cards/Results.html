@@ -1973,7 +1973,9 @@ const exportToPdf = async () => {
     // For PDF: exclude Grade, Term & Class, truncate long headers with ellipsis
     const PDF_EXCLUDE = new Set(['Grade', 'Term', 'Class', 'UPI']);
     const PDF_MAX_LEN = 9; // max chars before ellipsis
-    const truncate = (s) => s.length > PDF_MAX_LEN ? s.slice(0, PDF_MAX_LEN - 1) + '…' : s;
+    // Columns that should NEVER be truncated
+    const NO_TRUNCATE = new Set(['Official Student Name']);
+    const truncate = (s) => (!NO_TRUNCATE.has(s) && s.length > PDF_MAX_LEN) ? s.slice(0, PDF_MAX_LEN - 1) + '…' : s;
 
     const filteredHeaders = exportHeaders.filter(h => !PDF_EXCLUDE.has(h));
 
@@ -2036,14 +2038,14 @@ const exportToPdf = async () => {
 
     // Fixed widths for known short columns (mm)
     const FIXED_WIDTHS = {
-        'Rank'                 : 10,
-        'Assessment No'        : 20,
-        'UPI'                  : 18,
-        'Gender'               : 14,
-        'Total Marks'          : 18,
-        'Avg%'                 : 14,
-        'Level'                : 12,
-        'Official Student Name': 32,
+        'Rank'                   : 10,
+        'Assessment No'          : 20,
+        'UPI'                    : 18,
+        'Gender'                 : 14,
+        'Total Marks'            : 18,
+        'Avg%'                   : 14,
+        'Level'                  : 12,
+        'Official Student Name'  : 48,
     };
 
     // Calculate how much width is left for subject columns
@@ -2190,6 +2192,13 @@ const exportToPdf = async () => {
                 data.cell.styles.textColor = [255, 255, 255];
                 data.cell.styles.fontStyle = 'bold';
                 data.cell.styles.fontSize = 7;
+            }
+            // Left-align and wrap the Official Student Name column
+            const origKey = headerKeyMap[data.column.dataKey] || data.column.dataKey;
+            if (origKey === 'Official Student Name') {
+                data.cell.styles.halign = 'left';
+                data.cell.styles.overflow = 'linebreak';
+                data.cell.styles.cellWidth = 48;
             }
         },
         didDrawPage: function(data) {
