@@ -160,7 +160,7 @@
   <!-- Text Section -->
   <div class="text-center md:text-left">
     <h1 class="text-2xl md:text-3xl font-bold text-gray-800">
-      Online Students Results
+      Online Students Results...
     </h1>
     <p class="text-gray-500 text-sm md:text-base">
       Manage and analyze student results.
@@ -282,48 +282,14 @@
     </div>
 
     <div id="print-modal" class="fixed inset-0 bg-gray-800 bg-opacity-50 flex items-center justify-center hidden z-50">
-        <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md">
-            <h3 class="text-lg font-semibold mb-1 text-center">Export Options</h3>
-
-            <!-- Export context info -->
-            <p id="export-context-info" class="text-center text-sm text-blue-600 mb-4 font-medium"></p>
-
-            <!-- Large export warning -->
-            <div id="export-warning" class="hidden mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg text-sm text-yellow-800">
-                <strong>⚠️ Large Export:</strong> You are about to export <span id="export-warning-count"></span> students across all grades mixed together.
-                <div class="mt-2 flex gap-2">
-                    <button id="export-warning-select-grade-btn" class="px-3 py-1 bg-yellow-500 text-white rounded text-xs font-semibold hover:bg-yellow-600 transition">Select a Grade First</button>
-                    <button id="export-warning-continue-btn" class="px-3 py-1 bg-gray-400 text-white rounded text-xs hover:bg-gray-500 transition">Export Anyway</button>
-                </div>
-            </div>
-
-            <!-- Export buttons (hidden when warning shown) -->
-            <div id="export-buttons-section">
-
-            <!-- Column visibility toggles -->
-            <div class="mb-4">
-                <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Columns to include</p>
-                <div class="grid grid-cols-2 gap-2" id="col-toggle-container">
-                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="col-toggle" data-col="Assessment No" checked> Assessment No</label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="col-toggle" data-col="UPI" checked> UPI</label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="col-toggle" data-col="Gender" checked> Gender</label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="col-toggle" data-col="Grade" checked> Grade</label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="col-toggle" data-col="Term" checked> Term</label>
-                    <label class="flex items-center gap-2 text-sm cursor-pointer"><input type="checkbox" class="col-toggle" data-col="Class" checked> Class</label>
-                </div>
-            </div>
-
-            <!-- Export buttons (hidden when warning shown) -->
-            <div id="export-buttons-section">
-            <!-- Format buttons -->
-            <p class="text-xs font-semibold text-gray-500 uppercase mb-2">Format</p>
-            <div class="flex justify-around mb-4">
+        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h3 class="text-lg font-semibold mb-4 text-center">Choose Export Format</h3>
+            <div class="flex justify-around">
                 <button id="print-excel-btn" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">Excel</button>
                 <button id="print-pdf-btn" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">PDF</button>
                 <button id="print-word-btn" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Word</button>
             </div>
-            </div>
-            <button id="close-print-modal-btn" class="w-full py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
+            <button id="close-print-modal-btn" class="mt-6 w-full py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancel</button>
         </div>
     </div>
 
@@ -434,7 +400,6 @@ toggleBtn.addEventListener('click', () => {
         let studentsData = [];
         let currentPage = 1;
         let studentsPerPage = 10;
-        let currentFilteredStudents = []; // tracks currently visible students for export
 
         const deleteGradeBtn = document.getElementById('delete-grade-btn');
         const studentsPerPageSelect = document.getElementById('students-per-page');
@@ -507,75 +472,17 @@ toggleBtn.addEventListener('click', () => {
             modal.classList.add('hidden');
         });
 
-        const openExportModal = () => {
-            const exportContextInfo = document.getElementById('export-context-info');
-            const exportWarning = document.getElementById('export-warning');
-            const exportWarningCount = document.getElementById('export-warning-count');
-            const selectedGrade = gradeFilterSelect.value;
-            const searchTerm = searchInput.value.trim();
-            const count = currentFilteredStudents.length;
-
-            // Context label
-            if (searchTerm && selectedGrade) {
-                exportContextInfo.textContent = `Exporting ${count} student(s) — Grade: ${selectedGrade}, Search: "${searchTerm}"`;
-            } else if (searchTerm) {
-                exportContextInfo.textContent = `Exporting ${count} student(s) matching "${searchTerm}"`;
-            } else if (selectedGrade) {
-                exportContextInfo.textContent = `Exporting ${count} student(s) from ${selectedGrade}`;
-            } else {
-                exportContextInfo.textContent = `Exporting all ${count} student(s) across all grades`;
-            }
-
-            // Warning for large unfiltered export — hide format buttons until resolved
-            const exportButtonsSection = document.getElementById('export-buttons-section');
-            if (!selectedGrade && !searchTerm && count > 50) {
-                exportWarning.classList.remove('hidden');
-                exportWarningCount.textContent = `${count}`;
-                exportButtonsSection.classList.add('hidden');
-            } else {
-                exportWarning.classList.add('hidden');
-                exportButtonsSection.classList.remove('hidden');
-            }
-
-            // Check for missing scores — warn if any subject has gaps
-            const subjectCols = getSubjectColumns(currentFilteredStudents);
-            const missingWarnings = [];
-            subjectCols.forEach(subj => {
-                const missing = currentFilteredStudents.filter(s => !s[subj] && s[subj] !== 0).length;
-                if (missing > 0) missingWarnings.push(`${missing} student(s) missing ${subj}`);
-            });
-            if (missingWarnings.length > 0) {
-                exportContextInfo.textContent += ` ⚠️ Missing scores: ${missingWarnings.slice(0,2).join('; ')}${missingWarnings.length > 2 ? '…' : ''}`;
-            }
-
-            printModal.classList.remove('hidden');
-        };
-
         printAllBtn.addEventListener('click', () => {
-            renderStudents(studentsData);
             gradeFilterSelect.value = '';
-            searchInput.value = '';
-            openExportModal();
+            printModal.classList.remove('hidden');
         });
 
         printGradeBtn.addEventListener('click', () => {
-            openExportModal();
+            printModal.classList.remove('hidden');
         });
 
         closePrintModalBtn.addEventListener('click', () => {
             printModal.classList.add('hidden');
-        });
-
-        document.getElementById('export-warning-select-grade-btn').addEventListener('click', () => {
-            printModal.classList.add('hidden');
-            gradeFilterSelect.focus();
-            // Scroll grade filter into view
-            gradeFilterSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        });
-
-        document.getElementById('export-warning-continue-btn').addEventListener('click', () => {
-            document.getElementById('export-warning').classList.add('hidden');
-            document.getElementById('export-buttons-section').classList.remove('hidden');
         });
 
         closePdfModalBtn.addEventListener('click', () => {
@@ -1507,7 +1414,6 @@ gradeFilterSelect.addEventListener('change', () => {
 
 
 const renderStudents = (students, activeFilter = null) => {
-            currentFilteredStudents = students; // always track what's visible
             dataDisplay.innerHTML = '';
             updateAnalyticsDashboard(students, activeFilter);
 
@@ -1784,18 +1690,7 @@ deleteGradeBtn.addEventListener('click', async () => {
         };
 
         const computeExportData = (students) => {
-            const subjectColsRaw = getSubjectColumns(students);
-
-            // Priority subject order: core subjects first, rest alphabetically after
-            const SUBJECT_PRIORITY = [
-                'Mathematics', 'English', 'Kiswahili', 'Integrated Science',
-                'Creative Arts & Social studies', 'Creative Arts & Sports',
-                'Creative Arts', 'Social studies', 'Agriculture', 'CRE',
-                'Pre-Technical Studies', 'Integrated Learning Area'
-            ];
-            const prioritySubjects = SUBJECT_PRIORITY.filter(s => subjectColsRaw.includes(s));
-            const otherSubjects = subjectColsRaw.filter(s => !SUBJECT_PRIORITY.includes(s)).sort();
-            const subjectCols = [...prioritySubjects, ...otherSubjects];
+            const subjectCols = getSubjectColumns(students);
 
             // Fixed meta columns (only those present in data)
             const META_BEFORE = ['Assessment No', 'UPI', 'Official Student Name', 'Gender'];
@@ -1812,9 +1707,9 @@ deleteGradeBtn.addEventListener('click', async () => {
                 'Closing Date', 'Opening Date']);
             const extraCols = Array.from(allKeys).filter(k => !knownCols.has(k)).sort();
 
-            // Final column order: Rank | meta | subjects | extra | Total Marks | Avg | Level | Class
+            // Final column order: No. | meta | subjects | extra | Total Marks | Avg | Level | Class
             const exportHeaders = [
-                'Rank',
+                'No.',
                 ...metaBefore,
                 ...subjectCols,
                 ...extraCols,
@@ -1838,7 +1733,7 @@ deleteGradeBtn.addEventListener('click', async () => {
 
                 const row = {};
                 exportHeaders.forEach(h => {
-                    if (h === 'Rank')          row[h] = idx + 1; // placeholder, re-ranked below
+                    if (h === 'No.')           row[h] = idx + 1; // placeholder, renumbered below
                     else if (h === 'Total Marks')  row[h] = scoredCount > 0 ? total : '-';
                     else if (h === 'Average (%)')  row[h] = scoredCount > 0 ? average : '-';
                     else if (h === 'Level')        row[h] = scoredCount > 0 ? level : '-';
@@ -1854,55 +1749,28 @@ deleteGradeBtn.addEventListener('click', async () => {
                 return bTotal - aTotal;
             });
 
-            // Assign ranks with tie handling (equal marks share same rank)
-            let rank = 1;
-            exportRows.forEach((row, i) => {
-                if (i > 0) {
-                    const prevTotal = exportRows[i - 1]['Total Marks'];
-                    const currTotal = row['Total Marks'];
-                    if (currTotal !== prevTotal) rank = i + 1;
-                }
-                row['Rank'] = typeof row['Total Marks'] === 'number' ? rank : 'N/A';
-            });
+            // Re-number after sorting
+            exportRows.forEach((row, i) => { row['No.'] = i + 1; });
 
             return { exportHeaders, exportRows, subjectCols };
         };
         // ────────────────────────────────────────────────────────────────────────────
 
-        // Returns set of columns the user has unchecked in the export modal
-        const getExcludedCols = () => {
-            const excluded = new Set();
-            document.querySelectorAll('.col-toggle').forEach(cb => {
-                if (!cb.checked) excluded.add(cb.dataset.col);
-            });
-            return excluded;
-        };
-
-        const getExportFilename = (ext) => {
-            const grade = gradeFilterSelect.value || 'All';
-            const term = (currentFilteredStudents[0] && currentFilteredStudents[0]['Term']) ? 
-                currentFilteredStudents[0]['Term'].replace(/[^a-zA-Z0-9-_]/g, '_') : 'Term';
-            const date = new Date().toISOString().split('T')[0];
-            return `Assessment_${grade}_${term}_${date}.${ext}`;
-        };
-
         const exportToExcel = () => {
-            const dataToExport = currentFilteredStudents;
-            if (dataToExport.length === 0) { showModal('No data to export.'); return; }
+            const selectedGrade = gradeFilterSelect.value;
+            const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
 
-            const userExcluded = getExcludedCols();
+            if (dataToExport.length === 0) {
+                showModal('No data to export.');
+                return;
+            }
+
             const { exportHeaders, exportRows } = computeExportData(dataToExport);
-            const filteredHeaders = exportHeaders.filter(h => !userExcluded.has(h));
-            const filteredRows = exportRows.map(row => {
-                const r = {};
-                filteredHeaders.forEach(h => { r[h] = row[h]; });
-                return r;
-            });
 
-            const worksheet = XLSX.utils.json_to_sheet(filteredRows, { header: filteredHeaders });
+            const worksheet = XLSX.utils.json_to_sheet(exportRows, { header: exportHeaders });
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
-            XLSX.writeFile(workbook, getExportFilename('xlsx'));
+            XLSX.writeFile(workbook, `student_Assessment_Outcome_${selectedGrade || 'all'}_${new Date().toISOString().split('T')[0]}.xlsx`);
             printModal.classList.add('hidden');
         };
 
@@ -1912,17 +1780,16 @@ const exportToPdf = async () => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF('landscape');
 
-    const dataToExport = currentFilteredStudents;
+    const selectedGrade = gradeFilterSelect.value;
+    const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
 
     if (dataToExport.length === 0) {
         showModal('No data to export.');
         return;
     }
 
-    const selectedGrade = gradeFilterSelect.value;
-
     // Get term from the first student
-    const term = dataToExport[0]['Term'] || 'N/A';
+    const term = dataToExport.length > 0 ? (dataToExport[0]['Term'] || 'N/A') : 'N/A';
 
     const title = `P O BOX 45 - 40139, AKALA, KENYA`;
     const subtitle = `LEVEL: ${selectedGrade || 'All Grades'} | Term: ${term} | Academic Year: ${new Date().getFullYear()}`;
@@ -1971,7 +1838,7 @@ const exportToPdf = async () => {
 
 
     // For PDF: exclude Grade, Term & Class, truncate long headers with ellipsis
-    const PDF_EXCLUDE = new Set(['Grade', 'Term', 'Class', 'UPI']);
+    const PDF_EXCLUDE = new Set(['Grade', 'Term', 'Class']);
     const PDF_MAX_LEN = 9; // max chars before ellipsis
     const truncate = (s) => s.length > PDF_MAX_LEN ? s.slice(0, PDF_MAX_LEN - 1) + '…' : s;
 
@@ -1991,44 +1858,6 @@ const exportToPdf = async () => {
         });
     });
 
-    // ── Grade summary row ──────────────────────────────────────────────────────
-    // Compute per-subject averages, class total average, and EE/ME/AE/BE counts
-    const { subjectCols } = computeExportData(dataToExport);
-    const scoredStudents = exportRows.filter(r => typeof r['Total Marks'] === 'number');
-
-    const summaryRow = headers.map(h => {
-        const origKey = headerKeyMap[h] || h;
-        if (origKey === 'Rank' || origKey === 'Assessment No' ||
-            origKey === 'Official Student Name' || origKey === 'Gender') {
-            return h === headers[0] ? 'CLASS AVG' : '';
-        }
-        if (origKey === 'Total Marks') {
-            const avg = scoredStudents.length
-                ? (scoredStudents.reduce((s, r) => s + r['Total Marks'], 0) / scoredStudents.length).toFixed(1)
-                : '-';
-            return `Avg: ${avg}`;
-        }
-        if (origKey === 'Average (%)') {
-            const avg = scoredStudents.length
-                ? (scoredStudents.reduce((s, r) => s + r['Average (%)'], 0) / scoredStudents.length).toFixed(1)
-                : '-';
-            return `${avg}%`;
-        }
-        if (origKey === 'Level') {
-            const ee = scoredStudents.filter(r => r['Level'] && r['Level'].startsWith('EE')).length;
-            const me = scoredStudents.filter(r => r['Level'] && r['Level'].startsWith('ME')).length;
-            const ae = scoredStudents.filter(r => r['Level'] && r['Level'].startsWith('AE')).length;
-            const be = scoredStudents.filter(r => r['Level'] && r['Level'].startsWith('BE')).length;
-            return `EE:${ee} ME:${me} AE:${ae} BE:${be}`;
-        }
-        // Subject column — compute average
-        if (subjectCols.includes(origKey)) {
-            const vals = scoredStudents.map(r => parseFloat(r[origKey])).filter(v => !isNaN(v));
-            return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '-';
-        }
-        return '';
-    });
-
     // ── Column widths: fixed narrow for meta/summary, equal share for subjects ──
     const pageWidth = doc.internal.pageSize.width;
     const margins = 20; // left + right margins
@@ -2036,13 +1865,13 @@ const exportToPdf = async () => {
 
     // Fixed widths for known short columns (mm)
     const FIXED_WIDTHS = {
-        'Rank'                 : 10,
-        'Assessment No'        : 20,
-        'UPI'                  : 18,
-        'Gender'               : 14,
-        'Total Marks'          : 18,
-        'Avg%'                 : 14,
-        'Level'                : 12,
+        'No.'              : 8,
+        'Assessment No'    : 20,
+        'UPI'              : 18,
+        'Gender'           : 14,
+        'Total Marks'      : 18,
+        'Avg%'             : 14,
+        'Level'            : 12,
         'Official Student Name': 32,
     };
 
@@ -2164,7 +1993,7 @@ const exportToPdf = async () => {
     // Generate table with header and footer on each page
     doc.autoTable({
         head: [headers],
-        body: [...body, summaryRow],
+        body: body,
         startY: 25,
         styles: { 
             fontSize: 8,
@@ -2183,15 +2012,6 @@ const exportToPdf = async () => {
         columnStyles,
         alternateRowStyles: { fillColor: [245, 245, 245] },
         margin: { top: 25, right: 10, bottom: 20, left: 10 },
-        didParseCell: function(data) {
-            // Style the summary row distinctly
-            if (data.row.index === body.length) {
-                data.cell.styles.fillColor = [41, 128, 185];
-                data.cell.styles.textColor = [255, 255, 255];
-                data.cell.styles.fontStyle = 'bold';
-                data.cell.styles.fontSize = 7;
-            }
-        },
         didDrawPage: function(data) {
             addHeader(data);
         }
@@ -2206,41 +2026,41 @@ const exportToPdf = async () => {
         addFooter({ pageNumber: i }, totalPages);
     }
 
-    doc.save(getExportFilename('pdf'));
+    doc.save(`students_Assessment_Outcome for: ${selectedGrade || 'all'}_${new Date().toISOString().split('T')[0]}.pdf`);
     printModal.classList.add('hidden');
 };
 
         const exportToWord = () => {
             const { Document, Packer, Paragraph, Table, TableCell, TableRow } = window.docx;
 
-            const dataToExport = currentFilteredStudents;
+            const selectedGrade = gradeFilterSelect.value;
+            const dataToExport = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
 
             if (dataToExport.length === 0) {
                 showModal('No data to export.');
                 return;
             }
 
-            const userExcluded = getExcludedCols();
             const { exportHeaders, exportRows } = computeExportData(dataToExport);
-            const filteredHeaders = exportHeaders.filter(h => !userExcluded.has(h));
 
             const headerRow = new TableRow({
-                children: filteredHeaders.map(header => new TableCell({ 
+                children: exportHeaders.map(header => new TableCell({ 
                     children: [new Paragraph({ text: header, bold: true })] 
                 })),
             });
 
             const dataRows = exportRows.map(row => {
                 return new TableRow({
-                    children: filteredHeaders.map(header => new TableCell({ 
+                    children: exportHeaders.map(header => new TableCell({ 
                         children: [new Paragraph(String(row[header] !== undefined ? row[header] : '-'))] 
                     })),
                 });
             });
 
-            const table = new Table({ rows: [headerRow, ...dataRows] });
+            const table = new Table({
+                rows: [headerRow, ...dataRows],
+            });
 
-            const selectedGrade = gradeFilterSelect.value;
             const doc = new Document({
                 sections: [{
                     children: [
@@ -2259,7 +2079,7 @@ const exportToPdf = async () => {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = getExportFilename('docx');
+                a.download = `student_Assessment_Outcome_${selectedGrade || 'all'}_${new Date().toISOString().split('T')[0]}.docx`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
