@@ -2046,40 +2046,29 @@ const exportToPdf = async () => {
     const margins = 20; // left + right margins
     const usableWidth = pageWidth - margins;
 
-    // Fixed widths keyed by ORIGINAL (pre-truncation) column name
-    const FIXED_WIDTHS_ORIG = {
+    // Fixed widths for known short columns (mm)
+    const FIXED_WIDTHS = {
         'Rank'                 : 10,
         'Assessment No'        : 20,
         'UPI'                  : 18,
-        'Gender'               : 12,
-        'Total Marks'          : 16,
-        'Average (%)'          : 14,
-        'Level'                : 14,
-        'Official Student Name': 44,
+        'Gender'               : 14,
+        'Total Marks'          : 18,
+        'Avg%'                 : 14,
+        'Level'                : 12,
+        'Official Student Name': 32,
     };
 
-    // Build a display-header → fixed-width map using the original key lookup
-    const displayFixedWidths = {};
-    filteredHeaders.forEach(origH => {
-        const dispH = truncate(origH);
-        if (FIXED_WIDTHS_ORIG[origH] !== undefined) {
-            displayFixedWidths[dispH] = FIXED_WIDTHS_ORIG[origH];
-        }
-    });
-
-    // Calculate how much width is left for subject/learning-area columns.
-    // Cap at 14 mm per learning area.
-    const fixedTotal = headers.reduce((sum, h) => sum + (displayFixedWidths[h] || 0), 0);
-    const subjectHeaders = headers.filter(h => !displayFixedWidths[h]);
-    const subjectWidthCalc = subjectHeaders.length > 0
+    // Calculate how much width is left for subject columns
+    const fixedTotal = headers.reduce((sum, h) => sum + (FIXED_WIDTHS[h] || 0), 0);
+    const subjectHeaders = headers.filter(h => !FIXED_WIDTHS[h]);
+    const subjectWidth = subjectHeaders.length > 0
         ? parseFloat(((usableWidth - fixedTotal) / subjectHeaders.length).toFixed(1))
-        : 14;
-    const subjectWidth = Math.min(subjectWidthCalc, 14);
+        : 20;
 
     // Build columnStyles object keyed by column index
     const columnStyles = {};
     headers.forEach((h, i) => {
-        columnStyles[i] = { cellWidth: displayFixedWidths[h] || subjectWidth };
+        columnStyles[i] = { cellWidth: FIXED_WIDTHS[h] || subjectWidth };
     });
 
     // Premium Header Function
@@ -2214,15 +2203,12 @@ const exportToPdf = async () => {
                 data.cell.styles.fontStyle = 'bold';
                 data.cell.styles.fontSize = 7;
             }
-            // Resolve original column key — dataKey is numeric index for autoTable
-            const colIndex = data.column.index;
-            const displayHeader = headers[colIndex] || '';
-            const origKey = headerKeyMap[displayHeader] || displayHeader;
-            // Official Student Name: left-align for BOTH header and data rows
+            // Official Student Name: left-align; all other columns: centre
+            const origKey = headerKeyMap[data.column.dataKey] || data.column.dataKey;
             if (origKey === 'Official Student Name') {
                 data.cell.styles.halign = 'left';
                 data.cell.styles.overflow = 'linebreak';
-                data.cell.styles.cellWidth = 44;
+                data.cell.styles.cellWidth = 48;
             } else {
                 data.cell.styles.halign = 'center';
             }
@@ -2241,127 +2227,81 @@ const exportToPdf = async () => {
         addFooter({ pageNumber: i }, totalPages);
     }
 
-    // ── Rubric legend on its OWN dedicated new page ─────────────────────────
-    doc.addPage();
-    const rubricPageNum = doc.internal.getNumberOfPages();
-    const rpW = doc.internal.pageSize.width;
-    const rpH = doc.internal.pageSize.height;
-
-    // Page header (same blue banner style as results pages)
-    doc.setFillColor(41, 128, 185);
-    doc.rect(0, 0, rpW, 20, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
-    doc.text('ASSESSMENT RUBRIC / PERFORMANCE LEVELS', rpW / 2, 13, { align: 'center' });
-
-    // School sub-line
-    doc.setFontSize(8);
-    doc.setFont(undefined, 'normal');
-    doc.text('KANYADET PRI & JUNIOR SCHOOL', rpW / 2, 18, { align: 'center' });
-
+    // ── Rubric legend on the LAST page, below the table ──────────────────────
+    doc.setPage(totalPages);
     const rubric = [
-        { score: '90 – 100', level: 'EE1', meaning: 'Exceeding Expectation 1',  detail: 'Outstanding performance. Student consistently surpasses all learning objectives.',   color: [39, 174, 96]  },
-        { score: '75 – 89',  level: 'EE2', meaning: 'Exceeding Expectation 2',  detail: 'Very good performance. Student frequently goes beyond the expected standard.',         color: [82, 190, 128] },
-        { score: '58 – 74',  level: 'ME1', meaning: 'Meeting Expectation 1',    detail: 'Good performance. Student meets most learning objectives with confidence.',            color: [41, 128, 185] },
-        { score: '41 – 57',  level: 'ME2', meaning: 'Meeting Expectation 2',    detail: 'Satisfactory performance. Student adequately meets the basic learning objectives.',    color: [93, 173, 226] },
-        { score: '31 – 40',  level: 'AE1', meaning: 'Approaching Expectation 1',detail: 'Needs improvement. Student is working towards meeting the learning objectives.',      color: [230, 126, 34] },
-        { score: '21 – 30',  level: 'AE2', meaning: 'Approaching Expectation 2',detail: 'Requires support. Student shows partial understanding but needs more guidance.',       color: [243, 156, 18] },
-        { score: '11 – 20',  level: 'BE1', meaning: 'Below Expectation 1',      detail: 'Significant support needed. Student struggles to meet minimum learning objectives.',   color: [192, 57, 43]  },
-        { score: '1  – 10',  level: 'BE2', meaning: 'Below Expectation 2',      detail: 'Critical intervention required. Student has not met the learning objectives.',         color: [231, 76, 60]  },
+        { score: '90 – 100', level: 'EE1', meaning: 'Exceeding Expectation 1', color: [39, 174, 96]   },
+        { score: '75 – 89',  level: 'EE2', meaning: 'Exceeding Expectation 2', color: [82, 190, 128]  },
+        { score: '58 – 74',  level: 'ME1', meaning: 'Meeting Expectation 1',   color: [41, 128, 185]  },
+        { score: '41 – 57',  level: 'ME2', meaning: 'Meeting Expectation 2',   color: [93, 173, 226]  },
+        { score: '31 – 40',  level: 'AE1', meaning: 'Approaching Expectation 1',color:[230, 126, 34]  },
+        { score: '21 – 30',  level: 'AE2', meaning: 'Approaching Expectation 2',color:[243, 156, 18]  },
+        { score: '11 – 20',  level: 'BE1', meaning: 'Below Expectation 1',     color: [192, 57, 43]   },
+        { score: '1  – 10',  level: 'BE2', meaning: 'Below Expectation 2',     color: [231, 76, 60]   },
     ];
 
-    // Table layout
-    const rStartX  = 15;
-    const rTableW  = rpW - 30;
-    const rColW    = [28, 18, 60, rTableW - 28 - 18 - 60]; // Score | Level | Meaning | Detail
-    const rRowH    = 14;
-    const rHeaderH = 10;
-    let   rY       = 30;
+    const pW   = doc.internal.pageSize.width;
+    const pH   = doc.internal.pageSize.height;
+    // Position rubric above the footer (footer occupies ~last 20 mm)
+    const legendY = pH - 42;
+    const colW = [22, 14, 52];  // Score | Level | Meaning column widths (mm)
+    const rowH = 5;
+    const tableW = colW.reduce((a, b) => a + b, 0);
+    const startX = 10;
 
-    // Column header row
-    doc.setFillColor(41, 128, 185);
-    doc.rect(rStartX, rY, rTableW, rHeaderH, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(9);
+    // Section heading
+    doc.setFontSize(7.5);
     doc.setFont(undefined, 'bold');
-    const rHLabels = ['Score Range', 'Level', 'Meaning', 'Description'];
-    let rcx = rStartX;
-    rHLabels.forEach((lbl, i) => {
-        doc.text(lbl, rcx + rColW[i] / 2, rY + 6.5, { align: 'center' });
-        rcx += rColW[i];
+    doc.setTextColor(60, 60, 60);
+    doc.text('ASSESSMENT RUBRIC / PERFORMANCE LEVELS', startX, legendY - 3);
+
+    // Header row
+    doc.setFillColor(41, 128, 185);
+    doc.rect(startX, legendY, tableW, rowH, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(6.5);
+    doc.setFont(undefined, 'bold');
+    const hLabels = ['Score Range', 'Level', 'Meaning'];
+    let cx = startX;
+    hLabels.forEach((lbl, i) => {
+        doc.text(lbl, cx + colW[i] / 2, legendY + 3.5, { align: 'center' });
+        cx += colW[i];
     });
-    rY += rHeaderH;
 
     // Data rows
     rubric.forEach((row, idx) => {
-        // Alternating background
-        doc.setFillColor(idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 249 : 255, idx % 2 === 0 ? 250 : 255);
-        doc.rect(rStartX, rY, rTableW, rRowH, 'F');
+        const ry = legendY + rowH + idx * rowH;
+        // Alternating row background
+        if (idx % 2 === 0) {
+            doc.setFillColor(245, 245, 245);
+        } else {
+            doc.setFillColor(255, 255, 255);
+        }
+        doc.rect(startX, ry, tableW, rowH, 'F');
 
-        // Left accent bar using rubric colour
+        // Colour swatch in Level cell
         doc.setFillColor(...row.color);
-        doc.rect(rStartX, rY, 3, rRowH, 'F');
+        doc.roundedRect(startX + colW[0] + 1, ry + 1, colW[1] - 2, rowH - 2, 1, 1, 'F');
 
-        // Score Range
         doc.setTextColor(60, 60, 60);
-        doc.setFont(undefined, 'bold');
-        doc.setFontSize(9);
-        doc.text(row.score, rStartX + 3 + (rColW[0] - 3) / 2, rY + rRowH / 2 + 1.5, { align: 'center' });
-
-        // Level badge (coloured pill)
-        const badgeX = rStartX + rColW[0] + 2;
-        const badgeW = rColW[1] - 4;
-        const badgeH = rRowH - 4;
-        doc.setFillColor(...row.color);
-        doc.roundedRect(badgeX, rY + 2, badgeW, badgeH, 2, 2, 'F');
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(6.5);
+        // Score
+        doc.text(row.score, startX + colW[0] / 2, ry + 3.5, { align: 'center' });
+        // Level (white text on colour swatch)
         doc.setTextColor(255, 255, 255);
         doc.setFont(undefined, 'bold');
-        doc.setFontSize(10);
-        doc.text(row.level, badgeX + badgeW / 2, rY + rRowH / 2 + 2, { align: 'center' });
-
+        doc.text(row.level, startX + colW[0] + colW[1] / 2, ry + 3.5, { align: 'center' });
         // Meaning
-        doc.setTextColor(40, 40, 40);
-        doc.setFont(undefined, 'bold');
-        doc.setFontSize(8.5);
-        doc.text(row.meaning, rStartX + rColW[0] + rColW[1] + 3, rY + rRowH / 2 + 1.5);
-
-        // Detail description
+        doc.setTextColor(60, 60, 60);
         doc.setFont(undefined, 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(90, 90, 90);
-        const descX = rStartX + rColW[0] + rColW[1] + rColW[2] + 3;
-        const descLines = doc.splitTextToSize(row.detail, rColW[3] - 6);
-        const lineSpacing = 4;
-        const blockH = descLines.length * lineSpacing;
-        const textStartY = rY + (rRowH - blockH) / 2 + lineSpacing - 1;
-        descLines.forEach((line, li) => {
-            doc.text(line, descX, textStartY + li * lineSpacing);
-        });
-
-        // Row bottom border
-        doc.setDrawColor(220, 220, 220);
-        doc.setLineWidth(0.2);
-        doc.line(rStartX, rY + rRowH, rStartX + rTableW, rY + rRowH);
-
-        rY += rRowH;
+        doc.text(row.meaning, startX + colW[0] + colW[1] + 3, ry + 3.5);
     });
 
-    // Outer border
-    doc.setDrawColor(41, 128, 185);
-    doc.setLineWidth(0.5);
-    doc.rect(rStartX, 30 + rHeaderH, rTableW, rubric.length * rRowH);
-
-    // Footer note
-    doc.setFontSize(7.5);
-    doc.setFont(undefined, 'italic');
-    doc.setTextColor(120, 120, 120);
-    doc.text(
-        'This rubric is based on the Kenya CBC assessment framework for Junior School.',
-        rpW / 2, rY + 10, { align: 'center' }
-    );
-    doc.setFont(undefined, 'normal');
-    doc.text(`Generated: ${new Date().toLocaleDateString()}`, rpW / 2, rY + 16, { align: 'center' });
+    // Outer border around the whole legend table
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.3);
+    doc.rect(startX, legendY, tableW, rowH + rubric.length * rowH);
     // ─────────────────────────────────────────────────────────────────────────
 
     doc.save(getExportFilename('pdf'));
