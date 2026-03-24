@@ -2314,6 +2314,105 @@ const exportToPdf = async () => {
     doc.setTextColor(120, 120, 120);
     doc.text('* Scores are based on the CBC (Competency Based Curriculum) Performance Levels.', pW / 2, noteY, { align: 'center' });
 
+    // ── Performance Comments Section ─────────────────────────────────────────
+    const commentsData = [
+        {
+            level: 'EE1 / EE2',
+            color: [39, 174, 96],
+            lightColor: [235, 250, 240],
+            borderColor: [39, 174, 96],
+            title: 'Exceeding Expectation (EE)',
+            comment: 'The learner demonstrates outstanding mastery of concepts and skills beyond the expected standard. ' +
+                     'Performance is consistently exemplary. The learner should be challenged with enrichment activities, ' +
+                     'leadership roles, and advanced tasks to sustain and further develop their exceptional potential.'
+        },
+        {
+            level: 'ME1 / ME2',
+            color: [41, 128, 185],
+            lightColor: [235, 244, 252],
+            borderColor: [41, 128, 185],
+            title: 'Meeting Expectation (ME)',
+            comment: 'The learner has achieved the expected competency level and demonstrates a solid understanding of ' +
+                     'the subject matter. Performance is satisfactory and consistent. The learner should be encouraged ' +
+                     'to maintain this standard and explore areas for deeper understanding and independent inquiry.'
+        },
+        {
+            level: 'AE1 / AE2',
+            color: [230, 126, 34],
+            lightColor: [254, 246, 235],
+            borderColor: [230, 126, 34],
+            title: 'Approaching Expectation (AE)',
+            comment: 'The learner is making progress but has not yet fully met the expected competency level. Key concepts ' +
+                     'and skills need further reinforcement. Targeted support, guided practice, and additional instructional ' +
+                     'interventions are recommended to help the learner close the identified performance gaps.'
+        },
+        {
+            level: 'BE1 / BE2',
+            color: [192, 57, 43],
+            lightColor: [253, 237, 236],
+            borderColor: [192, 57, 43],
+            title: 'Below Expectation (BE)',
+            comment: 'The learner has not demonstrated the minimum expected competency. Significant learning gaps are evident ' +
+                     'and require immediate, intensive intervention. A personalised support plan, close collaboration with ' +
+                     'parents/guardians, and remedial instructional strategies are strongly recommended.'
+        },
+    ];
+
+    const commentSectionTitleY = noteY + 10;
+    // Section heading
+    doc.setFontSize(11);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(41, 128, 185);
+    doc.text('TEACHER / ADMINISTRATOR COMMENTS ON PERFORMANCE', pW / 2, commentSectionTitleY, { align: 'center' });
+    doc.setDrawColor(41, 128, 185);
+    doc.setLineWidth(0.4);
+    doc.line(startX, commentSectionTitleY + 2, startX + tableW, commentSectionTitleY + 2);
+
+    const boxW    = tableW;
+    const boxH    = 22;           // height of each comment box
+    const boxGap  = 4;            // gap between boxes
+    let   boxY    = commentSectionTitleY + 6;
+
+    commentsData.forEach((item) => {
+        // Outer light-filled background
+        doc.setFillColor(...item.lightColor);
+        doc.roundedRect(startX, boxY, boxW, boxH, 2, 2, 'F');
+
+        // Left colour accent bar
+        doc.setFillColor(...item.color);
+        doc.roundedRect(startX, boxY, 4, boxH, 1, 1, 'F');
+
+        // Outer border
+        doc.setDrawColor(...item.borderColor);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(startX, boxY, boxW, boxH, 2, 2, 'S');
+
+        // Level badge (small pill)
+        doc.setFillColor(...item.color);
+        doc.roundedRect(startX + 7, boxY + 2.5, 20, 6, 1, 1, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(6.5);
+        doc.setFont(undefined, 'bold');
+        doc.text(item.level, startX + 17, boxY + 6.8, { align: 'center' });
+
+        // Title
+        doc.setTextColor(...item.color);
+        doc.setFontSize(8.5);
+        doc.setFont(undefined, 'bold');
+        doc.text(item.title, startX + 30, boxY + 7, { align: 'left' });
+
+        // Comment text — wrapped to fit within the box width
+        doc.setTextColor(60, 60, 60);
+        doc.setFontSize(7.5);
+        doc.setFont(undefined, 'normal');
+        const maxTextW = boxW - 14;  // leave margin inside box
+        const wrappedLines = doc.splitTextToSize(item.comment, maxTextW);
+        doc.text(wrappedLines, startX + 7, boxY + 13);
+
+        boxY += boxH + boxGap;
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Add footer to rubric page with the final page count
     const finalTotalPages = doc.internal.getNumberOfPages();
     addFooter({ pageNumber: rubricPageNum }, finalTotalPages);
