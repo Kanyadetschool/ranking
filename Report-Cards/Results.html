@@ -350,7 +350,7 @@
     </div>
 </div>
     <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
-    <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthmaino.js"></script>
+    <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthmain.js"></script>
                 <script src="https://kanyadet-school-admin.web.app/New-Students-Database/js/image-popup.js" ></script>
                   <script src="https://kanyadet-school-admin.web.app/Print-Individual-Results/js/Toggle.js" ></script>
 
@@ -1977,7 +1977,11 @@ const exportToPdf = async () => {
     // For PDF: exclude Grade, Term & Class, truncate long headers with ellipsis
     const PDF_EXCLUDE = new Set(['Grade', 'Term', 'Class', 'UPI']);
     const PDF_MAX_LEN = 9; // max chars before ellipsis
-    const truncate = (s) => s.length > PDF_MAX_LEN ? s.slice(0, PDF_MAX_LEN - 1) + '…' : s;
+    // Columns completely exempt from truncation — shown exactly as-is
+    const PDF_NO_TRUNCATE = new Set(['Official Student Name']);
+    const truncate = (s) => PDF_NO_TRUNCATE.has(s)
+        ? s
+        : (s.length > PDF_MAX_LEN ? s.slice(0, PDF_MAX_LEN - 1) + '…' : s);
 
     const filteredHeaders = exportHeaders.filter(h => !PDF_EXCLUDE.has(h));
 
