@@ -2048,13 +2048,13 @@ const exportToPdf = async () => {
 
     // Fixed widths keyed by ORIGINAL (pre-truncation) column name
     const FIXED_WIDTHS_ORIG = {
-        'Rank'                 :  9,
-        'Assessment No'        : 18,
-        'UPI'                  : 16,
-        'Gender'               : 11,
-        'Total Marks'          : 15,
-        'Average (%)'          : 13,
-        'Level'                : 13,
+        'Rank'                 : 10,
+        'Assessment No'        : 20,
+        'UPI'                  : 18,
+        'Gender'               : 12,
+        'Total Marks'          : 16,
+        'Average (%)'          : 14,
+        'Level'                : 14,
         'Official Student Name': 44,
     };
 
@@ -2068,14 +2068,13 @@ const exportToPdf = async () => {
     });
 
     // Calculate how much width is left for subject/learning-area columns.
-    // Cap at 12 mm so Level and other fixed cols always have room no matter
-    // how many learning areas are present.
+    // Cap at 14 mm per learning area.
     const fixedTotal = headers.reduce((sum, h) => sum + (displayFixedWidths[h] || 0), 0);
     const subjectHeaders = headers.filter(h => !displayFixedWidths[h]);
     const subjectWidthCalc = subjectHeaders.length > 0
         ? parseFloat(((usableWidth - fixedTotal) / subjectHeaders.length).toFixed(1))
-        : 12;
-    const subjectWidth = Math.min(subjectWidthCalc, 12);
+        : 14;
+    const subjectWidth = Math.min(subjectWidthCalc, 14);
 
     // Build columnStyles object keyed by column index
     const columnStyles = {};
