@@ -682,7 +682,7 @@ function addBarcode(doc, student, pageHeight) {
         ctx.drawImage(cvs, -cvs.width / 2, -cvs.height / 2);
         const bcDataURL = rotCanvas.toDataURL('image/png');
         const bcW = 10, bcH = 52;
-        const bcX = 1;
+        const bcX = 2;
         const bcY = pageHeight / 2 - bcH / 2;
         doc.addImage(bcDataURL, 'PNG', bcX, bcY, bcW, bcH);
         doc.setFontSize(5);
