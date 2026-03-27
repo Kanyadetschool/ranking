@@ -3115,14 +3115,14 @@
 <script>
 function toggleQuickLinks() {
   const panel = document.getElementById('quick-links-panel');
-  const arrow = document.getElementById('auth-toggle-arrow');
-  const btn   = document.getElementById('auth-qlinks-btn');
-  const isOpen = panel.classList.contains('open');
-  panel.classList.toggle('open', !isOpen);
-  arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
-  btn.style.color = isOpen ? '' : (document.documentElement.getAttribute('data-theme')==='light' ? '#2980b9' : 'rgba(0,212,255,.75)');
-}
-</script>
+    const arrow = document.getElementById('auth-toggle-arrow');
+      const btn   = document.getElementById('auth-qlinks-btn');
+        const isOpen = panel.classList.contains('open');
+          panel.classList.toggle('open', !isOpen);
+            arrow.style.transform = isOpen ? '' : 'rotate(180deg)';
+              btn.style.color = isOpen ? '' : (document.documentElement.getAttribute('data-theme')==='light' ? '#2980b9' : 'rgba(0,212,255,.75)');
+              }
+              </script>>
 
 <!-- DASHBOARD -->
 <div id="dashboard" class="main" style="display:none;">

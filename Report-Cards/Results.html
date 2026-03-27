@@ -2333,7 +2333,7 @@ const exportToPdf = async () => {
     doc.setFontSize(8);
     doc.setFont(undefined, 'italic');
     doc.setTextColor(120, 120, 120);
-    doc.text('* This rubric is based on the Kenya CBC assessment framework for Junior School.', pW / 2, noteY, { align: 'center' });
+    doc.text('*....', pW / 2, noteY, { align: 'center' });
     doc.setFont(undefined, 'normal');
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, pW / 2, noteY + 5, { align: 'center' });
     // ─────────────────────────────────────────────────────────────────────────
