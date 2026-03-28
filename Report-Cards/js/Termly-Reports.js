@@ -38,7 +38,7 @@ let selectedGrades = new Set();   // populated by buildGradeSelector()
 
 // Configuration for grade filtering
 const GRADE_FILTER_CONFIG = {
-    enabled: true,  // Set to false to show all grades
+    enabled: false,  // Set to false to show all grades
     allowedGrades: ['Grade 7', 'Grade 8', 'Grade 9']  // Modify this array as needed
 };
 
