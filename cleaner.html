@@ -433,6 +433,34 @@ body::after{
   background:linear-gradient(180deg,#00d4ff,#8b5cf6);border-radius:2px;
 }
 
+/* ── BULK EDIT GRADE ── */
+.grade-edit-grid{
+  display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:end;
+  margin-bottom:12px;
+}
+@media(max-width:700px){.grade-edit-grid{grid-template-columns:1fr;}}
+.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:6px;}
+.grade-select,.grade-input-field{
+  width:100%;padding:9px 13px;
+  background:var(--input);border:1.5px solid var(--border);
+  border-radius:var(--rs);color:var(--text);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.grade-select:focus,.grade-input-field:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.12);}
+[data-theme="light"] .grade-select,[data-theme="light"] .grade-input-field{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+.grade-hint{font-size:11.5px;color:var(--text2);line-height:1.65;padding:10px 14px;background:rgba(0,212,255,.03);border:1px solid var(--border);border-radius:var(--rs);}
+
+/* grade confirm dialog – amber theme */
+#grade-overlay .dialog{border-color:rgba(245,158,11,.3);box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(245,158,11,.1);}
+#grade-overlay .dialog-title{color:#fbbf24;}
+[data-theme="light"] #grade-overlay .dialog{border-color:rgba(245,158,11,.3);}
+[data-theme="light"] #grade-overlay .dialog-title{color:#92400e;}
+
+/* th hover cue */
+.th-grade-edit{cursor:pointer;user-select:none;}
+.th-grade-edit:hover{color:var(--amber)!important;}
+
 /* responsive */
 @media(max-width:640px){
   .main{padding:16px 12px 60px;}
@@ -490,7 +518,7 @@ body::after{
       ⚠️ <strong>Admin access only.</strong> This tool permanently deletes fields from all student records in the database. Actions cannot be undone.
     </div>
     <button class="btn btn-cyan" style="width:100%;padding:13px;font-size:14px;justify-content:center;" onclick="doSignIn()" id="signin-btn">
-      🔐 Sign in with Google
+      🔐 Sign in with Google..
     </button>
   </div>
 </div>
@@ -520,6 +548,34 @@ body::after{
         <div class="stat-icon">🗂️</div>
         <div class="stat-val" id="stat-path" style="color:#f59e0b;font-size:12px;font-family:'JetBrains Mono',monospace;">—</div>
         <div class="stat-lbl">DB Path</div>
+      </div>
+    </div>
+
+    <!-- ── BULK EDIT GRADE ── -->
+    <div class="card" style="margin-bottom:20px;animation-delay:.08s;" id="grade-edit-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">✏️ Bulk Edit Grade</div>
+          <div class="card-sub">Select an existing Grade value and replace it across all matching records</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="grade-edit-grid">
+          <div>
+            <div class="field-label">Current Grade (to replace)</div>
+            <select class="grade-select" id="grade-current-select" onchange="onGradeSelectChange()">
+              <option value="">— load data first —</option>
+            </select>
+          </div>
+          <div>
+            <div class="field-label">New Grade Value</div>
+            <input type="text" class="grade-input-field" id="grade-new-input" placeholder="e.g. Grade 7/2026/T2…" oninput="onGradeSelectChange()">
+          </div>
+          <div>
+            <button class="btn btn-green" id="grade-apply-btn" onclick="openGradeConfirm()" disabled>✏️ Apply</button>
+          </div>
+        </div>
+        <div class="grade-hint" id="grade-hint">Load data, then pick a Grade value to replace and type the new one.</div>
       </div>
     </div>
 
@@ -613,6 +669,25 @@ body::after{
     <div class="dialog-actions" style="margin-top:12px;">
       <button class="btn btn-ghost" onclick="closeConfirm()" id="cancel-btn">Cancel</button>
       <button class="btn btn-red" id="confirm-del-btn" disabled onclick="executeDelete()">🗑️ Delete Fields</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── GRADE EDIT CONFIRM DIALOG ── -->
+<div class="overlay" id="grade-overlay" onclick="if(event.target===this&&!_gradeSaving)closeGradeConfirm()">
+  <div class="dialog">
+    <div class="dialog-icon">✏️</div>
+    <div class="dialog-title">Confirm Grade Update</div>
+    <div class="dialog-body">
+      Replace <code id="dlg-grade-old" style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(239,68,68,.08);padding:2px 6px;border-radius:4px;">—</code> with <strong id="dlg-grade-new">—</strong> across <strong id="dlg-grade-count">—</strong> records. This overwrites the <strong>Grade</strong> field on every matching record.
+    </div>
+    <div class="progress-bar-wrap" id="grade-progress-wrap" style="display:none;">
+      <div class="progress-bar" id="grade-progress-bar"></div>
+    </div>
+    <div class="progress-text" id="grade-progress-text"></div>
+    <div class="dialog-actions" style="margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeGradeConfirm()" id="grade-cancel-btn">Cancel</button>
+      <button class="btn btn-green" id="grade-confirm-btn" onclick="executeGradeUpdate()">✏️ Update Grades</button>
     </div>
   </div>
 </div>
@@ -794,6 +869,7 @@ async function loadData(){
   analyseFields();
   renderTable();
   updateStats();
+  populateGradeSelect();
   document.getElementById('stat-path').textContent=_activePath;
 }
 window.refreshData=loadData;
@@ -1015,6 +1091,130 @@ async function executeDelete(){
   await loadData();
 }
 window.executeDelete=executeDelete;
+
+// ── BULK GRADE EDIT ───────────────────────────────────────────
+let _gradeSaving = false;
+
+function populateGradeSelect(){
+  const grades = new Map(); // grade value → count
+  Object.values(allRecords).forEach(rec => {
+    const g = rec.Grade !== undefined && rec.Grade !== null ? String(rec.Grade).trim() : '';
+    if(g) grades.set(g, (grades.get(g)||0) + 1);
+  });
+  const sel = document.getElementById('grade-current-select');
+  if(grades.size === 0){
+    sel.innerHTML = '<option value="">— No Grade field found in records —</option>';
+    document.getElementById('grade-apply-btn').disabled = true;
+    document.getElementById('grade-hint').textContent = 'No Grade values found in the loaded records.';
+    return;
+  }
+  const sorted = [...grades.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  sel.innerHTML = '<option value="">— Select current Grade to replace —</option>' +
+    sorted.map(([g,n])=>`<option value="${esc(g)}">${esc(g)} (${n} record${n!==1?'s':''})</option>`).join('');
+  onGradeSelectChange();
+}
+
+function onGradeSelectChange(){
+  const current = document.getElementById('grade-current-select').value;
+  const newVal  = document.getElementById('grade-new-input').value.trim();
+  const btn     = document.getElementById('grade-apply-btn');
+  const hint    = document.getElementById('grade-hint');
+
+  if(!current){
+    hint.textContent = 'Select which Grade value you want to replace.';
+    btn.disabled = true; return;
+  }
+  const count = Object.values(allRecords).filter(r=>String(r.Grade||'').trim()===current).length;
+  if(!newVal){
+    hint.innerHTML = `<strong style="color:var(--cyan);">${count} record${count!==1?'s':''}</strong> have Grade = "<em>${esc(current)}</em>". Enter the new Grade value above.`;
+    btn.disabled = true; return;
+  }
+  if(newVal === current){
+    hint.innerHTML = `⚠️ New value is the same as the current value — nothing would change.`;
+    btn.disabled = true; return;
+  }
+  hint.innerHTML = `Ready to replace <strong style="color:#f87171;">"${esc(current)}"</strong> → <strong style="color:#34d399;">"${esc(newVal)}"</strong> on <strong style="color:var(--cyan);">${count} record${count!==1?'s':''}</strong>.`;
+  btn.disabled = false;
+}
+window.onGradeSelectChange = onGradeSelectChange;
+
+function openGradeConfirm(){
+  const current = document.getElementById('grade-current-select').value;
+  const newVal  = document.getElementById('grade-new-input').value.trim();
+  if(!current || !newVal || newVal===current) return;
+  const count = Object.values(allRecords).filter(r=>String(r.Grade||'').trim()===current).length;
+  document.getElementById('dlg-grade-old').textContent   = current;
+  document.getElementById('dlg-grade-new').textContent   = newVal;
+  document.getElementById('dlg-grade-count').textContent = count;
+  document.getElementById('grade-progress-wrap').style.display = 'none';
+  document.getElementById('grade-progress-bar').style.width    = '0%';
+  document.getElementById('grade-progress-text').textContent   = '';
+  document.getElementById('grade-overlay').classList.add('open');
+}
+window.openGradeConfirm = openGradeConfirm;
+
+function closeGradeConfirm(){
+  if(_gradeSaving) return;
+  document.getElementById('grade-overlay').classList.remove('open');
+}
+window.closeGradeConfirm = closeGradeConfirm;
+
+async function executeGradeUpdate(){
+  if(_gradeSaving) return;
+  const current = document.getElementById('grade-current-select').value;
+  const newVal  = document.getElementById('grade-new-input').value.trim();
+  if(!current || !newVal) return;
+
+  _gradeSaving = true;
+  document.getElementById('grade-cancel-btn').disabled  = true;
+  document.getElementById('grade-confirm-btn').disabled = true;
+  document.getElementById('grade-confirm-btn').textContent = '⏳ Updating…';
+  document.getElementById('grade-progress-wrap').style.display = 'block';
+
+  const matchKeys = Object.entries(allRecords)
+    .filter(([,rec])=>String(rec.Grade||'').trim()===current)
+    .map(([k])=>k);
+
+  const total = matchKeys.length;
+  let done = 0, errors = 0;
+  const BATCH = 50;
+  log(`✏️ Replacing Grade "${current}" → "${newVal}" on ${total} records…`, 'info');
+
+  for(let i=0; i<matchKeys.length; i+=BATCH){
+    const batch = matchKeys.slice(i, i+BATCH);
+    const updates = {};
+    batch.forEach(key=>{ updates[`${_activePath}/${key}/Grade`] = newVal; });
+    try{
+      await fb.update(fb.ref(db), updates);
+      done += batch.length;
+    } catch(e){
+      errors += batch.length;
+      log(`❌ Batch error at record ${i}: ${e.message}`, 'error');
+    }
+    const pct = Math.round(done/total*100);
+    document.getElementById('grade-progress-bar').style.width = pct+'%';
+    document.getElementById('grade-progress-text').textContent = `${done} / ${total} records updated (${pct}%)`;
+    await new Promise(r=>setTimeout(r,20));
+  }
+
+  _gradeSaving = false;
+  document.getElementById('grade-cancel-btn').disabled  = false;
+  document.getElementById('grade-confirm-btn').disabled = false;
+  document.getElementById('grade-confirm-btn').textContent = '✏️ Update Grades';
+  document.getElementById('grade-overlay').classList.remove('open');
+
+  if(errors===0){
+    notify(`✅ Grade updated to "${newVal}" on ${done} records!`, 'success');
+    log(`✅ Grade "${current}" → "${newVal}" set on ${done} records.`, 'success');
+  } else {
+    notify(`⚠️ Completed with ${errors} errors. Check the log.`, 'warning');
+    log(`⚠️ Grade update done: ${done} ok, ${errors} errors.`, 'warning');
+  }
+
+  document.getElementById('grade-new-input').value = '';
+  await loadData(); // refresh → repopulates dropdown with new grade values
+}
+window.executeGradeUpdate = executeGradeUpdate;
 
 // ── ACTIVITY LOG ─────────────────────────────────────────────
 const _logColors={success:'#10b981',error:'#f87171',warning:'#fbbf24',info:'#00d4ff'};
