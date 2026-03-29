@@ -38,7 +38,7 @@ let selectedGrades = new Set();   // populated by buildGradeSelector()
 
 // Configuration for grade filtering
 const GRADE_FILTER_CONFIG = {
-    enabled: true,  // Set to false to show all grades
+    enabled: false,  // Set to false to show all grades
     allowedGrades: ['Grade 7', 'Grade 8', 'Grade 9']  // Modify this array as needed
 };
 
@@ -716,14 +716,14 @@ async function drawBottomSection(d, yPos, student, pageWidth, pageHeight) {
     d.line(20, yPos + 16, pageWidth - 20, yPos + 16);
     let remarkY = yPos + 19;
 
-    // Parent acknowledgement
-    d.setFontSize(7.5); d.setFont(undefined,'bold'); d.setTextColor(0,0,0);
-    d.text('Parent/Guardian Acknowledgement:', 20, FOOTER_TOP);
-    d.setFont(undefined,'normal');
-    d.line(78, FOOTER_TOP, pageWidth - 20, FOOTER_TOP);
-    d.setFontSize(6.5); d.setTextColor(100,100,100);
-    d.text('Signature: ____________________   Date: ________________   Contact: ____________________',
-        20, FOOTER_TOP + 4.5);
+    // // Parent acknowledgement
+    // d.setFontSize(7.5); d.setFont(undefined,'bold'); d.setTextColor(0,0,0);
+    // d.text('Parent/Guardian Acknowledgement:', 20, FOOTER_TOP);
+    // d.setFont(undefined,'normal');
+    // d.line(78, FOOTER_TOP, pageWidth - 20, FOOTER_TOP);
+    // d.setFontSize(6.5); d.setTextColor(100,100,100);
+    // d.text('Signature: ____________________   Date: ________________   Contact: ____________________',
+    //     20, FOOTER_TOP + 4.5);
 
     // Signatures
     d.setFontSize(8.5); d.setFont(undefined,'bold'); d.setTextColor(0,0,0);
