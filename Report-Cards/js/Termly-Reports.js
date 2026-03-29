@@ -713,7 +713,7 @@ async function drawBottomSection(d, yPos, student, pageWidth, pageHeight) {
 
     d.setDrawColor(200, 200, 200);
     d.line(20, yPos + 8,  pageWidth - 20, yPos + 8);
-    d.line(20, yPos + 16, pageWidth - 20, yPos + 16);
+    //d.line(20, yPos + 16, pageWidth - 20, yPos + 16);
     let remarkY = yPos + 19;
 
     // // Parent acknowledgement
