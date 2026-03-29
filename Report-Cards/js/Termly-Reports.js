@@ -704,7 +704,7 @@ async function drawBottomSection(d, yPos, student, pageWidth, pageHeight) {
     const FOOTER_TOP    = pageHeight - 38;
     const SIG_Y         = pageHeight - 20;
     const FOOTER_TEXT_Y = pageHeight - 5;
-    const BOTTOM_SAFE   = FOOTER_TOP - 4;
+    const BOTTOM_SAFE   = FOOTER_TOP - 4; 
 
     // Teacher remarks — two blank lines for handwritten remarks
     d.setFont(undefined, 'bold'); d.setFontSize(9);
@@ -744,7 +744,7 @@ async function drawBottomSection(d, yPos, student, pageWidth, pageHeight) {
         pageWidth / 2, FOOTER_TEXT_Y, { align: 'center' });
 
     // QR code — bottom-right corner
-    await addQrCode(d, student, pageWidth - 26, SIG_Y - 16, 20);  // slightly smaller QR
+    await addQrCode(d, student, pageWidth - 26, SIG_Y - 10, 20);  // slightly smaller QR
 
     // Vertical barcode — left edge, middle of page
     addBarcode(d, student, pageHeight);
