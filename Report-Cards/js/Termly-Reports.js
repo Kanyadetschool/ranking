@@ -38,7 +38,7 @@ let selectedGrades = new Set();   // populated by buildGradeSelector()
 
 // Configuration for grade filtering
 const GRADE_FILTER_CONFIG = {
-    enabled: false,  // Set to false to show all grades
+    enabled: true,  // Set to false to show all grades
     allowedGrades: ['Grade 7', 'Grade 8', 'Grade 9']  // Modify this array as needed
 };
 
@@ -1068,9 +1068,9 @@ function _drawPerformanceChart(doc, mergedStudent, allSubjects, gradeList, start
     // Average line legend
     const avgLx = CHART_L + 50 + gradeList.length * 48;
     doc.setDrawColor(80,80,80); doc.setLineWidth(0.5);
-    doc.setLineDashPattern([1,0.8], 0);
+    doc.setLineDash([1,0.8], 0);
     doc.line(avgLx, startY + 1.5, avgLx + 6, startY + 1.5);
-    doc.setLineDashPattern([], 0);
+    doc.setLineDash([], 0);
     doc.setFontSize(5.5); doc.setTextColor(60,60,60);
     doc.text('Average', avgLx + 7, startY + 3);
 
@@ -1148,17 +1148,17 @@ function _drawPerformanceChart(doc, mergedStudent, allSubjects, gradeList, start
     // ── dashed average trend line ─────────────────────────────
     if (avgPoints.length > 1) {
         doc.setDrawColor(60,60,60); doc.setLineWidth(0.6);
-        doc.setLineDashPattern([1.2,0.8], 0);
+        doc.setLineDash([1.2,0.8], 0);
         for (let i = 1; i < avgPoints.length; i++) {
             doc.line(avgPoints[i-1].x, avgPoints[i-1].y, avgPoints[i].x, avgPoints[i].y);
         }
-        doc.setLineDashPattern([], 0);
+        doc.setLineDash([], 0);
 
         // Average dots + value labels
         avgPoints.forEach(({ x, y, avg }) => {
             const [r,gv,b] = bandColor(avg);
             doc.setFillColor(r,gv,b);
-            doc.circle(x, y, 1.2, 'F');
+            doc.ellipse(x, y, 1.2, 1.2, 'F');
             doc.setFontSize(4.5); doc.setFont(undefined,'bold');
             doc.setTextColor(r,gv,b);
             doc.text(`${avg.toFixed(0)}`, x, y - 2.2, { align:'center' });
@@ -1166,7 +1166,7 @@ function _drawPerformanceChart(doc, mergedStudent, allSubjects, gradeList, start
     }
 
     doc.setTextColor(0,0,0); doc.setFont(undefined,'normal');
-    doc.setLineDashPattern([], 0);
+    doc.setLineDash([], 0);
 
     return PLOT_BOT + LABEL_H + 2;   // return Y position after chart
 }
