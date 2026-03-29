@@ -740,11 +740,11 @@ async function drawBottomSection(d, yPos, student, pageWidth, pageHeight) {
 
     // Footer text
     d.setFontSize(6.5); d.setTextColor(128,128,128);
-    d.text(`Generated: ${new Date().toLocaleDateString()}  |  KANYADET PRI & JUNIOR SCHOOL`,
+    d.text(`Generated: ${new Date().toLocaleDateString()}  |  https://kanyadet-school-portal.web.app/`,
         pageWidth / 2, FOOTER_TEXT_Y, { align: 'center' });
 
     // QR code — bottom-right corner
-    await addQrCode(d, student, pageWidth - 26, SIG_Y - 16, 20);  // slightly smaller QR
+    await addQrCode(d, student, pageWidth - 26, SIG_Y - 10, 20);  // slightly smaller QR
 
     // Vertical barcode — left edge, middle of page
     addBarcode(d, student, pageHeight);
@@ -2996,7 +2996,7 @@ async function generateSubjectAnalysis() {
     });
 
     doc.setFontSize(7); doc.setTextColor(150,150,150);
-    doc.text(`Generated: ${new Date().toLocaleString()}  |  KANYADET PRI & JUNIOR SCHOOL`,
+    doc.text(`Generated: ${new Date().toLocaleString()}  |  https://kanyadet-school-portal.web.app/`,
         pageWidth/2, doc.internal.pageSize.height - 5, { align:'center' });
 
     const grade = selectedGrade ? `_${selectedGrade.replace(/\s/g,'')}` : '_AllGrades';
