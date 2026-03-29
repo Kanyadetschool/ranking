@@ -1003,7 +1003,172 @@ async function _drawMultiTermReportPage(doc, mergedStudent, logoRes, studentImag
         }
     });
 
-    return doc.lastAutoTable.finalY;
+    const tableEndY = doc.lastAutoTable.finalY;
+
+    // ── PERFORMANCE CHART ────────────────────────────────────
+    const chartEndY = _drawPerformanceChart(doc, mergedStudent, allSubjects, gradeList, tableEndY + 4, pageWidth);
+
+    return chartEndY;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  PERFORMANCE BAR + LINE CHART
+//  Drawn with pure jsPDF primitives — no extra library needed.
+//  For each subject: one bar per selected grade, coloured by
+//  CBC band. A dashed line connects the average scores.
+//  Compact height: ~52mm so it fits on the page.
+// ═══════════════════════════════════════════════════════════
+function _drawPerformanceChart(doc, mergedStudent, allSubjects, gradeList, startY, pageWidth) {
+    if (!allSubjects.length) return startY;
+
+    // ── layout constants ──────────────────────────────────────
+    const CHART_L    = 22;                          // left margin
+    const CHART_R    = pageWidth - 18;              // right margin
+    const CHART_W    = CHART_R - CHART_L;
+    const CHART_H    = 46;                          // total chart height (mm)
+    const LABEL_H    = 10;                          // bottom subject label area
+    const LEGEND_H   = 6;                           // top legend area
+    const PLOT_TOP   = startY + LEGEND_H + 4;       // top of plot area
+    const PLOT_BOT   = PLOT_TOP + CHART_H - LABEL_H;
+    const PLOT_H     = PLOT_BOT - PLOT_TOP;         // actual bar plot height
+
+    // ── CBC band colour helper ────────────────────────────────
+    function bandColor(v) {
+        if (v >= 75) return [39,174,96];
+        if (v >= 58) return [41,128,185];
+        if (v >= 31) return [243,156,18];
+        return [231,76,60];
+    }
+
+    // ── background + border ───────────────────────────────────
+    doc.setFillColor(248, 250, 255);
+    doc.rect(CHART_L - 4, startY, CHART_W + 8, CHART_H + LEGEND_H + 2, 'F');
+    doc.setDrawColor(180, 210, 240); doc.setLineWidth(0.3);
+    doc.rect(CHART_L - 4, startY, CHART_W + 8, CHART_H + LEGEND_H + 2);
+
+    // ── chart title ───────────────────────────────────────────
+    doc.setFontSize(7.5); doc.setFont(undefined, 'bold');
+    doc.setTextColor(41,128,185);
+    doc.text('PERFORMANCE TREND CHART', CHART_L, startY + 4);
+
+    // ── legend ────────────────────────────────────────────────
+    const legendColors = [[39,174,96],[41,128,185],[243,156,18]];
+    gradeList.forEach((g, i) => {
+        const lx = CHART_L + 50 + i * 48;
+        const ly = startY + 3;
+        const [r,gv,b] = legendColors[i % legendColors.length];
+        doc.setFillColor(r,gv,b);
+        doc.rect(lx, ly - 2.5, 4, 3, 'F');
+        doc.setFontSize(5.5); doc.setFont(undefined, 'normal');
+        doc.setTextColor(60,60,60);
+        // Truncate long DB names for legend
+        const short = g.length > 22 ? g.substring(0,20)+'…' : g;
+        doc.text(short, lx + 5, ly);
+    });
+    // Average line legend
+    const avgLx = CHART_L + 50 + gradeList.length * 48;
+    doc.setDrawColor(80,80,80); doc.setLineWidth(0.5);
+    doc.setLineDashPattern([1,0.8], 0);
+    doc.line(avgLx, startY + 1.5, avgLx + 6, startY + 1.5);
+    doc.setLineDashPattern([], 0);
+    doc.setFontSize(5.5); doc.setTextColor(60,60,60);
+    doc.text('Average', avgLx + 7, startY + 3);
+
+    // ── horizontal grid lines at 25%, 50%, 75%, 100% ─────────
+    doc.setDrawColor(210,220,235); doc.setLineWidth(0.2);
+    [25,50,75,100].forEach(v => {
+        const gy = PLOT_BOT - (v / 100) * PLOT_H;
+        doc.line(CHART_L, gy, CHART_R, gy);
+        doc.setFontSize(5); doc.setTextColor(160,160,160);
+        doc.text(`${v}`, CHART_L - 6, gy + 1, { align: 'right' });
+    });
+
+    // ── axes ──────────────────────────────────────────────────
+    doc.setDrawColor(100,130,160); doc.setLineWidth(0.4);
+    doc.line(CHART_L, PLOT_TOP, CHART_L, PLOT_BOT);     // Y-axis
+    doc.line(CHART_L, PLOT_BOT, CHART_R, PLOT_BOT);     // X-axis
+
+    // ── bars + average line ───────────────────────────────────
+    const n         = allSubjects.length;
+    const groupW    = CHART_W / n;
+    const barW      = Math.min((groupW / (gradeList.length + 1)) * 0.85, 8);
+    const groupPad  = (groupW - barW * gradeList.length) / 2;
+
+    const avgPoints = [];    // collect (cx, cy) for dashed avg line
+
+    allSubjects.forEach((subj, si) => {
+        const gx   = CHART_L + si * groupW;
+        const cx   = gx + groupW / 2;   // center of group
+
+        const validScores = [];
+        gradeList.forEach((g, gi) => {
+            const rec = mergedStudent[`__grade_${g}`];
+            const v   = rec ? parseFloat(rec[subj]) : NaN;
+            if (isNaN(v)) return;
+            validScores.push(v);
+
+            const barX = gx + groupPad + gi * barW;
+            const barH = (v / 100) * PLOT_H;
+            const barY = PLOT_BOT - barH;
+            const [r,gv,b] = legendColors[gi % legendColors.length];
+
+            // Bar fill — semi-transparent look via lighter shade first
+            doc.setFillColor(
+                Math.min(255, r + 60),
+                Math.min(255, gv + 60),
+                Math.min(255, b + 60)
+            );
+            doc.rect(barX, barY, barW, barH, 'F');
+            // Bar border in full colour
+            doc.setDrawColor(r,gv,b); doc.setLineWidth(0.3);
+            doc.rect(barX, barY, barW, barH);
+
+            // Score label on top of bar if bar tall enough
+            if (barH > 5) {
+                doc.setFontSize(4.5); doc.setFont(undefined,'bold');
+                doc.setTextColor(r,gv,b);
+                doc.text(`${v}`, barX + barW/2, barY - 1, { align:'center' });
+            }
+        });
+
+        // Average point for this subject
+        if (validScores.length > 0) {
+            const avg = validScores.reduce((a,b)=>a+b,0) / validScores.length;
+            const ay  = PLOT_BOT - (avg / 100) * PLOT_H;
+            avgPoints.push({ x: cx, y: ay, avg });
+        }
+
+        // Subject label on X-axis — short name
+        doc.setFontSize(4.8); doc.setFont(undefined,'normal');
+        doc.setTextColor(50,50,50);
+        const shortSubj = subj.length > 10 ? subj.substring(0,9)+'.' : subj;
+        doc.text(shortSubj, cx, PLOT_BOT + 4, { align:'center' });
+    });
+
+    // ── dashed average trend line ─────────────────────────────
+    if (avgPoints.length > 1) {
+        doc.setDrawColor(60,60,60); doc.setLineWidth(0.6);
+        doc.setLineDashPattern([1.2,0.8], 0);
+        for (let i = 1; i < avgPoints.length; i++) {
+            doc.line(avgPoints[i-1].x, avgPoints[i-1].y, avgPoints[i].x, avgPoints[i].y);
+        }
+        doc.setLineDashPattern([], 0);
+
+        // Average dots + value labels
+        avgPoints.forEach(({ x, y, avg }) => {
+            const [r,gv,b] = bandColor(avg);
+            doc.setFillColor(r,gv,b);
+            doc.circle(x, y, 1.2, 'F');
+            doc.setFontSize(4.5); doc.setFont(undefined,'bold');
+            doc.setTextColor(r,gv,b);
+            doc.text(`${avg.toFixed(0)}`, x, y - 2.2, { align:'center' });
+        });
+    }
+
+    doc.setTextColor(0,0,0); doc.setFont(undefined,'normal');
+    doc.setLineDashPattern([], 0);
+
+    return PLOT_BOT + LABEL_H + 2;   // return Y position after chart
 }
 
 // ═══════════════════════════════════════════════════════════
