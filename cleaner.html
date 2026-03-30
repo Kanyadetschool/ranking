@@ -491,6 +491,60 @@ body::after{
 [data-theme="light"] #ufe-overlay .dialog{border-color:rgba(139,92,246,.3);}
 [data-theme="light"] #ufe-overlay .dialog-title{color:#6d28d9;}
 
+/* ── MISSING SCORES ── */
+.ms-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
+.ms-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.ms-badge.danger{background:rgba(239,68,68,.12);color:#f87171;border:1px solid rgba(239,68,68,.25);}
+.ms-badge.ok{background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2);}
+.ms-badge.warn{background:rgba(245,158,11,.1);color:#fbbf24;border:1px solid rgba(245,158,11,.2);}
+.ms-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.ms-table th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--cyan);background:rgba(0,212,255,.05);border-bottom:2px solid rgba(0,212,255,.12);white-space:nowrap;}
+[data-theme="light"] .ms-table th{color:#1a5276;background:rgba(41,128,185,.05);border-bottom-color:rgba(41,128,185,.15);}
+.ms-table td{padding:8px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.ms-table tr:last-child td{border-bottom:none;}
+.ms-table tr:hover td{background:rgba(239,68,68,.03);}
+.ms-missing-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;}
+.ms-missing-pill:hover{background:rgba(239,68,68,.2);transform:scale(1.05);}
+[data-theme="light"] .ms-missing-pill{color:#dc2626;}
+.ms-ok-pill{display:inline-block;padding:2px 8px;border-radius:10px;background:rgba(16,185,129,.08);color:#34d399;border:1px solid rgba(16,185,129,.15);font-size:11px;}
+.ms-filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center;}
+.ms-filter-chip{padding:5px 12px;border-radius:16px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;}
+.ms-filter-chip.active{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.4);color:#f87171;}
+[data-theme="light"] .ms-filter-chip.active{color:#dc2626;}
+.ms-filter-chip:hover{border-color:var(--border2);}
+.ms-score-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(0,212,255,.07);color:var(--text2);border:1px solid rgba(0,212,255,.1);margin:1px;}
+
+/* ── STUDENT RECORD EDITOR ── */
+.sre-search-wrap{position:relative;margin-bottom:14px;}
+.sre-search-wrap input{width:100%;padding:11px 16px 11px 40px;background:var(--input);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.sre-search-wrap input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+[data-theme="light"] .sre-search-wrap input{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+.sre-search-wrap::before{content:'🔍';position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;}
+.sre-results{max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--rs);margin-bottom:14px;display:none;}
+.sre-result-item{padding:10px 14px;cursor:pointer;transition:background .15s;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.sre-result-item:last-child{border-bottom:none;}
+.sre-result-item:hover{background:rgba(0,212,255,.06);}
+[data-theme="light"] .sre-result-item:hover{background:rgba(41,128,185,.05);}
+.sre-result-name{font-size:13px;font-weight:700;color:var(--text);}
+.sre-result-meta{font-size:11px;color:var(--text2);}
+.sre-result-badge{font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(0,212,255,.08);color:var(--cyan);border:1px solid rgba(0,212,255,.15);white-space:nowrap;}
+
+/* record editor panel */
+.sre-editor{background:var(--card2);border:1px solid var(--border2);border-radius:var(--rm);padding:20px;display:none;}
+.sre-editor-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;}
+.sre-student-title{font-size:16px;font-weight:800;color:var(--text);}
+.sre-student-meta{font-size:12px;color:var(--text2);margin-top:2px;}
+.sre-fields-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:16px;}
+.sre-field-item{display:flex;flex-direction:column;gap:4px;}
+.sre-field-key{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);}
+.sre-field-val{padding:7px 10px;background:var(--input);border:1.5px solid var(--border);border-radius:7px;color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;width:100%;}
+.sre-field-val:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+.sre-field-val.changed{border-color:var(--amber);background:rgba(245,158,11,.06);}
+.sre-field-val.missing{border-color:#ef4444;background:rgba(239,68,68,.07);}
+[data-theme="light"] .sre-field-val{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+.sre-save-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--border);}
+.sre-change-count{font-size:12px;color:var(--amber);font-weight:700;}
+
 /* responsive */
 @media(max-width:640px){
   .main{padding:16px 12px 60px;}
@@ -548,7 +602,7 @@ body::after{
       ⚠️ <strong>Admin access only.</strong> This tool permanently deletes fields from all student records in the database. Actions cannot be undone.
     </div>
     <button class="btn btn-cyan" style="width:100%;padding:13px;font-size:14px;justify-content:center;" onclick="doSignIn()" id="signin-btn">
-      🔐 Sign in with Google..
+      🔐 Sign in with Google
     </button>
   </div>
 </div>
@@ -578,6 +632,60 @@ body::after{
         <div class="stat-icon">🗂️</div>
         <div class="stat-val" id="stat-path" style="color:#f59e0b;font-size:12px;font-family:'JetBrains Mono',monospace;">—</div>
         <div class="stat-lbl">DB Path</div>
+      </div>
+    </div>
+
+    <!-- ── STUDENT RECORD EDITOR ── -->
+    <div class="card" style="margin-bottom:20px;animation-delay:.03s;" id="sre-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🔎 Search & Edit Student Record</div>
+          <div class="card-sub">Search by student name, click a result to open and edit their full record for any term</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="sre-search-wrap">
+          <input type="text" id="sre-search-input" placeholder="Type student name…" oninput="sreSearch(this.value)" autocomplete="off">
+        </div>
+        <div class="sre-results" id="sre-results"></div>
+        <div class="sre-editor" id="sre-editor">
+          <div class="sre-editor-header">
+            <div>
+              <div class="sre-student-title" id="sre-name-title">—</div>
+              <div class="sre-student-meta" id="sre-meta-title">—</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-ghost" onclick="sreClear()" style="font-size:12px;padding:7px 12px;">✖ Close</button>
+            </div>
+          </div>
+          <div class="sre-fields-grid" id="sre-fields-grid"></div>
+          <div class="sre-save-bar">
+            <span class="sre-change-count" id="sre-change-count" style="display:none;"></span>
+            <button class="btn btn-green" id="sre-save-btn" onclick="sreSave()" disabled style="font-size:13px;">💾 Save Changes</button>
+            <button class="btn btn-ghost" onclick="sreReset()" style="font-size:12px;padding:7px 12px;">↺ Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MISSING SCORES DETECTOR ── -->
+    <div class="card" style="margin-bottom:20px;animation-delay:.04s;" id="ms-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">⚠️ Missing / Non-Numeric Scores</div>
+          <div class="card-sub">Detects students whose score fields are blank, non-numeric, or have suspicious values</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="msScan()" id="ms-scan-btn" style="font-size:12px;padding:8px 14px;">🔍 Scan Now</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="ms-content">
+          <div class="empty" style="padding:30px 20px;">
+            <div class="empty-icon" style="font-size:36px;">🔍</div>
+            <div style="color:var(--text2);font-size:13px;">Click "Scan Now" to detect students with missing or invalid scores</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -776,6 +884,22 @@ body::after{
     <div class="dialog-actions" style="margin-top:20px;">
       <button class="btn btn-ghost" onclick="closeUfeConfirm()" id="ufe-cancel-btn">Cancel</button>
       <button class="btn btn-cyan" id="ufe-confirm-btn" onclick="executeUfeUpdate()">🛠️ Confirm Update</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SRE QUICK-FIX DIALOG (from missing scores) ── -->
+<div class="overlay" id="qfix-overlay" onclick="if(event.target===this)closeQfix()">
+  <div class="dialog" style="max-width:520px;border-color:rgba(245,158,11,.35);">
+    <div class="dialog-icon">✏️</div>
+    <div class="dialog-title" style="color:#fbbf24;" id="qfix-title">Fix Missing Score</div>
+    <div class="dialog-body" id="qfix-body">—</div>
+    <div id="qfix-fields" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;max-height:260px;overflow-y:auto;"></div>
+    <div class="progress-bar-wrap" id="qfix-progress-wrap" style="display:none;"><div class="progress-bar" id="qfix-progress-bar"></div></div>
+    <div class="progress-text" id="qfix-progress-text"></div>
+    <div class="dialog-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeQfix()" id="qfix-cancel-btn">Cancel</button>
+      <button class="btn btn-green" id="qfix-save-btn" onclick="executeQfix()">💾 Save</button>
     </div>
   </div>
 </div>
@@ -1304,6 +1428,305 @@ async function executeGradeUpdate(){
   await loadData(); // refresh → repopulates dropdown with new grade values
 }
 window.executeGradeUpdate = executeGradeUpdate;
+
+// ── STUDENT RECORD EDITOR ─────────────────────────────────────
+let _sreKey = null;
+let _sreOriginal = {};
+let _sreChanges = {};
+
+function sreSearch(q){
+  const box = document.getElementById('sre-results');
+  if(!q || q.trim().length < 2){ box.style.display='none'; box.innerHTML=''; return; }
+  const lq = q.toLowerCase();
+  const NAME_KEYS = ['Official Student Name','Name','Student Name','name','FullName'];
+  const matches = Object.entries(allRecords).filter(([,rec])=>{
+    return NAME_KEYS.some(k=> rec[k] && String(rec[k]).toLowerCase().includes(lq));
+  }).slice(0,40);
+  if(!matches.length){
+    box.style.display='block';
+    box.innerHTML=`<div class="sre-result-item"><span style="color:var(--text3);font-size:13px;">No students found matching "${esc(q)}"</span></div>`;
+    return;
+  }
+  box.style.display='block';
+  box.innerHTML = matches.map(([key,rec])=>{
+    const nameKey = NAME_KEYS.find(k=>rec[k]) || 'name';
+    const name = esc(String(rec[nameKey]||'Unknown'));
+    const grade = esc(String(rec.Grade||rec.Class||''));
+    const term  = esc(String(rec.Term||''));
+    const meta  = [grade, term].filter(Boolean).join(' · ');
+    return `<div class="sre-result-item" onclick="sreOpen('${esc(key)}')">
+      <div>
+        <div class="sre-result-name">${name}</div>
+        ${meta?`<div class="sre-result-meta">${meta}</div>`:''}
+      </div>
+      <span class="sre-result-badge">${esc(key.slice(0,10))}…</span>
+    </div>`;
+  }).join('');
+}
+window.sreSearch = sreSearch;
+
+function isValidScore(v){
+  if(v===null||v===undefined||String(v).trim()==='') return false;
+  const n = parseFloat(String(v).replace(/[^0-9.-]/g,''));
+  return !isNaN(n);
+}
+
+function sreOpen(key){
+  _sreKey = key;
+  _sreChanges = {};
+  const rec = allRecords[key];
+  if(!rec){ notify('Record not found','error'); return; }
+  _sreOriginal = JSON.parse(JSON.stringify(rec));
+  document.getElementById('sre-results').style.display='none';
+  const NAME_KEYS=['Official Student Name','Name','Student Name','name','FullName'];
+  const nameKey = NAME_KEYS.find(k=>rec[k]) || Object.keys(rec)[0];
+  document.getElementById('sre-name-title').textContent = String(rec[nameKey]||'Unknown Student');
+  const grade=rec.Grade||rec.Class||''; const term=rec.Term||''; const yr=rec.Year||'';
+  document.getElementById('sre-meta-title').textContent = [grade,term,yr].filter(Boolean).join(' · ') || 'No metadata';
+  const sortedKeys = Object.keys(rec).sort((a,b)=>{
+    const ta = fieldStats[a]?.type||'text';
+    const tb = fieldStats[b]?.type||'text';
+    const o={score:0,meta:1,text:2};
+    return (o[ta]||2)-(o[tb]||2) || a.localeCompare(b);
+  });
+  const grid = document.getElementById('sre-fields-grid');
+  grid.innerHTML = sortedKeys.map(k=>{
+    const v = rec[k]!==null&&rec[k]!==undefined ? String(rec[k]) : '';
+    const isScore = fieldStats[k]?.type==='score';
+    const isMissing = isScore && !isValidScore(v);
+    const typeIcon = isScore ? '📊' : (fieldStats[k]?.type==='meta' ? '📌' : '💬');
+    return `<div class="sre-field-item">
+      <div class="sre-field-key">${typeIcon} ${esc(k)}</div>
+      <input class="sre-field-val${isMissing?' missing':''}" data-key="${esc(k)}" value="${esc(v)}"
+        oninput="sreFieldChanged('${esc(k)}',this.value,this)">
+    </div>`;
+  }).join('');
+  document.getElementById('sre-editor').style.display='block';
+  document.getElementById('sre-save-btn').disabled=true;
+  document.getElementById('sre-change-count').style.display='none';
+  // Scroll to editor
+  setTimeout(()=>document.getElementById('sre-card').scrollIntoView({behavior:'smooth',block:'start'}),50);
+}
+window.sreOpen = sreOpen;
+
+function sreFieldChanged(key, val, input){
+  const orig = _sreOriginal[key]!==undefined ? String(_sreOriginal[key]) : '';
+  if(val !== orig){
+    _sreChanges[key] = val;
+    input.classList.add('changed'); input.classList.remove('missing');
+  } else {
+    delete _sreChanges[key];
+    input.classList.remove('changed');
+    const isScore = fieldStats[key]?.type==='score';
+    if(isScore && !isValidScore(val)) input.classList.add('missing');
+  }
+  const n = Object.keys(_sreChanges).length;
+  document.getElementById('sre-save-btn').disabled = n===0;
+  const cc = document.getElementById('sre-change-count');
+  if(n>0){ cc.style.display='inline'; cc.textContent=`${n} unsaved change${n!==1?'s':''}`; }
+  else { cc.style.display='none'; }
+}
+window.sreFieldChanged = sreFieldChanged;
+
+function sreReset(){ if(_sreKey) sreOpen(_sreKey); }
+window.sreReset = sreReset;
+
+function sreClear(){
+  _sreKey=null; _sreChanges={}; _sreOriginal={};
+  document.getElementById('sre-editor').style.display='none';
+  document.getElementById('sre-results').style.display='none';
+  document.getElementById('sre-search-input').value='';
+}
+window.sreClear = sreClear;
+
+async function sreSave(){
+  if(!_sreKey || !Object.keys(_sreChanges).length) return;
+  const btn = document.getElementById('sre-save-btn');
+  btn.disabled=true; btn.textContent='⏳ Saving…';
+  const updates = {};
+  Object.entries(_sreChanges).forEach(([k,v])=>{ updates[`${_activePath}/${_sreKey}/${k}`] = v==='' ? null : v; });
+  try{
+    await fb.update(fb.ref(db), updates);
+    const n = Object.keys(_sreChanges).length;
+    notify(`✅ Saved ${n} field${n!==1?'s':''} for this student!`,'success');
+    log(`✅ Updated ${n} field${n!==1?'s':''} on record ${_sreKey}.`,'success');
+    Object.entries(_sreChanges).forEach(([k,v])=>{
+      if(v===''||v===null) delete allRecords[_sreKey][k]; else allRecords[_sreKey][k]=v;
+    });
+    _sreChanges={};
+    sreOpen(_sreKey);
+  } catch(e){
+    notify('❌ Save failed: '+e.message,'error');
+    log('❌ Save error: '+e.message,'error');
+  }
+  btn.disabled=false; btn.textContent='💾 Save Changes';
+}
+window.sreSave = sreSave;
+
+// ── MISSING SCORES DETECTOR ────────────────────────────────────
+let _msFilter = 'all';
+let _msData   = [];
+
+function msScan(){
+  const btn = document.getElementById('ms-scan-btn');
+  btn.textContent='⏳ Scanning…'; btn.disabled=true;
+  const scoreFields = Object.keys(fieldStats).filter(k=>fieldStats[k].type==='score');
+  if(!scoreFields.length){
+    document.getElementById('ms-content').innerHTML=`<div class="empty" style="padding:30px 20px;"><div class="empty-icon" style="font-size:36px;">📊</div><div style="color:var(--text2);font-size:13px;">No score-type fields detected in the database.</div></div>`;
+    btn.textContent='🔍 Scan Now'; btn.disabled=false; return;
+  }
+  const NAME_KEYS=['Official Student Name','Name','Student Name','name','FullName'];
+  _msData = [];
+  Object.entries(allRecords).forEach(([key,rec])=>{
+    const nameKey = NAME_KEYS.find(k=>rec[k]);
+    const name = nameKey ? String(rec[nameKey]) : '(Unnamed)';
+    const missingFields=[], invalidFields=[];
+    scoreFields.forEach(f=>{
+      const v = rec[f];
+      if(v===undefined||v===null||String(v).trim()===''){
+        missingFields.push(f);
+      } else {
+        const n=parseFloat(String(v).replace(/[^0-9.-]/g,''));
+        if(isNaN(n)) invalidFields.push({field:f,value:String(v)});
+      }
+    });
+    if(missingFields.length||invalidFields.length){
+      _msData.push({key,name,grade:String(rec.Grade||rec.Class||'—'),term:String(rec.Term||'—'),missingFields,invalidFields,total:missingFields.length+invalidFields.length});
+    }
+  });
+  _msData.sort((a,b)=>b.total-a.total);
+  _msFilter='all';
+  msRender();
+  btn.textContent='🔄 Re-scan'; btn.disabled=false;
+  log(`⚠️ Scan: ${_msData.length} students with missing/invalid scores across ${scoreFields.length} score fields.`,'warning');
+}
+window.msScan = msScan;
+
+function msSetFilter(f){
+  _msFilter=f;
+  ['all','missing','invalid'].forEach(v=>{
+    const el=document.getElementById('ms-filter-'+v); if(el) el.classList.toggle('active', v===f);
+  });
+  msRender();
+}
+window.msSetFilter=msSetFilter;
+
+function msRender(){
+  const container=document.getElementById('ms-content');
+  if(!_msData.length){
+    container.innerHTML=`<div style="padding:20px;text-align:center;color:#34d399;font-weight:700;font-size:14px;">✅ All students have valid scores in every score field!</div>`;
+    return;
+  }
+  let rows = _msData;
+  if(_msFilter==='missing') rows=_msData.filter(r=>r.missingFields.length>0);
+  if(_msFilter==='invalid') rows=_msData.filter(r=>r.invalidFields.length>0);
+  const totalMissing = _msData.reduce((s,r)=>s+r.missingFields.length,0);
+  const totalInvalid = _msData.reduce((s,r)=>s+r.invalidFields.length,0);
+  container.innerHTML=`
+    <div class="ms-controls">
+      <span class="ms-badge danger">⚠️ ${_msData.length} student${_msData.length!==1?'s':''} affected</span>
+      <span class="ms-badge warn">❌ ${totalMissing} missing</span>
+      <span class="ms-badge warn">🔤 ${totalInvalid} non-numeric</span>
+    </div>
+    <div class="ms-filter-row">
+      <span style="font-size:11px;color:var(--text2);font-weight:700;">Filter:</span>
+      <button class="ms-filter-chip active" id="ms-filter-all" onclick="msSetFilter('all')">All (${_msData.length})</button>
+      <button class="ms-filter-chip" id="ms-filter-missing" onclick="msSetFilter('missing')">Missing (${_msData.filter(r=>r.missingFields.length).length})</button>
+      <button class="ms-filter-chip" id="ms-filter-invalid" onclick="msSetFilter('invalid')">Non-numeric (${_msData.filter(r=>r.invalidFields.length).length})</button>
+    </div>
+    <div style="overflow-x:auto;">
+    <table class="ms-table">
+      <thead><tr><th>Student</th><th>Grade · Term</th><th>Missing Fields</th><th>Invalid Values</th><th>Action</th></tr></thead>
+      <tbody>
+      ${rows.length===0
+        ?`<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text3);">No results for this filter.</td></tr>`
+        :rows.map(r=>`<tr>
+          <td><strong style="font-size:13px;">${esc(r.name)}</strong></td>
+          <td><span class="sre-result-meta">${esc(r.grade)} · ${esc(r.term)}</span></td>
+          <td>${r.missingFields.length
+            ?r.missingFields.map(f=>`<span class="ms-missing-pill" title="Click to fix" onclick="msQuickFix('${esc(r.key)}','${esc(f)}')">❌ ${esc(f)}</span>`).join(' ')
+            :'<span class="ms-ok-pill">✓</span>'}</td>
+          <td>${r.invalidFields.length
+            ?r.invalidFields.map(({field,value})=>`<span class="ms-missing-pill" title="${esc(value)}" onclick="msQuickFix('${esc(r.key)}','${esc(field)}')">🔤 ${esc(field)}: <em>${esc(value)}</em></span>`).join(' ')
+            :'<span class="ms-ok-pill">✓</span>'}</td>
+          <td><button class="btn btn-cyan" onclick="sreOpen('${esc(r.key)}')" style="font-size:11px;padding:6px 12px;">✏️ Edit Record</button></td>
+        </tr>`).join('')}
+      </tbody>
+    </table>
+    </div>`;
+  ['all','missing','invalid'].forEach(v=>{
+    const el=document.getElementById('ms-filter-'+v); if(el) el.classList.toggle('active', v===_msFilter);
+  });
+}
+
+let _qfixKey=null, _qfixFields=[];
+let _qfixSaving=false;
+function msQuickFix(key, field){
+  const rec = allRecords[key]; if(!rec) return;
+  _qfixKey=key;
+  const NAME_KEYS=['Official Student Name','Name','Student Name','name','FullName'];
+  const nameKey=NAME_KEYS.find(k=>rec[k]);
+  const name=nameKey?String(rec[nameKey]):'Unknown';
+  const scoreFields=Object.keys(fieldStats).filter(k=>fieldStats[k].type==='score');
+  _qfixFields=scoreFields.filter(f=>{
+    const v=rec[f];
+    if(v===undefined||v===null||String(v).trim()==='') return true;
+    const n=parseFloat(String(v).replace(/[^0-9.-]/g,'')); return isNaN(n);
+  });
+  if(!_qfixFields.length) return;
+  document.getElementById('qfix-title').textContent=`Fix Scores — ${name}`;
+  document.getElementById('qfix-body').innerHTML=`<strong>${esc(name)}</strong> (${esc(rec.Grade||'')} · ${esc(rec.Term||'')}) has ${_qfixFields.length} missing/invalid score field${_qfixFields.length!==1?'s':''}.`;
+  const wrap=document.getElementById('qfix-fields');
+  wrap.innerHTML=_qfixFields.map(f=>{
+    const cur=rec[f]!==undefined&&rec[f]!==null?String(rec[f]):'';
+    return `<div style="display:flex;flex-direction:column;gap:4px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);">📊 ${esc(f)}</div>
+      <input class="type-input" data-qfield="${esc(f)}" value="${esc(cur)}" placeholder="Enter numeric score…" style="border-color:rgba(239,68,68,.4);">
+    </div>`;
+  }).join('');
+  document.getElementById('qfix-progress-wrap').style.display='none';
+  document.getElementById('qfix-progress-bar').style.width='0%';
+  document.getElementById('qfix-progress-text').textContent='';
+  document.getElementById('qfix-overlay').classList.add('open');
+}
+window.msQuickFix=msQuickFix;
+
+function closeQfix(){ if(_qfixSaving) return; document.getElementById('qfix-overlay').classList.remove('open'); }
+window.closeQfix=closeQfix;
+
+async function executeQfix(){
+  if(!_qfixKey||_qfixSaving) return;
+  const inputs=[...document.querySelectorAll('#qfix-fields [data-qfield]')];
+  const updates={};
+  inputs.forEach(inp=>{
+    const f=inp.getAttribute('data-qfield'); const v=inp.value.trim();
+    if(v!=='') updates[`${_activePath}/${_qfixKey}/${f}`]=v;
+  });
+  if(!Object.keys(updates).length){ notify('No values entered','warning'); return; }
+  _qfixSaving=true;
+  document.getElementById('qfix-cancel-btn').disabled=true;
+  document.getElementById('qfix-save-btn').disabled=true;
+  document.getElementById('qfix-save-btn').textContent='⏳ Saving…';
+  document.getElementById('qfix-progress-wrap').style.display='block';
+  try{
+    await fb.update(fb.ref(db),updates);
+    const n=Object.keys(updates).length;
+    Object.entries(updates).forEach(([path,v])=>{ const f=path.split('/').pop(); allRecords[_qfixKey][f]=v; });
+    document.getElementById('qfix-progress-bar').style.width='100%';
+    document.getElementById('qfix-progress-text').textContent=`${n} field${n!==1?'s':''} saved.`;
+    notify(`✅ Fixed ${n} score field${n!==1?'s':''}!`,'success');
+    log(`✅ Quick-fixed ${n} score field${n!==1?'s':''} on record ${_qfixKey}.`,'success');
+    setTimeout(()=>{ document.getElementById('qfix-overlay').classList.remove('open'); msScan(); },700);
+  } catch(e){
+    notify('❌ Save failed: '+e.message,'error');
+    log('❌ Qfix error: '+e.message,'error');
+  }
+  _qfixSaving=false;
+  document.getElementById('qfix-cancel-btn').disabled=false;
+  document.getElementById('qfix-save-btn').disabled=false;
+  document.getElementById('qfix-save-btn').textContent='💾 Save';
+}
+window.executeQfix=executeQfix;
 
 // ── UNIVERSAL FIELD EDITOR ─────────────────────────────────
 let _ufeMode = 'replace'; // 'replace' | 'all' | 'rename'
