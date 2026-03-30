@@ -902,7 +902,7 @@ async function _drawMultiTermReportPage(doc, mergedStudent, logoRes, studentImag
     doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
     const baseRec = gradeList.map(g => mergedStudent[`__grade_${g}`]).find(Boolean) || mergedStudent;
     const infoRows = [
-        [`Name: ${mergedStudent['Official Student Name'] || 'N/A'}`,   `Adm No: ${mergedStudent['Assessment No'] || 'N/A'}`],
+        [`Name: ${mergedStudent['Official Student Name'] || 'N/A'}`,   `Assessment No: ${mergedStudent['Assessment No'] || 'N/A'}`],
         [`UPI:  ${mergedStudent['UPI'] || 'N/A'}`,                     `Gender: ${mergedStudent['Gender'] || 'N/A'}`],
         [`Class: ${baseRec['Class'] || mergedStudent['Class'] || 'N/A'}`,
          `Closing: ${baseRec['Closing Date'] || '...................'}  Opening: ${baseRec['Opening Date'] || '...................'}`],
