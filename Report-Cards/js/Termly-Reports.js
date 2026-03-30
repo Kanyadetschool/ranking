@@ -905,7 +905,7 @@ async function _drawMultiTermReportPage(doc, mergedStudent, logoRes, studentImag
         [`Name: ${mergedStudent['Official Student Name'] || 'N/A'}`,   `Adm No: ${mergedStudent['Assessment No'] || 'N/A'}`],
         [`UPI:  ${mergedStudent['UPI'] || 'N/A'}`,                     `Gender: ${mergedStudent['Gender'] || 'N/A'}`],
         [`Class: ${baseRec['Class'] || mergedStudent['Class'] || 'N/A'}`,
-         `Opening: ${baseRec['Opening Date'] || '........'}  Closing: ${baseRec['Closing Date'] || '........'}`],
+         `Opening: ${baseRec['Opening Date'] || '..............'}  Closing: ${baseRec['Closing Date'] || '...................'}`],
     ];
     let iy = yPos + 14;
     infoRows.forEach(([l, r]) => {
