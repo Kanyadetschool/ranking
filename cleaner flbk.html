@@ -461,36 +461,6 @@ body::after{
 .th-grade-edit{cursor:pointer;user-select:none;}
 .th-grade-edit:hover{color:var(--amber)!important;}
 
-/* ── UNIVERSAL FIELD EDITOR ── */
-.ufe-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:12px;}
-@media(max-width:860px){.ufe-grid{grid-template-columns:1fr 1fr;}}
-@media(max-width:560px){.ufe-grid{grid-template-columns:1fr;}}
-.ufe-select,.ufe-input{
-  width:100%;padding:9px 13px;
-  background:var(--input);border:1.5px solid var(--border);
-  border-radius:var(--rs);color:var(--text);
-  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;
-  outline:none;transition:border-color .2s,box-shadow .2s;
-}
-.ufe-select:focus,.ufe-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.12);}
-[data-theme="light"] .ufe-select,[data-theme="light"] .ufe-input{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
-.ufe-hint{font-size:11.5px;color:var(--text2);line-height:1.65;padding:10px 14px;background:rgba(139,92,246,.04);border:1px solid rgba(139,92,246,.15);border-radius:var(--rs);}
-.ufe-mode-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
-.ufe-mode-btn{
-  padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);
-  background:transparent;color:var(--text2);font-size:12px;font-weight:700;
-  cursor:pointer;transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;
-}
-.ufe-mode-btn.active{background:rgba(139,92,246,.18);border-color:rgba(139,92,246,.5);color:#c4b5fd;}
-[data-theme="light"] .ufe-mode-btn.active{background:rgba(139,92,246,.1);border-color:rgba(139,92,246,.4);color:#6d28d9;}
-.ufe-mode-btn:hover{border-color:var(--border2);}
-
-/* ufe confirm dialog – purple theme */
-#ufe-overlay .dialog{border-color:rgba(139,92,246,.35);box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(139,92,246,.12);}
-#ufe-overlay .dialog-title{color:#c4b5fd;}
-[data-theme="light"] #ufe-overlay .dialog{border-color:rgba(139,92,246,.3);}
-[data-theme="light"] #ufe-overlay .dialog-title{color:#6d28d9;}
-
 /* responsive */
 @media(max-width:640px){
   .main{padding:16px 12px 60px;}
@@ -578,47 +548,6 @@ body::after{
         <div class="stat-icon">🗂️</div>
         <div class="stat-val" id="stat-path" style="color:#f59e0b;font-size:12px;font-family:'JetBrains Mono',monospace;">—</div>
         <div class="stat-lbl">DB Path</div>
-      </div>
-    </div>
-
-    <!-- ── UNIVERSAL FIELD EDITOR ── -->
-    <div class="card" style="margin-bottom:20px;animation-delay:.06s;" id="ufe-card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">🛠️ Edit Any Field</div>
-          <div class="card-sub">Pick any field, choose a value to replace (or set all), and bulk-update across all records</div>
-        </div>
-      </div>
-      <div class="card-body">
-        <!-- Mode toggle -->
-        <div class="ufe-mode-row">
-          <button class="ufe-mode-btn active" id="ufe-mode-replace" onclick="ufeSetMode('replace')">🔁 Replace value</button>
-          <button class="ufe-mode-btn" id="ufe-mode-all" onclick="ufeSetMode('all')">📝 Set all records</button>
-          <button class="ufe-mode-btn" id="ufe-mode-rename" onclick="ufeSetMode('rename')">🏷️ Rename field key</button>
-        </div>
-        <!-- Controls grid -->
-        <div class="ufe-grid">
-          <div>
-            <div class="field-label">Field Name</div>
-            <select class="ufe-select" id="ufe-field-select" onchange="onUfeFieldChange()">
-              <option value="">— load data first —</option>
-            </select>
-          </div>
-          <div id="ufe-current-wrap">
-            <div class="field-label">Current Value (to replace)</div>
-            <select class="ufe-select" id="ufe-current-select" onchange="onUfeInputChange()" disabled>
-              <option value="">— pick a field first —</option>
-            </select>
-          </div>
-          <div>
-            <div class="field-label" id="ufe-new-label">New Value</div>
-            <input type="text" class="ufe-input" id="ufe-new-input" placeholder="Enter new value…" oninput="onUfeInputChange()" disabled>
-          </div>
-          <div>
-            <button class="btn btn-cyan" id="ufe-apply-btn" onclick="openUfeConfirm()" disabled style="height:40px;">🛠️ Apply</button>
-          </div>
-        </div>
-        <div class="ufe-hint" id="ufe-hint">Load data, choose a field, then set the value.</div>
       </div>
     </div>
 
@@ -759,23 +688,6 @@ body::after{
     <div class="dialog-actions" style="margin-top:20px;">
       <button class="btn btn-ghost" onclick="closeGradeConfirm()" id="grade-cancel-btn">Cancel</button>
       <button class="btn btn-green" id="grade-confirm-btn" onclick="executeGradeUpdate()">✏️ Update Grades</button>
-    </div>
-  </div>
-</div>
-
-<!-- ── UFE CONFIRM DIALOG ── -->
-<div class="overlay" id="ufe-overlay" onclick="if(event.target===this&&!_ufeSaving)closeUfeConfirm()">
-  <div class="dialog">
-    <div class="dialog-icon" id="ufe-dlg-icon">🛠️</div>
-    <div class="dialog-title" id="ufe-dlg-title">Confirm Field Update</div>
-    <div class="dialog-body" id="ufe-dlg-body">—</div>
-    <div class="progress-bar-wrap" id="ufe-progress-wrap" style="display:none;">
-      <div class="progress-bar" id="ufe-progress-bar"></div>
-    </div>
-    <div class="progress-text" id="ufe-progress-text"></div>
-    <div class="dialog-actions" style="margin-top:20px;">
-      <button class="btn btn-ghost" onclick="closeUfeConfirm()" id="ufe-cancel-btn">Cancel</button>
-      <button class="btn btn-cyan" id="ufe-confirm-btn" onclick="executeUfeUpdate()">🛠️ Confirm Update</button>
     </div>
   </div>
 </div>
@@ -958,7 +870,6 @@ async function loadData(){
   renderTable();
   updateStats();
   populateGradeSelect();
-  populateUfeFieldSelect();
   document.getElementById('stat-path').textContent=_activePath;
 }
 window.refreshData=loadData;
@@ -1304,224 +1215,6 @@ async function executeGradeUpdate(){
   await loadData(); // refresh → repopulates dropdown with new grade values
 }
 window.executeGradeUpdate = executeGradeUpdate;
-
-// ── UNIVERSAL FIELD EDITOR ─────────────────────────────────
-let _ufeMode = 'replace'; // 'replace' | 'all' | 'rename'
-let _ufeSaving = false;
-
-function ufeSetMode(mode){
-  _ufeMode = mode;
-  ['replace','all','rename'].forEach(m=>{
-    document.getElementById('ufe-mode-'+m).classList.toggle('active', m===mode);
-  });
-  const curWrap = document.getElementById('ufe-current-wrap');
-  const newLabel = document.getElementById('ufe-new-label');
-  const newInput = document.getElementById('ufe-new-input');
-  if(mode==='replace'){
-    curWrap.style.display='';
-    newLabel.textContent='New Value';
-    newInput.placeholder='Enter replacement value…';
-  } else if(mode==='all'){
-    curWrap.style.display='none';
-    newLabel.textContent='Value to Set';
-    newInput.placeholder='Set this value on ALL records…';
-  } else { // rename
-    curWrap.style.display='none';
-    newLabel.textContent='New Field Name';
-    newInput.placeholder='e.g. Score_Total…';
-  }
-  onUfeFieldChange();
-}
-window.ufeSetMode = ufeSetMode;
-
-function populateUfeFieldSelect(){
-  const fields = new Set();
-  Object.values(allRecords).forEach(rec=>Object.keys(rec).forEach(k=>fields.add(k)));
-  const sel = document.getElementById('ufe-field-select');
-  if(fields.size===0){
-    sel.innerHTML='<option value="">— No fields found —</option>';
-    document.getElementById('ufe-apply-btn').disabled=true;
-    return;
-  }
-  const sorted = [...fields].sort((a,b)=>a.localeCompare(b));
-  sel.innerHTML='<option value="">— Select a field —</option>'+
-    sorted.map(f=>`<option value="${esc(f)}">${esc(f)}</option>`).join('');
-  onUfeFieldChange();
-}
-
-function onUfeFieldChange(){
-  const field = document.getElementById('ufe-field-select').value;
-  const curSel = document.getElementById('ufe-current-select');
-  const newInput = document.getElementById('ufe-new-input');
-  newInput.disabled = !field;
-  if(!field){
-    curSel.innerHTML='<option value="">— pick a field first —</option>';
-    curSel.disabled=true;
-    document.getElementById('ufe-apply-btn').disabled=true;
-    document.getElementById('ufe-hint').textContent='Select a field to edit.';
-    return;
-  }
-  // populate current-value dropdown for replace mode
-  if(_ufeMode==='replace'){
-    const vals = new Map();
-    Object.values(allRecords).forEach(rec=>{
-      if(field in rec){
-        const v = rec[field]!==undefined&&rec[field]!==null ? String(rec[field]).trim() : '';
-        vals.set(v,(vals.get(v)||0)+1);
-      }
-    });
-    const sorted=[...vals.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
-    curSel.innerHTML='<option value="">— Select current value —</option>'+
-      sorted.map(([v,n])=>`<option value="${esc(v)}">${esc(v)} (${n} record${n!==1?'s':''})</option>`).join('');
-    curSel.disabled=false;
-  }
-  onUfeInputChange();
-}
-window.onUfeFieldChange=onUfeFieldChange;
-
-function onUfeInputChange(){
-  const field   = document.getElementById('ufe-field-select').value;
-  const current = document.getElementById('ufe-current-select').value;
-  const newVal  = document.getElementById('ufe-new-input').value.trim();
-  const btn     = document.getElementById('ufe-apply-btn');
-  const hint    = document.getElementById('ufe-hint');
-  if(!field){ btn.disabled=true; hint.textContent='Select a field.'; return; }
-
-  if(_ufeMode==='replace'){
-    if(!current){ hint.textContent=`Pick a current value to replace in "${esc(field)}".`; btn.disabled=true; return; }
-    const count = Object.values(allRecords).filter(r=>field in r && String(r[field]||'').trim()===current).length;
-    if(!newVal){ hint.innerHTML=`<strong style="color:var(--cyan);">${count} record${count!==1?'s':''}</strong> have <em>${esc(field)}</em> = "<em>${esc(current)}</em>". Enter the new value.`; btn.disabled=true; return; }
-    if(newVal===current){ hint.innerHTML='⚠️ New value is the same as the current — nothing would change.'; btn.disabled=true; return; }
-    hint.innerHTML=`Replace <strong style="color:#f87171;">"${esc(current)}"</strong> → <strong style="color:#34d399;">"${esc(newVal)}"</strong> in <em>${esc(field)}</em> on <strong style="color:var(--cyan);">${count} record${count!==1?'s':''}</strong>.`;
-    btn.disabled=false;
-  } else if(_ufeMode==='all'){
-    const total=Object.keys(allRecords).length;
-    if(!newVal){ hint.textContent=`All ${total} records will have "${esc(field)}" set to the value you type above.`; btn.disabled=true; return; }
-    hint.innerHTML=`Set <em>${esc(field)}</em> = <strong style="color:#34d399;">"${esc(newVal)}"</strong> on <strong style="color:var(--cyan);">${total} record${total!==1?'s':''}</strong>.`;
-    btn.disabled=false;
-  } else { // rename
-    if(!newVal){ hint.textContent=`Enter the new field name to rename "${esc(field)}".`; btn.disabled=true; return; }
-    if(newVal===field){ hint.textContent='⚠️ New name is the same as the current name.'; btn.disabled=true; return; }
-    const count=Object.values(allRecords).filter(r=>field in r).length;
-    hint.innerHTML=`Rename field <strong style="color:#f87171;">"${esc(field)}"</strong> → <strong style="color:#34d399;">"${esc(newVal)}"</strong> on <strong style="color:var(--cyan);">${count} record${count!==1?'s':''}</strong>. (Old key deleted, new key written.)`;
-    btn.disabled=false;
-  }
-}
-window.onUfeInputChange=onUfeInputChange;
-
-function openUfeConfirm(){
-  const field   = document.getElementById('ufe-field-select').value;
-  const current = document.getElementById('ufe-current-select').value;
-  const newVal  = document.getElementById('ufe-new-input').value.trim();
-  if(!field||!newVal) return;
-
-  let icon,title,body;
-  if(_ufeMode==='replace'){
-    const count=Object.values(allRecords).filter(r=>field in r&&String(r[field]||'').trim()===current).length;
-    icon='🔁'; title='Confirm Value Replace';
-    body=`Replace <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(239,68,68,.08);padding:2px 6px;border-radius:4px;">${esc(current)}</code> → <strong>${esc(newVal)}</strong> in the <strong>${esc(field)}</strong> field across <strong>${count} record${count!==1?'s':''}.</strong>`;
-  } else if(_ufeMode==='all'){
-    const total=Object.keys(allRecords).length;
-    icon='📝'; title='Confirm Bulk Set';
-    body=`Set <strong>${esc(field)}</strong> = <strong>"${esc(newVal)}"</strong> on every one of the <strong>${total} records</strong> in this database. Existing values will be overwritten.`;
-  } else {
-    const count=Object.values(allRecords).filter(r=>field in r).length;
-    icon='🏷️'; title='Confirm Field Rename';
-    body=`Rename field key <code style="font-family:'JetBrains Mono',monospace;font-size:12px;background:rgba(239,68,68,.08);padding:2px 6px;border-radius:4px;">${esc(field)}</code> → <strong>${esc(newVal)}</strong> on <strong>${count} record${count!==1?'s':''}.</strong> The old key will be removed.`;
-  }
-  document.getElementById('ufe-dlg-icon').textContent=icon;
-  document.getElementById('ufe-dlg-title').textContent=title;
-  document.getElementById('ufe-dlg-body').innerHTML=body;
-  document.getElementById('ufe-progress-wrap').style.display='none';
-  document.getElementById('ufe-progress-bar').style.width='0%';
-  document.getElementById('ufe-progress-text').textContent='';
-  document.getElementById('ufe-overlay').classList.add('open');
-}
-window.openUfeConfirm=openUfeConfirm;
-
-function closeUfeConfirm(){
-  if(_ufeSaving) return;
-  document.getElementById('ufe-overlay').classList.remove('open');
-}
-window.closeUfeConfirm=closeUfeConfirm;
-
-async function executeUfeUpdate(){
-  if(_ufeSaving) return;
-  const field   = document.getElementById('ufe-field-select').value;
-  const current = document.getElementById('ufe-current-select').value;
-  const newVal  = document.getElementById('ufe-new-input').value.trim();
-  if(!field||!newVal) return;
-
-  _ufeSaving=true;
-  document.getElementById('ufe-cancel-btn').disabled=true;
-  document.getElementById('ufe-confirm-btn').disabled=true;
-  document.getElementById('ufe-confirm-btn').textContent='⏳ Updating…';
-  document.getElementById('ufe-progress-wrap').style.display='block';
-
-  // Build list of keys to update
-  let matchKeys;
-  if(_ufeMode==='replace'){
-    matchKeys=Object.entries(allRecords).filter(([,rec])=>field in rec&&String(rec[field]||'').trim()===current).map(([k])=>k);
-  } else if(_ufeMode==='all'){
-    matchKeys=Object.keys(allRecords);
-  } else { // rename – keys that have the field
-    matchKeys=Object.entries(allRecords).filter(([,rec])=>field in rec).map(([k])=>k);
-  }
-
-  const total=matchKeys.length;
-  let done=0, errors=0;
-  const BATCH=50;
-
-  if(_ufeMode==='rename'){
-    log(`🏷️ Renaming field "${field}" → "${newVal}" on ${total} records…`,'info');
-  } else {
-    log(`✏️ Setting ${field} ${_ufeMode==='replace'?`"${current}" → `:''}= "${newVal}" on ${total} records…`,'info');
-  }
-
-  for(let i=0;i<matchKeys.length;i+=BATCH){
-    const batch=matchKeys.slice(i,i+BATCH);
-    const updates={};
-    batch.forEach(key=>{
-      if(_ufeMode==='rename'){
-        // write new key with old value, delete old key
-        const oldVal=allRecords[key][field];
-        updates[`${_activePath}/${key}/${newVal}`]=oldVal;
-        updates[`${_activePath}/${key}/${field}`]=null;
-      } else {
-        updates[`${_activePath}/${key}/${field}`]=newVal;
-      }
-    });
-    try{
-      await fb.update(fb.ref(db),updates);
-      done+=batch.length;
-    } catch(e){
-      errors+=batch.length;
-      log(`❌ Batch error at record ${i}: ${e.message}`,'error');
-    }
-    const pct=Math.round(done/total*100);
-    document.getElementById('ufe-progress-bar').style.width=pct+'%';
-    document.getElementById('ufe-progress-text').textContent=`${done} / ${total} records updated (${pct}%)`;
-    await new Promise(r=>setTimeout(r,20));
-  }
-
-  _ufeSaving=false;
-  document.getElementById('ufe-cancel-btn').disabled=false;
-  document.getElementById('ufe-confirm-btn').disabled=false;
-  document.getElementById('ufe-confirm-btn').textContent='🛠️ Confirm Update';
-  document.getElementById('ufe-overlay').classList.remove('open');
-
-  if(errors===0){
-    notify(`✅ Done! Updated ${done} record${done!==1?'s':''}!`,'success');
-    log(`✅ ${_ufeMode==='rename'?`Renamed "${field}" → "${newVal}"`:`Set ${field} = "${newVal}"`} on ${done} records.`,'success');
-  } else {
-    notify(`⚠️ Completed with ${errors} errors. Check the log.`,'warning');
-    log(`⚠️ Done: ${done} ok, ${errors} errors.`,'warning');
-  }
-
-  document.getElementById('ufe-new-input').value='';
-  await loadData();
-}
-window.executeUfeUpdate=executeUfeUpdate;
 
 // ── ACTIVITY LOG ─────────────────────────────────────────────
 const _logColors={success:'#10b981',error:'#f87171',warning:'#fbbf24',info:'#00d4ff'};
