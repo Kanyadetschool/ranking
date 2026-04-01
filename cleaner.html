@@ -491,6 +491,45 @@ body::after{
 [data-theme="light"] #ufe-overlay .dialog{border-color:rgba(139,92,246,.3);}
 [data-theme="light"] #ufe-overlay .dialog-title{color:#6d28d9;}
 
+/* ── BULK TERM REPLACE ── */
+.btr-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+@media(max-width:680px){.btr-row{grid-template-columns:1fr;}}
+.btr-select,.btr-input{width:100%;padding:9px 12px;background:var(--input);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;}
+.btr-select:focus,.btr-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.12);}
+[data-theme="light"] .btr-select,[data-theme="light"] .btr-input{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+.btr-hint{font-size:11.5px;color:var(--text2);line-height:1.65;padding:10px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.12);border-radius:var(--rs);margin-bottom:12px;}
+.btr-builder{background:rgba(0,212,255,.03);border:1px solid rgba(0,212,255,.12);border-radius:var(--rm);padding:16px;margin-bottom:12px;}
+.btr-builder-title{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--cyan);margin-bottom:12px;}
+[data-theme="light"] .btr-builder-title{color:#1a5276;}
+.btr-parts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:10px;margin-bottom:12px;}
+.btr-part{display:flex;flex-direction:column;gap:4px;}
+.btr-part-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);}
+.btr-preview-wrap{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.btr-preview{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;padding:8px 14px;border-radius:var(--rs);flex:1;min-width:0;background:rgba(16,185,129,.07);border:1.5px solid rgba(16,185,129,.25);color:#34d399;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+[data-theme="light"] .btr-preview{background:rgba(16,185,129,.06);border-color:rgba(16,185,129,.3);color:#059669;}
+.btr-preview.empty{color:var(--text3);border-color:var(--border);background:transparent;}
+.btr-as-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+.btr-as-chip{padding:5px 13px;border-radius:20px;border:1.5px solid var(--border);background:transparent;color:var(--text2);font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;font-family:'Plus Jakarta Sans',sans-serif;user-select:none;}
+.btr-as-chip.on{background:rgba(0,212,255,.15);border-color:rgba(0,212,255,.5);color:#00d4ff;}
+[data-theme="light"] .btr-as-chip.on{background:rgba(41,128,185,.1);border-color:rgba(41,128,185,.4);color:#1a5276;}
+.btr-as-chip:hover{border-color:var(--border2);}
+.btr-match-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;max-height:200px;overflow-y:auto;}
+.btr-match-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:var(--rs);background:rgba(255,255,255,.025);border:1px solid var(--border);font-size:12px;}
+[data-theme="light"] .btr-match-row{background:rgba(41,128,185,.03);}
+.btr-match-old{font-family:'JetBrains Mono',monospace;color:#f87171;font-size:11px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btr-match-arr{color:var(--text3);flex-shrink:0;}
+.btr-match-new{font-family:'JetBrains Mono',monospace;color:#34d399;font-size:11px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+.btr-match-cnt{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px;background:rgba(0,212,255,.08);color:var(--cyan);flex-shrink:0;}
+#btr-overlay .dialog{border-color:rgba(0,212,255,.35);box-shadow:0 24px 80px rgba(0,0,0,.8),0 0 0 1px rgba(0,212,255,.12);max-width:540px;}
+#btr-overlay .dialog-title{color:#00d4ff;}
+[data-theme="light"] #btr-overlay .dialog{border-color:rgba(0,212,255,.3);}
+[data-theme="light"] #btr-overlay .dialog-title{color:#1a5276;}
+.btr-dlg-list{display:flex;flex-direction:column;gap:5px;margin-bottom:16px;max-height:220px;overflow-y:auto;}
+.btr-dlg-row{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--rs);background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.1);font-size:11px;}
+.btr-dlg-old{font-family:'JetBrains Mono',monospace;color:#f87171;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.btr-dlg-new{font-family:'JetBrains Mono',monospace;color:#34d399;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right;}
+.btr-dlg-cnt{font-size:10px;font-weight:700;padding:2px 6px;border-radius:8px;background:rgba(0,212,255,.1);color:var(--cyan);flex-shrink:0;}
+
 /* ── MISSING SCORES ── */
 .ms-controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;}
 .ms-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
@@ -758,6 +797,90 @@ body::after{
       </div>
     </div>
 
+    <!-- ── BULK MATCH & REPLACE TERM ── -->
+    <div class="card" style="margin-bottom:20px;animation-delay:.09s;" id="btr-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🔄 Bulk Replace Term Column</div>
+          <div class="card-sub">Select a Grade → pick existing Term values to replace → build the new Term pattern and apply in bulk</div>
+        </div>
+      </div>
+      <div class="card-body">
+
+        <!-- Step 1: select grade -->
+        <div class="btr-row">
+          <div>
+            <div class="field-label">① Select Grade</div>
+            <select class="btr-select" id="btr-grade-select" onchange="onBtrGradeChange()">
+              <option value="">— load data first —</option>
+            </select>
+          </div>
+          <div>
+            <div class="field-label">② Current Term values in this grade</div>
+            <select class="btr-select" id="btr-term-select" onchange="onBtrTermChange()" disabled>
+              <option value="">— pick a grade first —</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Step 2: pattern builder -->
+        <div class="btr-builder" id="btr-builder" style="display:none;">
+          <div class="btr-builder-title">🧩 Build New Term Pattern — e.g. <code style="font-size:11px;background:rgba(0,212,255,.1);padding:2px 6px;border-radius:4px;">Grade 5-2026-Mid-Term 1--As01</code></div>
+          <div class="btr-parts-grid">
+            <div class="btr-part">
+              <div class="btr-part-lbl">Grade Label</div>
+              <input class="btr-input" id="btr-p-grade" placeholder="e.g. Grade 5" oninput="btrUpdatePreview()">
+            </div>
+            <div class="btr-part">
+              <div class="btr-part-lbl">Year</div>
+              <input class="btr-input" id="btr-p-year" placeholder="e.g. 2026" oninput="btrUpdatePreview()">
+            </div>
+            <div class="btr-part">
+              <div class="btr-part-lbl">Term Type</div>
+              <select class="btr-select" id="btr-p-termtype" onchange="btrUpdatePreview()">
+                <option value="Term">Term</option>
+                <option value="Mid-Term">Mid-Term</option>
+                <option value="End-Term">End-Term</option>
+                <option value="opener">Opener</option>
+                <option value="">Custom ↓</option>
+              </select>
+            </div>
+            <div class="btr-part">
+              <div class="btr-part-lbl">Term Number</div>
+              <select class="btr-select" id="btr-p-termnum" onchange="btrUpdatePreview()">
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+              </select>
+            </div>
+            <div class="btr-part" id="btr-custom-wrap" style="display:none;">
+              <div class="btr-part-lbl">Custom Term Type</div>
+              <input class="btr-input" id="btr-p-custom" placeholder="Custom term…" oninput="btrUpdatePreview()">
+            </div>
+          </div>
+          <!-- Assessment selector -->
+          <div class="btr-part-lbl" style="margin-bottom:6px;">③ Assessment Numbers to update (As01, As02…)</div>
+          <div class="btr-as-row" id="btr-as-row"></div>
+          <!-- Preview -->
+          <div style="margin-top:14px;">
+            <div class="btr-part-lbl" style="margin-bottom:6px;">Live Preview (per selected assessment)</div>
+            <div class="btr-preview-wrap">
+              <div class="btr-preview empty" id="btr-preview">Fill in the fields above…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Match summary list -->
+        <div id="btr-match-section" style="display:none;">
+          <div class="btr-part-lbl" style="margin-bottom:8px;">📋 Planned replacements</div>
+          <div class="btr-match-list" id="btr-match-list"></div>
+          <button class="btn btn-cyan" id="btr-apply-btn" onclick="openBtrConfirm()" disabled>🔄 Apply All Replacements</button>
+        </div>
+
+        <div class="btr-hint" id="btr-hint">Select a Grade to get started.</div>
+      </div>
+    </div>
+
     <!-- Fields card -->
     <div class="card" style="animation-delay:.1s;">
       <div class="card-header">
@@ -848,6 +971,24 @@ body::after{
     <div class="dialog-actions" style="margin-top:12px;">
       <button class="btn btn-ghost" onclick="closeConfirm()" id="cancel-btn">Cancel</button>
       <button class="btn btn-red" id="confirm-del-btn" disabled onclick="executeDelete()">🗑️ Delete Fields</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── BTR CONFIRM DIALOG ── -->
+<div class="overlay" id="btr-overlay" onclick="if(event.target===this&&!_btrSaving)closeBtrConfirm()">
+  <div class="dialog">
+    <div class="dialog-icon">🔄</div>
+    <div class="dialog-title">Confirm Term Replacements</div>
+    <div class="dialog-body">The following Term values in Grade <strong id="dlg-btr-grade">—</strong> will be replaced:</div>
+    <div class="btr-dlg-list" id="btr-dlg-list"></div>
+    <div class="progress-bar-wrap" id="btr-progress-wrap" style="display:none;">
+      <div class="progress-bar" id="btr-progress-bar"></div>
+    </div>
+    <div class="progress-text" id="btr-progress-text"></div>
+    <div class="dialog-actions" style="margin-top:20px;">
+      <button class="btn btn-ghost" onclick="closeBtrConfirm()" id="btr-cancel-btn">Cancel</button>
+      <button class="btn btn-cyan" id="btr-confirm-btn" onclick="executeBtrUpdate()">🔄 Update Terms</button>
     </div>
   </div>
 </div>
@@ -1082,6 +1223,7 @@ async function loadData(){
   renderTable();
   updateStats();
   populateGradeSelect();
+  populateBtrGradeSelect();
   populateUfeFieldSelect();
   document.getElementById('stat-path').textContent=_activePath;
 }
@@ -1428,6 +1570,321 @@ async function executeGradeUpdate(){
   await loadData(); // refresh → repopulates dropdown with new grade values
 }
 window.executeGradeUpdate = executeGradeUpdate;
+
+// ── BULK MATCH & REPLACE TERM ─────────────────────────────────
+let _btrSaving = false;
+let _btrGrade = '';
+// _btrPlan: array of { oldTerm, newTerm, keys[] }
+let _btrPlan = [];
+// selected assessment numbers (Set of strings like '01','02'…)
+let _btrSelAs = new Set();
+
+// Called after data loads
+function populateBtrGradeSelect(){
+  const grades = new Map();
+  Object.values(allRecords).forEach(rec => {
+    const g = String(rec.Grade||'').trim();
+    if(g) grades.set(g, (grades.get(g)||0)+1);
+  });
+  const sel = document.getElementById('btr-grade-select');
+  if(!grades.size){
+    sel.innerHTML = '<option value="">— No Grade field found —</option>';
+    return;
+  }
+  const sorted = [...grades.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  sel.innerHTML = '<option value="">— Select a Grade —</option>' +
+    sorted.map(([g,n])=>`<option value="${esc(g)}">${esc(g)} (${n})</option>`).join('');
+  // reset dependents
+  document.getElementById('btr-term-select').innerHTML = '<option value="">— pick a grade first —</option>';
+  document.getElementById('btr-term-select').disabled = true;
+  document.getElementById('btr-builder').style.display = 'none';
+  document.getElementById('btr-match-section').style.display = 'none';
+  document.getElementById('btr-hint').textContent = 'Select a Grade to see its Term values.';
+}
+
+function onBtrGradeChange(){
+  _btrGrade = document.getElementById('btr-grade-select').value;
+  const termSel = document.getElementById('btr-term-select');
+  document.getElementById('btr-builder').style.display = 'none';
+  document.getElementById('btr-match-section').style.display = 'none';
+  _btrPlan = [];
+  _btrSelAs.clear();
+
+  if(!_btrGrade){
+    termSel.innerHTML = '<option value="">— pick a grade first —</option>';
+    termSel.disabled = true;
+    document.getElementById('btr-hint').textContent = 'Select a Grade to see its Term values.';
+    return;
+  }
+
+  // Collect all distinct Term values for this grade
+  const terms = new Map();
+  Object.values(allRecords).forEach(rec => {
+    if(String(rec.Grade||'').trim() === _btrGrade){
+      const t = String(rec.Term||'').trim();
+      if(t) terms.set(t, (terms.get(t)||0)+1);
+    }
+  });
+
+  if(!terms.size){
+    termSel.innerHTML = '<option value="">— No Term values in this grade —</option>';
+    termSel.disabled = true;
+    document.getElementById('btr-hint').innerHTML = `<strong style="color:var(--cyan);">${esc(_btrGrade)}</strong> has no Term values.`;
+    return;
+  }
+
+  const sorted = [...terms.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
+  termSel.innerHTML = '<option value="">— select a Term to replace —</option>' +
+    sorted.map(([t,n])=>`<option value="${esc(t)}">${esc(t)} (${n})</option>`).join('');
+  termSel.disabled = false;
+
+  // Pre-fill grade label in builder from the grade value
+  const gradeLabel = _btrGrade.replace(/[\-\/]\d{4}.*/,'').trim(); // e.g. "Grade 5"
+  document.getElementById('btr-p-grade').value = gradeLabel;
+
+  document.getElementById('btr-hint').innerHTML =
+    `<strong style="color:var(--cyan);">${esc(_btrGrade)}</strong> has ${terms.size} distinct Term value${terms.size!==1?'s':''}. Pick one to replace.`;
+}
+window.onBtrGradeChange = onBtrGradeChange;
+
+function onBtrTermChange(){
+  const termVal = document.getElementById('btr-term-select').value;
+  document.getElementById('btr-builder').style.display = termVal ? 'block' : 'none';
+  document.getElementById('btr-match-section').style.display = 'none';
+  _btrPlan = [];
+
+  if(!termVal) return;
+
+  // Detect assessment number from the old term value  e.g. "...--As01"
+  const asMatch = termVal.match(/--As(\d+)$/i);
+  const detectedAs = asMatch ? asMatch[1] : null;
+
+  // Find all terms in this grade that share the same "base" (everything before --As\d+)
+  const baseTerm = termVal.replace(/--As\d+$/i, '');
+  const sibling = new Map(); // asNum -> { oldTerm, count }
+  Object.values(allRecords).forEach(rec => {
+    if(String(rec.Grade||'').trim() !== _btrGrade) return;
+    const t = String(rec.Term||'').trim();
+    if(!t) return;
+    const base = t.replace(/--As\d+$/i,'');
+    if(base === baseTerm){
+      const am = t.match(/--As(\d+)$/i);
+      const asNum = am ? am[1] : '??';
+      if(!sibling.has(asNum)) sibling.set(asNum, { oldTerm: t, count: 0 });
+      sibling.get(asNum).count++;
+    }
+  });
+
+  // Build assessment chips
+  _btrSelAs.clear();
+  const asRow = document.getElementById('btr-as-row');
+  const nums = [...sibling.keys()].sort();
+  if(nums.length === 0){
+    asRow.innerHTML = `<span style="font-size:12px;color:var(--text3);">No --As## suffix found — single replacement mode.</span>`;
+    // add a single "default" chip
+    _btrSelAs.add('__single__');
+  } else {
+    asRow.innerHTML = nums.map(n =>
+      `<span class="btr-as-chip on" data-as="${esc(n)}" onclick="btrToggleAs('${esc(n)}',this)">As${n} <span style="opacity:.6;font-size:10px;">(${sibling.get(n).count})</span></span>`
+    ).join('');
+    nums.forEach(n => _btrSelAs.add(n));
+  }
+
+  // Pre-fill builder fields from old term format
+  // Format: "Grade 5-2026-Mid-Term 1--As01"
+  const parts = baseTerm.split('-');
+  // Try to parse year
+  const yearPart = parts.find(p => /^\d{4}$/.test(p.trim()));
+  if(yearPart) document.getElementById('btr-p-year').value = yearPart.trim();
+
+  // term type / number
+  const termTypeEl = document.getElementById('btr-p-termtype');
+  const termNumEl = document.getElementById('btr-p-termnum');
+  const midMatch = baseTerm.match(/Mid-Term\s*(\d)/i);
+  const endMatch = baseTerm.match(/End-Term\s*(\d)/i);
+  const opMatch  = baseTerm.match(/[Oo]pener/i);
+  const termMatch = !midMatch && !endMatch && baseTerm.match(/Term\s*(\d)/i);
+
+  if(midMatch){ termTypeEl.value='Mid-Term'; termNumEl.value=midMatch[1]||'1'; }
+  else if(endMatch){ termTypeEl.value='End-Term'; termNumEl.value=endMatch[1]||'1'; }
+  else if(opMatch){ termTypeEl.value='opener'; }
+  else if(termMatch){ termTypeEl.value='Term'; termNumEl.value=termMatch[1]||'1'; }
+
+  btrHandleCustomType();
+  btrUpdatePreview();
+  document.getElementById('btr-hint').textContent = '';
+}
+window.onBtrTermChange = onBtrTermChange;
+
+function btrToggleAs(num, el){
+  if(_btrSelAs.has(num)){ _btrSelAs.delete(num); el.classList.remove('on'); }
+  else { _btrSelAs.add(num); el.classList.add('on'); }
+  btrUpdatePreview();
+}
+window.btrToggleAs = btrToggleAs;
+
+function btrHandleCustomType(){
+  const v = document.getElementById('btr-p-termtype').value;
+  document.getElementById('btr-custom-wrap').style.display = v==='' ? 'block' : 'none';
+}
+
+function btrBuildNewTerm(asNum){
+  const gradeLabel = document.getElementById('btr-p-grade').value.trim();
+  const year       = document.getElementById('btr-p-year').value.trim();
+  const typeVal    = document.getElementById('btr-p-termtype').value;
+  const termType   = typeVal === '' ? document.getElementById('btr-p-custom').value.trim() : typeVal;
+  const termNum    = document.getElementById('btr-p-termnum').value;
+
+  if(!gradeLabel || !year || !termType) return null;
+
+  let base = `${gradeLabel}-${year}-${termType}`;
+  if(termType !== 'opener') base += ` ${termNum}`;
+
+  if(asNum === '__single__') return base;
+  return `${base}--As${String(asNum).padStart(2,'0')}`;
+}
+
+function btrUpdatePreview(){
+  btrHandleCustomType();
+  const previewEl = document.getElementById('btr-preview');
+
+  // build a sample preview (first selected as)
+  const firstAs = [..._btrSelAs][0];
+  const sample = firstAs !== undefined ? btrBuildNewTerm(firstAs) : null;
+
+  if(!sample){
+    previewEl.textContent = 'Fill in the fields above…';
+    previewEl.classList.add('empty');
+  } else {
+    previewEl.textContent = sample;
+    previewEl.classList.remove('empty');
+  }
+
+  // Rebuild match plan
+  _btrPlan = [];
+  const termVal = document.getElementById('btr-term-select').value;
+  if(!termVal || !_btrSelAs.size){ btrRenderMatchList(); return; }
+
+  const baseTerm = termVal.replace(/--As\d+$/i,'');
+
+  _btrSelAs.forEach(asNum => {
+    const newTerm = btrBuildNewTerm(asNum);
+    if(!newTerm) return;
+    const oldTerm = asNum === '__single__' ? termVal : `${baseTerm}--As${String(asNum).padStart(2,'0')}`;
+    // Find matching keys
+    const keys = Object.entries(allRecords)
+      .filter(([,rec]) => String(rec.Grade||'').trim()===_btrGrade && String(rec.Term||'').trim()===oldTerm)
+      .map(([k])=>k);
+    if(oldTerm !== newTerm) _btrPlan.push({ oldTerm, newTerm, keys });
+  });
+
+  btrRenderMatchList();
+}
+window.btrUpdatePreview = btrUpdatePreview;
+
+function btrRenderMatchList(){
+  const section = document.getElementById('btr-match-section');
+  const list = document.getElementById('btr-match-list');
+  const btn = document.getElementById('btr-apply-btn');
+
+  if(!_btrPlan.length){
+    section.style.display = 'none';
+    btn.disabled = true;
+    return;
+  }
+
+  section.style.display = 'block';
+  list.innerHTML = _btrPlan.map(p =>
+    `<div class="btr-match-row">
+      <span class="btr-match-old" title="${esc(p.oldTerm)}">${esc(p.oldTerm)}</span>
+      <span class="btr-match-arr">→</span>
+      <span class="btr-match-new" title="${esc(p.newTerm)}">${esc(p.newTerm)}</span>
+      <span class="btr-match-cnt">${p.keys.length} rec</span>
+    </div>`
+  ).join('');
+
+  const totalRecords = _btrPlan.reduce((s,p)=>s+p.keys.length, 0);
+  btn.disabled = totalRecords === 0;
+  document.getElementById('btr-hint').innerHTML =
+    `<strong style="color:var(--cyan);">${_btrPlan.length} Term value${_btrPlan.length!==1?'s':''}</strong> will be replaced across <strong style="color:var(--cyan);">${totalRecords} record${totalRecords!==1?'s':''}</strong> in <em>${esc(_btrGrade)}</em>.`;
+}
+
+function openBtrConfirm(){
+  if(!_btrPlan.length) return;
+  document.getElementById('dlg-btr-grade').textContent = _btrGrade;
+  const dlgList = document.getElementById('btr-dlg-list');
+  dlgList.innerHTML = _btrPlan.map(p =>
+    `<div class="btr-dlg-row">
+      <span class="btr-dlg-old">${esc(p.oldTerm)}</span>
+      <span style="color:var(--text3);flex-shrink:0;">→</span>
+      <span class="btr-dlg-new">${esc(p.newTerm)}</span>
+      <span class="btr-dlg-cnt">${p.keys.length}</span>
+    </div>`
+  ).join('');
+  document.getElementById('btr-progress-wrap').style.display = 'none';
+  document.getElementById('btr-progress-bar').style.width    = '0%';
+  document.getElementById('btr-progress-text').textContent   = '';
+  document.getElementById('btr-overlay').classList.add('open');
+}
+window.openBtrConfirm = openBtrConfirm;
+
+function closeBtrConfirm(){
+  if(_btrSaving) return;
+  document.getElementById('btr-overlay').classList.remove('open');
+}
+window.closeBtrConfirm = closeBtrConfirm;
+
+async function executeBtrUpdate(){
+  if(_btrSaving || !_btrPlan.length) return;
+  _btrSaving = true;
+  document.getElementById('btr-cancel-btn').disabled  = true;
+  document.getElementById('btr-confirm-btn').disabled = true;
+  document.getElementById('btr-confirm-btn').textContent = '⏳ Updating…';
+  document.getElementById('btr-progress-wrap').style.display = 'block';
+
+  // Flatten all keys across plan
+  const allKeys = _btrPlan.flatMap(p => p.keys.map(k => ({ key: k, newTerm: p.newTerm })));
+  const total = allKeys.length;
+  let done = 0, errors = 0;
+  const BATCH = 50;
+
+  log(`🔄 Replacing ${_btrPlan.length} Term value${_btrPlan.length!==1?'s':''} in Grade "${_btrGrade}" on ${total} records…`, 'info');
+
+  for(let i = 0; i < allKeys.length; i += BATCH){
+    const batch = allKeys.slice(i, i+BATCH);
+    const updates = {};
+    batch.forEach(({ key, newTerm }) => { updates[`${_activePath}/${key}/Term`] = newTerm; });
+    try{
+      await fb.update(fb.ref(db), updates);
+      done += batch.length;
+    } catch(e){
+      errors += batch.length;
+      log(`❌ Batch error at record ${i}: ${e.message}`, 'error');
+    }
+    const pct = Math.round(done/total*100);
+    document.getElementById('btr-progress-bar').style.width = pct+'%';
+    document.getElementById('btr-progress-text').textContent = `${done} / ${total} records updated (${pct}%)`;
+    await new Promise(r=>setTimeout(r,20));
+  }
+
+  _btrSaving = false;
+  document.getElementById('btr-cancel-btn').disabled  = false;
+  document.getElementById('btr-confirm-btn').disabled = false;
+  document.getElementById('btr-confirm-btn').textContent = '🔄 Update Terms';
+  document.getElementById('btr-overlay').classList.remove('open');
+
+  if(errors===0){
+    notify(`✅ Updated Term on ${done} records in ${_btrGrade}!`, 'success');
+    log(`✅ Term bulk replace done: ${done} records in Grade "${_btrGrade}".`, 'success');
+  } else {
+    notify(`⚠️ Completed with ${errors} errors. Check the log.`, 'warning');
+    log(`⚠️ Term update done: ${done} ok, ${errors} errors.`, 'warning');
+  }
+
+  _btrPlan = [];
+  await loadData();
+}
+window.executeBtrUpdate = executeBtrUpdate;
 
 // ── STUDENT RECORD EDITOR ─────────────────────────────────────
 let _sreKey = null;
