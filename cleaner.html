@@ -69,8 +69,8 @@ body::after{
   background:var(--topbar);
   backdrop-filter:blur(24px) saturate(180%);
   border-bottom:1px solid var(--border);
-  display:flex;align-items:center;justify-content:space-between;
-  padding:0 28px;height:64px;gap:12px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;
+  padding:0 28px;min-height:64px;gap:8px;
   transition:background .4s;
 }
 .topbar::after{
@@ -100,7 +100,7 @@ body::after{
 @keyframes brandShimmer{0%,100%{background-position:200% 0;}50%{background-position:-200% 0;}}
 .brand-sub{font-size:10px;color:rgba(0,212,255,.55);font-weight:600;letter-spacing:.04em;margin-top:1px;}
 [data-theme="light"] .brand-sub{color:#3a6080;}
-.topbar-right{display:flex;align-items:center;gap:10px;}
+.topbar-right{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
 
 /* theme toggle */
 .theme-toggle{
@@ -587,9 +587,15 @@ body::after{
 /* responsive */
 @media(max-width:640px){
   .main{padding:16px 12px 60px;}
-  .topbar{padding:0 14px;}
+  .topbar{padding:6px 14px;gap:6px;}
+  .topbar-right{width:100%;justify-content:flex-end;padding-bottom:6px;}
+  .brand-sub{display:none;}
   .auth-card{padding:32px 24px;}
   .stats-row{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:400px){
+  .user-pill span#user-name{display:none;}
+  #signout-btn{font-size:11px;padding:6px 10px;}
 }
 </style>
 </head>
