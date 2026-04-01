@@ -825,7 +825,7 @@ body::after{
 
         <!-- Step 2: pattern builder -->
         <div class="btr-builder" id="btr-builder" style="display:none;">
-          <div class="btr-builder-title">🧩 Build New Term Pattern — e.g. <code style="font-size:11px;background:rgba(0,212,255,.1);padding:2px 6px;border-radius:4px;">Grade 5-2026-Mid-Term 1--As01</code></div>
+          <div class="btr-builder-title">🧩 Build New Term Pattern — e.g. <code style="font-size:11px;background:rgba(0,212,255,.1);padding:2px 6px;border-radius:4px;">Grade 5-2026-Mid-Term 1-As01</code></div>
           <div class="btr-parts-grid">
             <div class="btr-part">
               <div class="btr-part-lbl">Grade Label</div>
@@ -859,7 +859,7 @@ body::after{
             </div>
           </div>
           <!-- Assessment selector -->
-          <div class="btr-part-lbl" style="margin-bottom:6px;">③ Assessment Numbers to update (As01, As02…)</div>
+          <div class="btr-part-lbl" style="margin-bottom:6px;">③ Assessment suffixes to update (As01, ISDN001, or any value after the last "-")</div>
           <div class="btr-as-row" id="btr-as-row"></div>
           <!-- Preview -->
           <div style="margin-top:14px;">
@@ -1648,22 +1648,14 @@ function onBtrGradeChange(){
 window.onBtrGradeChange = onBtrGradeChange;
 
 // ── BTR helpers ──────────────────────────────────────────────
-// Strip ANY assessment suffix from a term string, returning { base, asNum|null }
-// Handles: "--As01", "-AS01", "-As01", " AS01", "AS01" at end of string
+// Strip ANY assessment suffix from a term string, returning { base, asNum, rawSuffix }
+// Handles any single-dash suffix: -As01, -ISDN001, -T2, -ABC etc.
+// Uses the full suffix token as the key, preserving original casing and format.
 function btrParseAs(term){
-  // Try "--As##" first (canonical new format)
-  let m = term.match(/^(.*?)--As(\d+)$/i);
-  if(m) return { base: m[1], asNum: m[2], sep: '--As' };
-  // "-As##" or "-AS##"
-  m = term.match(/^(.*?)-As(\d+)$/i);
-  if(m) return { base: m[1], asNum: m[2], sep: '-AS' };
-  // " As##" or " AS##"  (space before)
-  m = term.match(/^(.*?) As(\d+)$/i);
-  if(m) return { base: m[1], asNum: m[2], sep: ' AS' };
-  // plain "AS##" at end (embedded, e.g. "2025-END-TERM 3-AS01")
-  m = term.match(/^(.*?)[- ]?AS(\d+)$/i);
-  if(m) return { base: m[1].replace(/[- ]$/, ''), asNum: m[2], sep: '-AS' };
-  return { base: term, asNum: null, sep: null };
+  // Match a single "-" followed by a token that starts with a letter (avoids splitting on year numbers)
+  const m = term.match(/^(.*)-([A-Za-z][A-Za-z0-9]*)$/);
+  if(m) return { base: m[1], asNum: m[2], sep: '-', rawSuffix: m[2] };
+  return { base: term, asNum: null, sep: null, rawSuffix: null };
 }
 
 function onBtrTermChange(){
@@ -1689,7 +1681,7 @@ function onBtrTermChange(){
     // normalise bases for comparison (trim, lowercase)
     if(p.base.toLowerCase().replace(/\s+/g,' ') === baseOfSelected.toLowerCase().replace(/\s+/g,' ')){
       const key = p.asNum !== null ? p.asNum : '__single__';
-      if(!sibling.has(key)) sibling.set(key, { oldTerm: t, count: 0 });
+      if(!sibling.has(key)) sibling.set(key, { oldTerm: t, count: 0, rawSuffix: p.rawSuffix });
       sibling.get(key).count++;
     }
   });
@@ -1711,12 +1703,13 @@ function onBtrTermChange(){
   });
 
   if(nums.length === 1 && nums[0] === '__single__'){
-    asRow.innerHTML = `<span style="font-size:12px;color:var(--text3);">No As## suffix detected — will replace the exact selected Term value.</span>`;
+    asRow.innerHTML = `<span style="font-size:12px;color:var(--text3);">No suffix detected — will replace the exact selected Term value.</span>`;
     _btrSelAs.add('__single__');
   } else {
     asRow.innerHTML = nums.map(n => {
-      const label = n === '__single__' ? 'No suffix' : `As${n}`;
-      const cnt = sibling.get(n).count;
+      const sibEntry = sibling.get(n);
+      const label = n === '__single__' ? 'No suffix' : (sibEntry && sibEntry.rawSuffix ? sibEntry.rawSuffix : n);
+      const cnt = sibEntry ? sibEntry.count : 0;
       return `<span class="btr-as-chip on" data-as="${esc(n)}" onclick="btrToggleAs('${esc(n)}',this)">${label} <span style="opacity:.6;font-size:10px;">(${cnt})</span></span>`;
     }).join('');
     nums.forEach(n => _btrSelAs.add(n));
@@ -1772,7 +1765,10 @@ function btrBuildNewTerm(asNum){
   if(termType !== 'opener') base += ` ${termNum}`;
 
   if(asNum === '__single__') return base;
-  return `${base}--As${String(asNum).padStart(2,'0')}`;
+  // Use the original raw suffix from the sibling map if available, else fallback
+  const sibData = window._btrSibling && window._btrSibling.get(asNum);
+  if(sibData && sibData.rawSuffix) return `${base}-${sibData.rawSuffix}`;
+  return `${base}-As${String(asNum).padStart(2,'0')}`;
 }
 
 function btrUpdatePreview(){
