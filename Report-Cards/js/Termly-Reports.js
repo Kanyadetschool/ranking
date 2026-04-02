@@ -2683,9 +2683,55 @@ async function exportMissingDataToPdf() {
 
     const selectedGrade = gradeFilter.value;
     const selectedField = fieldFilter.value;
-    
-    // ── Apply term filter — respect the Grade Selector chip selection ────────
-    let dataToExport = _filterPoolBySelectedGrades([...filteredAndSearchedStudents])
+
+    const termLabel  = selectedGrades.size > 0 ? [...selectedGrades].join(' + ') : 'All Terms';
+    const title      = selectedField ? `Missing ${selectedField} Report` : `Assessment Outcome Data Report`;
+    const subtitle   = selectedField ? `Field: ${selectedField}  |  ${termLabel}` : `Terms: ${termLabel}`;
+    const gradeInfo  = selectedGrade ? `Grade: ${selectedGrade}` : 'All Grades';
+
+    // ── Build one averaged record per Assessment No across selected terms ────
+    // Step 1: get the raw pool filtered by selected grades and current filters
+    let rawPool = _filterPoolBySelectedGrades([...filteredAndSearchedStudents]);
+
+    // Step 2: group by Assessment No
+    const byAdm = {};
+    rawPool.forEach(s => {
+        const adm = String(s['Assessment No'] || s.id || '').trim();
+        if (!adm) return;
+        if (!byAdm[adm]) byAdm[adm] = [];
+        byAdm[adm].push(s);
+    });
+
+    // Step 3: for each student, average numeric subject scores across all their records
+    const allSubjectsSet = new Set(rawPool.flatMap(s => getSubjects(s)));
+    const allSubjectsList = [...allSubjectsSet];
+
+    let dataToExport = Object.values(byAdm).map(records => {
+        // Use first record for meta fields
+        const base = records[0];
+        const averaged = {
+            'Assessment No':         base['Assessment No'],
+            'Official Student Name': base['Official Student Name'],
+            'Gender':                base['Gender'],
+            'Grade':                 base['Grade'],
+            'Term':                  records.length > 1
+                                        ? [...new Set(records.map(r => r['Term']).filter(Boolean))].join(' + ')
+                                        : (base['Term'] || 'N/A'),
+        };
+        // Average each subject across all term records for this student
+        allSubjectsList.forEach(subj => {
+            const vals = records
+                .map(r => parseFloat(r[subj]))
+                .filter(v => !isNaN(v));
+            averaged[subj] = vals.length > 0
+                ? parseFloat((vals.reduce((a,b) => a+b, 0) / vals.length).toFixed(2))
+                : null;
+        });
+        return averaged;
+    });
+
+    // Sort by total points descending
+    dataToExport = dataToExport
         .sort((a, b) => parseFloat(calculateStudentStats(b).totalPoints) - parseFloat(calculateStudentStats(a).totalPoints));
 
     if (dataToExport.length === 0) {
@@ -2695,10 +2741,6 @@ async function exportMissingDataToPdf() {
         return;
     }
 
-    const termLabel  = selectedGrades.size > 0 ? [...selectedGrades].join(' + ') : 'All Terms';
-    const title      = selectedField ? `Missing ${selectedField} Report` : `Assessment Outcome Data Report`;
-    const subtitle   = selectedField ? `Field: ${selectedField}  |  ${termLabel}` : `Terms: ${termLabel}`;
-    const gradeInfo  = selectedGrade ? `Grade: ${selectedGrade}` : 'All Grades';
     const totalStudents = dataToExport.length;
     
     let logoImg = null;
@@ -2741,12 +2783,11 @@ async function exportMissingDataToPdf() {
 
     const headers = [
         'No.',
-        'Term',
         'Assessment No',
         'Official Student Name',
         'Gender',
+        'Grade',
         ...dynamicSubjects,
-        'Total Marks',
         'Avg %',
         'Points',
         'Level',
@@ -2756,32 +2797,18 @@ async function exportMissingDataToPdf() {
         const stats = calculateStudentStats(student);
         const row = [
             String(index + 1),
-            String(student['Term'] || 'N/A'),
             String(student['Assessment No'] || 'N/A'),
             String(student['Official Student Name'] || 'N/A'),
             String(student['Gender'] || 'N/A'),
-            ...dynamicSubjects.map(subj => String(student[subj] ?? 'N/A')),
-            String(stats.total),
+            String(student['Grade'] || 'N/A'),
+            ...dynamicSubjects.map(subj => {
+                const v = student[subj];
+                return (v === null || v === undefined) ? 'N/A' : String(v);
+            }),
             String(stats.average),
             String(stats.totalPoints),
             String(stats.comment),
         ];
-        
-        if (selectedField) {
-            const value = student[selectedField];
-            if (value === undefined) {
-                row.push('[MISSING - Field Not Present]');
-            } else if (value === null || value === "") {
-                row.push('[EMPTY]');
-            } else if (typeof value === 'string' && (value.toUpperCase() === 'NA' || value.toUpperCase() === 'N/A')) {
-                row.push(`[${value.toUpperCase()}]`);
-            } else {
-                row.push(String(value));
-            }
-        } else {
-            row.push('-');
-        }
-        
         return row;
     });
 
@@ -2881,11 +2908,11 @@ async function exportMissingDataToPdf() {
             cellWidth: 'auto'
         },
         columnStyles: {
-            0: { cellWidth: 8 },
-            1: { cellWidth: 22 },
-            2: { cellWidth: 22 },
-            3: { cellWidth: 35 },
-            4: { cellWidth: 12 },
+            0: { cellWidth: 8 },   // No.
+            1: { cellWidth: 22 },  // Assessment No
+            2: { cellWidth: 40 },  // Official Student Name
+            3: { cellWidth: 12 },  // Gender
+            4: { cellWidth: 28 },  // Grade
         },
         headStyles: { 
             fillColor: [41, 128, 185], 
@@ -2897,6 +2924,36 @@ async function exportMissingDataToPdf() {
         margin: { top: 25, right: 5, bottom: 20, left: 5 },
         didDrawPage: function(data) {
             addHeader();
+        },
+        didParseCell: function(data) {
+            if (data.section !== 'body') return;
+            const META_COLS = 5; // No, Adm, Name, Gender, Grade
+            const lastCol = headers.length - 1; // Level col
+            const secondLastCol = headers.length - 2; // Points col
+            const thirdLastCol = headers.length - 3; // Avg % col
+
+            // Colour subject score columns
+            if (data.column.index >= META_COLS && data.column.index < thirdLastCol) {
+                const v = parseFloat(data.cell.raw);
+                if (!isNaN(v)) {
+                    let r, g, b;
+                    if      (v >= 75) { r=39;  g=174; b=96;  }
+                    else if (v >= 58) { r=41;  g=128; b=185; }
+                    else if (v >= 31) { r=243; g=156; b=18;  }
+                    else              { r=231; g=76;  b=60;  }
+                    data.cell.styles.textColor = [r, g, b];
+                    data.cell.styles.fontStyle = 'bold';
+                }
+            }
+            // Colour Level column
+            if (data.column.index === lastCol) {
+                const v = String(data.cell.raw || '');
+                if      (v.includes('EE')) data.cell.styles.textColor = [39,174,96];
+                else if (v.includes('ME')) data.cell.styles.textColor = [41,128,185];
+                else if (v.includes('AE')) data.cell.styles.textColor = [243,156,18];
+                else if (v.includes('BE')) data.cell.styles.textColor = [231,76,60];
+                data.cell.styles.fontStyle = 'bold';
+            }
         }
     });
 
@@ -2919,7 +2976,7 @@ async function exportMissingDataToPdf() {
     
     NotificationManager.success(
         `<strong>PDF Export Complete!</strong><br/>` +
-        `<span style="font-size: 12px;">Downloaded: ${filename}<br/>Total records: ${totalStudents}  ·  ${termLabel}</span>`,
+        `<span style="font-size: 12px;">Downloaded: ${filename}<br/>${totalStudents} students (averaged across selected terms)  ·  ${termLabel}</span>`,
         4000
     );
 }
