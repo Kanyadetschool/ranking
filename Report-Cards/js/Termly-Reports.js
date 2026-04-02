@@ -2685,9 +2685,19 @@ async function exportMissingDataToPdf() {
     const selectedField = fieldFilter.value;
 
     const termLabel  = selectedGrades.size > 0 ? [...selectedGrades].join(' + ') : 'All Terms';
-    const title      = selectedField ? `Missing ${selectedField} Report` : `Assessment Outcome Data Report`;
-    const subtitle   = selectedField ? `Field: ${selectedField}  |  ${termLabel}` : `Terms: ${termLabel}`;
-    const gradeInfo  = selectedGrade ? `Grade: ${selectedGrade}` : 'All Grades';
+    const title      = `Assessment Outcome Data Report`;
+
+    // Derive actual grade label from the selected grade chips (e.g. "Grade 9")
+    // Extract the "Grade N" prefix from each selected grade value, deduplicate
+    const gradeLabelsFromSelection = [...new Set(
+        [...selectedGrades].map(g => {
+            const m = g.match(/^Grade\s*\d+/i);
+            return m ? m[0] : g;
+        })
+    )];
+    const gradeInfo = gradeLabelsFromSelection.length > 0
+        ? gradeLabelsFromSelection.join(', ')
+        : (selectedGrade ? `Grade: ${selectedGrade}` : 'All Grades');
 
     // ── Build one averaged record per Assessment No across selected terms ────
     // Step 1: get the raw pool filtered by selected grades and current filters
@@ -2730,9 +2740,9 @@ async function exportMissingDataToPdf() {
         return averaged;
     });
 
-    // Sort by total points descending
+    // Sort by average score descending
     dataToExport = dataToExport
-        .sort((a, b) => parseFloat(calculateStudentStats(b).totalPoints) - parseFloat(calculateStudentStats(a).totalPoints));
+        .sort((a, b) => parseFloat(calculateStudentStats(b).average) - parseFloat(calculateStudentStats(a).average));
 
     if (dataToExport.length === 0) {
         alert(selectedGrades.size > 0
@@ -2932,7 +2942,7 @@ async function exportMissingDataToPdf() {
             0: { cellWidth: 8 },   // No.
             1: { cellWidth: 24 },  // Assessment No
             2: { cellWidth: 42 },  // Official Student Name
-            3: { cellWidth: 11 },  // Gender
+            3: { cellWidth: 16 },  // Gender — wider to avoid wrapping
         },
         headStyles: { 
             fillColor: [41, 128, 185], 
@@ -2984,12 +2994,14 @@ async function exportMissingDataToPdf() {
     }
 
     const fieldPart  = selectedField ? `_${selectedField.replace(/\s+/g, '_')}` : '';
-    const gradePart  = selectedGrade ? `_grade${selectedGrade.replace(/\s/g,'')}` : '_all_grades';
+    const gradePart  = gradeLabelsFromSelection.length > 0
+        ? `_${gradeLabelsFromSelection.map(g => g.replace(/\s/g,'')).join('_')}`
+        : (selectedGrade ? `_${selectedGrade.replace(/\s/g,'')}` : '_AllGrades');
     const termPart   = selectedGrades.size > 0
         ? `_${[...selectedGrades].map(g => g.replace(/[^a-zA-Z0-9]/g,'_')).join('_')}`
         : '';
     const searchPart = searchQuery ? `_search_${searchQuery.replace(/\s+/g, '_')}` : '';
-    const filename = `missing_data_report${fieldPart}${gradePart}${termPart}${searchPart}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `Assessment_Outcome_Report${fieldPart}${gradePart}${termPart}${searchPart}_${new Date().toISOString().split('T')[0]}.pdf`;
     
     doc.save(filename);
     
