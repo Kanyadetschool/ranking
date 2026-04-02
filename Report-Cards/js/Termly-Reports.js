@@ -2777,17 +2777,37 @@ async function exportMissingDataToPdf() {
         }
     }
     
-    const dynamicSubjects = [...new Set(
-        dataToExport.flatMap(s => getSubjects(s))
-    )];
+    const PRIORITY_SUBJECTS = ['Mathematics', 'English', 'Kiswahili'];
+
+    // Build subject list: priority subjects first (in order), then remaining alphabetically
+    const rawSubjects = [...new Set(dataToExport.flatMap(s => getSubjects(s)))];
+    const dynamicSubjects = [
+        ...PRIORITY_SUBJECTS.filter(p => rawSubjects.some(s => s.toLowerCase().includes(p.toLowerCase())
+            || p.toLowerCase().includes(s.toLowerCase()) || s === p)),
+        ...rawSubjects.filter(s => !PRIORITY_SUBJECTS.some(p =>
+            s.toLowerCase().includes(p.toLowerCase()) || p.toLowerCase().includes(s.toLowerCase()) || s === p))
+            .sort()
+    ];
+    // Fallback: ensure no subject is lost (use raw set order for any that didn't match above)
+    const finalSubjects = [
+        ...dynamicSubjects,
+        ...rawSubjects.filter(s => !dynamicSubjects.includes(s))
+    ];
+
+    // Short level code extractor: "Meeting Expectation ME1" → "ME1"
+    function shortLevel(comment) {
+        const code = String(comment || '').match(/\b(EE|ME|AE|BE)\d\b/)?.[0];
+        if (code) return code;
+        if (String(comment).toLowerCase().includes('not assessed')) return 'N/A';
+        return String(comment).substring(0, 4);
+    }
 
     const headers = [
         'No.',
         'Assessment No',
         'Official Student Name',
         'Gender',
-        'Grade',
-        ...dynamicSubjects,
+        ...finalSubjects,
         'Avg %',
         'Points',
         'Level',
@@ -2800,14 +2820,13 @@ async function exportMissingDataToPdf() {
             String(student['Assessment No'] || 'N/A'),
             String(student['Official Student Name'] || 'N/A'),
             String(student['Gender'] || 'N/A'),
-            String(student['Grade'] || 'N/A'),
-            ...dynamicSubjects.map(subj => {
+            ...finalSubjects.map(subj => {
                 const v = student[subj];
                 return (v === null || v === undefined) ? 'N/A' : String(v);
             }),
             String(stats.average),
             String(stats.totalPoints),
-            String(stats.comment),
+            shortLevel(stats.comment),
         ];
         return row;
     });
@@ -2816,7 +2835,7 @@ async function exportMissingDataToPdf() {
         const pageWidth = doc.internal.pageSize.width;
         
         doc.setFillColor(41, 128, 185);
-        doc.rect(0, 0, pageWidth, 20, 'F');
+        doc.rect(0, 0, pageWidth, 22, 'F');
         
         if (logoImg && logoImg.complete && logoImg.naturalHeight !== 0) {
             try {
@@ -2829,28 +2848,30 @@ async function exportMissingDataToPdf() {
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(16);
         doc.setFont(undefined, 'bold');
-        doc.text('KANYADET PRI & JUNIOR SCHOOL', 34, 10);
+        doc.text('KANYADET PRI & JUNIOR SCHOOL', 34, 9);
         
-        doc.setFontSize(12);
-        doc.text(title, 34, 16);
+        doc.setFontSize(11);
+        doc.text(title, 34, 15);
+
+        // Terms averaged line — shown prominently below title
+        doc.setFontSize(7.5);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Averaged across: ${termLabel}`, 34, 21);
         
         doc.setFontSize(9);
-        doc.setFont(undefined, 'normal');
         const dateText = `Date: ${new Date().toLocaleDateString()}`;
         doc.text(dateText, pageWidth - 14, 6, { align: 'right' });
-        doc.text(subtitle, pageWidth - 14, 11, { align: 'right' });
-        doc.text(gradeInfo, pageWidth - 14, 16, { align: 'right' });
-        
-        doc.setFontSize(8);
-        doc.text(`Total Students: ${totalStudents}`, pageWidth - 14, 20, { align: 'right' });
+        doc.text(gradeInfo, pageWidth - 14, 12, { align: 'right' });
+        doc.text(`Total Students: ${totalStudents}`, pageWidth - 14, 18, { align: 'right' });
         
         if (searchQuery) {
+            doc.setFontSize(7.5);
             doc.text(`Search: "${searchQuery}"`, pageWidth - 14, 24, { align: 'right' });
         }
         
         doc.setDrawColor(41, 128, 185);
         doc.setLineWidth(0.5);
-        doc.line(0, 20, pageWidth, 20);
+        doc.line(0, 22, pageWidth, 22);
     };
 
     const addFooter = (data, totalPages) => {
@@ -2900,7 +2921,7 @@ async function exportMissingDataToPdf() {
     doc.autoTable({
         head: [headers],
         body: body,
-        startY: 25,
+        startY: 27,
         styles: { 
             fontSize: 7,
             cellPadding: 2,
@@ -2909,10 +2930,9 @@ async function exportMissingDataToPdf() {
         },
         columnStyles: {
             0: { cellWidth: 8 },   // No.
-            1: { cellWidth: 22 },  // Assessment No
-            2: { cellWidth: 40 },  // Official Student Name
-            3: { cellWidth: 12 },  // Gender
-            4: { cellWidth: 28 },  // Grade
+            1: { cellWidth: 24 },  // Assessment No
+            2: { cellWidth: 42 },  // Official Student Name
+            3: { cellWidth: 11 },  // Gender
         },
         headStyles: { 
             fillColor: [41, 128, 185], 
@@ -2921,16 +2941,15 @@ async function exportMissingDataToPdf() {
             fontSize: 7
         },
         alternateRowStyles: { fillColor: [245, 245, 245] },
-        margin: { top: 25, right: 5, bottom: 20, left: 5 },
+        margin: { top: 27, right: 5, bottom: 20, left: 5 },
         didDrawPage: function(data) {
             addHeader();
         },
         didParseCell: function(data) {
             if (data.section !== 'body') return;
-            const META_COLS = 5; // No, Adm, Name, Gender, Grade
+            const META_COLS = 4; // No, Adm, Name, Gender  (Grade column removed)
             const lastCol = headers.length - 1; // Level col
-            const secondLastCol = headers.length - 2; // Points col
-            const thirdLastCol = headers.length - 3; // Avg % col
+            const thirdLastCol = headers.length - 3; // Avg % col index
 
             // Colour subject score columns
             if (data.column.index >= META_COLS && data.column.index < thirdLastCol) {
@@ -2945,13 +2964,13 @@ async function exportMissingDataToPdf() {
                     data.cell.styles.fontStyle = 'bold';
                 }
             }
-            // Colour Level column
+            // Colour Level column by short code
             if (data.column.index === lastCol) {
                 const v = String(data.cell.raw || '');
-                if      (v.includes('EE')) data.cell.styles.textColor = [39,174,96];
-                else if (v.includes('ME')) data.cell.styles.textColor = [41,128,185];
-                else if (v.includes('AE')) data.cell.styles.textColor = [243,156,18];
-                else if (v.includes('BE')) data.cell.styles.textColor = [231,76,60];
+                if      (v.startsWith('EE')) data.cell.styles.textColor = [39,174,96];
+                else if (v.startsWith('ME')) data.cell.styles.textColor = [41,128,185];
+                else if (v.startsWith('AE')) data.cell.styles.textColor = [243,156,18];
+                else if (v.startsWith('BE')) data.cell.styles.textColor = [231,76,60];
                 data.cell.styles.fontStyle = 'bold';
             }
         }
