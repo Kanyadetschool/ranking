@@ -1560,6 +1560,18 @@ function getMergedStudents() {
 
 // ──────────────────────────────────────────────────────────────────────────────
 
+// ═══════════════════════════════════════════════════════════
+//  TERM FILTER HELPER
+//  Filters an array of student records to only those whose
+//  Grade field is one of the currently selectedGrades.
+//  If selectedGrades is empty (nothing chosen) the full pool
+//  is returned unchanged so the UI keeps working normally.
+// ═══════════════════════════════════════════════════════════
+function _filterPoolBySelectedGrades(pool) {
+    if (!selectedGrades || selectedGrades.size === 0) return pool;
+    return pool.filter(s => selectedGrades.has(s['Grade']));
+}
+
 // --- Main Application Flow ---
 
 /**
@@ -2590,17 +2602,21 @@ async function exportMissingDataToPdf() {
     const selectedGrade = gradeFilter.value;
     const selectedField = fieldFilter.value;
     
-    let dataToExport = [...filteredAndSearchedStudents]
+    // ── Apply term filter — respect the Grade Selector chip selection ────────
+    let dataToExport = _filterPoolBySelectedGrades([...filteredAndSearchedStudents])
         .sort((a, b) => parseFloat(calculateStudentStats(b).totalPoints) - parseFloat(calculateStudentStats(a).totalPoints));
 
     if (dataToExport.length === 0) {
-        alert('No data to export. Please adjust your filters.');
+        alert(selectedGrades.size > 0
+            ? 'No data to export for the selected terms. Try adjusting the Grade Selector or other filters.'
+            : 'No data to export. Please adjust your filters.');
         return;
     }
 
-    const title = selectedField ? `Missing ${selectedField} Report` : `Assessment Otcome Data Report`;
-    const subtitle = selectedField ? `Field: ${selectedField}` : 'All Missing Fields';
-    const gradeInfo = selectedGrade ? `Grade ${selectedGrade}` : 'All Grades';
+    const termLabel  = selectedGrades.size > 0 ? [...selectedGrades].join(' + ') : 'All Terms';
+    const title      = selectedField ? `Missing ${selectedField} Report` : `Assessment Outcome Data Report`;
+    const subtitle   = selectedField ? `Field: ${selectedField}  |  ${termLabel}` : `Terms: ${termLabel}`;
+    const gradeInfo  = selectedGrade ? `Grade: ${selectedGrade}` : 'All Grades';
     const totalStudents = dataToExport.length;
     
     let logoImg = null;
@@ -2809,16 +2825,19 @@ async function exportMissingDataToPdf() {
         addFooter({ pageNumber: i }, totalPages);
     }
 
-    const fieldPart = selectedField ? `_${selectedField.replace(/\s+/g, '_')}` : '';
-    const gradePart = selectedGrade ? `_grade${selectedGrade}` : '_all_grades';
+    const fieldPart  = selectedField ? `_${selectedField.replace(/\s+/g, '_')}` : '';
+    const gradePart  = selectedGrade ? `_grade${selectedGrade.replace(/\s/g,'')}` : '_all_grades';
+    const termPart   = selectedGrades.size > 0
+        ? `_${[...selectedGrades].map(g => g.replace(/[^a-zA-Z0-9]/g,'_')).join('_')}`
+        : '';
     const searchPart = searchQuery ? `_search_${searchQuery.replace(/\s+/g, '_')}` : '';
-    const filename = `missing_data_report${fieldPart}${gradePart}${searchPart}_${new Date().toISOString().split('T')[0]}.pdf`;
+    const filename = `missing_data_report${fieldPart}${gradePart}${termPart}${searchPart}_${new Date().toISOString().split('T')[0]}.pdf`;
     
     doc.save(filename);
     
     NotificationManager.success(
         `<strong>PDF Export Complete!</strong><br/>` +
-        `<span style="font-size: 12px;">Downloaded: ${filename}<br/>Total records: ${totalStudents}</span>`,
+        `<span style="font-size: 12px;">Downloaded: ${filename}<br/>Total records: ${totalStudents}  ·  ${termLabel}</span>`,
         4000
     );
 }
@@ -2842,7 +2861,7 @@ async function generateLeagueTable() {
         : studentsData;
 
     // ── Apply term filter ──────────────────────────────────────────────────
-    
+    pool = _filterPoolBySelectedGrades(pool);
 
     if (pool.length === 0) {
         NotificationManager.warning('No students found for the selected terms. Adjust the Term Selector above.');
@@ -2937,7 +2956,7 @@ async function generateSubjectAnalysis() {
         : studentsData;
 
     // ── Apply term filter ──────────────────────────────────────────────────
-    
+    pool = _filterPoolBySelectedGrades(pool);
 
     if (pool.length === 0) { NotificationManager.warning('No students found for the selected terms.'); return; }
 
@@ -3096,7 +3115,7 @@ function showGradeDashboard() {
         : studentsData;
 
     // ── Apply term filter ──────────────────────────────────────────────────
-    
+    pool = _filterPoolBySelectedGrades(pool);
 
     if (pool.length === 0) { NotificationManager.warning('No students found for the selected terms.'); return; }
 
@@ -3223,7 +3242,7 @@ function _doExportToExcel() {
         : studentsData;
 
     // ── Apply term filter ──────────────────────────────────────────────────
-    
+    pool = _filterPoolBySelectedGrades(pool);
 
     if (pool.length === 0) { NotificationManager.warning('No data to export for the selected terms.'); return; }
 
@@ -3379,7 +3398,7 @@ function bulkWhatsAppExport() {
         : studentsData;
 
     // ── Apply term filter ──────────────────────────────────────────────────
-    
+    pool = _filterPoolBySelectedGrades(pool);
 
     if (pool.length === 0) { NotificationManager.warning('No students found for the selected terms.'); return; }
 
