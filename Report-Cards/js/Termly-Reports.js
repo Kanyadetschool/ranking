@@ -32,7 +32,8 @@ let searchQuery = '';
 // ── GRADE SELECTION STATE FOR REPORT CARDS ──────────────────────────────────
 // Holds the set of full Grade field values the user has selected for report
 // card generation (e.g. "Grade 9/2026/MDT1/G9ASO1", "Grade 9-2026-End-Term 1")
-// Min 2, Max 3 selections required before printing multi-term report cards.
+// Min 1 selection required. When multiple grades are selected, scores are averaged
+// per learning area so each student appears once with combined results.
 let selectedGrades = new Set();   // populated by buildGradeSelector()
 
 
@@ -1239,14 +1240,77 @@ function _drawMultiTermSummary(doc, mergedStudent, tableEndY, pageWidth) {
 //  BULK REPORT CARDS — multi-term merged layout
 // ═══════════════════════════════════════════════════════════
 async function generateBulkReportCards() {
-    if (selectedGrades.size < 2) {
+    if (selectedGrades.size < 1) {
         NotificationManager.warning(
-            '⚠️ Please select <strong>at least 2 grades</strong> in the Grade Selector above before generating report cards.',
+            '⚠️ Please select <strong>at least 1 grade</strong> in the Grade Selector above before generating report cards.',
             4000
         );
         return;
     }
 
+    // Single-grade path: use original single-term report card generator
+    if (selectedGrades.size === 1) {
+        const gradeVal = [...selectedGrades][0];
+        const pool = studentsData.filter(s => s['Grade'] === gradeVal);
+        if (pool.length === 0) {
+            NotificationManager.warning('No students found for the selected grade.');
+            return;
+        }
+        const progressNotif = NotificationManager.info(
+            `Generating <strong>${pool.length}</strong> single-term report cards (${gradeVal})...<br/>` +
+            `<div style="width:100%;background:rgba(255,255,255,0.3);height:8px;border-radius:4px;margin-top:8px;">` +
+            `<div id="bulk-progress" style="width:0%;background:white;height:100%;border-radius:4px;transition:width 0.3s;"></div></div>`,
+            0
+        );
+        try {
+            const { jsPDF } = window.jspdf;
+            const combinedDoc = new jsPDF('portrait');
+            let isFirstPage = true;
+            for (let i = 0; i < pool.length; i++) {
+                const student = pool[i];
+                const progress = ((i + 1) / pool.length * 100).toFixed(0);
+                const pb = document.getElementById('bulk-progress');
+                if (pb) pb.style.width = `${progress}%`;
+                if (!isFirstPage) combinedDoc.addPage();
+                const tempDoc = await generateStudentReportCard(student, false);
+                if (tempDoc) {
+                    // merge pages from tempDoc into combinedDoc
+                    const totalP = tempDoc.internal.getNumberOfPages();
+                    for (let p = 1; p <= totalP; p++) {
+                        if (!isFirstPage || p > 1) combinedDoc.addPage();
+                        // Re-render by drawing on combinedDoc directly
+                    }
+                }
+                // Simpler: just regenerate directly on combinedDoc
+                // Use _drawCompactReportPage approach
+                const pw = combinedDoc.internal.pageSize.width;
+                const ph = combinedDoc.internal.pageSize.height;
+                const logoRes = await loadLogo();
+                const studentImageData = await loadStudentImage(student['Official Student Name'], student['Grade']);
+                const stats = calculateStudentStats(student);
+                if (!isFirstPage) { /* already added page */ } 
+                _drawCompactReportPage(combinedDoc, student, stats, studentImageData, logoRes, pw, ph);
+                const summaryBottom = drawSummary(combinedDoc, student, stats);
+                await drawBottomSection(combinedDoc, summaryBottom + 4, student, pw, ph);
+                isFirstPage = false;
+                await new Promise(r => setTimeout(r, 50));
+            }
+            const filename = `Report_Cards_${gradeVal.replace(/\s+/g,'')}_${new Date().toISOString().split('T')[0]}.pdf`;
+            combinedDoc.save(filename);
+            document.getElementById(progressNotif)?.remove();
+            NotificationManager.success(
+                `<strong>Report Cards Complete!</strong><br/>${pool.length} students · ${gradeVal}<br/><span style="font-size:11px;">${filename}</span>`,
+                5000
+            );
+        } catch (error) {
+            console.error('Bulk generation error:', error);
+            document.getElementById(progressNotif)?.remove();
+            NotificationManager.error(`Generation failed: ${error.message}`);
+        }
+        return;
+    }
+
+    // Multi-grade path
     const mergedStudents = getMergedStudents();
 
     if (mergedStudents.length === 0) {
@@ -1427,9 +1491,9 @@ function buildGradeSelector() {
             const isActive = chip.classList.contains('tc-active');
 
             if (isActive) {
-                // Enforce minimum of 2
-                if (selectedGrades.size <= 2) {
-                    warn.textContent = '⚠️ Minimum 2 grade selections required for multi-term report cards.';
+                // Enforce minimum of 1
+                if (selectedGrades.size <= 1) {
+                    warn.textContent = '⚠️ Minimum 1 grade selection required for report cards.';
                     warn.style.display = 'block';
                     setTimeout(() => { warn.style.display = 'none'; }, 2800);
                     return;
@@ -1437,11 +1501,7 @@ function buildGradeSelector() {
                 chip.classList.remove('tc-active');
                 selectedGrades.delete(gradeVal);
             } else {
-                // Enforce maximum of 3
-                if (selectedGrades.size >= 3) {
-                    NotificationManager.warning('⚠️ Maximum of <strong>3 grades</strong> can be selected for one report card.', 2500);
-                    return;
-                }
+                // No maximum limit — select as many grades as needed
                 chip.classList.add('tc-active');
                 selectedGrades.add(gradeVal);
             }
@@ -1449,9 +1509,9 @@ function buildGradeSelector() {
             warn.style.display = 'none';
             _updateGradeBadge(badge);
             NotificationManager.info(
-                selectedGrades.size < 2
-                    ? `Select at least <strong>1 more grade</strong> to enable multi-term report cards.`
-                    : `<strong>${selectedGrades.size} grades selected</strong> — ready to generate report cards.`,
+                selectedGrades.size < 1
+                    ? `Select at least <strong>1 grade</strong> to enable report cards.`
+                    : `<strong>${selectedGrades.size} grade${selectedGrades.size > 1 ? 's' : ''} selected</strong> — ready to generate report cards.`,
                 2000
             );
         });
@@ -1466,7 +1526,7 @@ function buildGradeSelector() {
     const labelDiv = bar.querySelector('div > div:first-child');
     if (labelDiv) labelDiv.textContent = 'Report Card Grades';
     const subDiv = bar.querySelector('div > div:last-child');
-    if (subDiv) subDiv.textContent = 'Select 2–3 grade nodes to merge into one report card';
+    if (subDiv) subDiv.textContent = 'Select 1 or more grade nodes to generate report cards';
 }
 
 // Keep legacy name as alias so old call-sites don't break
@@ -1478,11 +1538,8 @@ function _updateGradeBadge(badge) {
     if (n === 0) {
         badge.textContent = 'None Selected';
         badge.style.background = 'linear-gradient(135deg,#7f8c8d,#636e72)';
-    } else if (n === 1) {
-        badge.textContent = '1 Selected — Need 1 More';
-        badge.style.background = 'linear-gradient(135deg,#e67e22,#d35400)';
     } else {
-        badge.textContent = `${n} Grades Selected ✓`;
+        badge.textContent = `${n} Grade${n > 1 ? 's' : ''} Selected ✓`;
         badge.style.background = 'linear-gradient(135deg,#27ae60,#1e8449)';
     }
 }
@@ -1508,9 +1565,34 @@ function gradeToLabel(gradeVal) {
  * The base student info (Name, UPI, Gender etc.) is taken from the first matched record.
  */
 function getMergedStudents() {
-    if (selectedGrades.size < 2) return [];
+    if (selectedGrades.size < 1) return [];
 
     const gradeList = [...selectedGrades];
+
+    // Single grade — return each student wrapped in the merged format
+    if (gradeList.length === 1) {
+        const g = gradeList[0];
+        return studentsData
+            .filter(s => s['Grade'] === g)
+            .map(s => {
+                const ms = {
+                    id: s.id,
+                    'Assessment No':           s['Assessment No'],
+                    'Official Student Name':   s['Official Student Name'],
+                    'UPI':                     s['UPI'],
+                    'Gender':                  s['Gender'],
+                    'Class':                   s['Class'],
+                    'Grade':                   s['Grade'],
+                };
+                ms[`__grade_${g}`] = s;
+                return ms;
+            })
+            .sort((a, b) => {
+                const na = parseFloat(String(a['Assessment No']).replace(/\D/g,'')) || Infinity;
+                const nb = parseFloat(String(b['Assessment No']).replace(/\D/g,'')) || Infinity;
+                return na - nb;
+            });
+    }
 
     // Group studentsData by Assessment No, then by Grade
     const byAssessment = {};   // { assessmentNo: { gradeVal: studentRecord } }
@@ -1523,7 +1605,7 @@ function getMergedStudents() {
         byAssessment[adm][s['Grade']] = s;
     });
 
-    // Only include students that appear in ALL selected grades
+    // Only include students that appear in at least 2 selected grades
     const merged = [];
     Object.entries(byAssessment).forEach(([adm, gradeMap]) => {
         const presentIn = gradeList.filter(g => gradeMap[g]);
@@ -1764,8 +1846,8 @@ async function generateSearchReportCards() {
         NotificationManager.warning('No active search query');
         return;
     }
-    if (selectedGrades.size < 2) {
-        NotificationManager.warning('⚠️ Please select <strong>at least 2 grades</strong> in the Grade Selector above.', 4000);
+    if (selectedGrades.size < 1) {
+        NotificationManager.warning('⚠️ Please select <strong>at least 1 grade</strong> in the Grade Selector above.', 4000);
         return;
     }
 
@@ -2515,8 +2597,8 @@ function addReportCardControls() {
 
 
 async function generateClassReportCards() {
-    if (selectedGrades.size < 2) {
-        NotificationManager.warning('⚠️ Please select <strong>at least 2 grades</strong> in the Grade Selector above before generating report cards.', 4000);
+    if (selectedGrades.size < 1) {
+        NotificationManager.warning('⚠️ Please select <strong>at least 1 grade</strong> in the Grade Selector above before generating report cards.', 4000);
         return;
     }
 
