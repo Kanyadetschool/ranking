@@ -2909,8 +2909,9 @@ async function exportMissingDataToPdf() {
 
     const headers = [
         'No.',
-        'Assessment No',
+        'Photo',
         'Official Student Name',
+        'Assessment No',
         'Gender',
         ...finalSubjects,
         'Avg %',
@@ -2918,12 +2919,23 @@ async function exportMissingDataToPdf() {
         'Level',
     ];
 
+    // Pre-load student passport photos for the PDF table
+    const studentImages = await Promise.all(
+        dataToExport.map(student =>
+            loadStudentImage(
+                student['Official Student Name'] || '',
+                student['Grade'] || ''
+            ).catch(() => ({ loaded: false, img: null }))
+        )
+    );
+
     const body = dataToExport.map((student, index) => {
         const stats = calculateStudentStats(student);
         const row = [
             String(index + 1),
-            String(student['Assessment No'] || 'N/A'),
+            '',                                                    // Photo — image drawn in didDrawCell
             String(student['Official Student Name'] || 'N/A'),
+            String(student['Assessment No'] || 'N/A'),
             String(student['Gender'] || 'N/A'),
             ...finalSubjects.map(subj => {
                 const v = student[subj];
@@ -3051,9 +3063,10 @@ async function exportMissingDataToPdf() {
         },
         columnStyles: {
             0: { cellWidth: 8 },   // No.
-            1: { cellWidth: 24 },  // Assessment No
+            1: { cellWidth: 18 },  // Photo
             2: { cellWidth: 42 },  // Official Student Name
-            3: { cellWidth: 16 },  // Gender — wider to avoid wrapping
+            3: { cellWidth: 22 },  // Assessment No
+            4: { cellWidth: 14 },  // Gender
         },
         headStyles: { 
             fillColor: [41, 128, 185], 
@@ -3066,9 +3079,32 @@ async function exportMissingDataToPdf() {
         didDrawPage: function(data) {
             addHeader();
         },
+        didDrawCell: function(data) {
+            // Draw student passport photo in the Photo column (index 1)
+            if (data.section === 'body' && data.column.index === 1) {
+                const rowIdx = data.row.index;
+                const imgData = studentImages[rowIdx];
+                if (imgData && imgData.loaded && imgData.img) {
+                    const padding = 1;
+                    const imgSize = Math.min(data.cell.height - padding * 2, data.cell.width - padding * 2);
+                    const imgX = data.cell.x + (data.cell.width  - imgSize) / 2;
+                    const imgY = data.cell.y + (data.cell.height - imgSize) / 2;
+                    try {
+                        doc.addImage(imgData.img, 'JPEG', imgX, imgY, imgSize, imgSize);
+                    } catch(e) {
+                        // Silently skip if image can't be drawn
+                    }
+                }
+            }
+        },
         didParseCell: function(data) {
+            if (data.section === 'body' && data.column.index === 1) {
+                // Reserve row height for photo cell
+                data.cell.styles.minCellHeight = 18;
+                return;
+            }
             if (data.section !== 'body') return;
-            const META_COLS = 4; // No, Adm, Name, Gender  (Grade column removed)
+            const META_COLS = 5; // No, Photo, Name, Adm, Gender
             const lastCol = headers.length - 1; // Level col
             const thirdLastCol = headers.length - 3; // Avg % col index
 
