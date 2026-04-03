@@ -3098,11 +3098,6 @@ async function exportMissingDataToPdf() {
             }
         },
         didParseCell: function(data) {
-            if (data.section === 'body' && data.column.index === 1) {
-                // Reserve row height for photo cell
-                data.cell.styles.minCellHeight = 18;
-                return;
-            }
             if (data.section !== 'body') return;
             const META_COLS = 5; // No, Photo, Name, Adm, Gender
             const lastCol = headers.length - 1; // Level col
