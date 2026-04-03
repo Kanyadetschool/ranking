@@ -612,6 +612,54 @@ function extractGrade(gradeString) {
     return match ? match[0] : gradeString;
 }
 
+
+// ═══════════════════════════════════════════════════════════
+//  MINISTRY OF EDUCATION IMAGE WATERMARK
+//  Loads ../images/kenya_ministry_education.png (same folder
+//  convention as the HTML file) and stamps it centred on the
+//  page at 8 % opacity using jsPDF GState — identical to the
+//  approach used in aaResults_final.html.
+//  Returns a Promise so callers can await it.
+// ═══════════════════════════════════════════════════════════
+function _loadMinistryLogo() {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload  = () => resolve(img);
+        img.onerror = () => resolve(null);
+        setTimeout(()  => resolve(null), 3000);
+        img.src = './imgs/kenya_ministry_education.png';
+    });
+}
+
+// Cache so we only load once per session
+let _ministryLogoCache = undefined;
+
+async function addMinistryWatermark(doc) {
+    // Load & cache the ministry logo on first call
+    if (_ministryLogoCache === undefined) {
+        _ministryLogoCache = await _loadMinistryLogo();
+    }
+    const ministryLogoImg = _ministryLogoCache;
+    if (!ministryLogoImg) return;   // image unavailable — skip silently
+
+    const pageWidth  = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+
+    try {
+        const watermarkSize = 100;                              // mm
+        const watermarkX    = (pageWidth  - watermarkSize) / 2;
+        const watermarkY    = (pageHeight - watermarkSize) / 2;
+
+        doc.saveGraphicsState();
+        doc.setGState(new doc.GState({ opacity: 0.08 }));      // 8 % opacity
+        doc.addImage(ministryLogoImg, 'PNG', watermarkX, watermarkY, watermarkSize, watermarkSize);
+        doc.restoreGraphicsState();
+    } catch (e) {
+        console.warn('Ministry watermark skipped:', e);
+    }
+}
+
 function loadImg(src) {
     return new Promise(resolve => {
         const img = new Image();
@@ -707,47 +755,15 @@ async function drawBottomSection(d, yPos, student, pageWidth, pageHeight) {
     const FOOTER_TEXT_Y = pageHeight - 5;
     const BOTTOM_SAFE   = FOOTER_TOP - 4; 
 
-    // Teacher remarks — auto-generated CBC remark printed on the report card
+    // Teacher remarks — two blank lines for handwritten remarks
     d.setFont(undefined, 'bold'); d.setFontSize(9);
     d.setTextColor(0, 0, 0);
     d.text('CLASS TEACHER REMARKS', 20, yPos);
 
-    // Generate and print the automated CBC remark
-    const autoRemark = generateTeacherRemark(student);
-    const remarkBoxX = 20;
-    const remarkBoxW = pageWidth - 40;
-    const remarkBoxY = yPos + 3;
-
-    // Light blue background box for the remark
-    d.setFillColor(235, 245, 255);
-    d.setDrawColor(41, 128, 185);
-    d.setLineWidth(0.3);
-    d.roundedRect(remarkBoxX, remarkBoxY, remarkBoxW, 16, 1.5, 1.5, 'FD');
-
-    // Coloured left accent bar
-    d.setFillColor(41, 128, 185);
-    d.roundedRect(remarkBoxX, remarkBoxY, 2.5, 16, 0.8, 0.8, 'F');
-
-    // Remark text — wrapped inside the box
-    d.setFont(undefined, 'italic'); d.setFontSize(8);
-    d.setTextColor(30, 60, 100);
-    const wrappedRemark = d.splitTextToSize(autoRemark, remarkBoxW - 10);
-    // Print up to 2 lines inside the box
-    wrappedRemark.slice(0, 2).forEach((line, i) => {
-        d.text(line, remarkBoxX + 5, remarkBoxY + 6 + i * 5);
-    });
-    // If there's a third line, print it smaller
-    if (wrappedRemark.length > 2) {
-        d.setFontSize(7);
-        d.text(wrappedRemark.slice(2).join(' '), remarkBoxX + 5, remarkBoxY + 14, { maxWidth: remarkBoxW - 10 });
-    }
-
-    d.setTextColor(0, 0, 0);
-    d.setFont(undefined, 'normal');
     d.setDrawColor(200, 200, 200);
-    d.setLineWidth(0.3);
-
-    let remarkY = yPos + 22;
+    d.line(20, yPos + 8,  pageWidth - 20, yPos + 8);
+    //d.line(20, yPos + 16, pageWidth - 20, yPos + 16);
+    let remarkY = yPos + 19;
 
     // // Parent acknowledgement
     // d.setFontSize(7.5); d.setFont(undefined,'bold'); d.setTextColor(0,0,0);
@@ -884,6 +900,11 @@ async function generateStudentReportCard(student, includeWatermark = true) {
 
     // Remarks + parent ack + signatures + QR
     await drawBottomSection(doc, summaryBottom + 4, student, pageWidth, pageHeight);  // gap reduced from +6
+
+    // Ministry of Education image watermark (centred, 8% opacity)
+    if (includeWatermark !== false) {
+        await addMinistryWatermark(doc);
+    }
 
     return doc;
 }
@@ -1283,9 +1304,7 @@ async function generateBulkReportCards() {
     // Single-grade path: use original single-term report card generator
     if (selectedGrades.size === 1) {
         const gradeVal = [...selectedGrades][0];
-        const pool = studentsData
-            .filter(s => s['Grade'] === gradeVal)
-            .sort((a, b) => parseFloat(calculateStudentStats(b).average) - parseFloat(calculateStudentStats(a).average));
+        const pool = studentsData.filter(s => s['Grade'] === gradeVal);
         if (pool.length === 0) {
             NotificationManager.warning('No students found for the selected grade.');
             return;
@@ -1326,6 +1345,7 @@ async function generateBulkReportCards() {
                 _drawCompactReportPage(combinedDoc, student, stats, studentImageData, logoRes, pw, ph);
                 const summaryBottom = drawSummary(combinedDoc, student, stats);
                 await drawBottomSection(combinedDoc, summaryBottom + 4, student, pw, ph);
+                await addMinistryWatermark(combinedDoc);
                 isFirstPage = false;
                 await new Promise(r => setTimeout(r, 50));
             }
@@ -1345,12 +1365,7 @@ async function generateBulkReportCards() {
     }
 
     // Multi-grade path
-    const mergedStudents = getMergedStudents()
-        .sort((a, b) => {
-            const avgA = parseFloat(calculateStudentStats(_buildAveragedStudent(a)).average);
-            const avgB = parseFloat(calculateStudentStats(_buildAveragedStudent(b)).average);
-            return avgB - avgA;
-        });
+    const mergedStudents = getMergedStudents();
 
     if (mergedStudents.length === 0) {
         NotificationManager.warning('No students matched across the selected grade nodes. Check that Assessment Numbers are consistent.');
@@ -1387,6 +1402,7 @@ async function generateBulkReportCards() {
             const tableEnd = await _drawMultiTermReportPage(combinedDoc, ms, logoRes, studentImageData, pw, ph);
             const summaryEnd = _drawMultiTermSummary(combinedDoc, ms, tableEnd, pw);
             await drawBottomSection(combinedDoc, summaryEnd + 4, _buildAveragedStudent(ms), pw, ph);
+            await addMinistryWatermark(combinedDoc);
 
             isFirstPage = false;
             await new Promise(r => setTimeout(r, 50));
@@ -1890,18 +1906,12 @@ async function generateSearchReportCards() {
         return;
     }
 
-    // Filter merged students by the current search query and sort by avg descending
+    // Filter merged students by the current search query
     const q = searchQuery.toLowerCase();
-    const studentsToProcess = getMergedStudents()
-        .filter(ms =>
-            [ms['Official Student Name'], ms['Assessment No'], ms['UPI'], ms['Grade']]
-                .some(f => String(f||'').toLowerCase().includes(q))
-        )
-        .sort((a, b) => {
-            const avgA = parseFloat(calculateStudentStats(_buildAveragedStudent(a)).average);
-            const avgB = parseFloat(calculateStudentStats(_buildAveragedStudent(b)).average);
-            return avgB - avgA;
-        });
+    const studentsToProcess = getMergedStudents().filter(ms =>
+        [ms['Official Student Name'], ms['Assessment No'], ms['UPI'], ms['Grade']]
+            .some(f => String(f||'').toLowerCase().includes(q))
+    );
 
     if (studentsToProcess.length === 0) {
         NotificationManager.warning('No matched students found for this search across the selected grades.');
@@ -1938,6 +1948,7 @@ async function generateSearchReportCards() {
             const tableEnd   = await _drawMultiTermReportPage(combinedDoc, ms, logoRes, studentImageData, pw, ph);
             const summaryEnd = _drawMultiTermSummary(combinedDoc, ms, tableEnd, pw);
             await drawBottomSection(combinedDoc, summaryEnd + 4, _buildAveragedStudent(ms), pw, ph);
+            await addMinistryWatermark(combinedDoc);
 
             isFirstPage = false;
             await new Promise(r => setTimeout(r, 50));
@@ -2659,13 +2670,6 @@ async function generateClassReportCards() {
         );
     }
 
-    // Sort descending by average score
-    studentsToProcess = studentsToProcess.sort((a, b) => {
-        const avgA = parseFloat(calculateStudentStats(_buildAveragedStudent(a)).average);
-        const avgB = parseFloat(calculateStudentStats(_buildAveragedStudent(b)).average);
-        return avgB - avgA;
-    });
-
     if (studentsToProcess.length === 0) {
         NotificationManager.warning('No matched students found for the selected grades.');
         return;
@@ -2701,6 +2705,7 @@ async function generateClassReportCards() {
             const tableEnd   = await _drawMultiTermReportPage(combinedDoc, ms, logoRes, studentImageData, pw, ph);
             const summaryEnd = _drawMultiTermSummary(combinedDoc, ms, tableEnd, pw);
             await drawBottomSection(combinedDoc, summaryEnd + 4, _buildAveragedStudent(ms), pw, ph);
+            await addMinistryWatermark(combinedDoc);
 
             isFirstPage = false;
             await new Promise(r => setTimeout(r, 50));
@@ -2728,6 +2733,11 @@ async function exportMissingDataToPdf() {
     if (!window.jspdf) {
         alert('PDF library not loaded. Please refresh the page and try again.');
         return;
+    }
+
+    // Pre-load ministry watermark image (uses cache if already loaded)
+    if (_ministryLogoCache === undefined) {
+        _ministryLogoCache = await _loadMinistryLogo();
     }
 
     const { jsPDF } = window.jspdf;
@@ -2894,8 +2904,24 @@ async function exportMissingDataToPdf() {
     });
 
     const addHeader = () => {
-        const pageWidth = doc.internal.pageSize.width;
-        
+        const pageWidth  = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+
+        // Ministry of Education image watermark — drawn first so header sits on top
+        try {
+            if (_ministryLogoCache && _ministryLogoCache.complete && _ministryLogoCache.naturalHeight !== 0) {
+                const watermarkSize = 100;
+                const watermarkX = (pageWidth  - watermarkSize) / 2;
+                const watermarkY = (pageHeight - watermarkSize) / 2;
+                doc.saveGraphicsState();
+                doc.setGState(new doc.GState({ opacity: 0.08 }));
+                doc.addImage(_ministryLogoCache, 'PNG', watermarkX, watermarkY, watermarkSize, watermarkSize);
+                doc.restoreGraphicsState();
+            }
+        } catch (e) {
+            console.warn('Ministry watermark skipped:', e);
+        }
+
         doc.setFillColor(41, 128, 185);
         doc.rect(0, 0, pageWidth, 22, 'F');
         
