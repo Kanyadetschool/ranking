@@ -2986,10 +2986,13 @@ async function exportMissingDataToPdf() {
         doc.setFontSize(11);
         doc.text(title, 34, 15);
 
-        // Terms averaged line — shown prominently below title
+        // Term label line — only say "Averaged across" when multiple terms are selected
         doc.setFontSize(7.5);
         doc.setFont(undefined, 'normal');
-        doc.text(`Averaged across: ${termLabel}`, 34, 21);
+        const termLineText = selectedGrades.size > 1
+            ? `Averaged across: ${termLabel}`
+            : `Term: ${termLabel}`;
+        doc.text(termLineText, 34, 21);
         
         doc.setFontSize(9);
         const dateText = `Date: ${new Date().toLocaleDateString()}`;
