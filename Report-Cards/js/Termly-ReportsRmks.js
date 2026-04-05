@@ -762,34 +762,30 @@ async function drawBottomSection(d, yPos, student, pageWidth, pageHeight) {
 
     // Generate and print the automated CBC remark
     const autoRemark = generateTeacherRemark(student);
-    // Remark box spans same width as the performance table (margin left:15, right:15)
+    // Remark box: leave right margin clear for QR code (QR sits at pageWidth-26, width 20)
     const remarkBoxX = 15;
-    const remarkBoxW = pageWidth - 30;
+    const remarkBoxW = pageWidth - 30 - 26;   // stop before QR code area
     const remarkBoxY = yPos + 3;
+    const remarkBoxH = 18;                    // slightly taller for 3 lines
 
     // Light blue background box for the remark
     d.setFillColor(235, 245, 255);
     d.setDrawColor(41, 128, 185);
     d.setLineWidth(0.3);
-    d.roundedRect(remarkBoxX, remarkBoxY, remarkBoxW, 16, 1.5, 1.5, 'FD');
+    d.roundedRect(remarkBoxX, remarkBoxY, remarkBoxW, remarkBoxH, 1.5, 1.5, 'FD');
 
     // Coloured left accent bar
     d.setFillColor(41, 128, 185);
-    d.roundedRect(remarkBoxX, remarkBoxY, 2.5, 16, 0.8, 0.8, 'F');
+    d.roundedRect(remarkBoxX, remarkBoxY, 2.5, remarkBoxH, 0.8, 0.8, 'F');
 
-    // Remark text — wrapped inside the box
-    d.setFont(undefined, 'italic'); d.setFontSize(8);
+    // Remark text — wrapped inside the box, font size 7.5 for better fit
+    d.setFont(undefined, 'italic'); d.setFontSize(7.5);
     d.setTextColor(30, 60, 100);
-    const wrappedRemark = d.splitTextToSize(autoRemark, remarkBoxW - 10);
-    // Print up to 2 lines inside the box
-    wrappedRemark.slice(0, 2).forEach((line, i) => {
-        d.text(line, remarkBoxX + 5, remarkBoxY + 6 + i * 5);
+    const wrappedRemark = d.splitTextToSize(autoRemark, remarkBoxW - 9);
+    // Print up to 3 lines inside the box
+    wrappedRemark.slice(0, 3).forEach((line, i) => {
+        d.text(line, remarkBoxX + 5, remarkBoxY + 5.5 + i * 4.5);
     });
-    // If there's a third line, print it smaller
-    if (wrappedRemark.length > 2) {
-        d.setFontSize(7);
-        d.text(wrappedRemark.slice(2).join(' '), remarkBoxX + 5, remarkBoxY + 14, { maxWidth: remarkBoxW - 10 });
-    }
 
     d.setTextColor(0, 0, 0);
     d.setFont(undefined, 'normal');
@@ -1112,7 +1108,7 @@ function _drawPerformanceChart(doc, mergedStudent, allSubjects, gradeList, start
     const CHART_L    = 22;                          // left margin
     const CHART_R    = pageWidth - 18;              // right margin
     const CHART_W    = CHART_R - CHART_L;
-    const CHART_H    = 46;                          // total chart height (mm)
+    const CHART_H    = 34;                          // total chart height (mm)
     const LABEL_H    = 10;                          // bottom subject label area
     const LEGEND_H   = 6;                           // top legend area
     const PLOT_TOP   = startY + LEGEND_H + 4;       // top of plot area
