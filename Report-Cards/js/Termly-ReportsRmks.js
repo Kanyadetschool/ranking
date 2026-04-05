@@ -901,7 +901,7 @@ async function generateStudentReportCard(student, includeWatermark = true) {
     doc.setTextColor(0, 0, 0);
     const _closingDate = student['Closing Date'] || student['Closing'] || '...............';
     const _openingDate = student['Opening Date'] || student['Opening'] || '...............';
-    doc.text(`CLOSING: ${_closingDate}   OPENING: ${_openingDate}`, pageWidth - 40, yPos, { align: 'right' });
+    doc.text(`CLOSING: ${_closingDate}   OPENING: ${_openingDate}`, pageWidth - 15, yPos, { align: 'right' });
 
     const tableData = [];
     getSubjects(student).forEach(subject => {
@@ -1012,7 +1012,7 @@ async function _drawMultiTermReportPage(doc, mergedStudent, logoRes, studentImag
     // Closing / Opening date — same line, right-aligned
     doc.setFont(undefined, 'bold'); doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
-    doc.text(`CLOSING: ${closingDate}   OPENING: ${openingDate}`, pageWidth - 40, yPos, { align: 'right' });
+    doc.text(`CLOSING: ${closingDate}   OPENING: ${openingDate}`, pageWidth - 15, yPos, { align: 'right' });
     yPos += 4;
 
     // Collect all subjects across all selected grades (union, ordered by first appearance)
@@ -1528,7 +1528,7 @@ function _drawCompactReportPage(doc, student, stats, studentImageData, logoRes, 
     doc.setTextColor(0, 0, 0);
     const _closingDate = student['Closing Date'] || student['Closing'] || '...............';
     const _openingDate = student['Opening Date'] || student['Opening'] || '...............';
-    doc.text(`CLOSING: ${_closingDate}   OPENING: ${_openingDate}`, pageWidth - 40, yPos, { align: 'right' });
+    doc.text(`CLOSING: ${_closingDate}   OPENING: ${_openingDate}`, pageWidth - 15, yPos, { align: 'right' });
 
     const tableData = [];
     getSubjects(student).forEach(subject => {
