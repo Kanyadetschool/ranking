@@ -764,7 +764,7 @@ async function drawBottomSection(d, yPos, student, pageWidth, pageHeight) {
     const autoRemark = generateTeacherRemark(student);
     // Remark box: leave right margin clear for QR code (QR sits at pageWidth-26, width 20)
     const remarkBoxX = 15;
-    const remarkBoxW = pageWidth - 30 - 26;   // stop before QR code area
+    const remarkBoxW = pageWidth - 30 - 8;    // stop just before QR code area
     const remarkBoxY = yPos + 3;
     const remarkBoxH = 18;                    // slightly taller for 3 lines
 
@@ -896,8 +896,13 @@ async function generateStudentReportCard(student, includeWatermark = true) {
     yPos = 95;
     doc.setFont(undefined, 'bold'); doc.setFontSize(11);
     doc.text('ACADEMIC PERFORMANCE', 20, yPos);
-    doc.setFontSize(9);
-    doc.text(` CLOSING DATE: ${student['Closing Date'] || '...................'} | OPENING DATE: ${student['Opening Date'] || '...................'}`, 100, yPos);
+    // Closing / Opening date — same line, right-aligned, auto-picked from DB
+    doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
+    const _closingDate = student['Closing Date'] || student['Closing'] || '...............';
+    const _openingDate = student['Opening Date'] || student['Opening'] || '...............';
+    doc.text(`Closing: ${_closingDate}   Opening: ${_openingDate}`, pageWidth - 16, yPos, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
 
     const tableData = [];
     getSubjects(student).forEach(subject => {
@@ -983,17 +988,21 @@ async function _drawMultiTermReportPage(doc, mergedStudent, logoRes, studentImag
     doc.setFontSize(9); doc.setFont(undefined, 'bold');
     doc.text('STUDENT INFORMATION', 20, yPos + 7);
     doc.setFont(undefined, 'normal'); doc.setFontSize(8.5);
-    const baseRec = gradeList.map(g => mergedStudent[`__grade_${g}`]).find(Boolean) || mergedStudent;
+    // Pick dates from the LAST selected grade (most recent term)
+    const lastGrade  = gradeList[gradeList.length - 1];
+    const lastRec    = mergedStudent[`__grade_${lastGrade}`] || mergedStudent;
+    const baseRec    = gradeList.map(g => mergedStudent[`__grade_${g}`]).find(Boolean) || mergedStudent;
+    const closingDate  = lastRec['Closing Date']  || lastRec['Closing']  || '...............';
+    const openingDate  = lastRec['Opening Date']  || lastRec['Opening']  || '...............';
     const infoRows = [
         [`Name: ${mergedStudent['Official Student Name'] || 'N/A'}`,   `Assessment No: ${mergedStudent['Assessment No'] || 'N/A'}`],
         [`UPI:  ${mergedStudent['UPI'] || 'N/A'}`,                     `Gender: ${mergedStudent['Gender'] || 'N/A'}`],
-        [`Class: ${baseRec['Class'] || mergedStudent['Class'] || 'N/A'}`,
-         `Closing: ${baseRec['Closing Date'] || '...................'}  Opening: ${baseRec['Opening Date'] || '...................'}`],
+        [`Class: ${baseRec['Class'] || mergedStudent['Class'] || 'N/A'}`, ``],
     ];
     let iy = yPos + 14;
     infoRows.forEach(([l, r]) => {
         doc.text(l, 20, iy);
-        doc.text(r, pageWidth / 2 - 5, iy);
+        if (r) doc.text(r, pageWidth / 2 - 5, iy);
         iy += 7;
     });
 
@@ -1001,6 +1010,11 @@ async function _drawMultiTermReportPage(doc, mergedStudent, logoRes, studentImag
     yPos = iy + 5;
     doc.setFont(undefined, 'bold'); doc.setFontSize(10);
     doc.text('ACADEMIC PERFORMANCE', 20, yPos);
+    // Closing / Opening date — same line, right-aligned
+    doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Closing: ${closingDate}   Opening: ${openingDate}`, pageWidth - 16, yPos, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
     yPos += 4;
 
     // Collect all subjects across all selected grades (union, ordered by first appearance)
@@ -1511,8 +1525,13 @@ function _drawCompactReportPage(doc, student, stats, studentImageData, logoRes, 
     yPos = 95;
     doc.setFont(undefined, 'bold'); doc.setFontSize(11);
     doc.text('ACADEMIC PERFORMANCE', 20, yPos);
-    doc.setFontSize(9);
-    doc.text(` CLOSING DATE: ${student['Closing Date'] || '...................'} | OPENING DATE: ${student['Opening Date'] || '...................'}`, 100, yPos);
+    // Closing / Opening date — same line, right-aligned, auto-picked from DB
+    doc.setFont(undefined, 'normal'); doc.setFontSize(7.5);
+    doc.setTextColor(60, 60, 60);
+    const _closingDate = student['Closing Date'] || student['Closing'] || '...............';
+    const _openingDate = student['Opening Date'] || student['Opening'] || '...............';
+    doc.text(`Closing: ${_closingDate}   Opening: ${_openingDate}`, pageWidth - 16, yPos, { align: 'right' });
+    doc.setTextColor(0, 0, 0);
 
     const tableData = [];
     getSubjects(student).forEach(subject => {
