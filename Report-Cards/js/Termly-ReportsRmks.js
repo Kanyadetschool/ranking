@@ -2849,7 +2849,7 @@ async function exportMissingDataToPdf() {
 
     // Sort by average score descending
     dataToExport = dataToExport
-        .sort((a, b) => parseFloat(calculateStudentStats(b).average) - parseFloat(calculateStudentStats(a).average));
+        .sort((a, b) => parseFloat(calculateStudentStats(b).average) - parseFloat(calculateStudentStats(a).average)); // sort by average descending
 
     if (dataToExport.length === 0) {
         alert(selectedGrades.size > 0
@@ -3199,7 +3199,7 @@ async function generateLeagueTable() {
 
     const ranked = [...pool]
         .map(s => ({ s, stats: calculateStudentStats(s) }))
-        .sort((a, b) => parseFloat(b.stats.totalPoints) - parseFloat(a.stats.totalPoints));
+        .sort((a, b) => parseFloat(b.stats.average) - parseFloat(a.stats.average));
 
     const doc = new jsPDF('landscape');
     const pageWidth  = doc.internal.pageSize.width;
@@ -3305,7 +3305,7 @@ async function generateSubjectAnalysis() {
 
     const tableData = allSubjects.map(subj => {
         const scores = pool.map(s => parseFloat(s[subj])).filter(v => !isNaN(v));
-        if (scores.length === 0) return [subj, '-', '-', '-', '-', '-', '-'];
+        if (scores.length === 0) return { row: [subj, '-', '-', '-', '-', '-', '-'], avg: -1 };
         const avg   = scores.reduce((a,b)=>a+b,0) / scores.length;
         const high  = Math.max(...scores);
         const low   = Math.min(...scores);
@@ -3315,8 +3315,10 @@ async function generateSubjectAnalysis() {
         const me = scores.filter(v=>v>=58&&v<75).length;
         const ae = scores.filter(v=>v>=31&&v<58).length;
         const be = scores.filter(v=>v<31).length;
-        return [subj, scores.length, avg.toFixed(1), high, low, passRate, `EE:${ee} ME:${me} AE:${ae} BE:${be}`];
-    });
+        return { row: [subj, scores.length, avg.toFixed(1), high, low, passRate, `EE:${ee} ME:${me} AE:${ae} BE:${be}`], avg };
+    })
+    .sort((a, b) => b.avg - a.avg)
+    .map(item => item.row);
 
     doc.autoTable({
         head: [['Learning Area','Assessed','Avg','Highest','Lowest','Pass Rate','Band Distribution']],
@@ -3576,7 +3578,7 @@ function _doExportToExcel() {
     const termLabel = [...selectedGrades].join(' + ');
 
     const sorted = [...pool].sort((a,b) =>
-        parseFloat(calculateStudentStats(b).totalPoints) - parseFloat(calculateStudentStats(a).totalPoints)
+        parseFloat(calculateStudentStats(b).average) - parseFloat(calculateStudentStats(a).average)
     );
 
     const dynSubjects = [...new Set(sorted.flatMap(s => getSubjects(s)))];
@@ -3730,6 +3732,7 @@ function bulkWhatsAppExport() {
     if (pool.length === 0) { NotificationManager.warning('No students found for the selected terms.'); return; }
 
     const termLabel = [...selectedGrades].join(' + ');
+    pool = [...pool].sort((a,b) => parseFloat(calculateStudentStats(b).average) - parseFloat(calculateStudentStats(a).average));
     const allText = pool.map(s => generateWhatsAppText(s)).join('\n\n' + '─'.repeat(50) + '\n\n');
     const blob = new Blob([allText], { type: 'text/plain' });
     const a = document.createElement('a');
