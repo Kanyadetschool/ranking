@@ -1338,14 +1338,14 @@ function getSubjects(rec){
 }
 // CBC Grade Scale — exact criteria from teachers portal
 const GRADE_SCALE = [
-  {min:90,max:100,pts:'8.0',level:'EE1',label:'Exceeding Expectation',cls:'ee1',lc:'l-ee'},
-  {min:75,max:89, pts:'7.0',level:'EE2',label:'Exceeding Expectation',cls:'ee2',lc:'l-ee'},
-  {min:58,max:74, pts:'6.0',level:'ME1',label:'Meeting Expectation',  cls:'me1',lc:'l-me'},
-  {min:41,max:57, pts:'5.0',level:'ME2',label:'Meeting Expectation',  cls:'me2',lc:'l-me'},
-  {min:31,max:40, pts:'4.0',level:'AE1',label:'Approaching Expectation',cls:'ae',lc:'l-ae'},
-  {min:21,max:30, pts:'3.0',level:'AE2',label:'Approaching Expectation',cls:'ae',lc:'l-ae'},
-  {min:11,max:20, pts:'2.0',level:'BE1',label:'Below Expectation',    cls:'be',lc:'l-be'},
-  {min:1, max:10, pts:'1.0',level:'BE2',label:'Below Expectation',    cls:'be',lc:'l-be'},
+  {min:90,  max:100, pts:'8.0',level:'EE1',label:'Exceeding Expectation',  cls:'ee1',lc:'l-ee'},
+  {min:75,  max:89.9,pts:'7.0',level:'EE2',label:'Exceeding Expectation',  cls:'ee2',lc:'l-ee'},
+  {min:58,  max:74.9,pts:'6.0',level:'ME1',label:'Meeting Expectation',    cls:'me1',lc:'l-me'},
+  {min:41,  max:57.9,pts:'5.0',level:'ME2',label:'Meeting Expectation',    cls:'me2',lc:'l-me'},
+  {min:31,  max:40.9,pts:'4.0',level:'AE1',label:'Approaching Expectation',cls:'ae', lc:'l-ae'},
+  {min:21,  max:30.9,pts:'3.0',level:'AE2',label:'Approaching Expectation',cls:'ae', lc:'l-ae'},
+  {min:11,  max:20.9,pts:'2.0',level:'BE1',label:'Below Expectation',      cls:'be', lc:'l-be'},
+  {min:1,   max:10.9,pts:'1.0',level:'BE2',label:'Below Expectation',      cls:'be', lc:'l-be'},
 ];
 
 const REMARKS_DB = [
