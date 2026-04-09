@@ -577,6 +577,26 @@ body::before{
 .pg-info{font-size:11px;color:var(--text3);margin:0 8px;}
 
 /* ══════════════════════════════════════════
+   STUDENT ROW HOVER TOOLTIP
+══════════════════════════════════════════ */
+.student-rec-tooltip{
+  display:none;
+  position:fixed;
+  z-index:9999;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  padding:12px 14px;
+  box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 1px rgba(93,173,226,.15);
+  pointer-events:none;
+  min-width:240px;
+  max-width:300px;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+.student-hover-row{position:relative;cursor:default;}
+
+/* ══════════════════════════════════════════
    ACTIVITY LOG
 ══════════════════════════════════════════ */
 .activity-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
@@ -841,7 +861,6 @@ body::before{
                   <th>Adm No</th>
                   <th class="sortable" onclick="sortStudents('grade')">Grade ↕</th>
                   <th>Gender</th>
-                  <th>Records</th>
                   <th class="sortable" onclick="sortStudents('avg')">Best Avg ↕</th>
                   <th>Level</th>
                   <th>Position</th>
@@ -849,7 +868,7 @@ body::before{
                 </tr>
               </thead>
               <tbody id="students-tbody">
-                <tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text3)">Loading students…</td></tr>
+                <tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text3)">Loading students…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1815,12 +1834,27 @@ function renderStudentsTable(){
   const tbody=document.getElementById('students-tbody');
   const start=(currentPage-1)*PAGE_SIZE;
   const pageData=filteredStudents.slice(start,start+PAGE_SIZE);
-  if(!pageData.length){tbody.innerHTML='<tr><td colspan="10" style="text-align:center;padding:30px;color:var(--text3)">No students found.</td></tr>';renderStudentsPagination();return;}
+  if(!pageData.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text3)">No students found.</td></tr>';renderStudentsPagination();return;}
   tbody.innerHTML=pageData.map((r,i)=>{
     const st=calcStats(r);
     const color=barColor(st.avg);
     const init=(r['Official Student Name']||'?')[0].toUpperCase();
-    return `<tr>
+    const allRecs=r._allRecords||[r];
+    const tooltipRows=allRecs.map((x,xi)=>{
+      const xs=calcStats(x);
+      const xcolor=barColor(xs.avg);
+      const termLabel=getRecordTerm(x);
+      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:5px 0;${xi<allRecs.length-1?'border-bottom:1px solid rgba(255,255,255,.07)':''}">
+        <span style="font-size:10px;color:#aaccee;font-weight:600;white-space:nowrap">${termLabel}</span>
+        <span style="font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace;color:${xcolor};flex-shrink:0">${xs.avg}%</span>
+        <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.07);color:#cce">${xs.level}</span>
+      </div>`;
+    }).join('');
+    const tooltipHtml=`<div style="min-width:240px;max-width:300px">
+      <div style="font-size:10px;font-weight:800;color:#5dade2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(93,173,226,.25)">📋 ${allRecs.length} Record${allRecs.length===1?'':'s'}</div>
+      ${tooltipRows}
+    </div>`;
+    return `<tr class="student-hover-row" data-tooltip-id="tt-${r.id}" style="position:relative">
       <td>${start+i+1}</td>
       <td>
         <div style="display:flex;align-items:center;gap:9px">
@@ -1834,12 +1868,6 @@ function renderStudentsTable(){
       <td>${r['Assessment No']||'—'}</td>
       <td>${gShort(r['Grade'])}</td>
       <td>${r['Gender']||'—'}</td>
-      <td id="rec-term-${r.id}">
-        ${(r._allRecords||[r]).map((x,xi)=>{
-          const isActive=xi===0;
-          return `<button onclick="switchStudentRecord('${r.id}',${xi})" style="display:inline-block;margin:1px 2px 1px 0;padding:2px 7px;border-radius:7px;font-size:9px;font-weight:800;font-family:'JetBrains Mono',monospace;cursor:pointer;border:1px solid ${isActive?'var(--blue)':'var(--border)'};background:${isActive?'rgba(41,128,185,.2)':'transparent'};color:${isActive?'var(--blue-lt)':'var(--text3)'};transition:all .2s" title="${getRecordTerm(x)}">${getTermShort(x)}</button>`;
-        }).join('')}
-      </td>
       <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}" id="rec-avg-${r.id}">${st.avg}%</td>
       <td id="rec-lvl-${r.id}"><span class="gp ${gradePillClass(st.cls)}">${st.level}</span></td>
       <td id="rec-pos-${r.id}">${r['Position']||'—'}</td>
@@ -1850,6 +1878,7 @@ function renderStudentsTable(){
           <button class="btn btn-red btn-xs" onclick="deleteStudent('${r.id}')">🗑</button>
         </div>
       </td>
+      <div id="tt-${r.id}" class="student-rec-tooltip">${tooltipHtml}</div>
     </tr>`;
   }).join('');
   renderStudentsPagination();
@@ -2268,7 +2297,7 @@ function renderTrendChart(){
     if(!byTerm[t]) byTerm[t]=[];
     byTerm[t].push(parseFloat(calcStats(r).avg));
   });
-  const sortedTerms=Object.keys(byTerm).sort();
+  const sortedTerms=Object.keys(byTerm).sort((a,b)=>termSortKey(a).localeCompare(termSortKey(b)));
   const avgs=sortedTerms.map(t=>{ const vals=byTerm[t].filter(x=>!isNaN(x)); return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0; });
   const ctx=document.getElementById('trend-chart').getContext('2d');
   if(trendChart) trendChart.destroy();
@@ -2286,7 +2315,20 @@ function renderTrendChart(){
     options:{
       responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false}},
-      scales:{x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7aaec9',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7aaec9',font:{size:10}},min:0,max:100}}
+      scales:{
+        x:{
+          grid:{color:'rgba(255,255,255,.05)'},
+          ticks:{
+            color:'#7aaec9',
+            font:{size:10},
+            maxRotation:45,
+            minRotation:0,
+            autoSkip:false,
+            callback:function(value,index){ return sortedTerms[index]; }
+          }
+        },
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7aaec9',font:{size:10}},min:0,max:100}
+      }
     }
   });
 }
@@ -2578,6 +2620,27 @@ function addAnnouncement(){
 window.openAnnouncementModal=openAnnouncementModal;
 window.closeAnnModal=closeAnnModal;
 window.addAnnouncement=addAnnouncement;
+
+/* ══════════════════════════════════════════
+   STUDENT ROW HOVER TOOLTIP POSITIONING
+══════════════════════════════════════════ */
+document.addEventListener('mousemove',function(e){
+  const row=e.target.closest('.student-hover-row');
+  if(row){
+    const tt=row.querySelector('.student-rec-tooltip');
+    if(!tt) return;
+    const pad=16,vpW=window.innerWidth,vpH=window.innerHeight;
+    const ttW=tt.offsetWidth||260,ttH=tt.offsetHeight||120;
+    let x=e.clientX+pad,y=e.clientY+pad;
+    if(x+ttW>vpW-pad) x=e.clientX-ttW-pad;
+    if(y+ttH>vpH-pad) y=e.clientY-ttH-pad;
+    tt.style.left=x+'px';
+    tt.style.top=y+'px';
+    tt.style.display='block';
+  } else {
+    document.querySelectorAll('.student-rec-tooltip').forEach(t=>t.style.display='none');
+  }
+});
 
 /* ══════════════════════════════════════════
    SETTINGS
