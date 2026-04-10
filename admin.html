@@ -42,7 +42,7 @@ html{scroll-behavior:smooth;}
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
 
 body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:auto;
   background:radial-gradient(ellipse 60% 50% at 8% 10%,rgba(41,128,185,.12) 0%,transparent 65%),
     radial-gradient(ellipse 50% 45% at 92% 90%,rgba(22,160,133,.08) 0%,transparent 60%),
     radial-gradient(ellipse 35% 30% at 55% 50%,rgba(41,128,185,.05) 0%,transparent 70%);
@@ -269,7 +269,7 @@ body::before{
 ══════════════════════════════════════════ */
 .filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
 .search-input-wrap{position:relative;flex:1;min-width:200px;}
-.search-input-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:none;}
+.search-input-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:auto;}
 .search-input{
   width:100%;padding:9px 12px 9px 36px;
   background:var(--surface2);border:1.5px solid var(--border);
@@ -588,7 +588,7 @@ body::before{
   border-radius:var(--radius-md);
   padding:12px 14px;
   box-shadow:0 12px 40px rgba(0,0,0,.5),0 0 0 1px rgba(93,173,226,.15);
-  pointer-events:none;
+  pointer-events:auto;
   min-width:240px;
   max-width:300px;
   backdrop-filter:blur(12px);
@@ -647,7 +647,7 @@ body::before{
       <input type="password" id="inp-pass" placeholder="Enter password" autocomplete="current-password">
     </div>
     <button class="login-btn" onclick="doAdminLogin()" id="login-btn">🚀 Sign In to Admin</button>
-    <p class="login-hint">🔒 Authorized personnel only &nbsp;·&nbsp; Demo: admin / admin123</p>
+    <p class="login-hint">🔒 Authorized personnel only &nbsp;·&nbsp; Demo.: admin / admin123</p>
   </div>
 </div>
 
@@ -1844,14 +1844,15 @@ function renderStudentsTable(){
       const xs=calcStats(x);
       const xcolor=barColor(xs.avg);
       const termLabel=getRecordTerm(x);
-      return `<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:5px 0;${xi<allRecs.length-1?'border-bottom:1px solid rgba(255,255,255,.07)':''}">
-        <span style="font-size:10px;color:#aaccee;font-weight:600;white-space:nowrap">${termLabel}</span>
+      const isFirst=xi===0;
+      return `<div class="tt-rec-row" onclick="event.stopPropagation();switchStudentRecord('${r.id}',${xi})" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 5px;border-radius:6px;cursor:pointer;background:${isFirst?'rgba(93,173,226,.12)':'transparent'};transition:background .15s;${xi<allRecs.length-1?'border-bottom:1px solid rgba(255,255,255,.06)':''}">
+        <span style="font-size:10px;color:#aaccee;font-weight:600;white-space:nowrap;flex:1">${termLabel}</span>
         <span style="font-size:11px;font-weight:800;font-family:'JetBrains Mono',monospace;color:${xcolor};flex-shrink:0">${xs.avg}%</span>
-        <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.07);color:#cce">${xs.level}</span>
+        <span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.07);color:#cce;flex-shrink:0">${xs.level}</span>
       </div>`;
     }).join('');
     const tooltipHtml=`<div style="min-width:240px;max-width:300px">
-      <div style="font-size:10px;font-weight:800;color:#5dade2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(93,173,226,.25)">📋 ${allRecs.length} Record${allRecs.length===1?'':'s'}</div>
+      <div style="font-size:10px;font-weight:800;color:#5dade2;text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(93,173,226,.25)">📋 ${allRecs.length} Record${allRecs.length===1?'':'s'} · click to switch</div>
       ${tooltipRows}
     </div>`;
     return `<tr class="student-hover-row" data-tooltip-id="tt-${r.id}" style="position:relative">
@@ -1982,21 +1983,18 @@ window.closeStudentModal=closeStudentModal;
 
 /* Switch which exam record is shown in the students table row */
 function switchStudentRecord(masterId, idx){
-  // Find the deduplicated student entry
   const entry = filteredStudents.find(r=>r.id===masterId);
   if(!entry||!entry._allRecords) return;
   const rec = entry._allRecords[idx];
   if(!rec) return;
 
-  // Update the active record reference on the entry
   entry.id = rec.id;
-  // Re-point master id fields for view/edit buttons
+
   const viewBtn = document.getElementById('rec-view-'+masterId);
   const editBtn = document.getElementById('rec-edit-'+masterId);
   if(viewBtn) viewBtn.setAttribute('onclick', `viewStudent('${rec.id}')`);
   if(editBtn) editBtn.setAttribute('onclick', `editStudent('${rec.id}')`);
 
-  // Update avg, level, position cells
   const st = calcStats(rec);
   const color = barColor(st.avg);
   const avgCell = document.getElementById('rec-avg-'+masterId);
@@ -2006,14 +2004,12 @@ function switchStudentRecord(masterId, idx){
   if(lvlCell) lvlCell.innerHTML=`<span class="gp ${gradePillClass(st.cls)}">${st.level}</span>`;
   if(posCell) posCell.textContent=rec['Position']||'—';
 
-  // Update pill highlights in term cell
-  const termCell = document.getElementById('rec-term-'+masterId);
-  if(termCell){
-    termCell.querySelectorAll('button').forEach((btn, i)=>{
-      const active = i===idx;
-      btn.style.border = active?'1px solid var(--blue)':'1px solid var(--border)';
-      btn.style.background = active?'rgba(41,128,185,.2)':'transparent';
-      btn.style.color = active?'var(--blue-lt)':'var(--text3)';
+  // Highlight active record row inside tooltip
+  const tt = document.getElementById('tt-'+masterId);
+  if(tt){
+    tt.querySelectorAll('.tt-rec-row').forEach((row,i)=>{
+      row.style.background = i===idx ? 'rgba(93,173,226,.12)' : 'transparent';
+      row.style.borderRadius = '6px';
     });
   }
 }
@@ -2624,23 +2620,32 @@ window.addAnnouncement=addAnnouncement;
 /* ══════════════════════════════════════════
    STUDENT ROW HOVER TOOLTIP POSITIONING
 ══════════════════════════════════════════ */
-document.addEventListener('mousemove',function(e){
-  const row=e.target.closest('.student-hover-row');
-  if(row){
-    const tt=row.querySelector('.student-rec-tooltip');
-    if(!tt) return;
-    const pad=16,vpW=window.innerWidth,vpH=window.innerHeight;
-    const ttW=tt.offsetWidth||260,ttH=tt.offsetHeight||120;
-    let x=e.clientX+pad,y=e.clientY+pad;
-    if(x+ttW>vpW-pad) x=e.clientX-ttW-pad;
-    if(y+ttH>vpH-pad) y=e.clientY-ttH-pad;
-    tt.style.left=x+'px';
-    tt.style.top=y+'px';
-    tt.style.display='block';
-  } else {
-    document.querySelectorAll('.student-rec-tooltip').forEach(t=>t.style.display='none');
-  }
-});
+(function(){
+  let activeRow=null;
+  document.addEventListener('mousemove',function(e){
+    const row=e.target.closest('.student-hover-row');
+    const onTooltip=e.target.closest('.student-rec-tooltip');
+    if(row){
+      activeRow=row;
+      const tt=row.querySelector('.student-rec-tooltip');
+      if(!tt) return;
+      // Only reposition if not hovering the tooltip itself
+      if(!onTooltip){
+        const pad=16,vpW=window.innerWidth,vpH=window.innerHeight;
+        const ttW=tt.offsetWidth||260,ttH=tt.offsetHeight||140;
+        let x=e.clientX+pad,y=e.clientY+pad;
+        if(x+ttW>vpW-pad) x=e.clientX-ttW-pad;
+        if(y+ttH>vpH-pad) y=e.clientY-ttH-pad;
+        tt.style.left=x+'px';
+        tt.style.top=y+'px';
+      }
+      tt.style.display='block';
+    } else if(!onTooltip){
+      document.querySelectorAll('.student-rec-tooltip').forEach(t=>t.style.display='none');
+      activeRow=null;
+    }
+  });
+})();
 
 /* ══════════════════════════════════════════
    SETTINGS
