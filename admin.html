@@ -559,6 +559,26 @@ body::before{
 .toggle-sw.on::after{transform:translateX(20px);}
 
 /* ══════════════════════════════════════════
+   PRINT MODE
+══════════════════════════════════════════ */
+body.print-mode .sidebar,
+body.print-mode .topbar,
+body.print-mode .actions-row,
+body.print-mode .filter-row,
+body.print-mode .pagination,
+body.print-mode .btn-red,
+body.print-mode #print-mode-btn{display:none!important}
+body.print-mode .main-content{margin-left:0!important}
+body.print-mode{background:#fff!important;color:#000!important}
+body.print-mode .card{box-shadow:none!important;border:1px solid #ddd!important}
+body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
+@media print{
+  .sidebar,.topbar,.actions-row,.filter-row,.pagination,.btn-red{display:none!important}
+  .main-content{margin-left:0!important}
+  .card{box-shadow:none!important;page-break-inside:avoid}
+}
+
+/* ══════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════ */
 @media(max-width:768px){
@@ -656,7 +676,7 @@ body::before{
     <p>Kanyadet PRI &amp; Junior School — Restricted Access</p>
     <div class="login-err" id="login-err"></div>
     <div class="fg">
-      <label>ADMIN USERNAME</label>
+      <label>ADMIN USERNAME..</label>
       <input type="text" id="inp-user" placeholder="Enter username" autocomplete="username">
     </div>
     <div class="fg">
@@ -699,12 +719,19 @@ body::before{
       <div class="nav-item" onclick="navTo('analytics',this)">
         <span class="nav-icon">📈</span> Analytics
       </div>
+      <div class="nav-item" onclick="navTo('atrisk',this)">
+        <span class="nav-icon">🚨</span> At-Risk
+        <span class="nav-badge" id="nav-atrisk-count" style="background:var(--red)">—</span>
+      </div>
     </div>
 
     <div class="sidebar-section">
       <div class="s-label">Management</div>
       <div class="nav-item" onclick="navTo('reports',this)">
         <span class="nav-icon">📄</span> Report Cards
+      </div>
+      <div class="nav-item" onclick="navTo('import',this)">
+        <span class="nav-icon">📥</span> Import Data
       </div>
       <div class="nav-item" onclick="navTo('announcements',this)">
         <span class="nav-icon">📢</span> Announcements
@@ -743,6 +770,9 @@ body::before{
           <span class="theme-icon moon">🌙</span>
           <span class="theme-icon sun">☀️</span>
         </div>
+        <button class="btn btn-outline btn-sm" onclick="openSmartSearch()" title="Smart Search (Ctrl+K)">🔍 Search</button>
+        <button class="btn btn-outline btn-sm" onclick="togglePrintMode()" title="Print Mode" id="print-mode-btn">🖨️</button>
+        <button class="btn btn-outline btn-sm" onclick="showShortcuts()" title="Keyboard Shortcuts (?)">⌨️</button>
         <button class="btn btn-blue btn-sm" onclick="refreshData()">🔄 Refresh</button>
       </div>
     </header>
@@ -951,7 +981,21 @@ body::before{
 
       <!-- ══════ ANALYTICS VIEW ══════ -->
       <div class="view" id="view-analytics">
-        <div class="sec-hdr"><h2>Analytics &amp; Insights</h2></div>
+        <div class="sec-hdr">
+          <h2>Analytics &amp; Insights</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-outline btn-sm" onclick="openClassCompare()">📊 Class Compare</button>
+            <button class="btn btn-outline btn-sm" onclick="openEOTModal()">📑 Term Report</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:18px">
+          <div class="card-hdr">
+            <div class="card-title">🔥 Subject × Grade Heatmap</div>
+            <select class="sel" id="heatmap-term-sel" onchange="renderHeatmap()"><option value="all">All Terms</option></select>
+          </div>
+          <div id="heatmap-container" style="overflow-x:auto"></div>
+        </div>
 
         <div class="grid-2" style="margin-bottom:18px">
           <!-- Term Trend Chart -->
@@ -1026,6 +1070,7 @@ body::before{
             </p>
             <div style="display:flex;gap:10px;flex-wrap:wrap">
               <button class="btn btn-green" onclick="generateSummaryReport()">📑 Full School Report</button>
+              <button class="btn btn-blue" onclick="openEOTModal()">📑 End-of-Term PDF</button>
               <button class="btn btn-outline" onclick="exportAllCSV()">📥 Export All Data</button>
             </div>
             <div id="report-preview" style="margin-top:16px"></div>
@@ -1142,6 +1187,102 @@ body::before{
               <button class="btn btn-blue btn-sm" onclick="saveSettings()">💾 Save Settings</button>
             </div>
           </div>
+        </div>
+      </div>
+
+
+      <!-- ══════ AT-RISK VIEW ══════ -->
+      <div class="view" id="view-atrisk">
+        <div class="sec-hdr">
+          <h2>🚨 At-Risk Students</h2>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <select class="sel" id="atrisk-grade-sel" onchange="renderAtRisk()"><option value="all">All Grades</option></select>
+            <select class="sel" id="atrisk-term-sel" onchange="renderAtRisk()"><option value="all">All Terms</option></select>
+            <button class="btn btn-red btn-sm" onclick="exportAtRiskCSV()">📥 Export CSV</button>
+            <button class="btn btn-orange btn-sm" onclick="generateAtRiskPDF()">📄 Alert PDF</button>
+          </div>
+        </div>
+        <div class="kpi-grid" style="margin-bottom:18px">
+          <div class="kpi-card" style="--accent-glow:rgba(231,76,60,.1)">
+            <div class="kpi-icon">⚠️</div>
+            <div class="kpi-val" id="ar-kpi-total" style="color:var(--red)">—</div>
+            <div class="kpi-label">At-Risk Students</div>
+          </div>
+          <div class="kpi-card" style="--accent-glow:rgba(231,76,60,.1)">
+            <div class="kpi-icon">🔴</div>
+            <div class="kpi-val" id="ar-kpi-streak" style="color:var(--red)">—</div>
+            <div class="kpi-label">Consecutive Fails (2+)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">📉</div>
+            <div class="kpi-val" id="ar-kpi-avg" style="color:var(--orange)">—</div>
+            <div class="kpi-label">Avg Score (At-Risk)</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-icon">📚</div>
+            <div class="kpi-val" id="ar-kpi-grades" style="color:var(--text)">—</div>
+            <div class="kpi-label">Grades Affected</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>#</th>
+                <th>Student</th>
+                <th>Adm No</th>
+                <th>Grade</th>
+                <th>Term</th>
+                <th>Average</th>
+                <th>Worst Subject</th>
+                <th>Streak</th>
+                <th>Actions</th>
+              </tr></thead>
+              <tbody id="atrisk-tbody"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text3)">Load data first.</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ IMPORT VIEW ══════ -->
+      <div class="view" id="view-import">
+        <div class="sec-hdr"><h2>📥 Import Data</h2></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-hdr"><div class="card-title">📂 Upload CSV / Excel</div></div>
+            <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px">
+              Drag &amp; drop your results file or click to browse. Supported formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong>. The importer will detect columns automatically.
+            </p>
+            <div id="import-dropzone" onclick="document.getElementById('import-file-input').click()"
+              style="border:2px dashed var(--border-strong);border-radius:var(--radius-lg);padding:40px 20px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--surface2)"
+              ondragover="event.preventDefault();this.style.borderColor='var(--blue-lt)'"
+              ondragleave="this.style.borderColor='var(--border-strong)'"
+              ondrop="handleImportDrop(event)">
+              <div style="font-size:36px;margin-bottom:10px">📂</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Drop file here or click to browse</div>
+              <div style="font-size:11px;color:var(--text3)">.csv, .xlsx, .xls — max 10MB</div>
+              <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFile(this.files[0])">
+            </div>
+            <div id="import-status" style="margin-top:14px"></div>
+          </div>
+          <div class="card">
+            <div class="card-hdr"><div class="card-title">🗺️ Column Mapping</div></div>
+            <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:12px">
+              Map your file's columns to the database fields. Required fields are marked with <span style="color:var(--red)">*</span>
+            </p>
+            <div id="import-mapping" style="font-size:12px;color:var(--text3)">Upload a file first to see column mapping.</div>
+          </div>
+        </div>
+        <div class="card" id="import-preview-card" style="display:none">
+          <div class="card-hdr">
+            <div class="card-title">👁 Preview (first 10 rows)</div>
+            <div style="display:flex;gap:8px">
+              <span id="import-preview-info" style="font-size:11px;color:var(--text2)"></span>
+              <button class="btn btn-green btn-sm" id="import-commit-btn" onclick="commitImport()">✅ Commit to Database</button>
+            </div>
+          </div>
+          <div class="table-wrap" id="import-preview-table"></div>
+          <div id="import-dup-warning" style="margin-top:12px"></div>
         </div>
       </div>
 
@@ -1302,9 +1443,110 @@ body::before{
     </div>
     <div class="modal-footer" style="flex-wrap:wrap">
       <button class="btn btn-outline btn-sm" onclick="copyRecordData()">📋 Copy</button>
+      <button class="btn btn-outline btn-sm" onclick="openProgressFromRecords()">📈 Progress</button>
       <button class="btn btn-orange btn-sm" id="rec-modal-edit-btn" onclick="editFromRecordsModal()">✏️ Edit</button>
       <button class="btn btn-blue btn-sm" id="rec-modal-view-btn" onclick="viewFromRecordsModal()">👁 Full Profile</button>
       <button class="btn btn-outline btn-sm" onclick="closeRecordsModal()" style="margin-left:auto">✕ Close</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- SMART SEARCH MODAL -->
+<div class="modal-overlay" id="search-modal" onclick="if(event.target===this)closeSmartSearch()">
+  <div class="modal-box" style="margin-top:60px;align-self:flex-start">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px">🔍</span>
+      <input id="smart-search-input" type="text" placeholder="Search by name, UPI, adm no, grade, or score range (e.g. avg>70)…"
+        style="flex:1;border:none;background:transparent;font-size:14px;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif"
+        oninput="runSmartSearch(this.value)" onkeydown="searchKeyNav(event)">
+      <span style="font-size:11px;color:var(--text3)">ESC to close</span>
+    </div>
+    <div id="search-results" style="max-height:420px;overflow-y:auto;padding:8px 0"></div>
+  </div>
+</div>
+
+<!-- KEYBOARD SHORTCUTS MODAL -->
+<div class="modal-overlay" id="shortcuts-modal" onclick="if(event.target===this)closeShortcuts()">
+  <div class="modal-box" style="width:min(480px,100%)">
+    <div class="modal-hdr"><h3>⌨️ Keyboard Shortcuts</h3><button class="modal-close" onclick="closeShortcuts()">✕</button></div>
+    <div class="modal-body">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:12px">
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">Ctrl+K</kbd><span style="color:var(--text2);margin-left:8px">Smart Search</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">?</kbd><span style="color:var(--text2);margin-left:8px">Show shortcuts</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">N</kbd><span style="color:var(--text2);margin-left:8px">New student</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">R</kbd><span style="color:var(--text2);margin-left:8px">Refresh data</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">P</kbd><span style="color:var(--text2);margin-left:8px">Print mode</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">Esc</kbd><span style="color:var(--text2);margin-left:8px">Close modal</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">G 1</kbd><span style="color:var(--text2);margin-left:8px">Dashboard</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">G 2</kbd><span style="color:var(--text2);margin-left:8px">Students</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">G 3</kbd><span style="color:var(--text2);margin-left:8px">Results</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">G 4</kbd><span style="color:var(--text2);margin-left:8px">Analytics</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">G 5</kbd><span style="color:var(--text2);margin-left:8px">At-Risk</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">G 6</kbd><span style="color:var(--text2);margin-left:8px">Reports</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">← →</kbd><span style="color:var(--text2);margin-left:8px">Paginate</span></div>
+        <div style="background:var(--surface2);border-radius:var(--radius-md);padding:10px 14px"><kbd style="font-family:'JetBrains Mono',monospace;background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:11px">T</kbd><span style="color:var(--text2);margin-left:8px">Toggle theme</span></div>
+      </div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline btn-sm" onclick="closeShortcuts()">Close</button></div>
+  </div>
+</div>
+
+<!-- PROGRESS CHART MODAL -->
+<div class="modal-overlay" id="progress-modal" onclick="if(event.target===this)closeProgressModal()">
+  <div class="modal-box modal-wide">
+    <div class="modal-hdr">
+      <div><h3 id="progress-modal-name">Student Progress</h3><div id="progress-modal-sub" style="font-size:11px;color:var(--text3)"></div></div>
+      <button class="modal-close" onclick="closeProgressModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="chart-box" style="height:260px;margin-bottom:18px"><canvas id="progress-chart"></canvas></div>
+      <div id="progress-term-table"></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline btn-sm" onclick="closeProgressModal()">Close</button></div>
+  </div>
+</div>
+
+<!-- CLASS COMPARE MODAL -->
+<div class="modal-overlay" id="compare-modal" onclick="if(event.target===this)document.getElementById('compare-modal').classList.remove('on')">
+  <div class="modal-box modal-wide">
+    <div class="modal-hdr">
+      <div><h3>Class Comparison</h3><div style="font-size:11px;color:var(--text3)">Average scores by grade for selected term</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <select class="sel" id="compare-term-sel" onchange="renderClassCompare()"><option value="all">All Terms</option></select>
+        <button class="modal-close" onclick="document.getElementById('compare-modal').classList.remove('on')">✕</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="chart-box" style="height:300px"><canvas id="compare-chart"></canvas></div>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline btn-sm" onclick="document.getElementById('compare-modal').classList.remove('on')">Close</button></div>
+  </div>
+</div>
+
+<!-- END-OF-TERM REPORT MODAL -->
+<div class="modal-overlay" id="eot-modal" onclick="if(event.target===this)document.getElementById('eot-modal').classList.remove('on')">
+  <div class="modal-box modal-wide">
+    <div class="modal-hdr">
+      <h3>📑 End-of-Term Class Report</h3>
+      <button class="modal-close" onclick="document.getElementById('eot-modal').classList.remove('on')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap">
+        <div class="form-group" style="flex:1;min-width:160px">
+          <label>Grade</label>
+          <select class="sel" id="eot-grade" onchange="renderEOTPreview()" style="width:100%"><option value="">All Grades</option></select>
+        </div>
+        <div class="form-group" style="flex:1;min-width:160px">
+          <label>Term</label>
+          <select class="sel" id="eot-term" onchange="renderEOTPreview()" style="width:100%"><option value="">All Terms</option></select>
+        </div>
+      </div>
+      <div id="eot-preview"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-green btn-sm" onclick="generateEOTPDF()">📄 Download PDF Report</button>
+      <button class="btn btn-outline btn-sm" onclick="document.getElementById('eot-modal').classList.remove('on')">Close</button>
     </div>
   </div>
 </div>
@@ -1601,6 +1843,7 @@ window.refreshData=refreshData;
 
 function renderAll(){
   populateFilters();
+  populateAtRiskFilters();
   renderKPIs();
   renderDistChart();
   renderGradeBars();
@@ -1613,8 +1856,28 @@ function renderAll(){
   renderGenderChart();
   renderLevelChart();
   renderSubjectRanking();
+  renderHeatmap();
+  renderAtRisk();
   populatePrintSelectors();
   document.getElementById('nav-count').textContent=allData.length;
+}
+
+function populateAtRiskFilters(){
+  const grades=getUniqueGrades();
+  const terms=getUniqueTerms();
+  ['atrisk-grade-sel'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const first=el.options[0];el.innerHTML='';el.appendChild(first);
+    grades.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;el.appendChild(o);});
+  });
+  ['atrisk-term-sel'].forEach(id=>{
+    const el=document.getElementById(id);if(!el)return;
+    const first=el.options[0];el.innerHTML='';el.appendChild(first);
+    terms.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;el.appendChild(o);});
+  });
+  // Populate heatmap term sel
+  const hs=document.getElementById('heatmap-term-sel');
+  if(hs){const f=hs.options[0];hs.innerHTML='';hs.appendChild(f);terms.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;hs.appendChild(o);});}
 }
 
 /* ══════════════════════════════════════════
@@ -2415,7 +2678,13 @@ const views={'dashboard':'Overview & Analytics','students':'Manage Students','re
 function navTo(view,el){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('view-'+view).classList.add('active');
+  const viewEl=document.getElementById('view-'+view);
+  if(viewEl)viewEl.classList.add('active');
+  if(el)el.classList.add('active');
+  const crumbs={dashboard:'Overview & Analytics',students:'Student Directory',results:'Results & Grades',analytics:'Charts & Insights',atrisk:'Students Below 41%',reports:'Report Cards & Export',import:'CSV / Excel Import',announcements:'School Notices',settings:'Portal Configuration'};
+  const titles={dashboard:'Dashboard',students:'Students',results:'Results',analytics:'Analytics',atrisk:'At-Risk Students',reports:'Report Cards',import:'Import Data',announcements:'Announcements',settings:'Settings'};
+  if(document.getElementById('topbar-title'))document.getElementById('topbar-title').textContent=titles[view]||view;
+  if(document.getElementById('topbar-crumb'))document.getElementById('topbar-crumb').textContent=crumbs[view]||'';
   if(el) el.classList.add('active');
   document.getElementById('topbar-title').textContent=el?.querySelector('span+*')?.textContent||view.charAt(0).toUpperCase()+view.slice(1);
   document.getElementById('topbar-crumb').textContent=views[view]||'';
@@ -2832,6 +3101,631 @@ function copyRecordData(){
   });
 }
 window.copyRecordData = copyRecordData;
+
+/* ══════════════════════════════════════════
+   FEATURE: SMART SEARCH (Ctrl+K)
+══════════════════════════════════════════ */
+let _searchIdx=0;
+function openSmartSearch(){
+  document.getElementById('search-modal').classList.add('on');
+  setTimeout(()=>document.getElementById('smart-search-input').focus(),80);
+  runSmartSearch('');
+}
+window.openSmartSearch=openSmartSearch;
+function closeSmartSearch(){document.getElementById('search-modal').classList.remove('on');}
+window.closeSmartSearch=closeSmartSearch;
+
+function runSmartSearch(q){
+  q=(q||'').trim();
+  const box=document.getElementById('search-results');
+  if(!allData.length){box.innerHTML='<p style="padding:20px;color:var(--text3);font-size:12px">No data loaded yet.</p>';return;}
+
+  // Parse score range: avg>70, avg<40, score>=80
+  let scoreFilter=null;
+  const scoreM=q.match(/(?:avg|score)\s*([><=!]+)\s*(\d+)/i);
+  if(scoreM){scoreFilter={op:scoreM[1],val:parseFloat(scoreM[2])};q=q.replace(scoreM[0],'').trim();}
+
+  const byAsm={};
+  allData.forEach(r=>{
+    const key=String(r['Assessment No']||r['Official Student Name']||'').trim();
+    if(!byAsm[key]) byAsm[key]={best:r,all:[r]};
+    else{byAsm[key].all.push(r);if(parseFloat(calcStats(r).avg)>parseFloat(calcStats(byAsm[key].best).avg))byAsm[key].best=r;}
+  });
+
+  let results=Object.values(byAsm).filter(({best,all})=>{
+    const name=(best['Official Student Name']||'').toLowerCase();
+    const upi=(best['UPI']||'').toLowerCase();
+    const adm=(best['Assessment No']||'').toLowerCase();
+    const grade=gShort(best['Grade']).toLowerCase();
+    const avg=parseFloat(calcStats(best).avg);
+    if(q&&!name.includes(q.toLowerCase())&&!upi.includes(q.toLowerCase())&&!adm.includes(q.toLowerCase())&&!grade.includes(q.toLowerCase()))return false;
+    if(scoreFilter){
+      const op=scoreFilter.op,v=scoreFilter.val;
+      if(op==='>='&&!(avg>=v))return false;
+      if(op==='>'&&!(avg>v))return false;
+      if(op==='<='&&!(avg<=v))return false;
+      if(op==='<'&&!(avg<v))return false;
+      if((op==='='||op==='==')&&!(Math.round(avg)===v))return false;
+    }
+    return true;
+  }).slice(0,12);
+
+  if(!results.length){box.innerHTML='<p style="padding:20px;color:var(--text3);font-size:12px;text-align:center">No results for "'+q+'"</p>';return;}
+
+  box.innerHTML=results.map(({best,all},i)=>{
+    const st=calcStats(best);const color=barColor(st.avg);
+    const init=(best['Official Student Name']||'?')[0].toUpperCase();
+    return `<div class="search-result-item" tabindex="0" data-idx="${i}" data-id="${best.id}"
+      onclick="selectSearchResult('${best.id}')"
+      onkeydown="if(event.key==='Enter')selectSearchResult('${best.id}')"
+      style="display:flex;align-items:center;gap:12px;padding:10px 18px;cursor:pointer;border-bottom:1px solid var(--border);transition:background .15s">
+      <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0">${init}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;font-weight:700;color:var(--text)">${best['Official Student Name']||'—'}</div>
+        <div style="font-size:10px;color:var(--text3)">${gShort(best['Grade'])} · Adm: ${best['Assessment No']||'N/A'} · ${all.length} record${all.length>1?'s':''}</div>
+      </div>
+      <div style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color};font-size:13px">${st.avg}%</div>
+      <span class="gp ${gradePillClass(st.cls)}">${st.level}</span>
+    </div>`;
+  }).join('');
+  _searchIdx=0;
+  updateSearchHighlight();
+}
+window.runSmartSearch=runSmartSearch;
+
+function updateSearchHighlight(){
+  document.querySelectorAll('.search-result-item').forEach((el,i)=>{
+    el.style.background=i===_searchIdx?'rgba(41,128,185,.1)':'';
+  });
+}
+function searchKeyNav(e){
+  const items=document.querySelectorAll('.search-result-item');
+  if(e.key==='ArrowDown'){e.preventDefault();_searchIdx=Math.min(_searchIdx+1,items.length-1);updateSearchHighlight();}
+  else if(e.key==='ArrowUp'){e.preventDefault();_searchIdx=Math.max(_searchIdx-1,0);updateSearchHighlight();}
+  else if(e.key==='Enter'&&items[_searchIdx]){const id=items[_searchIdx].getAttribute('data-id');if(id)selectSearchResult(id);}
+}
+window.searchKeyNav=searchKeyNav;
+
+function selectSearchResult(id){
+  closeSmartSearch();
+  // Find the student in filteredStudents or navigate to students view
+  const entry=filteredStudents.find(r=>r.id===id)||(()=>{const r=allData.find(x=>x.id===id);return r?{...r,_allRecords:allData.filter(x=>(x['Assessment No']||x['Official Student Name'])===(r['Assessment No']||r['Official Student Name']))}:null;})();
+  if(entry){
+    navTo('students',document.querySelector('.nav-item:nth-child(2)'));
+    setTimeout(()=>openRecordsModal(entry.id),100);
+  }
+}
+window.selectSearchResult=selectSearchResult;
+
+/* ══════════════════════════════════════════
+   FEATURE: KEYBOARD SHORTCUTS
+══════════════════════════════════════════ */
+let _gPressed=false,_gTimer=null;
+function showShortcuts(){document.getElementById('shortcuts-modal').classList.add('on');}
+function closeShortcuts(){document.getElementById('shortcuts-modal').classList.remove('on');}
+window.showShortcuts=showShortcuts;window.closeShortcuts=closeShortcuts;
+
+document.addEventListener('keydown',function(e){
+  const tag=document.activeElement.tagName.toLowerCase();
+  const isInput=tag==='input'||tag==='textarea'||tag==='select';
+  const anyModal=[...document.querySelectorAll('.modal-overlay.on')].length>0;
+
+  if(e.key==='Escape'){
+    document.querySelectorAll('.modal-overlay.on').forEach(m=>m.classList.remove('on'));
+    if(document.body.classList.contains('print-mode'))togglePrintMode();
+    return;
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();openSmartSearch();return;}
+  if(isInput||anyModal) return;
+  if(e.key==='?'){showShortcuts();return;}
+  if(e.key==='n'||e.key==='N'){openAddStudentModal();return;}
+  if(e.key==='r'||e.key==='R'){refreshData();return;}
+  if(e.key==='t'||e.key==='T'){toggleTheme();return;}
+  if(e.key==='p'||e.key==='P'){togglePrintMode();return;}
+  if(e.key==='ArrowRight'){const pgNext=document.querySelector('.pg-btn:last-child:not([disabled])');if(pgNext)pgNext.click();return;}
+  if(e.key==='ArrowLeft'){const pgPrev=document.querySelector('.pg-btn:nth-child(2):not([disabled])');if(pgPrev)pgPrev.click();return;}
+  if(e.key==='g'||e.key==='G'){
+    _gPressed=true;clearTimeout(_gTimer);
+    _gTimer=setTimeout(()=>{_gPressed=false;},1500);return;
+  }
+  if(_gPressed){
+    const views=['dashboard','students','results','analytics','atrisk','reports','import','announcements','settings'];
+    const idx=parseInt(e.key)-1;
+    if(idx>=0&&idx<views.length){
+      _gPressed=false;
+      const navItems=document.querySelectorAll('.nav-item');
+      navTo(views[idx],navItems[idx]||navItems[0]);
+    }
+  }
+});
+
+/* ══════════════════════════════════════════
+   FEATURE: PRINT MODE
+══════════════════════════════════════════ */
+let _printMode=false;
+function togglePrintMode(){
+  _printMode=!_printMode;
+  document.body.classList.toggle('print-mode',_printMode);
+  const btn=document.getElementById('print-mode-btn');
+  if(btn) btn.style.background=_printMode?'var(--orange)':'';
+  if(_printMode){notify('🖨️ Print mode — press P or Esc to exit, then Ctrl+P','info',5000);}
+}
+window.togglePrintMode=togglePrintMode;
+
+/* ══════════════════════════════════════════
+   FEATURE: HEATMAP (Subject × Grade)
+══════════════════════════════════════════ */
+function renderHeatmap(){
+  const term=document.getElementById('heatmap-term-sel')?.value||'all';
+  let data=term==='all'?allData:allData.filter(r=>getRecordTerm(r)===term);
+  const grades=getUniqueGrades();
+  const subjects=getDynamicSubjects();
+  if(!grades.length||!subjects.length){document.getElementById('heatmap-container').innerHTML='<p style="padding:20px;color:var(--text3);font-size:12px">No data available.</p>';return;}
+
+  // Build matrix
+  const matrix={};
+  grades.forEach(g=>{matrix[g]={};subjects.forEach(s=>{matrix[g][s]=[];});});
+  data.forEach(r=>{
+    const g=gShort(r['Grade']);
+    if(!matrix[g])return;
+    subjects.forEach(s=>{const v=parseFloat(r[s]);if(!isNaN(v))matrix[g][s].push(v);});
+  });
+
+  const cellW=Math.max(52,Math.floor((700-100)/grades.length));
+  let html=`<div style="overflow-x:auto"><table style="border-collapse:collapse;font-size:10px;min-width:500px">`;
+  // Header
+  html+=`<tr><td style="padding:6px 8px;font-weight:800;color:var(--text3);font-size:9px;text-transform:uppercase">Subject</td>`;
+  grades.forEach(g=>{html+=`<td style="padding:6px 4px;text-align:center;font-weight:800;color:var(--text2);width:${cellW}px">${g}</td>`;});
+  html+=`</tr>`;
+  // Rows
+  subjects.forEach(s=>{
+    html+=`<tr>`;
+    html+=`<td style="padding:5px 8px;font-weight:600;color:var(--text);white-space:nowrap;border-right:1px solid var(--border)">${s}</td>`;
+    grades.forEach(g=>{
+      const vals=matrix[g]?matrix[g][s]||[]:[];
+      const avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+      const bg=avg===null?'var(--surface3)':avg>=75?'rgba(39,174,96,.25)':avg>=58?'rgba(243,156,18,.2)':avg>=41?'rgba(230,126,34,.2)':'rgba(231,76,60,.25)';
+      const col=avg===null?'var(--text3)':barColor(avg);
+      html+=`<td style="padding:5px 4px;text-align:center;background:${bg};border:1px solid var(--border);border-radius:4px">
+        <span style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${col};font-size:10px">${avg===null?'—':avg.toFixed(0)}</span>
+      </td>`;
+    });
+    html+=`</tr>`;
+  });
+  html+=`</table></div>`;
+  document.getElementById('heatmap-container').innerHTML=html;
+}
+window.renderHeatmap=renderHeatmap;
+
+/* ══════════════════════════════════════════
+   FEATURE: CLASS COMPARE CHART
+══════════════════════════════════════════ */
+let _compareChart=null;
+function openClassCompare(){
+  // Populate term selector
+  const sel=document.getElementById('compare-term-sel');
+  const terms=getUniqueTerms();
+  const first=sel.options[0];sel.innerHTML='';sel.appendChild(first);
+  terms.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;sel.appendChild(o);});
+  document.getElementById('compare-modal').classList.add('on');
+  renderClassCompare();
+}
+window.openClassCompare=openClassCompare;
+
+function renderClassCompare(){
+  const term=document.getElementById('compare-term-sel').value;
+  const data=term&&term!=='all'?allData.filter(r=>getRecordTerm(r)===term):allData;
+  const grades=getUniqueGrades();
+  const avgs=grades.map(g=>{
+    const recs=data.filter(r=>gShort(r['Grade'])===g);
+    const vals=recs.map(r=>parseFloat(calcStats(r).avg)).filter(x=>!isNaN(x));
+    return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0;
+  });
+  const sorted=[...grades.map((g,i)=>({g,v:parseFloat(avgs[i])}))]
+    .sort((a,b)=>b.v-a.v);
+  const ctx=document.getElementById('compare-chart').getContext('2d');
+  if(_compareChart)_compareChart.destroy();
+  _compareChart=new Chart(ctx,{
+    type:'bar',
+    data:{
+      labels:sorted.map(x=>x.g),
+      datasets:[{
+        label:'Average Score',
+        data:sorted.map(x=>x.v),
+        backgroundColor:sorted.map(x=>x.v>=75?'rgba(39,174,96,.7)':x.v>=58?'rgba(243,156,18,.7)':x.v>=41?'rgba(230,126,34,.7)':'rgba(231,76,60,.7)'),
+        borderRadius:6,borderWidth:0
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7aaec9',font:{size:11}}},
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7aaec9',font:{size:11}},min:0,max:100}
+      }
+    }
+  });
+}
+window.renderClassCompare=renderClassCompare;
+
+/* ══════════════════════════════════════════
+   FEATURE: STUDENT PROGRESS CHART
+══════════════════════════════════════════ */
+let _progressChart=null;
+function openProgressModal(masterId){
+  const entry=filteredStudents.find(r=>r.id===masterId)||
+    (()=>{const r=allData.find(x=>x.id===masterId);if(!r)return null;
+      const key=r['Assessment No']||r['Official Student Name'];
+      const all=allData.filter(x=>(x['Assessment No']||x['Official Student Name'])===key);
+      return{...r,_allRecords:all};})();
+  if(!entry)return;
+  const allRecs=(entry._allRecords||[entry]).sort((a,b)=>termSortKey(getRecordTerm(a)).localeCompare(termSortKey(getRecordTerm(b))));
+  const name=entry['Official Student Name']||'Student';
+  document.getElementById('progress-modal-name').textContent=name+' — Progress';
+  document.getElementById('progress-modal-sub').textContent=allRecs.length+' term'+( allRecs.length>1?'s':'');
+
+  const labels=allRecs.map(r=>getRecordTerm(r));
+  const avgs=allRecs.map(r=>parseFloat(calcStats(r).avg));
+  const colors=avgs.map(v=>barColor(v));
+
+  const ctx=document.getElementById('progress-chart').getContext('2d');
+  if(_progressChart)_progressChart.destroy();
+  _progressChart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[{
+        label:'Average %',data:avgs,
+        borderColor:'#5dade2',backgroundColor:'rgba(93,173,226,.08)',
+        borderWidth:3,fill:true,tension:.35,
+        pointBackgroundColor:colors,pointBorderColor:'#fff',pointBorderWidth:2,pointRadius:7
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.raw}% · ${gradeInfo(ctx.raw).level}`}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7aaec9',font:{size:10},maxRotation:35}},
+        y:{grid:{color:'rgba(255,255,255,.05)'},ticks:{color:'#7aaec9',font:{size:10}},min:0,max:100,
+          afterFit(scale){scale.width=40;}}
+      }
+    }
+  });
+
+  // Term summary table
+  const delta=avgs.map((v,i)=>i===0?null:(v-avgs[i-1]).toFixed(1));
+  document.getElementById('progress-term-table').innerHTML=`
+    <div class="table-wrap"><table class="data-table">
+      <thead><tr><th>Term</th><th>Average</th><th>Level</th><th>Position</th><th>Change</th></tr></thead>
+      <tbody>${allRecs.map((r,i)=>{
+        const st=calcStats(r);const d=delta[i];const col=barColor(st.avg);
+        return `<tr>
+          <td style="font-size:10px;color:var(--text2)">${getRecordTerm(r)}</td>
+          <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${col}">${st.avg}%</td>
+          <td><span class="gp ${gradePillClass(st.cls)}">${st.level}</span></td>
+          <td>${r['Position']||'—'}</td>
+          <td style="font-weight:700;color:${d===null?'var(--text3)':parseFloat(d)>0?'var(--green)':parseFloat(d)<0?'var(--red)':'var(--text3)'}">${d===null?'—':(parseFloat(d)>0?'▲ +':'▼ ')+d+'%'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div>`;
+
+  document.getElementById('progress-modal').classList.add('on');
+}
+window.openProgressModal=openProgressModal;
+function closeProgressModal(){document.getElementById('progress-modal').classList.remove('on');}
+window.closeProgressModal=closeProgressModal;
+
+function openProgressFromRecords(){
+  if(_recModalMasterId) openProgressModal(_recModalMasterId);
+}
+window.openProgressFromRecords=openProgressFromRecords;
+
+/* ══════════════════════════════════════════
+   FEATURE: AT-RISK VIEW
+══════════════════════════════════════════ */
+function renderAtRisk(){
+  const grade=document.getElementById('atrisk-grade-sel')?.value||'all';
+  const term=document.getElementById('atrisk-term-sel')?.value||'all';
+  let data=allData.filter(r=>{
+    if(grade!=='all'&&gShort(r['Grade'])!==grade)return false;
+    if(term!=='all'&&getRecordTerm(r)!==term)return false;
+    return parseFloat(calcStats(r).avg)<41;
+  });
+
+  // Deduplicate, keep worst record per student for display
+  const byAsm={};
+  data.forEach(r=>{
+    const key=String(r['Assessment No']||r['Official Student Name']||'').trim();
+    if(!byAsm[key])byAsm[key]={worst:r,count:1};
+    else{byAsm[key].count++;if(parseFloat(calcStats(r).avg)<parseFloat(calcStats(byAsm[key].worst).avg))byAsm[key].worst=r;}
+  });
+  const rows=Object.values(byAsm).sort((a,b)=>parseFloat(calcStats(a.worst).avg)-parseFloat(calcStats(b.worst).avg));
+
+  // Streak: count students with 2+ at-risk records
+  const streakCount=Object.values(byAsm).filter(x=>x.count>=2).length;
+  const avgScore=rows.length?(rows.reduce((s,x)=>s+parseFloat(calcStats(x.worst).avg),0)/rows.length).toFixed(1):'N/A';
+  const gradesAffected=new Set(rows.map(x=>gShort(x.worst['Grade']))).size;
+
+  document.getElementById('ar-kpi-total').textContent=rows.length;
+  document.getElementById('ar-kpi-streak').textContent=streakCount;
+  document.getElementById('ar-kpi-avg').textContent=avgScore+'%';
+  document.getElementById('ar-kpi-grades').textContent=gradesAffected;
+  document.getElementById('nav-atrisk-count').textContent=rows.length;
+
+  const tbody=document.getElementById('atrisk-tbody');
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--green)">✅ No at-risk students found for this selection.</td></tr>';return;}
+  tbody.innerHTML=rows.map(({worst,count},i)=>{
+    const st=calcStats(worst);const color=barColor(st.avg);
+    const subjects=getSubjects(worst);
+    const worstSubj=subjects.reduce((a,s)=>{const v=parseFloat(worst[s]);return(!isNaN(v)&&(a===null||v<parseFloat(worst[a])))?s:a;},null);
+    const worstVal=worstSubj?parseFloat(worst[worstSubj]):null;
+    return `<tr>
+      <td>${i+1}</td>
+      <td><div style="font-size:12px;font-weight:700;color:var(--text)">${worst['Official Student Name']||'—'}</div><div style="font-size:10px;color:var(--text3)">UPI: ${worst['UPI']||'N/A'}</div></td>
+      <td>${worst['Assessment No']||'—'}</td>
+      <td>${gShort(worst['Grade'])}</td>
+      <td style="font-size:10px;color:var(--text2)">${getRecordTerm(worst)}</td>
+      <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}">${st.avg}%</td>
+      <td style="font-size:11px;color:var(--red)">${worstSubj||'—'} ${worstVal!==null?'('+worstVal+')':''}</td>
+      <td><span style="font-weight:800;font-size:11px;color:${count>=2?'var(--red)':'var(--text3)'}">${count>=2?'🔴 '+count+'x':'1x'}</span></td>
+      <td><div style="display:flex;gap:5px">
+        <button class="btn btn-blue btn-xs" onclick="openRecordsModal('${worst.id}')">📋 Records</button>
+        <button class="btn btn-outline btn-xs" onclick="openProgressModal('${worst.id}')">📈</button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+window.renderAtRisk=renderAtRisk;
+
+function exportAtRiskCSV(){
+  const tbody=document.getElementById('atrisk-tbody');
+  if(!tbody||tbody.querySelector('[colspan]'))return notify('No at-risk data to export.','warn');
+  const grade=document.getElementById('atrisk-grade-sel')?.value||'all';
+  const term=document.getElementById('atrisk-term-sel')?.value||'all';
+  let data=allData.filter(r=>{
+    if(grade!=='all'&&gShort(r['Grade'])!==grade)return false;
+    if(term!=='all'&&getRecordTerm(r)!==term)return false;
+    return parseFloat(calcStats(r).avg)<41;
+  });
+  const rows=data.map(r=>{const st=calcStats(r);return{'Name':r['Official Student Name']||'','Adm No':r['Assessment No']||'','Grade':gShort(r['Grade']),'Term':getRecordTerm(r),'Average':st.avg,'Level':st.level,'Position':r['Position']||''};});
+  const keys=Object.keys(rows[0]||{});
+  const csv=keys.join(',')+'\n'+rows.map(r=>keys.map(k=>'"'+(String(r[k]||'').replace(/"/g,'""'))+'"').join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='AtRisk_Students.csv';a.click();
+  notify('📥 At-Risk CSV exported!','success');
+}
+window.exportAtRiskCSV=exportAtRiskCSV;
+
+async function generateAtRiskPDF(){
+  if(!window.jspdf){notify('PDF library loading…','info');return;}
+  const{jsPDF}=window.jspdf;const doc=new jsPDF();const W=doc.internal.pageSize.width;
+  doc.setFillColor(231,76,60);doc.rect(0,0,W,28,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
+  doc.text('KANYADET SCHOOL — AT-RISK STUDENTS ALERT',W/2,12,{align:'center'});
+  doc.setFontSize(8);doc.setFont(undefined,'normal');
+  doc.text('Generated: '+new Date().toLocaleDateString(),W/2,20,{align:'center'});
+  doc.setTextColor(0,0,0);
+  const data=allData.filter(r=>parseFloat(calcStats(r).avg)<41);
+  const tableData=data.map(r=>{const st=calcStats(r);return[r['Official Student Name']||'',r['Assessment No']||'',gShort(r['Grade']),getRecordTerm(r),st.avg+'%',st.level];});
+  doc.autoTable({head:[['Student','Adm No','Grade','Term','Average','Level']],body:tableData,startY:32,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[231,76,60],textColor:[255,255,255]}});
+  doc.save('AtRisk_Alert_'+new Date().toISOString().split('T')[0]+'.pdf');
+  notify('📄 At-Risk PDF downloaded!','success');
+}
+window.generateAtRiskPDF=generateAtRiskPDF;
+
+/* ══════════════════════════════════════════
+   FEATURE: END-OF-TERM CLASS REPORT
+══════════════════════════════════════════ */
+function openEOTModal(){
+  const grades=getUniqueGrades();const terms=getUniqueTerms();
+  const gs=document.getElementById('eot-grade');const ts=document.getElementById('eot-term');
+  const gf=gs.options[0];const tf=ts.options[0];
+  gs.innerHTML='';gs.appendChild(gf);grades.forEach(g=>{const o=document.createElement('option');o.value=g;o.textContent=g;gs.appendChild(o);});
+  ts.innerHTML='';ts.appendChild(tf);terms.forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;ts.appendChild(o);});
+  document.getElementById('eot-modal').classList.add('on');
+  renderEOTPreview();
+}
+window.openEOTModal=openEOTModal;
+
+function renderEOTPreview(){
+  const grade=document.getElementById('eot-grade').value;
+  const term=document.getElementById('eot-term').value;
+  let data=allData.filter(r=>{
+    if(grade&&gShort(r['Grade'])!==grade)return false;
+    if(term&&getRecordTerm(r)!==term)return false;
+    return true;
+  });
+  if(!data.length){document.getElementById('eot-preview').innerHTML='<p style="color:var(--text3);font-size:12px">No records match this selection.</p>';return;}
+
+  const avgs=data.map(r=>parseFloat(calcStats(r).avg)).filter(x=>!isNaN(x));
+  const schoolAvg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1):'N/A';
+  const eeCount=data.filter(r=>parseFloat(calcStats(r).avg)>=75).length;
+  const atRisk=data.filter(r=>parseFloat(calcStats(r).avg)<41).length;
+  const top5=data.sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg)).slice(0,5);
+
+  document.getElementById('eot-preview').innerHTML=`
+    <div class="mini-stats" style="margin-bottom:16px">
+      <div class="mini-stat"><div class="ms-val">${data.length}</div><div class="ms-lbl">Records</div></div>
+      <div class="mini-stat"><div class="ms-val" style="color:var(--blue-lt)">${schoolAvg}%</div><div class="ms-lbl">Class Avg</div></div>
+      <div class="mini-stat"><div class="ms-val" style="color:var(--green)">${eeCount}</div><div class="ms-lbl">EE Students</div></div>
+      <div class="mini-stat"><div class="ms-val" style="color:var(--red)">${atRisk}</div><div class="ms-lbl">At-Risk</div></div>
+    </div>
+    <div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Top 5 Students</div>
+    <div class="rank-list">${top5.map((r,i)=>{
+      const st=calcStats(r);const numClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-rest';
+      return `<div class="rank-item"><div class="rank-num ${numClass}">${i+1}</div>
+        <div style="flex:1"><div class="rank-name">${r['Official Student Name']||'—'}</div><div class="rank-sub">${gShort(r['Grade'])}</div></div>
+        <div class="rank-score" style="color:${barColor(st.avg)}">${st.avg}%</div>
+        <span class="gp ${gradePillClass(st.cls)}">${st.level}</span></div>`;
+    }).join('')}</div>`;
+}
+window.renderEOTPreview=renderEOTPreview;
+
+async function generateEOTPDF(){
+  if(!window.jspdf){notify('PDF library loading…','info');return;}
+  const{jsPDF}=window.jspdf;const doc=new jsPDF();const W=doc.internal.pageSize.width;
+  const grade=document.getElementById('eot-grade').value||'All Grades';
+  const term=document.getElementById('eot-term').value||'All Terms';
+  let data=allData.filter(r=>{
+    if(grade!=='All Grades'&&gShort(r['Grade'])!==grade)return false;
+    if(term!=='All Terms'&&getRecordTerm(r)!==term)return false;
+    return true;
+  });
+  if(!data.length){notify('No data for this selection.','warn');return;}
+
+  // Cover
+  doc.setFillColor(41,128,185);doc.rect(0,0,W,40,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
+  doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',W/2,14,{align:'center'});
+  doc.setFontSize(10);doc.setFont(undefined,'normal');
+  doc.text('END-OF-TERM CLASS PERFORMANCE REPORT',W/2,22,{align:'center'});
+  doc.setFontSize(8);doc.text(`${grade} · ${term} · Generated: ${new Date().toLocaleDateString()}`,W/2,30,{align:'center'});
+  doc.setTextColor(0,0,0);
+
+  // Stats
+  const avgs=data.map(r=>parseFloat(calcStats(r).avg)).filter(x=>!isNaN(x));
+  const avg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1):'N/A';
+  doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text(`Total: ${data.length} | Avg: ${avg}% | EE: ${data.filter(r=>parseFloat(calcStats(r).avg)>=75).length} | At-Risk: ${data.filter(r=>parseFloat(calcStats(r).avg)<41).length}`,10,48);
+  doc.setFont(undefined,'normal');
+
+  // Table
+  const sorted=data.sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg));
+  const tableData=sorted.map((r,i)=>{const st=calcStats(r);return[i+1,r['Official Student Name']||'',r['Assessment No']||'',gShort(r['Grade']),st.avg+'%',st.level,r['Position']||''];});
+  doc.autoTable({head:[['#','Student','Adm No','Grade','Average','Level','Position']],body:tableData,startY:52,margin:{left:10,right:10},styles:{fontSize:7,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255]},
+    didParseCell:(d)=>{if(d.column.index===4&&d.section==='body'){const v=parseFloat(d.cell.raw);d.cell.styles.textColor=v>=75?[39,174,96]:v>=41?[230,126,34]:[231,76,60];}}
+  });
+  doc.save(`ClassReport_${grade}_${term}.pdf`.replace(/\s+/g,'_'));
+  notify('📄 End-of-Term PDF downloaded!','success');
+}
+window.generateEOTPDF=generateEOTPDF;
+
+/* ══════════════════════════════════════════
+   FEATURE: BULK CSV/EXCEL IMPORT
+══════════════════════════════════════════ */
+let _importData=[];let _importHeaders=[];let _importMapping={};
+
+function handleImportDrop(e){
+  e.preventDefault();
+  document.getElementById('import-dropzone').style.borderColor='var(--border-strong)';
+  const file=e.dataTransfer.files[0];
+  if(file)handleImportFile(file);
+}
+window.handleImportDrop=handleImportDrop;
+
+async function handleImportFile(file){
+  if(!file)return;
+  const status=document.getElementById('import-status');
+  status.innerHTML=`<div style="font-size:12px;color:var(--text2)">⏳ Reading ${file.name}…</div>`;
+  document.getElementById('import-preview-card').style.display='none';
+
+  try{
+    const ext=file.name.split('.').pop().toLowerCase();
+    let rows=[];
+    if(ext==='csv'){
+      const text=await file.text();
+      const lines=text.split(/\r?\n/).filter(l=>l.trim());
+      const headers=lines[0].split(',').map(h=>h.replace(/^"|"$/g,'').trim());
+      rows=lines.slice(1).filter(l=>l.trim()).map(line=>{
+        const vals=line.match(/(".*?"|[^,]+)/g)||[];
+        const obj={};headers.forEach((h,i)=>{obj[h]=(vals[i]||'').replace(/^"|"$/g,'').trim();});return obj;
+      });
+      _importHeaders=headers;
+    } else if(ext==='xlsx'||ext==='xls'){
+      if(!window.XLSX){
+        status.innerHTML=`<div style="font-size:12px;color:var(--red)">XLSX support: include SheetJS. For now, please convert to CSV.</div>`;return;
+      }
+      const buf=await file.arrayBuffer();
+      const wb=window.XLSX.read(buf,{type:'array'});
+      const ws=wb.Sheets[wb.SheetNames[0]];
+      rows=window.XLSX.utils.sheet_to_json(ws,{defval:''});
+      _importHeaders=Object.keys(rows[0]||{});
+    }
+
+    if(!rows.length){status.innerHTML=`<div style="font-size:12px;color:var(--red)">❌ No data rows found in file.</div>`;return;}
+    _importData=rows;
+
+    // Duplicate detection
+    const existing=new Set(allData.map(r=>(r['Assessment No']||'').trim()).filter(Boolean));
+    const dupes=rows.filter(r=>{const v=Object.values(r).find((_,i)=>_importHeaders[i]==='Assessment No')||r['Assessment No']||'';return existing.has(String(v).trim());});
+
+    status.innerHTML=`<div style="font-size:12px;color:var(--green)">✅ Loaded <strong>${rows.length}</strong> rows, <strong>${_importHeaders.length}</strong> columns${dupes.length?` · <span style="color:var(--orange)">${dupes.length} possible duplicates</span>`:''}</div>`;
+    buildColumnMapping();
+    showImportPreview(rows,dupes);
+  }catch(err){
+    status.innerHTML=`<div style="font-size:12px;color:var(--red)">❌ Error: ${err.message}</div>`;
+  }
+}
+window.handleImportFile=handleImportFile;
+
+const DB_FIELDS=['Official Student Name','Assessment No','UPI','Grade','Term','Gender','Class','Position','Remarks'];
+
+function buildColumnMapping(){
+  const map=document.getElementById('import-mapping');
+  map.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    ${DB_FIELDS.map(f=>{
+      const isReq=f==='Official Student Name'||f==='Assessment No'||f==='Grade';
+      const guessed=_importHeaders.find(h=>h.toLowerCase().replace(/\s+/g,'').includes(f.toLowerCase().replace(/\s+/g,'')))||'';
+      _importMapping[f]=guessed;
+      return `<div style="display:flex;align-items:center;gap:8px">
+        <label style="font-size:11px;font-weight:700;color:var(--text2);min-width:110px">${f}${isReq?'<span style="color:var(--red)">*</span>':''}</label>
+        <select class="sel" style="flex:1;font-size:11px" onchange="_importMapping['${f}']=this.value">
+          <option value="">— skip —</option>
+          ${_importHeaders.map(h=>`<option value="${h}" ${h===guessed?'selected':''}>${h}</option>`).join('')}
+        </select>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function showImportPreview(rows,dupes){
+  const dupeAsms=new Set(dupes.map(r=>String(r['Assessment No']||Object.values(r)[1]||'').trim()));
+  const card=document.getElementById('import-preview-card');
+  card.style.display='block';
+  document.getElementById('import-preview-info').textContent=`${rows.length} rows · ${_importHeaders.length} columns`;
+  const preview=rows.slice(0,10);
+  const html=`<table class="data-table" style="min-width:600px">
+    <thead><tr>${_importHeaders.map(h=>`<th>${h}</th>`).join('')}</tr></thead>
+    <tbody>${preview.map(r=>{
+      const adm=String(r['Assessment No']||Object.values(r)[1]||'').trim();
+      const isDupe=dupeAsms.has(adm);
+      return `<tr style="${isDupe?'background:rgba(230,126,34,.1)':''}">${_importHeaders.map(h=>`<td style="font-size:11px">${r[h]||''}</td>`).join('')}</tr>`;
+    }).join('')}</tbody>
+  </table>`;
+  document.getElementById('import-preview-table').innerHTML=html;
+  if(dupes.length){
+    document.getElementById('import-dup-warning').innerHTML=`<div style="background:rgba(230,126,34,.1);border:1px solid rgba(230,126,34,.3);border-radius:var(--radius-md);padding:10px 14px;font-size:12px;color:var(--orange)">⚠️ ${dupes.length} rows highlighted in orange may be duplicates based on Assessment No. They will still be imported as new records.</div>`;
+  }
+}
+
+async function commitImport(){
+  if(!_importData.length){notify('No data to import.','warn');return;}
+  const{ref,push}=window._fb;
+  if(!db){notify('Database not connected.','error');return;}
+  const btn=document.getElementById('import-commit-btn');
+  btn.disabled=true;btn.textContent='⏳ Importing…';
+  let count=0;
+  try{
+    for(const row of _importData){
+      const rec={};
+      DB_FIELDS.forEach(f=>{const col=_importMapping[f];if(col&&row[col]!==undefined)rec[f]=String(row[col]).trim();});
+      // Pass through any unmapped columns as subject scores
+      Object.keys(row).forEach(k=>{
+        const mapped=Object.values(_importMapping).includes(k);
+        if(!mapped){const v=parseFloat(row[k]);if(!isNaN(v))rec[k]=v;}
+      });
+      if(!rec['Official Student Name']&&!rec['Assessment No'])continue;
+      await push(ref(db,DB_PATH),rec);
+      count++;
+    }
+    notify(`✅ Imported <strong>${count}</strong> records successfully!`,'success');
+    btn.textContent='✅ Done!';
+    logActivity(`📥 Imported ${count} records via CSV upload`,'act-green','Admin');
+    setTimeout(()=>refreshData(),1500);
+  }catch(err){
+    notify('Import error: '+err.message,'error');
+    btn.disabled=false;btn.textContent='✅ Commit to Database';
+  }
+}
+window.commitImport=commitImport;
 
 /* ══════════════════════════════════════════
    SETTINGS
