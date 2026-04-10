@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en" data-theme="light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -795,6 +795,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         <button class="btn btn-outline btn-sm" onclick="togglePrintMode()" title="Print Mode" id="print-mode-btn">🖨️</button>
         <button class="btn btn-outline btn-sm" onclick="showShortcuts()" title="Keyboard Shortcuts (?)">⌨️</button>
         <button class="btn btn-blue btn-sm" onclick="refreshData()">🔄 Refresh</button>
+        <button class="btn btn-red btn-sm" onclick="doSignOut()" title="Sign out" style="display:flex;align-items:center;gap:5px">↩ Sign Out</button>
       </div>
     </header>
 
@@ -865,9 +866,14 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           <div class="card">
             <div class="card-hdr">
               <div class="card-title">🏅 Top 10 Students</div>
-              <select class="sel" id="top-grade-sel" onchange="renderTopStudents()">
-                <option value="all">All Grades</option>
-              </select>
+              <div style="display:flex;gap:6px;align-items:center">
+                <select class="sel" id="top-term-sel" onchange="renderTopStudents()" style="font-size:11px">
+                  <option value="all">All Terms</option>
+                </select>
+                <select class="sel" id="top-grade-sel" onchange="renderTopStudents()" style="font-size:11px">
+                  <option value="all">All Grades</option>
+                </select>
+              </div>
             </div>
             <div class="rank-list" id="top-students-list">
               <div class="skeleton" style="height:44px;margin-bottom:8px"></div>
@@ -1768,7 +1774,7 @@ function toggleTheme(){
 window.toggleTheme=toggleTheme;
 (()=>{
   const saved=localStorage.getItem('kss_admin_theme');
-  if(saved) document.documentElement.setAttribute('data-theme',saved);
+  document.documentElement.setAttribute('data-theme', saved || 'light');
 })();
 
 /* ══════════════════════════════════════════
@@ -2000,7 +2006,7 @@ function populateFilters(){
     el.appendChild(first);
     grades.forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; el.appendChild(o); });
   });
-  ['results-term-sel','print-term'].forEach(id=>{
+  ['results-term-sel','print-term','top-term-sel'].forEach(id=>{
     const el=document.getElementById(id);
     if(!el) return;
     const first=el.options[0];
@@ -2120,26 +2126,47 @@ function renderGradeBars(){
 ══════════════════════════════════════════ */
 function renderTopStudents(){
   const grade=document.getElementById('top-grade-sel')?.value||'all';
-  const data=getFilteredByGrade(grade);
-  // Get latest record per student
-  const byStudent={};
-  data.forEach(r=>{
-    const key=r['Assessment No']||r['Official Student Name'];
-    const st=calcStats(r);
-    const avg=parseFloat(st.avg);
-    if(!byStudent[key]||avg>parseFloat(calcStats(byStudent[key]).avg)) byStudent[key]=r;
-  });
-  const sorted=Object.values(byStudent).sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg)).slice(0,10);
+  const term=document.getElementById('top-term-sel')?.value||'all';
+  // Filter by grade
+  let data=getFilteredByGrade(grade);
+  // Filter by term (Grade field contains the term identifier)
+  if(term&&term!=='all') data=data.filter(r=>getRecordTerm(r)===term);
+  // When a specific term is selected: show each student's record for that term (no de-dup needed)
+  // When 'all terms': de-dup to each student's best record
+  let ranked=[];
+  if(term&&term!=='all'){
+    // Direct list — one record per student for that term; deduplicate by adm no, keep highest
+    const byStudent={};
+    data.forEach(r=>{
+      const key=String(r['Assessment No']||r['Official Student Name']||'').trim();
+      const avg=parseFloat(calcStats(r).avg);
+      if(!byStudent[key]||avg>parseFloat(calcStats(byStudent[key]).avg)) byStudent[key]=r;
+    });
+    ranked=Object.values(byStudent);
+  } else {
+    // All terms: best record per student
+    const byStudent={};
+    data.forEach(r=>{
+      const key=String(r['Assessment No']||r['Official Student Name']||'').trim();
+      const avg=parseFloat(calcStats(r).avg);
+      if(!byStudent[key]||avg>parseFloat(calcStats(byStudent[key]).avg)) byStudent[key]=r;
+    });
+    ranked=Object.values(byStudent);
+  }
+  const sorted=ranked.sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg)).slice(0,10);
   const container=document.getElementById('top-students-list');
-  if(!sorted.length){container.innerHTML='<p style="font-size:12px;color:var(--text3)">No data</p>';return;}
-  container.innerHTML=sorted.map((r,i)=>{
+  if(!sorted.length){container.innerHTML='<p style="font-size:12px;color:var(--text3)">No data for selected filter.</p>';return;}
+  // Show which term is being ranked
+  const termLabel=term&&term!=='all'?`<div style="font-size:10px;color:var(--blue-lt);font-weight:700;margin-bottom:10px;padding:4px 8px;background:rgba(41,128,185,.1);border-radius:6px;display:inline-block">📅 ${term}</div>`:'';
+  container.innerHTML=termLabel+sorted.map((r,i)=>{
     const st=calcStats(r);
     const color=barColor(st.avg);
     const numClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-rest';
+    const termInfo=term==='all'?`<span style="font-size:9px;color:var(--text3);margin-left:4px">(${getRecordTerm(r)})</span>`:'';
     return `<div class="rank-item">
       <div class="rank-num ${numClass}">${i+1}</div>
       <div style="flex:1">
-        <div class="rank-name">${r['Official Student Name']||'—'}</div>
+        <div class="rank-name">${r['Official Student Name']||'—'}${termInfo}</div>
         <div class="rank-sub">${r['Grade']||'N/A'} · Adm: ${r['Assessment No']||'N/A'}</div>
       </div>
       <div class="rank-score" style="color:${color}">${st.avg}%</div>
