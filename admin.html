@@ -43,7 +43,7 @@ html{scroll-behavior:smooth;}
 body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s;}
 
 body::before{
-  content:'';position:fixed;inset:0;z-index:0;pointer-events:auto;
+  content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(ellipse 60% 50% at 8% 10%,rgba(41,128,185,.12) 0%,transparent 65%),
     radial-gradient(ellipse 50% 45% at 92% 90%,rgba(22,160,133,.08) 0%,transparent 60%),
     radial-gradient(ellipse 35% 30% at 55% 50%,rgba(41,128,185,.05) 0%,transparent 70%);
@@ -607,7 +607,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   background:var(--surface2);border:1px solid var(--border);
   cursor:pointer;align-items:center;justify-content:center;font-size:16px;
 }
-.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:299;backdrop-filter:blur(4px);}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:299;}
 .sidebar-backdrop.on{display:block;}
 
 /* ══════════════════════════════════════════
@@ -655,6 +655,24 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .subj-bar-head{display:flex;justify-content:space-between;margin-bottom:4px;}
 .subj-bar-name{font-size:12px;font-weight:700;color:var(--text);}
 .subj-bar-val{font-size:12px;font-weight:800;font-family:'JetBrains Mono',monospace;}
+
+/* ══════════════════════════════════════════
+   STUDENT PHOTO AVATARS
+══════════════════════════════════════════ */
+.stu-av-wrap{
+  position:relative;overflow:hidden;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(135deg,var(--orange),var(--gold));
+  color:#fff;font-weight:900;
+}
+.stu-av-wrap img{
+  position:absolute;inset:0;width:100%;height:100%;
+  object-fit:cover;transition:opacity .3s;
+}
+.stu-av-sm{width:32px;height:32px;border-radius:9px;font-size:12px;}
+.stu-av-md{width:44px;height:44px;border-radius:12px;font-size:16px;}
+.stu-av-lg{width:64px;height:64px;border-radius:16px;font-size:24px;border:3px solid var(--border);}
+.stu-av-rank{width:36px;height:36px;border-radius:10px;font-size:13px;}
 </style>
 </head>
 <body>
@@ -903,7 +921,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         </div>
         <div class="filter-row">
           <div class="search-input-wrap">
-            <input class="search-input" id="student-search" placeholder="Search by name, assessment no, UPI…" oninput="filterStudents()">
+            <input class="search-input" id="student-search" placeholder="Search by name, adm no, UPI, grade… or score range (e.g. >70)" oninput="filterStudents()">
           </div>
           <select class="sel" id="filter-grade" onchange="filterStudents()">
             <option value="">All Grades</option>
@@ -1460,9 +1478,12 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div class="modal-overlay" id="records-modal" onclick="if(event.target===this)closeRecordsModal()">
   <div class="modal-box modal-wide">
     <div class="modal-hdr">
-      <div style="min-width:0">
-        <h3 id="rec-modal-name" style="margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Student Records</h3>
-        <div id="rec-modal-sub" style="font-size:11px;color:var(--text3)"></div>
+      <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
+        <div class="stu-av-wrap stu-av-md" id="rec-modal-av">?</div>
+        <div style="min-width:0">
+          <h3 id="rec-modal-name" style="margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Student Records</h3>
+          <div id="rec-modal-sub" style="font-size:11px;color:var(--text3)"></div>
+        </div>
       </div>
       <button class="modal-close" onclick="closeRecordsModal()">✕</button>
     </div>
@@ -1590,6 +1611,84 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 </script>
 
 <script>
+
+/* ══════════════════════════════════════════
+   STUDENT PHOTO LOADING (server-fetched)
+   Path: ./Report-Cards/student_images/{Grade}/{Name}.jpg
+══════════════════════════════════════════ */
+const _imgCache={};
+
+function _loadImg(src){
+  return new Promise(resolve=>{
+    if(_imgCache[src]!==undefined){resolve(_imgCache[src]);return;}
+    const img=new Image();
+    img.crossOrigin='anonymous';
+    const timer=setTimeout(()=>{_imgCache[src]=null;resolve(null);},2500);
+    img.onload=()=>{clearTimeout(timer);_imgCache[src]=img.src;resolve(img.src);};
+    img.onerror=()=>{clearTimeout(timer);_imgCache[src]=null;resolve(null);};
+    img.src=src;
+  });
+}
+
+async function loadStudentPhoto(name, grade){
+  // Extract base grade e.g. "Grade 7" from longer strings
+  const g=(grade||'').match(/Grade\s*\d+/i)?.[0]||grade||'';
+  const cleanName=(name||'').trim();
+  const encGrade=encodeURIComponent(g);
+  const encName=encodeURIComponent(cleanName);
+  const paths=[
+    `./Report-Cards/student_images/${g}/${cleanName}.jpg`,
+    `./Report-Cards/student_images/${encGrade}/${encName}.jpg`,
+    `./Report-Cards/student_images/${g}/${encName}.jpg`,
+    `./student_images/${g}/${cleanName}.jpg`,
+    `./student_images/${encGrade}/${encName}.jpg`,
+  ];
+  for(const p of paths){
+    const src=await _loadImg(p);
+    if(src) return src;
+  }
+  // Final fallback: shared default avatar (same approach as reference)
+  return await _loadImg('./Report-Cards/student_images/default.jpg');
+}
+
+// Build a photo avatar element and async-load the image
+// wrapClass: CSS class(es) for the wrapper div
+// initials: fallback text
+function makePhotoAvatar(name, grade, wrapClass, extraStyle=''){
+  const initials=(name||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
+  const uid='av_'+Math.random().toString(36).slice(2,8);
+  // Return HTML + schedule async load
+  const html=`<div class="stu-av-wrap ${wrapClass}" id="${uid}" style="${extraStyle}">${initials}</div>`;
+  // Load after current paint
+  requestAnimationFrame(()=>{
+    loadStudentPhoto(name, grade).then(src=>{
+      if(!src) return;
+      const el=document.getElementById(uid);
+      if(!el) return;
+      const img=document.createElement('img');
+      img.src=src;
+      img.alt=name||'';
+      img.loading='lazy';
+      el.appendChild(img);
+    });
+  });
+  return html;
+}
+
+// Async inject photo into an existing wrapper element by id
+function injectPhoto(elemId, name, grade){
+  loadStudentPhoto(name, grade).then(src=>{
+    if(!src) return;
+    const el=document.getElementById(elemId);
+    if(!el) return;
+    const existing=el.querySelector('img');
+    if(existing){existing.src=src;return;}
+    const img=document.createElement('img');
+    img.src=src;img.alt=name||'';
+    el.appendChild(img);
+  });
+}
+
 /* ══════════════════════════════════════════
    CONFIG
 ══════════════════════════════════════════ */
@@ -2163,10 +2262,12 @@ function renderTopStudents(){
     const color=barColor(st.avg);
     const numClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-rest';
     const termInfo=term==='all'?`<span style="font-size:9px;color:var(--text3);margin-left:4px">(${getRecordTerm(r)})</span>`:'';
+    const _rkAv=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-rank');
     return `<div class="rank-item">
       <div class="rank-num ${numClass}">${i+1}</div>
-      <div style="flex:1">
-        <div class="rank-name">${r['Official Student Name']||'—'}${termInfo}</div>
+      ${_rkAv}
+      <div style="flex:1;min-width:0">
+        <div class="rank-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['Official Student Name']||'—'}${termInfo}</div>
         <div class="rank-sub">${r['Grade']||'N/A'} · Adm: ${r['Assessment No']||'N/A'}</div>
       </div>
       <div class="rank-score" style="color:${color}">${st.avg}%</div>
@@ -2207,22 +2308,39 @@ function timeAgo(d){
 /* ══════════════════════════════════════════
    STUDENTS TABLE
 ══════════════════════════════════════════ */
-let studentSortField='name', studentSortDir=1;
+let studentSortField='avg', studentSortDir=-1;
 
 function filterStudents(){
-  const q=(document.getElementById('student-search')?.value||'').toLowerCase();
+  let q=(document.getElementById('student-search')?.value||'').trim();
   const g=document.getElementById('filter-grade')?.value||'';
   const t=document.getElementById('filter-term')?.value||'';
   const gend=document.getElementById('filter-gender')?.value||'';
   const lv=document.getElementById('filter-level')?.value||'';
 
+  // Parse score/avg range from search query: avg>70, score<=80, >60, <40
+  let scoreFilter=null;
+  const scoreM=q.match(/(?:avg|score)?\s*([><=!]+)\s*(\d+(?:\.\d+)?)/i);
+  if(scoreM){scoreFilter={op:scoreM[1],val:parseFloat(scoreM[2])};q=q.replace(scoreM[0],'').trim();}
+  const ql=q.toLowerCase();
+
   // First filter all matching rows
   const matchedRows=allData.filter(r=>{
-    if(q){
+    if(ql){
       const name=(String(r['Official Student Name']||'')).toLowerCase();
       const asm=(String(r['Assessment No']||'')).toLowerCase();
-      const upi=(r['UPI']||'').toLowerCase();
-      if(!name.includes(q)&&!asm.includes(q)&&!upi.includes(q)) return false;
+      const upi=(String(r['UPI']||'')).toLowerCase();
+      const grade=(String(r['Grade']||'')).toLowerCase();
+      const gender=(String(r['Gender']||'')).toLowerCase();
+      if(!name.includes(ql)&&!asm.includes(ql)&&!upi.includes(ql)&&!grade.includes(ql)&&!gender.includes(ql)) return false;
+    }
+    if(scoreFilter){
+      const avg=parseFloat(calcStats(r).avg);
+      const{op,val}=scoreFilter;
+      if(op==='>='&&!(avg>=val)) return false;
+      if(op==='>'&&!(avg>val)) return false;
+      if(op==='<='&&!(avg<=val)) return false;
+      if(op==='<'&&!(avg<val)) return false;
+      if((op==='='||op==='==')&&!(Math.round(avg)===val)) return false;
     }
     if(g&&gShort(r['Grade'])!==g) return false;
     if(t&&(r['Grade']||r['Term']||'')!==t) return false;
@@ -2272,14 +2390,14 @@ function renderStudentsTable(){
   tbody.innerHTML=pageData.map((r,i)=>{
     const st=calcStats(r);
     const color=barColor(st.avg);
-    const init=(r['Official Student Name']||'?')[0].toUpperCase();
     const allRecs=r._allRecords||[r];
     const recCount=allRecs.length;
+    const _avHtml=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm');
     return `<tr class="student-hover-row" onclick="openRecordsModal('${r.id}')" title="Click to view all records">
       <td>${start+i+1}</td>
       <td>
         <div style="display:flex;align-items:center;gap:9px">
-          <div style="width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff;flex-shrink:0">${init}</div>
+          ${_avHtml}
           <div>
             <div style="font-size:12px;font-weight:700;color:var(--text)">${r['Official Student Name']||'—'}</div>
             <div style="font-size:10px;color:var(--text3)">UPI: ${r['UPI']||'N/A'} · <span style="color:var(--blue-lt);font-weight:700">${recCount} record${recCount===1?'':'s'}</span></div>
@@ -2330,12 +2448,11 @@ function viewStudent(id){
   const st=calcStats(rec);
   const subjects=getSubjects(rec);
   const color=barColor(st.avg);
-  const init=(rec['Official Student Name']||'?')[0];
-
+  const _modalAvId='modal_av_'+id;
   document.getElementById('student-modal-title').textContent=rec['Official Student Name']||'Student Profile';
   document.getElementById('student-modal-body').innerHTML=`
     <div class="student-card">
-      <div class="student-avatar">${init}</div>
+      <div class="stu-av-wrap stu-av-lg" id="${_modalAvId}">${(rec['Official Student Name']||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?'}</div>
       <div>
         <div class="student-meta">
           <div class="s-name">${rec['Official Student Name']||'—'}</div>
@@ -2392,6 +2509,7 @@ function viewStudent(id){
   `;
   document.getElementById('modal-pdf-btn').onclick=()=>dlStudentPDF(id);
   document.getElementById('student-modal').classList.add('on');
+  injectPhoto(_modalAvId, rec['Official Student Name']||'', rec['Grade']||'');
   logActivity(`👁 Viewed profile of ${rec['Official Student Name']}`, 'act-blue', 'Admin');
 }
 window.viewStudent=viewStudent;
@@ -3058,6 +3176,16 @@ function openRecordsModal(masterId){
 
   document.getElementById('rec-modal-name').textContent = name;
   document.getElementById('rec-modal-sub').textContent  = 'Adm: ' + adm + ' · ' + allRecs.length + ' record' + (allRecs.length===1?'':'s');
+  // Set initials instantly, load photo async
+  const recAvEl=document.getElementById('rec-modal-av');
+  if(recAvEl){
+    const ini=(name||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
+    recAvEl.textContent=ini;
+    // clear old img if any
+    recAvEl.querySelectorAll('img').forEach(el=>el.remove());
+    const grade=entry['Grade']||'';
+    injectPhoto('rec-modal-av', name, grade);
+  }
 
   renderRecordTabs(allRecs, 0);
   renderRecordContent(allRecs, 0);
