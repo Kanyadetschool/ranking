@@ -385,32 +385,53 @@ body::before{
 ══════════════════════════════════════════ */
 .modal-overlay{
   display:none;position:fixed;inset:0;z-index:8000;
-  background:rgba(0,0,0,.7);backdrop-filter:blur(12px);
-  align-items:center;justify-content:center;padding:20px;overflow-y:auto;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  align-items:center;justify-content:center;
+  padding:16px;overflow-y:auto;
 }
 .modal-overlay.on{display:flex;}
 .modal-box{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius-xl);width:min(640px,100%);
-  box-shadow:0 32px 100px rgba(0,0,0,.5);
-  animation:mIn .35s cubic-bezier(.34,1.56,.64,1);
-  margin:auto;max-height:90vh;display:flex;flex-direction:column;
+  box-shadow:0 32px 100px rgba(0,0,0,.55);
+  animation:mIn .32s cubic-bezier(.34,1.56,.64,1);
+  margin:auto;
+  max-height:calc(100vh - 32px);
+  display:flex;flex-direction:column;
+  flex-shrink:0;
 }
-.modal-body{padding:22px;overflow-y:auto;flex:1;}
-@keyframes mIn{from{transform:scale(.88) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+/* Wider variant for records modal */
+.modal-box.modal-wide{width:min(780px,100%);}
+.modal-body{padding:22px;overflow-y:auto;flex:1;min-height:0;}
+@keyframes mIn{from{transform:scale(.9) translateY(16px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
 .modal-hdr{
   display:flex;align-items:center;justify-content:space-between;
-  padding:18px 22px;border-bottom:1px solid var(--border);
+  padding:16px 22px;border-bottom:1px solid var(--border);flex-shrink:0;
+  gap:12px;
 }
 .modal-hdr h3{font-size:15px;font-weight:900;color:var(--text);}
 .modal-close{
-  width:32px;height:32px;border-radius:50%;
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
   background:var(--surface2);border:none;cursor:pointer;
   font-size:14px;color:var(--text2);display:flex;align-items:center;justify-content:center;
   transition:var(--transition);
 }
 .modal-close:hover{background:rgba(231,76,60,.15);color:var(--red);}
-.modal-footer{padding:16px 22px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end;}
+.modal-footer{
+  padding:14px 22px;border-top:1px solid var(--border);
+  display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;flex-shrink:0;
+}
+@media(max-width:600px){
+  .modal-overlay{padding:0;}
+  .modal-box,.modal-box.modal-wide{
+    width:100%;max-height:100dvh;border-radius:var(--radius-lg) var(--radius-lg) 0 0;
+    margin:auto 0 0;
+  }
+  .modal-hdr{padding:14px 16px;}
+  .modal-body{padding:16px;}
+  .modal-footer{padding:12px 16px;gap:6px;}
+  .modal-footer .btn{flex:1;justify-content:center;font-size:11px;padding:8px 10px;}
+}
 
 /* ══════════════════════════════════════════
    FORM ELEMENTS IN MODALS
@@ -549,6 +570,16 @@ body::before{
   .topbar{padding:10px 16px;}
   .content-area{padding:16px;}
   .hamburger{display:flex!important;}
+  /* Records modal tabs scroll on mobile */
+  #rec-modal-tabs{padding:0 12px;}
+  #rec-modal-content{padding:14px 12px;}
+  /* Subject table: hide progress bar column on small screens */
+  .rec-perf-col{display:none;}
+}
+@media(max-width:480px){
+  .kpi-grid{grid-template-columns:1fr;}
+  .mini-stats{grid-template-columns:1fr 1fr;}
+  .grid-2,.grid-3,.grid-60-40{grid-template-columns:1fr;}
 }
 .hamburger{
   display:none;width:36px;height:36px;border-radius:var(--radius-sm);
@@ -625,7 +656,7 @@ body::before{
     <p>Kanyadet PRI &amp; Junior School — Restricted Access</p>
     <div class="login-err" id="login-err"></div>
     <div class="fg">
-      <label>ADMIN USERNAME</label>
+      <label>ADMIN USERNAME..</label>
       <input type="text" id="inp-user" placeholder="Enter username" autocomplete="username">
     </div>
     <div class="fg">
@@ -1256,25 +1287,24 @@ body::before{
 
 <!-- STUDENT RECORDS MODAL -->
 <div class="modal-overlay" id="records-modal" onclick="if(event.target===this)closeRecordsModal()">
-  <div class="modal-box" style="width:min(760px,100%)">
+  <div class="modal-box modal-wide">
     <div class="modal-hdr">
-      <div>
-        <h3 id="rec-modal-name" style="margin-bottom:2px">Student Records</h3>
+      <div style="min-width:0">
+        <h3 id="rec-modal-name" style="margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Student Records</h3>
         <div id="rec-modal-sub" style="font-size:11px;color:var(--text3)"></div>
       </div>
       <button class="modal-close" onclick="closeRecordsModal()">✕</button>
     </div>
-    <div class="modal-body" style="padding:0">
-      <!-- Record selector tabs -->
-      <div id="rec-modal-tabs" style="display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--border);padding:0 22px;background:var(--surface2)"></div>
-      <!-- Active record detail -->
-      <div id="rec-modal-content" style="padding:22px"></div>
+    <!-- Record selector tabs — scrollable on mobile -->
+    <div id="rec-modal-tabs" style="display:flex;overflow-x:auto;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;scrollbar-width:none"></div>
+    <div class="modal-body" style="padding:0;overflow-y:auto">
+      <div id="rec-modal-content" style="padding:20px"></div>
     </div>
-    <div class="modal-footer">
-      <button class="btn btn-outline btn-sm" onclick="copyRecordData()">📋 Copy Data</button>
-      <button class="btn btn-orange btn-sm" id="rec-modal-edit-btn" onclick="editFromRecordsModal()">✏️ Edit Record</button>
+    <div class="modal-footer" style="flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="copyRecordData()">📋 Copy</button>
+      <button class="btn btn-orange btn-sm" id="rec-modal-edit-btn" onclick="editFromRecordsModal()">✏️ Edit</button>
       <button class="btn btn-blue btn-sm" id="rec-modal-view-btn" onclick="viewFromRecordsModal()">👁 Full Profile</button>
-      <button class="btn btn-outline btn-sm" onclick="closeRecordsModal()">Close</button>
+      <button class="btn btn-outline btn-sm" onclick="closeRecordsModal()" style="margin-left:auto">✕ Close</button>
     </div>
   </div>
 </div>
@@ -2651,16 +2681,20 @@ function renderRecordTabs(allRecs, activeIdx){
     const termLabel = getRecordTerm(x);
     const xs = calcStats(x);
     const isActive = xi === activeIdx;
-    return `<div onclick="switchRecordTab(${xi})" style="
-      flex-shrink:0;padding:12px 18px;cursor:pointer;font-size:11px;font-weight:700;
+    const xcolor = barColor(xs.avg);
+    return `<button onclick="switchRecordTab(${xi})" style="
+      flex-shrink:0;padding:10px 16px;cursor:pointer;font-size:11px;font-weight:700;
+      border:none;outline:none;
       border-bottom:2px solid ${isActive?'var(--blue-lt)':'transparent'};
       color:${isActive?'var(--blue-lt)':'var(--text2)'};
       background:${isActive?'var(--surface)':'transparent'};
       transition:all .2s;white-space:nowrap;
+      display:flex;flex-direction:column;align-items:center;gap:2px;
+      min-width:100px;text-align:center;
     ">
-      <div>${termLabel}</div>
-      <div style="font-size:9px;font-weight:800;font-family:'JetBrains Mono',monospace;color:${barColor(xs.avg)};margin-top:2px">${xs.avg}%</div>
-    </div>`;
+      <span>${termLabel}</span>
+      <span style="font-size:10px;font-weight:900;font-family:'JetBrains Mono',monospace;color:${xcolor}">${xs.avg}%</span>
+    </button>`;
   }).join('');
 }
 
@@ -2688,7 +2722,7 @@ function renderRecordContent(allRecs, idx){
 
   document.getElementById('rec-modal-content').innerHTML = `
     <!-- Meta badges -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px">
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
       <span class="bdg blue">📚 ${gShort(rec['Grade'])}</span>
       <span class="bdg orange">📅 ${p.term||'N/A'}${p.examType?' — '+p.examType:''}</span>
       ${p.year?`<span class="bdg" style="background:rgba(22,160,133,.12);border-color:rgba(22,160,133,.25);color:#1abc9c">📆 ${p.year}</span>`:''}
@@ -2696,15 +2730,15 @@ function renderRecordContent(allRecs, idx){
       <span class="bdg">📍 Pos: ${rec['Position']||'N/A'}</span>
     </div>
 
-    <!-- Stats row -->
-    <div class="mini-stats" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px">
+    <!-- Stats row — uses CSS class so responsive rules apply -->
+    <div class="mini-stats" style="margin-bottom:16px">
       <div class="mini-stat">
         <div class="ms-val" style="color:${color}">${st.avg}%</div>
         <div class="ms-lbl">Average</div>
       </div>
       <div class="mini-stat">
         <div class="ms-val">${st.total}</div>
-        <div class="ms-lbl">Total Marks</div>
+        <div class="ms-lbl">Total</div>
       </div>
       <div class="mini-stat">
         <div class="ms-val">${st.pts}</div>
@@ -2717,22 +2751,26 @@ function renderRecordContent(allRecs, idx){
     </div>
 
     <!-- Subject scores table -->
-    <div style="margin-bottom:${rec['Remarks']?'18px':'0'}">
+    <div style="margin-bottom:${rec['Remarks']?'16px':'0'}">
       <div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Subject Scores</div>
       <div class="table-wrap">
-        <table class="data-table">
+        <table class="data-table" style="min-width:340px">
           <thead><tr>
-            <th>Subject</th><th>Score</th><th>Points</th><th>Level</th><th style="width:40%">Performance</th>
+            <th>Subject</th>
+            <th>Score</th>
+            <th>Pts</th>
+            <th>Level</th>
+            <th class="rec-perf-col" style="width:35%">Performance</th>
           </tr></thead>
           <tbody>
             ${subjects.map(s=>{
               const v=parseFloat(rec[s]);const g=gradeInfo(v);const c=barColor(v);
               return `<tr>
-                <td style="font-weight:700;color:var(--text)">${s}</td>
+                <td style="font-weight:700;color:var(--text);white-space:nowrap">${s}</td>
                 <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${c}">${isNaN(v)?'N/A':v}</td>
-                <td style="font-family:'JetBrains Mono',monospace">${g.pts}</td>
+                <td style="font-family:'JetBrains Mono',monospace;color:var(--text2)">${g.pts}</td>
                 <td><span class="gp ${gradePillClass(g.cls)}">${g.level}</span></td>
-                <td><div class="progress-bar"><div class="progress-fill" style="width:${isNaN(v)?0:v}%;background:${c}"></div></div></td>
+                <td class="rec-perf-col"><div class="progress-bar"><div class="progress-fill" style="width:${isNaN(v)?0:v}%;background:${c}"></div></div></td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -2742,7 +2780,7 @@ function renderRecordContent(allRecs, idx){
 
     <!-- Remarks -->
     ${rec['Remarks']?`
-    <div class="card" style="background:var(--surface2);margin:18px 0 0;padding:14px 16px">
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-top:16px">
       <div style="font-size:22px;color:rgba(41,128,185,.25);line-height:.7;font-family:Georgia">"</div>
       <p style="font-size:12px;line-height:1.8;color:var(--text);font-style:italic;margin-top:4px">${rec['Remarks']}</p>
       <p style="font-size:10px;color:var(--text2);margin-top:6px">— Class Teacher, ${getRecordTerm(rec)}</p>
