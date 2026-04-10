@@ -686,6 +686,34 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     </div>
     <button class="login-btn" onclick="doAdminLogin()" id="login-btn">🚀 Sign In to Admin</button>
     <p class="login-hint">🔒 Authorized personnel only &nbsp;·&nbsp; Demo: admin / admin123</p>
+    <div class="auth-qlinks-panel" id="quick-links-panel">
+          <a href="./Report-Cards/Junior-School.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
+            <div class="auth-qlink-dot"></div>📄Junior School<span class="auth-qlink-arrow">→</span>
+          </a>
+          <a href="./Report-Cards/Junior-School-Normks.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
+            <div class="auth-qlink-dot"></div>📄 Junior-School-Normks<span class="auth-qlink-arrow">→</span>
+          </a>
+          <a href="./Report-Cards/Primary-Report-Cards.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-2">
+            <div class="auth-qlink-dot"></div>📄 Primary School<span class="auth-qlink-arrow">→</span>
+          </a>
+          <a href="./Report-Cards/Primary-Report-Cards-Normks.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
+            <div class="auth-qlink-dot"></div>📄 Primary School Normks<span class="auth-qlink-arrow">→</span>
+          </a>
+           <a href="./Report-Cards/Termly-Reports.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
+            <div class="auth-qlink-dot"></div>🎓 All Terms Merged <span class="auth-qlink-arrow">→</span>
+          </a>
+          <a href="./Report-Cards/Termly-ReportsRmks.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
+            <div class="auth-qlink-dot"></div>🎓 All Terms Merged Rmks<span class="auth-qlink-arrow">→</span>
+          </a>
+          
+          <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
+            <div class="auth-qlink-dot"></div>🎓 Students Portal<span class="auth-qlink-arrow">→</span>
+          </a>
+          
+        </div>
+
+
+        
   </div>
 </div>
 
@@ -3195,12 +3223,25 @@ window.searchKeyNav=searchKeyNav;
 
 function selectSearchResult(id){
   closeSmartSearch();
-  // Find the student in filteredStudents or navigate to students view
-  const entry=filteredStudents.find(r=>r.id===id)||(()=>{const r=allData.find(x=>x.id===id);return r?{...r,_allRecords:allData.filter(x=>(x['Assessment No']||x['Official Student Name'])===(r['Assessment No']||r['Official Student Name']))}:null;})();
-  if(entry){
-    navTo('students',document.querySelector('.nav-item:nth-child(2)'));
-    setTimeout(()=>openRecordsModal(entry.id),100);
-  }
+  const raw=allData.find(x=>x.id===id);
+  if(!raw) return;
+  navTo('students',document.querySelector('.nav-item:nth-child(2)'));
+  // Clear all filters so filteredStudents is fully populated
+  const sSearch=document.getElementById('student-search');
+  const fGrade=document.getElementById('filter-grade');
+  const fTerm=document.getElementById('filter-term');
+  const fGender=document.getElementById('filter-gender');
+  const fLevel=document.getElementById('filter-level');
+  if(sSearch) sSearch.value='';
+  if(fGrade) fGrade.value='';
+  if(fTerm) fTerm.value='';
+  if(fGender) fGender.value='';
+  if(fLevel) fLevel.value='';
+  filterStudents();
+  // Find the deduped master record for this student
+  const key=String(raw['Assessment No']||raw['Official Student Name']||'').trim();
+  const master=filteredStudents.find(r=>String(r['Assessment No']||r['Official Student Name']||'').trim()===key)||filteredStudents.find(r=>r.id===id);
+  if(master) setTimeout(()=>openRecordsModal(master.id),80);
 }
 window.selectSearchResult=selectSearchResult;
 
@@ -3650,8 +3691,8 @@ async function handleImportFile(file){
     _importData=rows;
 
     // Duplicate detection
-    const existing=new Set(allData.map(r=>(r['Assessment No']||'').trim()).filter(Boolean));
-    const dupes=rows.filter(r=>{const v=Object.values(r).find((_,i)=>_importHeaders[i]==='Assessment No')||r['Assessment No']||'';return existing.has(String(v).trim());});
+    const existing=new Set(allData.map(r=>String(r['Assessment No']||'').trim()).filter(Boolean));
+    const dupes=rows.filter(r=>{const v=r['Assessment No']!==undefined?r['Assessment No']:(Object.values(r).find((_,i)=>_importHeaders[i]==='Assessment No')||'');return existing.has(String(v).trim());});
 
     status.innerHTML=`<div style="font-size:12px;color:var(--green)">✅ Loaded <strong>${rows.length}</strong> rows, <strong>${_importHeaders.length}</strong> columns${dupes.length?` · <span style="color:var(--orange)">${dupes.length} possible duplicates</span>`:''}</div>`;
     buildColumnMapping();
