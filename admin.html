@@ -6,6 +6,7 @@
 <title>Kanyadet School — Admin Portal</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 <style>
@@ -676,7 +677,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     <p>Kanyadet PRI &amp; Junior School — Restricted Access</p>
     <div class="login-err" id="login-err"></div>
     <div class="fg">
-      <label>ADMIN USERNAME..</label>
+      <label>ADMIN USERNAME</label>
       <input type="text" id="inp-user" placeholder="Enter username" autocomplete="username">
     </div>
     <div class="fg">
@@ -881,6 +882,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           <select class="sel" id="filter-grade" onchange="filterStudents()">
             <option value="">All Grades</option>
           </select>
+          <select class="sel" id="filter-term" onchange="filterStudents()" title="Filter by exact Grade/Term entry">
+            <option value="">All Terms</option>
+          </select>
           <select class="sel" id="filter-gender" onchange="filterStudents()">
             <option value="">All Genders</option>
             <option value="Male">Male</option>
@@ -906,7 +910,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                   <th>#</th>
                   <th class="sortable" onclick="sortStudents('name')">Name ↕</th>
                   <th>Adm No</th>
-                  <th class="sortable" onclick="sortStudents('grade')">Grade ↕</th>
+                  <th class="sortable" onclick="sortStudents('grade')" style="min-width:180px">Grade / Term ↕</th>
                   <th>Gender</th>
                   <th class="sortable" onclick="sortStudents('avg')">Best Avg ↕</th>
                   <th>Level</th>
@@ -1728,7 +1732,7 @@ function getUniqueGrades(){
 }
 function getUniqueTerms(){
   const terms=[...new Set(allData.map(r=>getRecordTerm(r)).filter(t=>t&&t!=='Unknown'))];
-  return terms.sort((a,b)=>termSortKey(a).localeCompare(termSortKey(b)));
+  return terms.sort((a,b)=>a.localeCompare(b));
 }
 
 /* ══════════════════════════════════════════
@@ -1887,6 +1891,9 @@ function populateFilters(){
   const grades=getUniqueGrades();
   const terms=getUniqueTerms();
   const selIds=['filter-grade','dist-grade-sel','top-grade-sel','trend-grade-sel','results-grade-sel','subj-grade-sel','subj-rank-grade'];
+  // Also populate filter-term for student directory
+  const termSelStudents=document.getElementById('filter-term');
+  if(termSelStudents){const cv=termSelStudents.value;termSelStudents.innerHTML='<option value="">All Terms</option>';getUniqueTerms().forEach(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;termSelStudents.appendChild(o);});termSelStudents.value=cv;}
   selIds.forEach(id=>{
     const el=document.getElementById(id);
     if(!el) return;
@@ -2035,7 +2042,7 @@ function renderTopStudents(){
       <div class="rank-num ${numClass}">${i+1}</div>
       <div style="flex:1">
         <div class="rank-name">${r['Official Student Name']||'—'}</div>
-        <div class="rank-sub">${gShort(r['Grade'])} · Adm: ${r['Assessment No']||'N/A'}</div>
+        <div class="rank-sub">${r['Grade']||'N/A'} · Adm: ${r['Assessment No']||'N/A'}</div>
       </div>
       <div class="rank-score" style="color:${color}">${st.avg}%</div>
       <span class="gp ${gradePillClass(st.cls)}">${st.level}</span>
@@ -2080,6 +2087,7 @@ let studentSortField='name', studentSortDir=1;
 function filterStudents(){
   const q=(document.getElementById('student-search')?.value||'').toLowerCase();
   const g=document.getElementById('filter-grade')?.value||'';
+  const t=document.getElementById('filter-term')?.value||'';
   const gend=document.getElementById('filter-gender')?.value||'';
   const lv=document.getElementById('filter-level')?.value||'';
 
@@ -2092,6 +2100,7 @@ function filterStudents(){
       if(!name.includes(q)&&!asm.includes(q)&&!upi.includes(q)) return false;
     }
     if(g&&gShort(r['Grade'])!==g) return false;
+    if(t&&(r['Grade']||r['Term']||'')!==t) return false;
     if(gend&&r['Gender']!==gend) return false;
     if(lv&&!calcStats(r).level.includes(lv)) return false;
     return true;
@@ -2124,7 +2133,7 @@ window.sortStudents=sortStudents;
 function sortStudentsData(){
   filteredStudents.sort((a,b)=>{
     if(studentSortField==='name') return (a['Official Student Name']||'').localeCompare(b['Official Student Name']||'')*studentSortDir;
-    if(studentSortField==='grade') return (parseInt((gShort(a['Grade'])||'').replace(/\D/g,''))||0)-(parseInt((gShort(b['Grade'])||'').replace(/\D/g,''))||0)*studentSortDir;
+    if(studentSortField==='grade') return (a['Grade']||'').localeCompare(b['Grade']||'')*studentSortDir;
     if(studentSortField==='avg') return (parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg))*studentSortDir;
     return 0;
   });
@@ -2153,7 +2162,7 @@ function renderStudentsTable(){
         </div>
       </td>
       <td>${r['Assessment No']||'—'}</td>
-      <td>${gShort(r['Grade'])}</td>
+      <td style="font-size:10px;max-width:160px;word-break:break-word">${r['Grade']||'—'}</td>
       <td>${r['Gender']||'—'}</td>
       <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}" id="rec-avg-${r.id}">${st.avg}%</td>
       <td id="rec-lvl-${r.id}"><span class="gp ${gradePillClass(st.cls)}">${st.level}</span></td>
@@ -2208,10 +2217,9 @@ function viewStudent(id){
           <div class="s-detail">UPI: ${rec['UPI']||'N/A'} · Adm: ${rec['Assessment No']||'N/A'} · ${rec['Gender']||'N/A'}</div>
         </div>
         <div class="badge-row">
-          <span class="bdg blue">📚 ${gShort(rec['Grade'])}</span>
-          <span class="bdg orange">📅 ${(()=>{const p=parseGradeField(rec['Grade']||rec['Term']||'');return p.term||'N/A';})()}</span>
+          <span class="bdg blue">📚 ${rec['Grade']||rec['Term']||'N/A'}</span>
           ${(()=>{const e=getExamType(rec);return e?`<span class="bdg" style="background:rgba(142,68,173,.12);border-color:rgba(142,68,173,.25);color:#c39bd3">📝 ${e}</span>`:''})()}
-          ${(()=>{const p=parseGradeField(rec['Grade']||rec['Term']||'');return p.year?`<span class="bdg" style="background:rgba(22,160,133,.12);border-color:rgba(22,160,133,.25);color:#1abc9c">📆 ${p.year}</span>`:''})()}
+
           <span class="bdg green">🏆 ${st.level} — ${st.label}</span>
           <span class="bdg">📍 Position: ${rec['Position']||'N/A'}</span>
         </div>
@@ -2509,8 +2517,8 @@ function renderResultsTable(){
     return `<tr>
       <td>${start+i+1}</td>
       <td style="font-weight:700;color:var(--text)">${r['Official Student Name']||'—'}</td>
-      <td>${gShort(r['Grade'])}</td>
-      <td title="${getRecordTerm(r)}">${getTermShort(r)}</td>
+      <td style="font-size:10px;max-width:160px;word-break:break-word">${r['Grade']||'—'}</td>
+      <td style="font-size:10px">${r['Grade']||r['Term']||'—'}</td>
       <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}">${st.avg}%</td>
       <td><span class="gp ${gradePillClass(st.cls)}">${st.level}</span></td>
       <td>${r['Position']||'—'}</td>
@@ -2578,7 +2586,7 @@ function renderTrendChart(){
     if(!byTerm[t]) byTerm[t]=[];
     byTerm[t].push(parseFloat(calcStats(r).avg));
   });
-  const sortedTerms=Object.keys(byTerm).sort((a,b)=>termSortKey(a).localeCompare(termSortKey(b)));
+  const sortedTerms=Object.keys(byTerm).sort((a,b)=>a.localeCompare(b));
   const avgs=sortedTerms.map(t=>{ const vals=byTerm[t].filter(x=>!isNaN(x)); return vals.length?(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1):0; });
   const ctx=document.getElementById('trend-chart').getContext('2d');
   if(trendChart) trendChart.destroy();
@@ -2725,7 +2733,7 @@ async function dlStudentPDF(id){
   doc.setFontSize(10);doc.setFont(undefined,'normal');
   doc.text('P.O. BOX 45-40139 AKALA, KENYA',W/2,17,{align:'center'});
   doc.text('STUDENT PERFORMANCE REPORT',W/2,23,{align:'center'});
-  const _recYear=parseGradeField(rec['Grade']||'').year||new Date().getFullYear();doc.setFontSize(8.5);doc.text(`Term: ${getRecordTerm(rec)} | ${_recYear}`,W/2,30,{align:'center'});
+  doc.setFontSize(7.5);doc.text(`${rec['Grade']||getRecordTerm(rec)||'N/A'}`,W/2,30,{align:'center'});
 
   // Info box
   doc.setTextColor(0,0,0);doc.setFillColor(240,240,240);doc.rect(15,42,W-30,36,'F');
@@ -2733,7 +2741,7 @@ async function dlStudentPDF(id){
   doc.setFont(undefined,'normal');doc.setFontSize(8.5);
   const info=[
     [`Name: ${rec['Official Student Name']||'N/A'}`,`Assessment No: ${rec['Assessment No']||'N/A'}`],
-    [`UPI: ${rec['UPI']||'N/A'}`,`Grade: ${gShort(rec['Grade'])}`],
+    [`UPI: ${rec['UPI']||'N/A'}`,`Grade: ${rec['Grade']||'N/A'}`],
     [`Gender: ${rec['Gender']||'N/A'}`,`Position: ${rec['Position']||'N/A'}`],
   ];
   let iy=58;info.forEach(([l,r])=>{doc.text(l,20,iy);doc.text(r,W/2,iy);iy+=7;});
@@ -2793,8 +2801,8 @@ async function bulkGeneratePDF(){
     doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
     doc.text('KANYADET PRI & JUNIOR SCHOOL',W/2,10,{align:'center'});
     doc.setFontSize(9);doc.setFont(undefined,'normal');
-    doc.text(`STUDENT PERFORMANCE REPORT — ${getRecordTerm(rec)}`,W/2,17,{align:'center'});
-    doc.setFontSize(8);doc.text(`${rec['Official Student Name']||'N/A'} | ${gShort(rec['Grade'])} | Adm: ${rec['Assessment No']||'N/A'}`,W/2,24,{align:'center'});
+    doc.text(`STUDENT PERFORMANCE REPORT`,W/2,17,{align:'center'});
+    doc.setFontSize(7);doc.text(`${rec['Official Student Name']||'N/A'} | ${rec['Grade']||'N/A'} | Adm: ${rec['Assessment No']||'N/A'}`,W/2,24,{align:'center'});
     doc.setTextColor(0,0,0);
     const tableData=subjects.map(s=>{ const v=parseFloat(rec[s]);const g=gradeInfo(v);return[s,isNaN(v)?'N/A':v,g.pts,g.level]; });
     doc.autoTable({head:[['Subject','Score','Pts','Level']],body:tableData,startY:35,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[41,128,185],textColor:[255,255,255]},});
@@ -3083,8 +3091,7 @@ function copyRecordData(){
     'Student: ' + (rec['Official Student Name']||'N/A'),
     'Adm No: ' + (rec['Assessment No']||'N/A'),
     'UPI: ' + (rec['UPI']||'N/A'),
-    'Grade: ' + gShort(rec['Grade']),
-    'Term: ' + getRecordTerm(rec),
+    'Grade: ' + (rec['Grade']||'N/A'),
     'Average: ' + st.avg + '%',
     'Level: ' + st.level + ' (' + st.label + ')',
     'Points: ' + st.pts,
@@ -3136,7 +3143,7 @@ function runSmartSearch(q){
     const name=(best['Official Student Name']||'').toLowerCase();
     const upi=(best['UPI']||'').toLowerCase();
     const adm=(best['Assessment No']||'').toLowerCase();
-    const grade=gShort(best['Grade']).toLowerCase();
+    const grade=(best['Grade']||'').toLowerCase();
     const avg=parseFloat(calcStats(best).avg);
     if(q&&!name.includes(q.toLowerCase())&&!upi.includes(q.toLowerCase())&&!adm.includes(q.toLowerCase())&&!grade.includes(q.toLowerCase()))return false;
     if(scoreFilter){
@@ -3162,7 +3169,7 @@ function runSmartSearch(q){
       <div style="width:32px;height:32px;border-radius:10px;background:linear-gradient(135deg,var(--orange),var(--gold));display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;flex-shrink:0">${init}</div>
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700;color:var(--text)">${best['Official Student Name']||'—'}</div>
-        <div style="font-size:10px;color:var(--text3)">${gShort(best['Grade'])} · Adm: ${best['Assessment No']||'N/A'} · ${all.length} record${all.length>1?'s':''}</div>
+        <div style="font-size:10px;color:var(--text3)">${best['Grade']||'N/A'} · Adm: ${best['Assessment No']||'N/A'} · ${all.length} record${all.length>1?'s':''}</div>
       </div>
       <div style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color};font-size:13px">${st.avg}%</div>
       <span class="gp ${gradePillClass(st.cls)}">${st.level}</span>
@@ -3359,7 +3366,7 @@ function openProgressModal(masterId){
       const all=allData.filter(x=>(x['Assessment No']||x['Official Student Name'])===key);
       return{...r,_allRecords:all};})();
   if(!entry)return;
-  const allRecs=(entry._allRecords||[entry]).sort((a,b)=>termSortKey(getRecordTerm(a)).localeCompare(termSortKey(getRecordTerm(b))));
+  const allRecs=(entry._allRecords||[entry]).sort((a,b)=>getRecordTerm(a).localeCompare(getRecordTerm(b)));
   const name=entry['Official Student Name']||'Student';
   document.getElementById('progress-modal-name').textContent=name+' — Progress';
   document.getElementById('progress-modal-sub').textContent=allRecs.length+' term'+( allRecs.length>1?'s':'');
@@ -3463,8 +3470,7 @@ function renderAtRisk(){
       <td>${i+1}</td>
       <td><div style="font-size:12px;font-weight:700;color:var(--text)">${worst['Official Student Name']||'—'}</div><div style="font-size:10px;color:var(--text3)">UPI: ${worst['UPI']||'N/A'}</div></td>
       <td>${worst['Assessment No']||'—'}</td>
-      <td>${gShort(worst['Grade'])}</td>
-      <td style="font-size:10px;color:var(--text2)">${getRecordTerm(worst)}</td>
+      <td style="font-size:10px;max-width:160px;word-break:break-word">${worst['Grade']||'—'}</td>
       <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}">${st.avg}%</td>
       <td style="font-size:11px;color:var(--red)">${worstSubj||'—'} ${worstVal!==null?'('+worstVal+')':''}</td>
       <td><span style="font-weight:800;font-size:11px;color:${count>=2?'var(--red)':'var(--text3)'}">${count>=2?'🔴 '+count+'x':'1x'}</span></td>
@@ -3487,7 +3493,7 @@ function exportAtRiskCSV(){
     if(term!=='all'&&getRecordTerm(r)!==term)return false;
     return parseFloat(calcStats(r).avg)<41;
   });
-  const rows=data.map(r=>{const st=calcStats(r);return{'Name':r['Official Student Name']||'','Adm No':r['Assessment No']||'','Grade':gShort(r['Grade']),'Term':getRecordTerm(r),'Average':st.avg,'Level':st.level,'Position':r['Position']||''};});
+  const rows=data.map(r=>{const st=calcStats(r);return{'Name':r['Official Student Name']||'','Adm No':r['Assessment No']||'','Grade':r['Grade']||'','Average':st.avg,'Level':st.level,'Position':r['Position']||''};});
   const keys=Object.keys(rows[0]||{});
   const csv=keys.join(',')+'\n'+rows.map(r=>keys.map(k=>'"'+(String(r[k]||'').replace(/"/g,'""'))+'"').join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='AtRisk_Students.csv';a.click();
@@ -3505,8 +3511,8 @@ async function generateAtRiskPDF(){
   doc.text('Generated: '+new Date().toLocaleDateString(),W/2,20,{align:'center'});
   doc.setTextColor(0,0,0);
   const data=allData.filter(r=>parseFloat(calcStats(r).avg)<41);
-  const tableData=data.map(r=>{const st=calcStats(r);return[r['Official Student Name']||'',r['Assessment No']||'',gShort(r['Grade']),getRecordTerm(r),st.avg+'%',st.level];});
-  doc.autoTable({head:[['Student','Adm No','Grade','Term','Average','Level']],body:tableData,startY:32,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[231,76,60],textColor:[255,255,255]}});
+  const tableData=data.map(r=>{const st=calcStats(r);return[r['Official Student Name']||'',r['Assessment No']||'',r['Grade']||'',st.avg+'%',st.level];});
+  doc.autoTable({head:[['Student','Adm No','Grade / Term','Average','Level']],body:tableData,startY:32,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[231,76,60],textColor:[255,255,255]}});
   doc.save('AtRisk_Alert_'+new Date().toISOString().split('T')[0]+'.pdf');
   notify('📄 At-Risk PDF downloaded!','success');
 }
@@ -3553,7 +3559,7 @@ function renderEOTPreview(){
     <div class="rank-list">${top5.map((r,i)=>{
       const st=calcStats(r);const numClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-rest';
       return `<div class="rank-item"><div class="rank-num ${numClass}">${i+1}</div>
-        <div style="flex:1"><div class="rank-name">${r['Official Student Name']||'—'}</div><div class="rank-sub">${gShort(r['Grade'])}</div></div>
+        <div style="flex:1"><div class="rank-name">${r['Official Student Name']||'—'}</div><div class="rank-sub" style="font-size:9px;word-break:break-word;max-width:120px">${r['Grade']||'N/A'}</div></div>
         <div class="rank-score" style="color:${barColor(st.avg)}">${st.avg}%</div>
         <span class="gp ${gradePillClass(st.cls)}">${st.level}</span></div>`;
     }).join('')}</div>`;
@@ -3589,7 +3595,7 @@ async function generateEOTPDF(){
 
   // Table
   const sorted=data.sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg));
-  const tableData=sorted.map((r,i)=>{const st=calcStats(r);return[i+1,r['Official Student Name']||'',r['Assessment No']||'',gShort(r['Grade']),st.avg+'%',st.level,r['Position']||''];});
+  const tableData=sorted.map((r,i)=>{const st=calcStats(r);return[i+1,r['Official Student Name']||'',r['Assessment No']||'',r['Grade']||'',st.avg+'%',st.level,r['Position']||''];});
   doc.autoTable({head:[['#','Student','Adm No','Grade','Average','Level','Position']],body:tableData,startY:52,margin:{left:10,right:10},styles:{fontSize:7,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255]},
     didParseCell:(d)=>{if(d.column.index===4&&d.section==='body'){const v=parseFloat(d.cell.raw);d.cell.styles.textColor=v>=75?[39,174,96]:v>=41?[230,126,34]:[231,76,60];}}
   });
@@ -3631,7 +3637,7 @@ async function handleImportFile(file){
       _importHeaders=headers;
     } else if(ext==='xlsx'||ext==='xls'){
       if(!window.XLSX){
-        status.innerHTML=`<div style="font-size:12px;color:var(--red)">XLSX support: include SheetJS. For now, please convert to CSV.</div>`;return;
+        status.innerHTML=`<div style="font-size:12px;color:var(--red)">XLSX library not yet loaded. Try again in a moment, or convert to CSV.</div>`;return;
       }
       const buf=await file.arrayBuffer();
       const wb=window.XLSX.read(buf,{type:'array'});
