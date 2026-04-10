@@ -656,7 +656,7 @@ body::before{
     <p>Kanyadet PRI &amp; Junior School — Restricted Access</p>
     <div class="login-err" id="login-err"></div>
     <div class="fg">
-      <label>ADMIN USERNAME..</label>
+      <label>ADMIN USERNAME</label>
       <input type="text" id="inp-user" placeholder="Enter username" autocomplete="username">
     </div>
     <div class="fg">
@@ -1461,18 +1461,13 @@ function parseGradeField(raw){
 function cleanTerm(t){ const p=parseGradeField(t); return p.term?(p.term+(p.examType?' — '+p.examType:'')+(p.year?' ('+p.year+')':'')):String(t||'Unknown'); }
 function gShort(raw){ return parseGradeField(raw).grade||'N/A'; }
 function getRecordTerm(r){
-  const src=r['Grade']||r['Term']||'';
-  const p=parseGradeField(src);
-  if(!p.term&&!p.examType) return 'Unknown';
-  let label=p.term||'';
-  if(p.examType) label+=(label?' — ':'')+p.examType;
-  if(p.year) label+=' ('+p.year+')';
-  return label||'Unknown';
+  // Return the raw DB value — Grade field is the primary identifier
+  return r['Grade']||r['Term']||'Unknown';
 }
 function getExamType(r){ return parseGradeField(r['Grade']||r['Term']||'').examType||''; }
-// Short label for tables: "T1 Opener 2026"
+// Short label: same raw value (used in other places)
 function getTermShort(r){
-  return r['Term']||r['Grade']||'N/A';
+  return r['Grade']||r['Term']||'N/A';
 }
 function termSortKey(label){
   const y=(label.match(/(\d{4})/)||['','0'])[1];
@@ -2721,10 +2716,15 @@ function renderRecordContent(allRecs, idx){
   document.getElementById('rec-modal-edit-btn').setAttribute('data-id', rec.id);
 
   document.getElementById('rec-modal-content').innerHTML = `
+    <!-- Raw DB identifier -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--blue-lt);word-break:break-all">
+      ${rec['Grade']||rec['Term']||'N/A'}
+    </div>
     <!-- Meta badges -->
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;align-items:center">
-      <span class="bdg blue">📚 ${gShort(rec['Grade'])}</span>
-      <span class="bdg orange">📅 ${p.term||'N/A'}${p.examType?' — '+p.examType:''}</span>
+      <span class="bdg blue">📚 ${p.grade||'N/A'}</span>
+      ${p.term?`<span class="bdg orange">📅 ${p.term}</span>`:''}
+      ${p.examType?`<span class="bdg" style="background:rgba(142,68,173,.12);border-color:rgba(142,68,173,.25);color:#c39bd3">📝 ${p.examType}</span>`:''}
       ${p.year?`<span class="bdg" style="background:rgba(22,160,133,.12);border-color:rgba(22,160,133,.25);color:#1abc9c">📆 ${p.year}</span>`:''}
       <span class="bdg green">🏆 ${st.level} · ${st.label}</span>
       <span class="bdg">📍 Pos: ${rec['Position']||'N/A'}</span>
