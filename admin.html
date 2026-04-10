@@ -676,44 +676,36 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     <h1>Admin Portal</h1>
     <p>Kanyadet PRI &amp; Junior School — Restricted Access</p>
     <div class="login-err" id="login-err"></div>
-    <div class="fg">
-      <label>ADMIN USERNAME</label>
-      <input type="text" id="inp-user" placeholder="Enter username" autocomplete="username">
-    </div>
-    <div class="fg">
-      <label>PASSWORD</label>
-      <input type="password" id="inp-pass" placeholder="Enter password" autocomplete="current-password">
-    </div>
-    <button class="login-btn" onclick="doAdminLogin()" id="login-btn">🚀 Sign In to Admin</button>
-    <p class="login-hint">🔒 Authorized personnel only &nbsp;·&nbsp; Demo: admin / admin123</p>
-    <div class="auth-qlinks-panel" id="quick-links-panel">
-          <a href="./Report-Cards/Junior-School.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
-            <div class="auth-qlink-dot"></div>📄Junior School<span class="auth-qlink-arrow">→</span>
-          </a>
-          <a href="./Report-Cards/Junior-School-Normks.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
-            <div class="auth-qlink-dot"></div>📄 Junior-School-Normks<span class="auth-qlink-arrow">→</span>
-          </a>
-          <a href="./Report-Cards/Primary-Report-Cards.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-2">
-            <div class="auth-qlink-dot"></div>📄 Primary School<span class="auth-qlink-arrow">→</span>
-          </a>
-          <a href="./Report-Cards/Primary-Report-Cards-Normks.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
-            <div class="auth-qlink-dot"></div>📄 Primary School Normks<span class="auth-qlink-arrow">→</span>
-          </a>
-           <a href="./Report-Cards/Termly-Reports.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
-            <div class="auth-qlink-dot"></div>🎓 All Terms Merged <span class="auth-qlink-arrow">→</span>
-          </a>
-          <a href="./Report-Cards/Termly-ReportsRmks.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
-            <div class="auth-qlink-dot"></div>🎓 All Terms Merged Rmks<span class="auth-qlink-arrow">→</span>
-          </a>
-          
-          <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
-            <div class="auth-qlink-dot"></div>🎓 Students Portal<span class="auth-qlink-arrow">→</span>
-          </a>
-          
-        </div>
 
+    <!-- Tab switcher -->
+    <div style="display:flex;gap:0;margin-bottom:20px;border:1.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
+      <button id="tab-email-btn" onclick="switchLoginTab('email')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s">✉️ Email</button>
+      <button id="tab-google-btn" onclick="switchLoginTab('google')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s">🔵 Google</button>
+    </div>
 
-        
+    <!-- Email/Password tab -->
+    <div id="tab-email">
+      <div class="fg">
+        <label>EMAIL ADDRESS</label>
+        <input type="email" id="inp-user" placeholder="admin@kanyadet.ac.ke" autocomplete="email">
+      </div>
+      <div class="fg">
+        <label>PASSWORD</label>
+        <input type="password" id="inp-pass" placeholder="Enter password" autocomplete="current-password">
+      </div>
+      <button class="login-btn" onclick="doEmailLogin()" id="login-btn">🚀 Sign In</button>
+    </div>
+
+    <!-- Google tab -->
+    <div id="tab-google" style="display:none;text-align:center">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:18px">Sign in with your Google account. Only authorized school emails can access this portal.</p>
+      <button class="login-btn" onclick="doGoogleLogin()" id="google-btn" style="background:linear-gradient(135deg,#4285f4,#1a73e8);display:flex;align-items:center;justify-content:center;gap:10px">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.7 20-21 0-1.4-.1-2.7-.5-4z"/></svg>
+        Continue with Google
+      </button>
+    </div>
+
+    <p class="login-hint">🔒 Authorized school personnel only</p>
   </div>
 </div>
 
@@ -1587,7 +1579,8 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, get, set, push, update, remove } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove };
+  import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut };
 </script>
 
 <script>
@@ -1781,6 +1774,7 @@ window.toggleTheme=toggleTheme;
 /* ══════════════════════════════════════════
    FIREBASE WAIT
 ══════════════════════════════════════════ */
+let auth;
 function waitFB(cb,n){
   n=n||0;
   if(window._fb){cb();}
@@ -1791,60 +1785,136 @@ function waitFB(cb,n){
 window.addEventListener('load',()=>{
   waitFB(()=>{
     try{
-      const{initializeApp,getApps,getDatabase}=window._fb;
+      const{initializeApp,getApps,getDatabase,getAuth,onAuthStateChanged}=window._fb;
       const app=getApps().length===0?initializeApp(FB_CONFIG):getApps()[0];
       db=getDatabase(app);
-    }catch(e){notify('Firebase init error: '+e.message,'error');}
-    document.getElementById('loader').style.display='none';
-    // Check for saved admin session
-    const sess=sessionStorage.getItem('kss_admin_user');
-    if(sess){
-      const u=JSON.parse(sess);
-      showApp(u);
+      auth=getAuth(app);
+      // Listen for auth state — auto-login if session persists
+      onAuthStateChanged(auth,user=>{
+        document.getElementById('loader').style.display='none';
+        if(user){
+          const userData={user:user.email,name:user.displayName||user.email.split('@')[0],role:'Admin',photoURL:user.photoURL||''};
+          showApp(userData);
+        }
+      });
+    }catch(e){
+      notify('Firebase init error: '+e.message,'error');
+      document.getElementById('loader').style.display='none';
     }
   });
 });
 
 /* ══════════════════════════════════════════
-   ADMIN LOGIN
+   LOGIN TAB SWITCHER
 ══════════════════════════════════════════ */
-// Simple credential store (in real app, use Firebase Auth)
-const ADMIN_USERS={
-  'admin':{pass:'admin123',name:'Administrator',role:'Super Admin'},
-  'principal':{pass:'principal2024',name:'Mr. Odhiambo',role:'Principal'},
-  'secretary':{pass:'sec2024',name:'Mrs. Achieng',role:'Secretary'},
-};
+function switchLoginTab(tab){
+  const emailTab=document.getElementById('tab-email');
+  const googleTab=document.getElementById('tab-google');
+  const emailBtn=document.getElementById('tab-email-btn');
+  const googleBtn=document.getElementById('tab-google-btn');
+  if(tab==='email'){
+    emailTab.style.display='block';googleTab.style.display='none';
+    emailBtn.style.background='linear-gradient(135deg,var(--blue),var(--blue-dk))';emailBtn.style.color='#fff';
+    googleBtn.style.background='var(--surface2)';googleBtn.style.color='var(--text2)';
+  } else {
+    emailTab.style.display='none';googleTab.style.display='block';
+    googleBtn.style.background='linear-gradient(135deg,var(--blue),var(--blue-dk))';googleBtn.style.color='#fff';
+    emailBtn.style.background='var(--surface2)';emailBtn.style.color='var(--text2)';
+  }
+  document.getElementById('login-err').classList.remove('on');
+}
+window.switchLoginTab=switchLoginTab;
 
-function doAdminLogin(){
-  const user=document.getElementById('inp-user').value.trim().toLowerCase();
+/* ══════════════════════════════════════════
+   ADMIN LOGIN — EMAIL / PASSWORD
+══════════════════════════════════════════ */
+async function doEmailLogin(){
+  const email=document.getElementById('inp-user').value.trim();
   const pass=document.getElementById('inp-pass').value;
   const err=document.getElementById('login-err');
   err.classList.remove('on');
-  if(!user||!pass){err.textContent='Please enter username and password.';err.classList.add('on');return;}
-  const found=ADMIN_USERS[user];
-  if(!found||found.pass!==pass){err.textContent='Invalid credentials. Please try again.';err.classList.add('on');return;}
-  const userData={user,name:found.name,role:found.role};
-  sessionStorage.setItem('kss_admin_user',JSON.stringify(userData));
-  showApp(userData);
+  if(!email||!pass){err.textContent='Please enter your email and password.';err.classList.add('on');return;}
+  const btn=document.getElementById('login-btn');
+  btn.disabled=true;btn.textContent='⏳ Signing in…';
+  try{
+    const{signInWithEmailAndPassword}=window._fb;
+    const cred=await signInWithEmailAndPassword(auth,email,pass);
+    const u=cred.user;
+    const userData={user:u.email,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
+    showApp(userData);
+  }catch(e){
+    const msg=e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'?'Incorrect email or password.':
+              e.code==='auth/user-not-found'?'No account found with this email.':
+              e.code==='auth/invalid-email'?'Please enter a valid email address.':
+              e.code==='auth/too-many-requests'?'Too many attempts. Please try again later.':
+              'Sign-in failed: '+e.message;
+    err.textContent=msg;err.classList.add('on');
+    btn.disabled=false;btn.textContent='🚀 Sign In';
+  }
 }
-window.doAdminLogin=doAdminLogin;
+window.doEmailLogin=doEmailLogin;
+
+/* ══════════════════════════════════════════
+   ADMIN LOGIN — GOOGLE
+══════════════════════════════════════════ */
+async function doGoogleLogin(){
+  const err=document.getElementById('login-err');
+  err.classList.remove('on');
+  const btn=document.getElementById('google-btn');
+  btn.disabled=true;btn.textContent='⏳ Opening Google…';
+  try{
+    const{signInWithPopup,GoogleAuthProvider}=window._fb;
+    const provider=new GoogleAuthProvider();
+    provider.setCustomParameters({prompt:'select_account'});
+    const cred=await signInWithPopup(auth,provider);
+    const u=cred.user;
+    const userData={user:u.email,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
+    showApp(userData);
+  }catch(e){
+    const msg=e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':
+              e.code==='auth/popup-blocked'?'Popup blocked — please allow popups for this site.':
+              'Google sign-in failed: '+e.message;
+    err.textContent=msg;err.classList.add('on');
+    btn.disabled=false;
+    btn.innerHTML='<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.7 20-21 0-1.4-.1-2.7-.5-4z"/></svg> Continue with Google';
+  }
+}
+window.doGoogleLogin=doGoogleLogin;
+
 document.addEventListener('keydown',e=>{
-  if(e.key==='Enter'&&!document.getElementById('login-screen').classList.contains('hidden')) doAdminLogin();
+  if(e.key==='Enter'&&!document.getElementById('login-screen').classList.contains('hidden')) doEmailLogin();
 });
 
 function showApp(userData){
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').style.display='flex';
   document.getElementById('admin-name').textContent=userData.name;
-  document.getElementById('admin-av').textContent=userData.name[0]||'A';
+  const av=document.getElementById('admin-av');
+  if(userData.photoURL){
+    av.innerHTML=`<img src="${userData.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" referrerpolicy="no-referrer">`;
+    av.textContent='';
+  } else {
+    av.textContent=userData.name[0]||'A';
+  }
   logActivity('🔐 Admin signed in','act-blue',userData.name);
   loadAllData();
 }
 
-function doSignOut(){
-  sessionStorage.removeItem('kss_admin_user');
+async function doSignOut(){
+  try{
+    const{signOut}=window._fb;
+    await signOut(auth);
+  }catch(e){}
   document.getElementById('login-screen').classList.remove('hidden');
   document.getElementById('app-shell').style.display='none';
+  // Reset login UI
+  document.getElementById('inp-user').value='';
+  document.getElementById('inp-pass').value='';
+  const btn=document.getElementById('login-btn');
+  if(btn){btn.disabled=false;btn.textContent='🚀 Sign In';}
+  const gbtn=document.getElementById('google-btn');
+  if(gbtn){gbtn.disabled=false;gbtn.innerHTML='<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.7 20-21 0-1.4-.1-2.7-.5-4z"/></svg> Continue with Google';}
+  switchLoginTab('email');
   notify('👋 Signed out.','info');
 }
 window.doSignOut=doSignOut;
@@ -3226,7 +3296,6 @@ function selectSearchResult(id){
   const raw=allData.find(x=>x.id===id);
   if(!raw) return;
   navTo('students',document.querySelector('.nav-item:nth-child(2)'));
-  // Clear all filters so filteredStudents is fully populated
   const sSearch=document.getElementById('student-search');
   const fGrade=document.getElementById('filter-grade');
   const fTerm=document.getElementById('filter-term');
@@ -3238,7 +3307,6 @@ function selectSearchResult(id){
   if(fGender) fGender.value='';
   if(fLevel) fLevel.value='';
   filterStudents();
-  // Find the deduped master record for this student
   const key=String(raw['Assessment No']||raw['Official Student Name']||'').trim();
   const master=filteredStudents.find(r=>String(r['Assessment No']||r['Official Student Name']||'').trim()===key)||filteredStudents.find(r=>r.id===id);
   if(master) setTimeout(()=>openRecordsModal(master.id),80);
