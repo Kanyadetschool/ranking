@@ -64,7 +64,7 @@ body::before{
   border-right:1px solid var(--border);
   display:flex;flex-direction:column;
   position:fixed;top:0;left:0;height:100vh;
-  z-index:300;
+  z-index:400;
   transition:var(--transition),transform .3s;
   overflow-y:auto;overflow-x:hidden;
 }
@@ -126,7 +126,7 @@ body::before{
   padding:12px 28px;background:var(--topbar);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
-  position:sticky;top:0;z-index:200;
+  position:sticky;top:0;z-index:350;
 }
 .topbar-left{display:flex;align-items:center;gap:14px;}
 .page-title{font-size:18px;font-weight:900;color:var(--text);}
@@ -611,8 +611,119 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .sidebar-backdrop.on{display:block;}
 
 /* ══════════════════════════════════════════
-   LOADING SKELETON
+   TOPBAR MOBILE MORE MENU
 ══════════════════════════════════════════ */
+/* Desktop: hide the ⋮ button */
+.topbar-more-wrap{display:none;position:relative;}
+
+/* Mobile: hide desktop-only items, show ⋮ */
+@media(max-width:768px){
+  .topbar-desktop-only{display:none!important;}
+  .topbar-live{display:none!important;}
+  .topbar-more-wrap{display:block;}
+}
+
+.topbar-more-btn{
+  width:34px;height:34px;padding:0!important;
+  font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;
+}
+
+.topbar-more-menu{
+  display:none;
+  position:absolute;top:calc(100% + 8px);right:0;
+  min-width:190px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  box-shadow:0 12px 40px rgba(0,0,0,.35);
+  z-index:10000;
+  overflow:hidden;
+  animation:moreMenuIn .18s cubic-bezier(.34,1.56,.64,1);
+}
+.topbar-more-menu.open{display:block;}
+@keyframes moreMenuIn{from{opacity:0;transform:scale(.95) translateY(-6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+.topbar-more-item{
+  display:flex;align-items:center;justify-content:space-between;
+  width:100%;padding:11px 16px;
+  background:transparent;border:none;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;
+  color:var(--text);cursor:pointer;
+  transition:background .15s;text-align:left;gap:8px;
+}
+.topbar-more-item:hover{background:rgba(41,128,185,.1);}
+.topbar-more-item:active{background:rgba(41,128,185,.18);}
+.topbar-more-danger{color:var(--red);}
+.topbar-more-danger:hover{background:rgba(231,76,60,.1);}
+.topbar-more-hint{
+  font-size:10px;font-weight:700;
+  color:var(--text3);
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:5px;padding:1px 6px;
+  margin-left:auto;flex-shrink:0;
+}
+.topbar-more-divider{height:1px;background:var(--border);margin:2px 0;}
+
+/* ══════════════════════════════════════════
+   BACK TO TOP BUTTON
+══════════════════════════════════════════ */
+#back-to-top{
+  position:fixed;bottom:24px;right:24px;z-index:500;
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;color:#fff;
+  box-shadow:0 4px 16px var(--blue-glow);
+  opacity:0;transform:translateY(12px);
+  transition:opacity .3s,transform .3s;
+  pointer-events:none;
+}
+#back-to-top.visible{opacity:1;transform:translateY(0);pointer-events:auto;}
+#back-to-top:hover{transform:translateY(-3px);box-shadow:0 8px 24px var(--blue-glow);}
+
+/* ══════════════════════════════════════════
+   STYLED CONFIRM MODAL
+══════════════════════════════════════════ */
+#confirm-modal{
+  display:none;position:fixed;inset:0;z-index:9500;
+  background:rgba(0,0,0,.72);backdrop-filter:blur(12px);
+  align-items:center;justify-content:center;padding:16px;
+}
+#confirm-modal.on{display:flex;}
+.confirm-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-xl);width:min(380px,100%);
+  box-shadow:0 32px 100px rgba(0,0,0,.55);
+  animation:mIn .28s cubic-bezier(.34,1.56,.64,1);
+  padding:28px 24px 20px;text-align:center;
+}
+.confirm-icon{font-size:40px;margin-bottom:12px;}
+.confirm-title{font-size:16px;font-weight:900;color:var(--text);margin-bottom:8px;}
+.confirm-msg{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:20px;}
+.confirm-btns{display:flex;gap:10px;justify-content:center;}
+.confirm-btns .btn{min-width:100px;justify-content:center;}
+
+/* ══════════════════════════════════════════
+   INACTIVITY WARNING BANNER
+══════════════════════════════════════════ */
+#inactivity-banner{
+  display:none;position:fixed;bottom:0;left:0;right:0;z-index:8500;
+  background:linear-gradient(90deg,var(--orange-dk),var(--orange));
+  color:#fff;padding:12px 20px;
+  display:none;align-items:center;justify-content:space-between;gap:12px;
+  font-size:13px;font-weight:600;
+  box-shadow:0 -4px 24px rgba(0,0,0,.3);
+}
+#inactivity-banner.on{display:flex;}
+#inactivity-banner button{
+  background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.4);
+  color:#fff;padding:6px 14px;border-radius:var(--radius-sm);
+  cursor:pointer;font-size:12px;font-weight:700;transition:.2s;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+#inactivity-banner button:hover{background:rgba(255,255,255,.35);}
 .skeleton{background:linear-gradient(90deg,var(--surface2) 25%,var(--surface3) 50%,var(--surface2) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius-sm);}
 @keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
 
@@ -873,6 +984,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         <a href="./index2.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
           <div class="auth-qlink-dot"></div>🎓 Landing<span class="auth-qlink-arrow">→</span>
         </a>
+         <a href="./index3.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
+          <div class="auth-qlink-dot"></div>🎓 Landing flbk<span class="auth-qlink-arrow">→</span>
+        </a>
       </div>
     </div>
 
@@ -898,18 +1012,30 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         </div>
       </div>
       <div class="topbar-right">
-        <span style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px">
+        <span class="topbar-live" style="font-size:11px;color:var(--text3);display:flex;align-items:center;gap:6px">
           <span class="status-dot"></span> Live Data
         </span>
         <div class="theme-toggle" onclick="toggleTheme()">
           <span class="theme-icon moon">🌙</span>
           <span class="theme-icon sun">☀️</span>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="openSmartSearch()" title="Smart Search (Ctrl+K)">🔍 Search</button>
-        <button class="btn btn-outline btn-sm" onclick="togglePrintMode()" title="Print Mode" id="print-mode-btn">🖨️</button>
-        <button class="btn btn-outline btn-sm" onclick="showShortcuts()" title="Keyboard Shortcuts (?)">⌨️</button>
+        <!-- Desktop-only actions -->
+        <button class="btn btn-outline btn-sm topbar-desktop-only" onclick="openSmartSearch()" title="Smart Search (Ctrl+K)">🔍 Search</button>
+        <button class="btn btn-outline btn-sm topbar-desktop-only" onclick="togglePrintMode()" title="Print Mode" id="print-mode-btn">🖨️</button>
+        <button class="btn btn-outline btn-sm topbar-desktop-only" onclick="showShortcuts()" title="Keyboard Shortcuts (?)">⌨️</button>
         <button class="btn btn-blue btn-sm" onclick="refreshData()">🔄 Refresh</button>
-        <button class="btn btn-red btn-sm" onclick="doSignOut()" title="Sign out" style="display:flex;align-items:center;gap:5px">↩ Sign Out</button>
+        <button class="btn btn-red btn-sm topbar-desktop-only" onclick="doSignOut()" title="Sign out" style="display:flex;align-items:center;gap:5px">↩ Sign Out</button>
+        <!-- Mobile overflow menu -->
+        <div class="topbar-more-wrap" id="topbar-more-wrap">
+          <button class="btn btn-outline btn-sm topbar-more-btn" id="topbar-more-btn" onclick="toggleTopbarMenu(event)" title="More options">⋮</button>
+          <div class="topbar-more-menu" id="topbar-more-menu">
+            <button class="topbar-more-item" onclick="openSmartSearch();closeTopbarMenu()">🔍 Search <span class="topbar-more-hint">Ctrl+K</span></button>
+            <button class="topbar-more-item" onclick="togglePrintMode();closeTopbarMenu()" id="print-mode-btn-mobile">🖨️ Print Mode <span class="topbar-more-hint">P</span></button>
+            <button class="topbar-more-item" onclick="showShortcuts();closeTopbarMenu()">⌨️ Shortcuts <span class="topbar-more-hint">?</span></button>
+            <div class="topbar-more-divider"></div>
+            <button class="topbar-more-item topbar-more-danger" onclick="doSignOut()">↩ Sign Out</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -1290,7 +1416,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <h4>Dark Mode</h4>
                 <p>Toggle between light and dark interface theme</p>
               </div>
-              <div class="toggle-sw on" id="toggle-dark" onclick="toggleTheme();this.classList.toggle('on')"></div>
+              <div class="toggle-sw" id="toggle-dark" onclick="toggleTheme()"></div>
             </div>
             <div class="setting-row">
               <div class="setting-info">
@@ -1320,11 +1446,11 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
               </div>
               <div class="form-group">
                 <label>New Password</label>
-                <input type="password" placeholder="Leave blank to keep current">
+                <input type="password" id="setting-new-pass" placeholder="Leave blank to keep current">
               </div>
               <div class="form-group">
                 <label>Confirm Password</label>
-                <input type="password" placeholder="Confirm new password">
+                <input type="password" id="setting-confirm-pass" placeholder="Confirm new password">
               </div>
             </div>
             <div style="margin-top:14px">
@@ -1376,13 +1502,12 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <th>Student</th>
                 <th>Adm No</th>
                 <th>Grade</th>
-                <th>Term</th>
                 <th>Average</th>
                 <th>Worst Subject</th>
                 <th>Streak</th>
                 <th>Actions</th>
               </tr></thead>
-              <tbody id="atrisk-tbody"><tr><td colspan="9" style="text-align:center;padding:30px;color:var(--text3)">Load data first.</td></tr></tbody>
+              <tbody id="atrisk-tbody"><tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">Load data first.</td></tr></tbody>
             </table>
           </div>
         </div>
@@ -1698,6 +1823,28 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   </div>
 </div>
 
+<!-- BACK TO TOP -->
+<button id="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="Back to top">↑</button>
+
+<!-- STYLED CONFIRM MODAL -->
+<div id="confirm-modal">
+  <div class="confirm-box">
+    <div class="confirm-icon" id="confirm-icon">🗑️</div>
+    <div class="confirm-title" id="confirm-title">Confirm Delete</div>
+    <div class="confirm-msg" id="confirm-msg">Are you sure?</div>
+    <div class="confirm-btns">
+      <button class="btn btn-outline btn-sm" id="confirm-cancel-btn" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-red btn-sm" id="confirm-ok-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- INACTIVITY WARNING BANNER -->
+<div id="inactivity-banner">
+  <span>⏱️ You've been inactive for 25 minutes. You'll be signed out in <strong id="inactivity-countdown">5:00</strong>.</span>
+  <button onclick="resetInactivity()">Stay Signed In</button>
+</div>
+
 <!-- Firebase -->
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
@@ -1965,11 +2112,20 @@ function toggleTheme(){
   const isDark=h.getAttribute('data-theme')==='dark';
   h.setAttribute('data-theme',isDark?'light':'dark');
   localStorage.setItem('kss_admin_theme',isDark?'light':'dark');
+  // Sync settings page toggle
+  const sw=document.getElementById('toggle-dark');
+  if(sw) sw.classList.toggle('on',!isDark);
 }
 window.toggleTheme=toggleTheme;
 (()=>{
   const saved=localStorage.getItem('kss_admin_theme');
-  document.documentElement.setAttribute('data-theme', saved || 'light');
+  const theme=saved||'light';
+  document.documentElement.setAttribute('data-theme', theme);
+  // Sync settings toggle on load
+  window.addEventListener('DOMContentLoaded',()=>{
+    const sw=document.getElementById('toggle-dark');
+    if(sw) sw.classList.toggle('on', theme==='dark');
+  });
 })();
 
 /* ══════════════════════════════════════════
@@ -2098,10 +2254,13 @@ function showApp(userData){
     av.textContent=userData.name[0]||'A';
   }
   logActivity('🔐 Admin signed in','act-blue',userData.name);
+  resetInactivity();
   loadAllData();
 }
 
 async function doSignOut(){
+  clearTimeout(_inactivityTimer);clearInterval(_countdownTimer);
+  document.getElementById('inactivity-banner').classList.remove('on');
   try{
     const{signOut}=window._fb;
     await signOut(auth);
@@ -2518,20 +2677,37 @@ function renderStudentsTable(){
   renderStudentsPagination();
 }
 
+function buildPagination(current,total,goFn){
+  if(total<=1) return '';
+  let html='';
+  html+=`<button class="pg-btn" onclick="${goFn}(${current-1})" ${current===1?'disabled':''}>‹</button>`;
+  const delta=2;
+  const pages=new Set([1,total]);
+  for(let i=Math.max(2,current-delta);i<=Math.min(total-1,current+delta);i++) pages.add(i);
+  let prev=0;
+  [...pages].sort((a,b)=>a-b).forEach(p=>{
+    if(prev&&p-prev>1) html+=`<span class="pg-info" style="padding:0 2px;min-width:auto">…</span>`;
+    html+=`<button class="pg-btn ${p===current?'active':''}" onclick="${goFn}(${p})">${p}</button>`;
+    prev=p;
+  });
+  html+=`<button class="pg-btn" onclick="${goFn}(${current+1})" ${current===total?'disabled':''}>›</button>`;
+  return html;
+}
+
 function renderStudentsPagination(){
   const total=Math.ceil(filteredStudents.length/PAGE_SIZE);
   const container=document.getElementById('students-pagination');
-  if(total<=1){container.innerHTML=`<span class="pg-info">${filteredStudents.length} student${filteredStudents.length===1?'':'s'}</span>`;return;}
   let html=`<span class="pg-info">${filteredStudents.length} student${filteredStudents.length===1?'':'s'}</span>`;
-  html+=`<button class="pg-btn" onclick="goPage(${currentPage-1},'s')" ${currentPage===1?'disabled':''}>‹</button>`;
-  for(let p=1;p<=Math.min(total,7);p++) html+=`<button class="pg-btn ${p===currentPage?'active':''}" onclick="goPage(${p},'s')">${p}</button>`;
-  html+=`<button class="pg-btn" onclick="goPage(${currentPage+1},'s')" ${currentPage===total?'disabled':''}>›</button>`;
+  html+=buildPagination(currentPage,total,'goPageS');
   container.innerHTML=html;
 }
 
+function goPageS(p){if(p<1||p>Math.ceil(filteredStudents.length/PAGE_SIZE))return;currentPage=p;renderStudentsTable();}
+window.goPageS=goPageS;
+
 function goPage(p,type){
-  if(type==='s'){if(p<1||p>Math.ceil(filteredStudents.length/PAGE_SIZE))return; currentPage=p; renderStudentsTable();}
-  else{if(p<1||p>Math.ceil(filteredResults.length/PAGE_SIZE))return; resultsPage=p; renderResultsTable();}
+  if(type==='s'){if(p<1||p>Math.ceil(filteredStudents.length/PAGE_SIZE))return;currentPage=p;renderStudentsTable();}
+  else{if(p<1||p>Math.ceil(filteredResults.length/PAGE_SIZE))return;resultsPage=p;renderResultsTable();}
 }
 window.goPage=goPage;
 
@@ -2814,7 +2990,12 @@ window.closeEditModal=closeEditModal;
 async function deleteStudent(id){
   const rec=allData.find(r=>r.id===id);
   if(!rec) return;
-  if(!confirm(`Delete record for ${rec['Official Student Name']} (${getRecordTerm(rec)})?\nThis cannot be undone.`)) return;
+  const ok=await showConfirm(
+    'Delete Record',
+    `Delete record for ${rec['Official Student Name']} (${getRecordTerm(rec)})? This cannot be undone.`,
+    '🗑️','Delete','btn-red'
+  );
+  if(!ok) return;
   try{
     const{ref,remove}=window._fb;
     await remove(ref(db,`${DB_PATH}/${id}`));
@@ -2856,8 +3037,8 @@ function renderResultsTable(){
     return `<tr>
       <td>${start+i+1}</td>
       <td style="font-weight:700;color:var(--text)">${r['Official Student Name']||'—'}</td>
-      <td style="font-size:10px;max-width:160px;word-break:break-word">${r['Grade']||'—'}</td>
-      <td style="font-size:10px">${r['Grade']||r['Term']||'—'}</td>
+      <td style="font-size:10px;max-width:160px;word-break:break-word">${gShort(r['Grade'])||'—'}</td>
+      <td style="font-size:10px;color:var(--text2)">${(()=>{const p=parseGradeField(r['Grade']||r['Term']||'');return [p.term,p.examType,p.year].filter(Boolean).join(' · ')||r['Grade']||'—';})()}</td>
       <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}">${st.avg}%</td>
       <td><span class="gp ${gradePillClass(st.cls)}">${st.level}</span></td>
       <td>${r['Position']||'—'}</td>
@@ -2876,13 +3057,12 @@ function renderResultsTable(){
 function renderResultsPagination(){
   const total=Math.ceil(filteredResults.length/PAGE_SIZE);
   const container=document.getElementById('results-pagination');
-  if(total<=1){container.innerHTML=`<span class="pg-info">${filteredResults.length} records</span>`;return;}
   let html=`<span class="pg-info">${filteredResults.length} records</span>`;
-  html+=`<button class="pg-btn" onclick="goPage(${resultsPage-1},'r')" ${resultsPage===1?'disabled':''}>‹</button>`;
-  for(let p=1;p<=Math.min(total,7);p++) html+=`<button class="pg-btn ${p===resultsPage?'active':''}" onclick="goPage(${p},'r')">${p}</button>`;
-  html+=`<button class="pg-btn" onclick="goPage(${resultsPage+1},'r')" ${resultsPage===total?'disabled':''}>›</button>`;
+  html+=buildPagination(resultsPage,total,'goPageR');
   container.innerHTML=html;
 }
+function goPageR(p){if(p<1||p>Math.ceil(filteredResults.length/PAGE_SIZE))return;resultsPage=p;renderResultsTable();}
+window.goPageR=goPageR;
 
 /* ══════════════════════════════════════════
    SUBJECT PERFORMANCE
@@ -3074,6 +3254,96 @@ function closeSidebar(){
   document.getElementById('sidebar-backdrop').classList.remove('on');
 }
 window.toggleSidebar=toggleSidebar;window.closeSidebar=closeSidebar;
+
+/* Auto-close sidebar on mobile after nav tap */
+document.querySelectorAll('.nav-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    if(window.innerWidth<=768) closeSidebar();
+  });
+});
+
+/* Topbar mobile ⋮ menu */
+function toggleTopbarMenu(e){
+  e.stopPropagation();
+  document.getElementById('topbar-more-menu').classList.toggle('open');
+}
+function closeTopbarMenu(){
+  document.getElementById('topbar-more-menu').classList.remove('open');
+}
+window.toggleTopbarMenu=toggleTopbarMenu;window.closeTopbarMenu=closeTopbarMenu;
+document.addEventListener('click',function(e){
+  const wrap=document.getElementById('topbar-more-wrap');
+  if(wrap&&!wrap.contains(e.target)) closeTopbarMenu();
+});
+
+/* ══════════════════════════════════════════
+   BACK TO TOP BUTTON
+══════════════════════════════════════════ */
+(function(){
+  const btn=document.getElementById('back-to-top');
+  if(!btn) return;
+  window.addEventListener('scroll',()=>{
+    btn.classList.toggle('visible', window.scrollY>300);
+  },{passive:true});
+})();
+
+/* ══════════════════════════════════════════
+   STYLED CONFIRM DIALOG (replaces confirm())
+══════════════════════════════════════════ */
+let _confirmResolve=null;
+function showConfirm(title,msg,icon='🗑️',okLabel='Delete',okClass='btn-red'){
+  return new Promise(resolve=>{
+    _confirmResolve=resolve;
+    document.getElementById('confirm-icon').textContent=icon;
+    document.getElementById('confirm-title').textContent=title;
+    document.getElementById('confirm-msg').textContent=msg;
+    const okBtn=document.getElementById('confirm-ok-btn');
+    okBtn.textContent=okLabel;
+    okBtn.className='btn '+okClass+' btn-sm';
+    okBtn.onclick=()=>{closeConfirm();resolve(true);};
+    document.getElementById('confirm-modal').classList.add('on');
+  });
+}
+function closeConfirm(){
+  document.getElementById('confirm-modal').classList.remove('on');
+  if(_confirmResolve){_confirmResolve(false);_confirmResolve=null;}
+}
+window.closeConfirm=closeConfirm;
+
+/* ══════════════════════════════════════════
+   INACTIVITY TIMEOUT (25min warn → 5min countdown → sign out)
+══════════════════════════════════════════ */
+const INACTIVITY_WARN_MS  = 25*60*1000;  // 25 min
+const INACTIVITY_LIMIT_MS =  5*60*1000;  // 5 min countdown
+let _inactivityTimer=null, _countdownTimer=null, _countdownSec=300;
+
+function resetInactivity(){
+  clearTimeout(_inactivityTimer);clearInterval(_countdownTimer);
+  document.getElementById('inactivity-banner').classList.remove('on');
+  _inactivityTimer=setTimeout(showInactivityWarning, INACTIVITY_WARN_MS);
+}
+function showInactivityWarning(){
+  document.getElementById('inactivity-banner').classList.add('on');
+  _countdownSec=300;
+  updateCountdown();
+  _countdownTimer=setInterval(()=>{
+    _countdownSec--;
+    updateCountdown();
+    if(_countdownSec<=0){clearInterval(_countdownTimer);doSignOut();notify('⏱ Session expired. Please sign in again.','warn',8000);}
+  },1000);
+}
+function updateCountdown(){
+  const m=Math.floor(_countdownSec/60);const s=_countdownSec%60;
+  const el=document.getElementById('inactivity-countdown');
+  if(el) el.textContent=m+':'+(s<10?'0':'')+s;
+}
+window.resetInactivity=resetInactivity;
+['click','keydown','mousemove','touchstart'].forEach(ev=>{
+  document.addEventListener(ev,()=>{
+    // Only reset if warning not already showing
+    if(!document.getElementById('inactivity-banner').classList.contains('on')) resetInactivity();
+  },{passive:true});
+});
 
 /* ══════════════════════════════════════════
    PDF DOWNLOAD
@@ -3602,6 +3872,7 @@ document.addEventListener('keydown',function(e){
 
   if(e.key==='Escape'){
     document.querySelectorAll('.modal-overlay.on').forEach(m=>m.classList.remove('on'));
+    closeConfirm();
     if(document.body.classList.contains('print-mode'))togglePrintMode();
     return;
   }
@@ -3637,7 +3908,9 @@ function togglePrintMode(){
   _printMode=!_printMode;
   document.body.classList.toggle('print-mode',_printMode);
   const btn=document.getElementById('print-mode-btn');
+  const btnMob=document.getElementById('print-mode-btn-mobile');
   if(btn) btn.style.background=_printMode?'var(--orange)':'';
+  if(btnMob) btnMob.style.background=_printMode?'rgba(230,126,34,.15)':'';
   if(_printMode){notify('🖨️ Print mode — press P or Esc to exit, then Ctrl+P','info',5000);}
 }
 window.togglePrintMode=togglePrintMode;
@@ -3843,7 +4116,7 @@ function renderAtRisk(){
   document.getElementById('nav-atrisk-count').textContent=rows.length;
 
   const tbody=document.getElementById('atrisk-tbody');
-  if(!rows.length){tbody.innerHTML='<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--green)">✅ No at-risk students found for this selection.</td></tr>';return;}
+  if(!rows.length){tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--green)">✅ No at-risk students found for this selection.</td></tr>';return;}
   tbody.innerHTML=rows.map(({worst,count},i)=>{
     const st=calcStats(worst);const color=barColor(st.avg);
     const subjects=getSubjects(worst);
@@ -4127,6 +4400,10 @@ function toggleAutoRefresh(){
 }
 function saveSettings(){
   const name=document.getElementById('setting-admin-name').value.trim();
+  const newPass=document.getElementById('setting-new-pass')?.value||'';
+  const confPass=document.getElementById('setting-confirm-pass')?.value||'';
+  if(newPass&&newPass!==confPass){notify('❌ Passwords do not match.','error');return;}
+  if(newPass&&newPass.length<6){notify('❌ Password must be at least 6 characters.','error');return;}
   if(name) document.getElementById('admin-name').textContent=name;
   notify('✅ Settings saved!','success');
 }
