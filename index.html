@@ -53,7 +53,7 @@ body::before{
 /* ══════════════════════════════════════════
    LAYOUT SHELL
 ══════════════════════════════════════════ */
-.app-shell{display:flex;min-height:100vh;position:relative;z-index:1;}
+.app-shell{display:flex;min-height:100vh;position:relative;z-index:1;width:100%;overflow-x:hidden;}
 
 /* ══════════════════════════════════════════
    SIDEBAR
@@ -116,6 +116,7 @@ body::before{
 ══════════════════════════════════════════ */
 .main-content{
   margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;
+  min-width:0;max-width:calc(100vw - var(--sidebar-w));overflow-x:hidden;
 }
 
 /* ══════════════════════════════════════════
@@ -127,11 +128,12 @@ body::before{
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
   border-bottom:1px solid var(--border);
   position:sticky;top:0;z-index:350;
+  min-width:0;gap:10px;
 }
-.topbar-left{display:flex;align-items:center;gap:14px;}
-.page-title{font-size:18px;font-weight:900;color:var(--text);}
-.page-crumb{font-size:11px;color:var(--text3);}
-.topbar-right{display:flex;align-items:center;gap:10px;}
+.topbar-left{display:flex;align-items:center;gap:14px;min-width:0;flex-shrink:1;}
+.page-title{font-size:18px;font-weight:900;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.page-crumb{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.topbar-right{display:flex;align-items:center;gap:10px;flex-shrink:0;}
 
 .theme-toggle{
   width:52px;height:28px;border-radius:14px;background:var(--surface2);
@@ -156,7 +158,7 @@ body::before{
 /* ══════════════════════════════════════════
    CONTENT AREA
 ══════════════════════════════════════════ */
-.content-area{padding:24px 28px;flex:1;}
+.content-area{padding:24px clamp(12px,2.5vw,28px);flex:1;min-width:0;box-sizing:border-box;}
 
 /* ══════════════════════════════════════════
    VIEWS
@@ -167,9 +169,9 @@ body::before{
 /* ══════════════════════════════════════════
    SECTION HEADER
 ══════════════════════════════════════════ */
-.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;}
-.sec-hdr h2{font-size:16px;font-weight:900;color:var(--text);display:flex;align-items:center;gap:8px;}
-.sec-hdr h2::before{content:'';display:block;width:4px;height:18px;background:linear-gradient(180deg,var(--blue),var(--teal));border-radius:2px;}
+.sec-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:12px;min-width:0;}
+.sec-hdr h2{font-size:16px;font-weight:900;color:var(--text);display:flex;align-items:center;gap:8px;min-width:0;}
+.sec-hdr h2::before{content:'';display:block;width:4px;height:18px;background:linear-gradient(180deg,var(--blue),var(--teal));border-radius:2px;flex-shrink:0;}
 .actions-row{display:flex;gap:8px;flex-wrap:wrap;}
 
 /* ══════════════════════════════════════════
@@ -197,7 +199,7 @@ body::before{
 /* ══════════════════════════════════════════
    KPI CARDS
 ══════════════════════════════════════════ */
-.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:14px;margin-bottom:24px;}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(175px,100%),1fr));gap:14px;margin-bottom:24px;}
 .kpi-card{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius-lg);padding:18px 20px;
@@ -225,17 +227,19 @@ body::before{
   background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius-lg);padding:20px;
   box-shadow:var(--card-shadow);margin-bottom:18px;
+  min-width:0;
 }
-.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
-.card-title{font-size:13px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.06em;}
-.card-title::before{content:'';display:block;width:3px;height:14px;background:linear-gradient(180deg,var(--blue),var(--orange));border-radius:2px;}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;min-width:0;}
+.card-title{font-size:13px;font-weight:800;color:var(--text);display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.06em;min-width:0;}
+.card-title::before{content:'';display:block;width:3px;height:14px;background:linear-gradient(180deg,var(--blue),var(--orange));border-radius:2px;flex-shrink:0;}
 
 /* ══════════════════════════════════════════
    GRID LAYOUTS
 ══════════════════════════════════════════ */
-.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
-.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
-.grid-60-40{display:grid;grid-template-columns:60% 40%;gap:18px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;min-width:0;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;min-width:0;}
+.grid-60-40{display:grid;grid-template-columns:60% 40%;gap:18px;min-width:0;}
+@media(max-width:1024px){.grid-60-40{grid-template-columns:1fr 1fr;}}
 @media(max-width:900px){.grid-2,.grid-3,.grid-60-40{grid-template-columns:1fr;}}
 
 /* ══════════════════════════════════════════
@@ -268,8 +272,8 @@ body::before{
 /* ══════════════════════════════════════════
    SEARCH & FILTER BAR
 ══════════════════════════════════════════ */
-.filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;}
-.search-input-wrap{position:relative;flex:1;min-width:200px;}
+.filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;min-width:0;}
+.search-input-wrap{position:relative;flex:1;min-width:0;max-width:100%;}
 .search-input-wrap::before{content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:13px;pointer-events:auto;}
 .search-input{
   width:100%;padding:9px 12px 9px 36px;
@@ -437,7 +441,7 @@ body::before{
 /* ══════════════════════════════════════════
    FORM ELEMENTS IN MODALS
 ══════════════════════════════════════════ */
-.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(200px,100%),1fr));gap:14px;}
 .form-full{grid-column:1/-1;}
 .form-group{display:flex;flex-direction:column;gap:6px;}
 .form-group label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.04em;}
@@ -569,13 +573,13 @@ body.print-mode .filter-row,
 body.print-mode .pagination,
 body.print-mode .btn-red,
 body.print-mode #print-mode-btn{display:none!important}
-body.print-mode .main-content{margin-left:0!important}
+body.print-mode .main-content{margin-left:0!important;max-width:100vw!important;}
 body.print-mode{background:#fff!important;color:#000!important}
 body.print-mode .card{box-shadow:none!important;border:1px solid #ddd!important}
 body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 @media print{
   .sidebar,.topbar,.actions-row,.filter-row,.pagination,.btn-red{display:none!important}
-  .main-content{margin-left:0!important}
+  .main-content{margin-left:0!important;max-width:100vw!important;}
   .card{box-shadow:none!important;page-break-inside:avoid}
 }
 
@@ -585,11 +589,11 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 @media(max-width:768px){
   .sidebar{transform:translateX(-100%);}
   .sidebar.open{transform:translateX(0);}
-  .main-content{margin-left:0;}
+  .main-content{margin-left:0;max-width:100vw;}
   .kpi-grid{grid-template-columns:1fr 1fr;}
   .mini-stats{grid-template-columns:1fr 1fr;}
-  .topbar{padding:10px 16px;}
-  .content-area{padding:16px;}
+  .topbar{padding:10px 14px;gap:8px;}
+  .content-area{padding:14px;}
   .hamburger{display:flex!important;}
   /* Records modal tabs scroll on mobile */
   #rec-modal-tabs{padding:0 12px;}
@@ -984,9 +988,6 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         <a href="./index2.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
           <div class="auth-qlink-dot"></div>🎓 Landing<span class="auth-qlink-arrow">→</span>
         </a>
-         <a href="./index3.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
-          <div class="auth-qlink-dot"></div>🎓 Landing flbk<span class="auth-qlink-arrow">→</span>
-        </a>
       </div>
     </div>
 
@@ -1176,7 +1177,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                   <th>#</th>
                   <th class="sortable" onclick="sortStudents('name')">Name ↕</th>
                   <th>Adm No</th>
-                  <th class="sortable" onclick="sortStudents('grade')" style="min-width:180px">Grade / Term ↕</th>
+                  <th class="sortable" onclick="sortStudents('grade')">Grade / Term ↕</th>
                   <th>Gender</th>
                   <th class="sortable" onclick="sortStudents('avg')">Best Avg ↕</th>
                   <th>Level</th>
