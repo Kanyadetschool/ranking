@@ -67,6 +67,7 @@ body::before{
   z-index:600;
   transition:var(--transition),transform .3s;
   overflow-y:auto;overflow-x:hidden;
+  pointer-events:auto;
 }
 .sidebar-brand{
   padding:20px 20px 16px;
@@ -611,8 +612,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   background:var(--surface2);border:1px solid var(--border);
   cursor:pointer;align-items:center;justify-content:center;font-size:16px;
 }
-.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:590;}
-.sidebar-backdrop.on{display:block;}
+.sidebar-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:595;}
+@media(max-width:768px){.sidebar-backdrop.on{display:block;left:var(--sidebar-w);}}
+@media(min-width:769px){.sidebar-backdrop{display:none!important;}}
 
 /* ══════════════════════════════════════════
    TOPBAR MOBILE MORE MENU
@@ -3353,6 +3355,7 @@ window.toggleQuickLinks=toggleQuickLinks;
 })();
 
 function toggleSidebar(){
+  if(window.innerWidth>768) return;
   document.getElementById('sidebar').classList.toggle('open');
   document.getElementById('sidebar-backdrop').classList.toggle('on');
 }
@@ -3361,6 +3364,14 @@ function closeSidebar(){
   document.getElementById('sidebar-backdrop').classList.remove('on');
 }
 window.toggleSidebar=toggleSidebar;window.closeSidebar=closeSidebar;
+
+/* Clear backdrop if user resizes to desktop */
+window.addEventListener('resize',()=>{
+  if(window.innerWidth>768){
+    document.getElementById('sidebar-backdrop').classList.remove('on');
+    document.getElementById('sidebar').classList.remove('open');
+  }
+});
 
 /* Auto-close sidebar on mobile after nav tap */
 document.querySelectorAll('.nav-item').forEach(item=>{
