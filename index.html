@@ -864,7 +864,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     <!-- Tab switcher -->
     <div style="display:flex;gap:0;margin-bottom:20px;border:1.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
       <button id="tab-email-btn" onclick="switchLoginTab('email')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s">✉️ Email</button>
-      <button id="tab-google-btn" onclick="switchLoginTab('google')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s"disabled>🔵 Google</button>
+      <button id="tab-google-btn" onclick="switchLoginTab('google')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s" disabled>🔵 Google</button>
     </div>
 
     <!-- Email/Password tab -->
@@ -893,9 +893,6 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     
            <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
           <div class="auth-qlink-dot"></div>🎓 Students Portal<span class="auth-qlink-arrow">→</span>
-        </a>
-         <a href="./index2.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
-          <div class="auth-qlink-dot"></div>🎓 Teachers RON<span class="auth-qlink-arrow">→</span>
         </a>
   </div>
 </div>
@@ -950,6 +947,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       </div>
       <div class="nav-item" onclick="navTo('settings',this)">
         <span class="nav-icon">⚙️</span> Settings
+      </div>
+      <div class="nav-item" onclick="navTo('auditlog',this)">
+        <span class="nav-icon">🗂️</span> Audit Log
       </div>
     </div>
 
@@ -1559,6 +1559,33 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         </div>
       </div>
 
+      <!-- ══════ AUDIT LOG VIEW ══════ -->
+      <div class="view" id="view-auditlog">
+        <div class="sec-hdr">
+          <h2>🗂️ Audit Log</h2>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span id="audit-count" style="font-size:11px;color:var(--text3);font-weight:700"></span>
+            <button class="btn btn-outline btn-sm" onclick="loadAuditLogs()">🔄 Refresh</button>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="filter-row" style="margin-bottom:16px">
+            <div class="search-input-wrap" style="flex:1">
+              <input class="search-input" placeholder="Search actions, names…" oninput="auditSearch(this.value)">
+            </div>
+            <select class="sel" id="audit-actor-sel" onchange="auditFilter(this.value)">
+              <option value="">All Admins</option>
+            </select>
+          </div>
+          <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
+            📋 Every admin action (logins, edits, deletes, imports, exports, data refreshes) is recorded here with the admin's name, email, and timestamp. This log is stored permanently in Firebase so incoming admins can review all historical activity.
+          </p>
+          <div id="audit-log-list">
+            <p style="font-size:12px;color:var(--text3)">Loading audit history…</p>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /content-area -->
   </div><!-- /main-content -->
 </div><!-- /app-shell -->
@@ -1949,6 +1976,9 @@ const FB_CONFIG = {
   appId:"1:409708360032:web:a21d63e8cb5fa1ecabee05"
 };
 const DB_PATH = 'Results/default-app-id/students';
+const AUDIT_PATH = 'audit_logs';
+let currentAdminName = 'Admin';
+let currentAdminEmail = '';
 
 const META_KEYS = new Set([
   'id','Term','Grade','Class','Gender','UPI','Official Student Name',
@@ -2250,6 +2280,8 @@ function showApp(userData){
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app-shell').style.display='flex';
   document.getElementById('admin-name').textContent=userData.name;
+  currentAdminName = userData.name;
+  currentAdminEmail = userData.user || '';
   const av=document.getElementById('admin-av');
   if(userData.photoURL){
     av.innerHTML=`<img src="${userData.photoURL}" style="width:100%;height:100%;object-fit:cover;border-radius:10px" referrerpolicy="no-referrer">`;
@@ -2260,11 +2292,13 @@ function showApp(userData){
   logActivity('🔐 Admin signed in','act-blue',userData.name);
   resetInactivity();
   loadAllData();
+  loadAuditLogs();
 }
 
 async function doSignOut(){
   clearTimeout(_inactivityTimer);clearInterval(_countdownTimer);
   document.getElementById('inactivity-banner').classList.remove('on');
+  logActivity('🚪 Admin signed out','act-orange',currentAdminName);
   try{
     const{signOut}=window._fb;
     await signOut(auth);
@@ -2303,7 +2337,7 @@ async function loadAllData(){
 async function refreshData(){
   notify('🔄 Refreshing data…','info',2000);
   await loadAllData();
-  logActivity('🔄 Data refreshed','act-blue','Admin');
+  logActivity('🔄 Data refreshed','act-blue',currentAdminName);
 }
 window.refreshData=refreshData;
 
@@ -2537,31 +2571,99 @@ function renderTopStudents(){
 window.renderTopStudents=renderTopStudents;
 
 /* ══════════════════════════════════════════
-   ACTIVITY LOG
+   ACTIVITY LOG — persisted to Firebase
 ══════════════════════════════════════════ */
 const activities=[];
-function logActivity(text,iconClass,actor){
-  activities.unshift({text,iconClass,actor,time:new Date()});
-  if(activities.length>20) activities.pop();
+
+async function logActivity(text,iconClass,actor){
+  const entry={text,iconClass,actor:actor||currentAdminName,email:currentAdminEmail||'',time:new Date().toISOString()};
+  activities.unshift(entry);
+  if(activities.length>100) activities.pop();
   renderActivityLog();
+  renderAuditView();
+  // Persist to Firebase
+  if(db){
+    try{
+      const{ref,push}=window._fb;
+      await push(ref(db,AUDIT_PATH),entry);
+    }catch(e){/* non-blocking */}
+  }
 }
+
+async function loadAuditLogs(){
+  if(!db) return;
+  try{
+    const{ref,query,orderByChild,limitToLast,get}=window._fb;
+    const q=query(ref(db,AUDIT_PATH),orderByChild('time'),limitToLast(200));
+    const snap=await get(q);
+    const data=snap.val();
+    if(!data) return;
+    const loaded=Object.entries(data).map(([k,v])=>({...v,_key:k})).sort((a,b)=>new Date(b.time)-new Date(a.time));
+    // Merge: keep unique by key, loaded entries go to the back of local-session ones
+    const localKeys=new Set(activities.map(a=>a._key).filter(Boolean));
+    loaded.forEach(e=>{ if(!localKeys.has(e._key)) activities.push(e); });
+    activities.sort((a,b)=>new Date(b.time)-new Date(a.time));
+    if(activities.length>200) activities.splice(200);
+    renderActivityLog();
+    renderAuditView();
+  }catch(e){ /* silent */ }
+}
+
 function renderActivityLog(){
   const container=document.getElementById('activity-log');
+  if(!container) return;
   if(!activities.length){container.innerHTML='<p style="font-size:12px;color:var(--text3)">No activity yet.</p>';return;}
   container.innerHTML=activities.slice(0,8).map(a=>`
     <div class="activity-item">
-      <div class="act-icon ${a.iconClass}">${a.text.split(' ')[0]}</div>
+      <div class="act-icon ${a.iconClass||'act-blue'}">${a.text.split(' ')[0]}</div>
       <div class="act-body">
         <div class="act-text">${a.text.replace(/^[^\s]+\s/,'')}</div>
-        <div class="act-time">${a.actor} · ${timeAgo(a.time)}</div>
+        <div class="act-time">${a.actor||'Admin'}${a.email?' &lt;'+a.email+'&gt;':''} · ${timeAgo(a.time)}</div>
       </div>
     </div>`).join('');
 }
+
+let auditSearchVal='', auditFilterActor='';
+function renderAuditView(){
+  const container=document.getElementById('audit-log-list');
+  if(!container) return;
+  let filtered=activities;
+  if(auditSearchVal) filtered=filtered.filter(a=>a.text.toLowerCase().includes(auditSearchVal)||a.actor.toLowerCase().includes(auditSearchVal)||(a.email||'').toLowerCase().includes(auditSearchVal));
+  if(auditFilterActor) filtered=filtered.filter(a=>a.actor===auditFilterActor);
+  if(!filtered.length){container.innerHTML='<p style="font-size:13px;color:var(--text3);padding:20px 0">No audit entries match your filter.</p>';return;}
+  container.innerHTML=filtered.map((a,i)=>{
+    const d=new Date(a.time);
+    const dateStr=d.toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'});
+    const timeStr=d.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="activity-item" style="padding:12px 0;${i===0?'':''}">
+      <div class="act-icon ${a.iconClass||'act-blue'}" style="font-size:16px">${a.text.split(' ')[0]}</div>
+      <div class="act-body">
+        <div class="act-text" style="font-size:13px">${a.text.replace(/^[^\s]+\s/,'')}</div>
+        <div class="act-time" style="font-size:11px;margin-top:3px">
+          <span style="font-weight:700;color:var(--blue-lt)">${a.actor||'Admin'}</span>
+          ${a.email?`<span style="color:var(--text3)"> · ${a.email}</span>`:''}
+          <span style="margin-left:8px;color:var(--text3)">${dateStr} ${timeStr}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  // Update unique actors for filter dropdown
+  const actorSel=document.getElementById('audit-actor-sel');
+  if(actorSel&&actorSel.options.length<=1){
+    const actors=[...new Set(activities.map(a=>a.actor).filter(Boolean))].sort();
+    actors.forEach(ac=>{const o=document.createElement('option');o.value=ac;o.textContent=ac;actorSel.appendChild(o);});
+  }
+  document.getElementById('audit-count').textContent=filtered.length+' entries';
+}
+window.auditSearch=function(v){auditSearchVal=v.toLowerCase();renderAuditView();};
+window.auditFilter=function(v){auditFilterActor=v;renderAuditView();};
+
 function timeAgo(d){
-  const s=Math.floor((Date.now()-d)/1000);
+  const s=Math.floor((Date.now()-new Date(d))/1000);
   if(s<60) return 'just now';
   if(s<3600) return Math.floor(s/60)+'m ago';
-  return Math.floor(s/3600)+'h ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return new Date(d).toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'});
 }
 
 /* ══════════════════════════════════════════
@@ -2786,7 +2888,7 @@ function viewStudent(id){
   document.getElementById('modal-pdf-btn').onclick=()=>dlStudentPDF(id);
   document.getElementById('student-modal').classList.add('on');
   injectPhoto(_modalAvId, rec['Official Student Name']||'', rec['Grade']||'');
-  logActivity(`👁 Viewed profile of ${rec['Official Student Name']}`, 'act-blue', 'Admin');
+  logActivity(`👁 Viewed profile of ${rec['Official Student Name']}`, 'act-blue', currentAdminName);
 }
 window.viewStudent=viewStudent;
 
@@ -2969,13 +3071,13 @@ async function saveStudentRecord(){
       const idx=allData.findIndex(r=>r.id===editingKey);
       if(idx>-1) allData[idx]={...allData[idx],...record};
       notify('✅ Record updated successfully!','success');
-      logActivity(`✏️ Updated record for ${name}`,'act-green','Admin');
+      logActivity(`✏️ Updated record for ${name}`,'act-green',currentAdminName);
     } else {
       const newRef=push(ref(db,DB_PATH));
       await set(newRef,record);
       allData.push({id:newRef.key,...record});
       notify('✅ Student record added!','success');
-      logActivity(`➕ Added student ${name}`,'act-green','Admin');
+      logActivity(`➕ Added student ${name}`,'act-green',currentAdminName);
     }
     closeEditModal();
     renderAll();
@@ -3005,7 +3107,7 @@ async function deleteStudent(id){
     await remove(ref(db,`${DB_PATH}/${id}`));
     allData=allData.filter(r=>r.id!==id);
     notify('🗑 Record deleted.','warn');
-    logActivity(`🗑 Deleted record for ${rec['Official Student Name']}`,'act-red','Admin');
+    logActivity(`🗑 Deleted record for ${rec['Official Student Name']}`,'act-red',currentAdminName);
     renderAll();
   }catch(e){
     notify('Error deleting: '+e.message,'error');
@@ -3205,20 +3307,21 @@ window.renderSubjectRanking=renderSubjectRanking;
 /* ══════════════════════════════════════════
    NAVIGATION
 ══════════════════════════════════════════ */
-const views={'dashboard':'Overview & Analytics','students':'Manage Students','results':'Results & Grades','analytics':'Deep Analytics','reports':'Report Cards & Export','announcements':'School Announcements','settings':'Portal Settings'};
+const views={'dashboard':'Overview & Analytics','students':'Manage Students','results':'Results & Grades','analytics':'Deep Analytics','reports':'Report Cards & Export','announcements':'School Announcements','settings':'Portal Settings','auditlog':'Full Admin Audit Trail'};
 function navTo(view,el){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const viewEl=document.getElementById('view-'+view);
   if(viewEl)viewEl.classList.add('active');
   if(el)el.classList.add('active');
-  const crumbs={dashboard:'Overview & Analytics',students:'Student Directory',results:'Results & Grades',analytics:'Charts & Insights',atrisk:'Students Below 41%',reports:'Report Cards & Export',import:'CSV / Excel Import',announcements:'School Notices',settings:'Portal Configuration'};
-  const titles={dashboard:'Dashboard',students:'Students',results:'Results',analytics:'Analytics',atrisk:'At-Risk Students',reports:'Report Cards',import:'Import Data',announcements:'Announcements',settings:'Settings'};
+  const crumbs={dashboard:'Overview & Analytics',students:'Student Directory',results:'Results & Grades',analytics:'Charts & Insights',atrisk:'Students Below 41%',reports:'Report Cards & Export',import:'CSV / Excel Import',announcements:'School Notices',settings:'Portal Configuration',auditlog:'Full Admin Audit Trail'};
+  const titles={dashboard:'Dashboard',students:'Students',results:'Results',analytics:'Analytics',atrisk:'At-Risk Students',reports:'Report Cards',import:'Import Data',announcements:'Announcements',settings:'Settings',auditlog:'Audit Log'};
   if(document.getElementById('topbar-title'))document.getElementById('topbar-title').textContent=titles[view]||view;
   if(document.getElementById('topbar-crumb'))document.getElementById('topbar-crumb').textContent=crumbs[view]||'';
   if(el) el.classList.add('active');
   document.getElementById('topbar-title').textContent=el?.querySelector('span+*')?.textContent||view.charAt(0).toUpperCase()+view.slice(1);
   document.getElementById('topbar-crumb').textContent=views[view]||'';
+  if(view==='auditlog') renderAuditView();
   if(window.innerWidth<768) closeSidebar();
 }
 window.navTo=navTo;
@@ -3409,7 +3512,7 @@ async function dlStudentPDF(id){
   const name=(rec['Official Student Name']||'Student').replace(/\s+/g,'_');
   doc.save(`Report_${name}_${getRecordTerm(rec).replace(/\s+/g,'_')}.pdf`);
   notify('📄 PDF downloaded!','success');
-  logActivity(`📄 Downloaded PDF for ${rec['Official Student Name']}`,'act-orange','Admin');
+  logActivity(`📄 Downloaded PDF for ${rec['Official Student Name']}`,'act-orange',currentAdminName);
 }
 window.dlStudentPDF=dlStudentPDF;
 
@@ -3450,7 +3553,7 @@ async function bulkGeneratePDF(){
   doc.save(`BulkReports_${suffix}_${new Date().toISOString().split('T')[0]}.pdf`);
   document.querySelectorAll('.notif').forEach(n=>n.remove());
   notify(`✅ ${recs.length} report cards exported!`,'success');
-  logActivity(`📄 Bulk PDF: ${recs.length} records`,'act-orange','Admin');
+  logActivity(`📄 Bulk PDF: ${recs.length} records`,'act-orange',currentAdminName);
 }
 window.bulkGeneratePDF=bulkGeneratePDF;
 
@@ -3474,6 +3577,7 @@ function exportStudentsCSV(){
   if(!filteredStudents.length){notify('No students to export.','warn');return;}
   downloadCSV(toCSV(filteredStudents),`Students_Export_${new Date().toISOString().split('T')[0]}.csv`);
   notify('📥 Students CSV exported!','success');
+  logActivity(`📥 Exported students CSV (${filteredStudents.length} records)`,'act-orange',currentAdminName);
 }
 window.exportStudentsCSV=exportStudentsCSV;
 
@@ -3481,6 +3585,7 @@ function exportResultsCSV(){
   if(!filteredResults.length){notify('No results to export.','warn');return;}
   downloadCSV(toCSV(filteredResults),`Results_Export_${new Date().toISOString().split('T')[0]}.csv`);
   notify('📥 Results CSV exported!','success');
+  logActivity(`📥 Exported results CSV (${filteredResults.length} records)`,'act-orange',currentAdminName);
 }
 window.exportResultsCSV=exportResultsCSV;
 
@@ -3488,6 +3593,7 @@ function exportAllCSV(){
   if(!allData.length){notify('No data to export.','warn');return;}
   downloadCSV(toCSV(allData),`AllData_Kanyadet_${new Date().toISOString().split('T')[0]}.csv`);
   notify('📥 All data exported!','success');
+  logActivity(`📥 Exported full dataset CSV (${allData.length} records)`,'act-orange',currentAdminName);
 }
 window.exportAllCSV=exportAllCSV;
 
@@ -3502,6 +3608,7 @@ function bulkExportCSV(){
   if(!recs.length){notify('No matching records.','warn');return;}
   downloadCSV(toCSV(recs),`Export_${grade||'All'}_${term||'All'}.csv`);
   notify(`📥 ${recs.length} records exported!`,'success');
+  logActivity(`📥 Bulk CSV export: ${recs.length} records (${grade||'All Grades'} · ${term||'All Terms'})`,'act-orange',currentAdminName);
 }
 window.bulkExportCSV=bulkExportCSV;
 
@@ -3523,6 +3630,7 @@ function generateSummaryReport(){
     <div style="border-top:1px solid var(--border);margin:8px 0;padding-top:8px">${lines.join('<br>')}</div>
   </div>`;
   notify('📑 Report generated!','success');
+  logActivity(`📑 Generated school summary report`,'act-blue',currentAdminName);
 }
 window.generateSummaryReport=generateSummaryReport;
 
@@ -3546,7 +3654,7 @@ function addAnnouncement(){
   document.getElementById('ann-title-input').value='';
   document.getElementById('ann-body-input').value='';
   notify('📢 Announcement published!','success');
-  logActivity(`📢 Published announcement: ${title}`,'act-orange','Admin');
+  logActivity(`📢 Published announcement: ${title}`,'act-orange',currentAdminName);
 }
 window.openAnnouncementModal=openAnnouncementModal;
 window.closeAnnModal=closeAnnModal;
@@ -3583,7 +3691,7 @@ function openRecordsModal(masterId){
   renderRecordTabs(allRecs, 0);
   renderRecordContent(allRecs, 0);
   document.getElementById('records-modal').classList.add('on');
-  logActivity('📋 Viewed records for ' + name, 'act-blue', 'Admin');
+  logActivity('📋 Viewed records for ' + name, 'act-blue', currentAdminName);
 }
 window.openRecordsModal = openRecordsModal;
 
@@ -4158,6 +4266,7 @@ function exportAtRiskCSV(){
   const csv=keys.join(',')+'\n'+rows.map(r=>keys.map(k=>'"'+(String(r[k]||'').replace(/"/g,'""'))+'"').join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='AtRisk_Students.csv';a.click();
   notify('📥 At-Risk CSV exported!','success');
+  logActivity(`📥 Exported at-risk students CSV`,'act-red',currentAdminName);
 }
 window.exportAtRiskCSV=exportAtRiskCSV;
 
@@ -4175,6 +4284,7 @@ async function generateAtRiskPDF(){
   doc.autoTable({head:[['Student','Adm No','Grade / Term','Average','Level']],body:tableData,startY:32,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[231,76,60],textColor:[255,255,255]}});
   doc.save('AtRisk_Alert_'+new Date().toISOString().split('T')[0]+'.pdf');
   notify('📄 At-Risk PDF downloaded!','success');
+  logActivity(`📄 At-Risk PDF downloaded`,'act-red',currentAdminName);
 }
 window.generateAtRiskPDF=generateAtRiskPDF;
 
@@ -4261,6 +4371,7 @@ async function generateEOTPDF(){
   });
   doc.save(`ClassReport_${grade}_${term}.pdf`.replace(/\s+/g,'_'));
   notify('📄 End-of-Term PDF downloaded!','success');
+  logActivity(`📄 End-of-Term PDF: ${grade} · ${term}`,'act-orange',currentAdminName);
 }
 window.generateEOTPDF=generateEOTPDF;
 
@@ -4384,7 +4495,7 @@ async function commitImport(){
     }
     notify(`✅ Imported <strong>${count}</strong> records successfully!`,'success');
     btn.textContent='✅ Done!';
-    logActivity(`📥 Imported ${count} records via CSV upload`,'act-green','Admin');
+    logActivity(`📥 Imported ${count} records via CSV upload`,'act-green',currentAdminName);
     setTimeout(()=>refreshData(),1500);
   }catch(err){
     notify('Import error: '+err.message,'error');
@@ -4409,7 +4520,9 @@ function saveSettings(){
   if(newPass&&newPass!==confPass){notify('❌ Passwords do not match.','error');return;}
   if(newPass&&newPass.length<6){notify('❌ Password must be at least 6 characters.','error');return;}
   if(name) document.getElementById('admin-name').textContent=name;
+  if(name) currentAdminName=name;
   notify('✅ Settings saved!','success');
+  logActivity('⚙️ Updated portal settings','act-blue',currentAdminName);
 }
 window.saveSettings=saveSettings;
 </script>
