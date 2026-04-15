@@ -1951,6 +1951,46 @@ function makePhotoAvatar(name, grade, wrapClass, extraStyle=''){
   return html;
 }
 
+/* ══════════════════════════════════════════
+   SCHOOL LOGO — UI + PDF
+   Loads ./imgs/logo.png; silently falls back to emoji
+══════════════════════════════════════════ */
+function tryLoadLogo(){
+  const logoImg=new Image();
+  logoImg.src='./imgs/logo.png';
+  logoImg.onload=()=>{
+    // Replace brand-icon emoji in sidebar
+    const brand=document.querySelector('.brand-icon');
+    if(brand) brand.innerHTML=`<img src="./imgs/logo.png" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">`;
+    // Replace loader logo emoji
+    const ll=document.getElementById('ld-logo')||document.querySelector('.ld-logo');
+    if(ll) ll.innerHTML=`<img src="./imgs/logo.png" alt="Logo" style="width:48px;height:48px;object-fit:cover;border-radius:12px;">`;
+  };
+  // onerror: silently keep emoji — no crash
+}
+
+// Shared logo loader for jsPDF — caches as dataURL
+let _logoPDFCache=null;
+async function _loadLogoPDF(){
+  if(_logoPDFCache!==null) return _logoPDFCache;
+  const src='./imgs/logo.png';
+  const ok=await new Promise(resolve=>{
+    const img=new Image();img.crossOrigin='anonymous';
+    const t=setTimeout(()=>{_logoPDFCache={ok:false,dataUrl:null};resolve(null);},2500);
+    img.onload=()=>{clearTimeout(t);resolve(img);};
+    img.onerror=()=>{clearTimeout(t);resolve(null);};
+    img.src=src;
+  });
+  if(!ok){_logoPDFCache={ok:false,dataUrl:null};return _logoPDFCache;}
+  try{
+    const c=document.createElement('canvas');
+    c.width=ok.naturalWidth||200;c.height=ok.naturalHeight||200;
+    c.getContext('2d').drawImage(ok,0,0);
+    _logoPDFCache={ok:true,dataUrl:c.toDataURL('image/png')};
+  }catch(e){_logoPDFCache={ok:true,dataUrl:ok.src};}
+  return _logoPDFCache;
+}
+
 // Async inject photo into an existing wrapper element by id
 function injectPhoto(elemId, name, grade){
   loadStudentPhoto(name, grade).then(src=>{
@@ -2295,6 +2335,7 @@ function showApp(userData){
   resetInactivity();
   loadAllData();
   loadAuditLogs();
+  tryLoadLogo();
 }
 
 async function doSignOut(){
@@ -3476,14 +3517,23 @@ async function dlStudentPDF(id){
   const st=calcStats(rec);
   const subjects=getSubjects(rec);
 
-  // Header
-  doc.setFillColor(41,128,185);doc.rect(0,0,W,35,'F');
+  // Header banner
+  const bannerH=35;
+  doc.setFillColor(41,128,185);doc.rect(0,0,W,bannerH,'F');
+  // Logo
+  const logoData=await _loadLogoPDF();
+  const logoSize=26;
+  let textX=W/2;
+  if(logoData&&logoData.ok&&logoData.dataUrl){
+    try{doc.addImage(logoData.dataUrl,'PNG',5,(bannerH-logoSize)/2,logoSize,logoSize);}catch(e){}
+    textX=(W+logoSize+10)/2;
+  }
   doc.setTextColor(255,255,255);doc.setFontSize(16);doc.setFont(undefined,'bold');
-  doc.text('KANYADET PRI & JUNIOR SCHOOL',W/2,11,{align:'center'});
+  doc.text('KANYADET PRI & JUNIOR SCHOOL',textX,11,{align:'center'});
   doc.setFontSize(10);doc.setFont(undefined,'normal');
-  doc.text('P.O. BOX 45-40139 AKALA, KENYA',W/2,17,{align:'center'});
-  doc.text('STUDENT PERFORMANCE REPORT',W/2,23,{align:'center'});
-  doc.setFontSize(7.5);doc.text(`${rec['Grade']||getRecordTerm(rec)||'N/A'}`,W/2,30,{align:'center'});
+  doc.text('P.O. BOX 45-40139 AKALA, KENYA',textX,17,{align:'center'});
+  doc.text('STUDENT PERFORMANCE REPORT',textX,23,{align:'center'});
+  doc.setFontSize(7.5);doc.text(`${rec['Grade']||getRecordTerm(rec)||'N/A'}`,textX,30,{align:'center'});
 
   // Info box
   doc.setTextColor(0,0,0);doc.setFillColor(240,240,240);doc.rect(15,42,W-30,36,'F');
@@ -3544,15 +3594,23 @@ async function bulkGeneratePDF(){
   const{jsPDF}=window.jspdf;
   const doc=new jsPDF('portrait','mm','a4');
   const W=doc.internal.pageSize.width;
+  const logoData=await _loadLogoPDF();
+  const logoSize=22;
   for(let i=0;i<recs.length;i++){
     if(i>0) doc.addPage();
     const rec=recs[i];const st=calcStats(rec);const subjects=getSubjects(rec);
-    doc.setFillColor(41,128,185);doc.rect(0,0,W,30,'F');
+    const bannerH=30;
+    doc.setFillColor(41,128,185);doc.rect(0,0,W,bannerH,'F');
+    let textX=W/2;
+    if(logoData&&logoData.ok&&logoData.dataUrl){
+      try{doc.addImage(logoData.dataUrl,'PNG',4,(bannerH-logoSize)/2,logoSize,logoSize);}catch(e){}
+      textX=(W+logoSize+8)/2;
+    }
     doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
-    doc.text('KANYADET PRI & JUNIOR SCHOOL',W/2,10,{align:'center'});
+    doc.text('KANYADET PRI & JUNIOR SCHOOL',textX,10,{align:'center'});
     doc.setFontSize(9);doc.setFont(undefined,'normal');
-    doc.text(`STUDENT PERFORMANCE REPORT`,W/2,17,{align:'center'});
-    doc.setFontSize(7);doc.text(`${rec['Official Student Name']||'N/A'} | ${rec['Grade']||'N/A'} | Adm: ${rec['Assessment No']||'N/A'}`,W/2,24,{align:'center'});
+    doc.text(`STUDENT PERFORMANCE REPORT`,textX,17,{align:'center'});
+    doc.setFontSize(7);doc.text(`${rec['Official Student Name']||'N/A'} | ${rec['Grade']||'N/A'} | Adm: ${rec['Assessment No']||'N/A'}`,textX,24,{align:'center'});
     doc.setTextColor(0,0,0);
     const tableData=subjects.map(s=>{ const v=parseFloat(rec[s]);const g=gradeInfo(v);return[s,isNaN(v)?'N/A':v,g.pts,g.level]; });
     doc.autoTable({head:[['Subject','Score','Pts','Level']],body:tableData,startY:35,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[41,128,185],textColor:[255,255,255]},});
@@ -4284,11 +4342,18 @@ window.exportAtRiskCSV=exportAtRiskCSV;
 async function generateAtRiskPDF(){
   if(!window.jspdf){notify('PDF library loading…','info');return;}
   const{jsPDF}=window.jspdf;const doc=new jsPDF();const W=doc.internal.pageSize.width;
-  doc.setFillColor(231,76,60);doc.rect(0,0,W,28,'F');
+  const bannerH=28;const logoSize=20;
+  doc.setFillColor(231,76,60);doc.rect(0,0,W,bannerH,'F');
+  const logoData=await _loadLogoPDF();
+  let textX=W/2;
+  if(logoData&&logoData.ok&&logoData.dataUrl){
+    try{doc.addImage(logoData.dataUrl,'PNG',4,(bannerH-logoSize)/2,logoSize,logoSize);}catch(e){}
+    textX=(W+logoSize+8)/2;
+  }
   doc.setTextColor(255,255,255);doc.setFontSize(13);doc.setFont(undefined,'bold');
-  doc.text('KANYADET SCHOOL — AT-RISK STUDENTS ALERT',W/2,12,{align:'center'});
+  doc.text('KANYADET SCHOOL — AT-RISK STUDENTS ALERT',textX,12,{align:'center'});
   doc.setFontSize(8);doc.setFont(undefined,'normal');
-  doc.text('Generated: '+new Date().toLocaleDateString(),W/2,20,{align:'center'});
+  doc.text('Generated: '+new Date().toLocaleDateString(),textX,20,{align:'center'});
   doc.setTextColor(0,0,0);
   const data=allData.filter(r=>parseFloat(calcStats(r).avg)<41);
   const tableData=data.map(r=>{const st=calcStats(r);return[r['Official Student Name']||'',r['Assessment No']||'',r['Grade']||'',st.avg+'%',st.level];});
@@ -4360,12 +4425,19 @@ async function generateEOTPDF(){
   if(!data.length){notify('No data for this selection.','warn');return;}
 
   // Cover
-  doc.setFillColor(41,128,185);doc.rect(0,0,W,40,'F');
+  const bannerH=40;const logoSize=30;
+  doc.setFillColor(41,128,185);doc.rect(0,0,W,bannerH,'F');
+  const logoData=await _loadLogoPDF();
+  let textX=W/2;
+  if(logoData&&logoData.ok&&logoData.dataUrl){
+    try{doc.addImage(logoData.dataUrl,'PNG',5,(bannerH-logoSize)/2,logoSize,logoSize);}catch(e){}
+    textX=(W+logoSize+10)/2;
+  }
   doc.setTextColor(255,255,255);doc.setFontSize(14);doc.setFont(undefined,'bold');
-  doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',W/2,14,{align:'center'});
+  doc.text('KANYADET PRIMARY & JUNIOR SCHOOL',textX,14,{align:'center'});
   doc.setFontSize(10);doc.setFont(undefined,'normal');
-  doc.text('END-OF-TERM CLASS PERFORMANCE REPORT',W/2,22,{align:'center'});
-  doc.setFontSize(8);doc.text(`${grade} · ${term} · Generated: ${new Date().toLocaleDateString()}`,W/2,30,{align:'center'});
+  doc.text('END-OF-TERM CLASS PERFORMANCE REPORT',textX,22,{align:'center'});
+  doc.setFontSize(8);doc.text(`${grade} · ${term} · Generated: ${new Date().toLocaleDateString()}`,textX,30,{align:'center'});
   doc.setTextColor(0,0,0);
 
   // Stats
