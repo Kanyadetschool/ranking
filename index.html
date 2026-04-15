@@ -242,6 +242,7 @@ body::before{
 .grid-60-40{display:grid;grid-template-columns:60% 40%;gap:18px;min-width:0;}
 @media(max-width:1024px){.grid-60-40{grid-template-columns:1fr 1fr;}}
 @media(max-width:900px){.grid-2,.grid-3,.grid-60-40{grid-template-columns:1fr;}}
+@media(max-width:768px){.grid-2{grid-template-columns:1fr;}}
 
 /* ══════════════════════════════════════════
    DATA TABLE
@@ -1129,7 +1130,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           </div>
 
           <!-- Recent Activity -->
-          <div class="card">
+          <div class="card" style="order:2">
             <div class="card-hdr">
               <div class="card-title">🕐 Activity Log</div>
             </div>
@@ -2789,7 +2790,7 @@ function sortStudentsData(){
   filteredStudents.sort((a,b)=>{
     if(studentSortField==='name') return (a['Official Student Name']||'').localeCompare(b['Official Student Name']||'')*studentSortDir;
     if(studentSortField==='grade') return (a['Grade']||'').localeCompare(b['Grade']||'')*studentSortDir;
-    if(studentSortField==='avg') return (parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg))*studentSortDir;
+    if(studentSortField==='avg') return (parseFloat(calcStats(a).avg)-parseFloat(calcStats(b).avg))*studentSortDir;
     return 0;
   });
 }
