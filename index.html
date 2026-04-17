@@ -899,7 +899,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div id="login-screen">
   <div class="login-card">
     <div class="login-icon" id="login-logo-icon">🔐</div>
-    <h1>Admin Portal.</h1>
+    <h1>Admin Portal</h1>
     <p>Kanyadet PRI &amp; Junior School — Restricted Access</p>
     <div class="login-err" id="login-err"></div>
 
@@ -4855,7 +4855,7 @@ const REPORT_CARD_CONFIG = {
 };
 
 
-// Fields that are never learning areas — used by getSubjects()
+// Fields that are never learning areas — used by getSubjects_rc()
 const META_KEYS_RC = new Set([
     'id', 'Term', 'Grade', 'Class', 'Gender', 'UPI',
     'Official Student Name', 'Assessment No', 'Position',
@@ -4867,7 +4867,7 @@ const META_KEYS_RC = new Set([
  * Dynamically derive learning areas from a student record.
  * Returns only keys whose values are numeric scores.
  */
-function getSubjects(student) {
+function getSubjects_rc(student) {
     if (!student) return [];
     return Object.keys(student).filter(k => {
         if (META_KEYS_RC.has(k)) return false;
@@ -5173,7 +5173,7 @@ function getGradeFromScore(score) {
 }
 
 function calculateStudentStats(student) {
-    const subjects = getSubjects(student);
+    const subjects = getSubjects_rc(student);
     const scores = subjects.map(subject => {
         const score = parseFloat(student[subject]);
         return isNaN(score) ? null : score;
@@ -5238,7 +5238,7 @@ function generateTeacherRemark(student) {
 // ═══════════════════════════════════════════════════════════
 function drawSummary(doc, student, stats) {
     const pageWidth = doc.internal.pageSize.width;
-    const subjects  = getSubjects(student);
+    const subjects  = getSubjects_rc(student);
 
     // --- derive best / weakest learning area ---
     let best = null, worst = null;
@@ -5484,7 +5484,7 @@ async function loadStudentImage(studentName, grade) {
 
 function addQrCode(doc, student, x, y, size) {
     const stats = calculateStudentStats(student);
-    const subjects = getSubjects(student);
+    const subjects = getSubjects_rc(student);
     const subjectLines = subjects.map(subj => {
         const sc = student[subj];
         const gi = getGradeFromScore(sc);
@@ -5701,7 +5701,7 @@ async function generateStudentReportCard(student, includeWatermark = true) {
     doc.text(`CLOSING: ${_closingDate}   OPENING: ${_openingDate}`, pageWidth - 15, yPos, { align: 'right' });
 
     const tableData = [];
-    getSubjects(student).forEach(subject => {
+    getSubjects_rc(student).forEach(subject => {
         const score = student[subject];
         const numScore = parseFloat(score);
         const gradeInfo = getGradeFromScore(score);
@@ -5816,7 +5816,7 @@ async function _drawMultiTermReportPage(doc, mergedStudent, logoRes, studentImag
     const allSubjects = [];
     gradeList.forEach(g => {
         const rec = mergedStudent[`__grade_${g}`];
-        if (rec) getSubjects(rec).forEach(s => { if (!allSubjects.includes(s)) allSubjects.push(s); });
+        if (rec) getSubjects_rc(rec).forEach(s => { if (!allSubjects.includes(s)) allSubjects.push(s); });
     });
 
     // Table header:  Learning Area | [Grade DB Name Score] | [Grade DB Name Score] | … | Avg | Rubric
@@ -6076,7 +6076,7 @@ function _buildAveragedStudent(mergedStudent) {
     const allSubjects = [];
     gradeList.forEach(g => {
         const rec = mergedStudent[`__grade_${g}`];
-        if (rec) getSubjects(rec).forEach(s => { if (!allSubjects.includes(s)) allSubjects.push(s); });
+        if (rec) getSubjects_rc(rec).forEach(s => { if (!allSubjects.includes(s)) allSubjects.push(s); });
     });
 
     // Base record — copy meta fields from first available grade record
@@ -6328,7 +6328,7 @@ function _drawCompactReportPage(doc, student, stats, studentImageData, logoRes, 
     doc.text(`CLOSING: ${_closingDate}   OPENING: ${_openingDate}`, pageWidth - 15, yPos, { align: 'right' });
 
     const tableData = [];
-    getSubjects(student).forEach(subject => {
+    getSubjects_rc(student).forEach(subject => {
         const score = student[subject];
         const numScore = parseFloat(score);
         const gradeInfo = getGradeFromScore(score);
@@ -6855,7 +6855,7 @@ function fetchStudentsData() {
         });
 
         studentsData = students;
-        populateFilters(students);
+        populateFilters_rc(students);
         buildTermSelector();   // ← rebuild term chips now that we have real data
         applyFilters(); 
         loader.style.display = 'none';
@@ -6876,7 +6876,7 @@ function fetchStudentsData() {
     });
 }
 
-function populateFilters(students) {
+function populateFilters_rc(students) {
     const grades = new Set();
     const allKeys = new Set();
 
@@ -7628,7 +7628,7 @@ async function exportMissingDataToPdf() {
     });
 
     // Step 3: for each student, average numeric subject scores across all their records
-    const allSubjectsSet = new Set(rawPool.flatMap(s => getSubjects(s)));
+    const allSubjectsSet = new Set(rawPool.flatMap(s => getSubjects_rc(s)));
     const allSubjectsList = [...allSubjectsSet];
 
     let dataToExport = Object.values(byAdm).map(records => {
@@ -7705,7 +7705,7 @@ async function exportMissingDataToPdf() {
     const PRIORITY_SUBJECTS = ['Mathematics', 'English', 'Kiswahili'];
 
     // Build subject list: priority subjects first (in order), then remaining alphabetically
-    const rawSubjects = [...new Set(dataToExport.flatMap(s => getSubjects(s)))];
+    const rawSubjects = [...new Set(dataToExport.flatMap(s => getSubjects_rc(s)))];
     const dynamicSubjects = [
         ...PRIORITY_SUBJECTS.filter(p => rawSubjects.some(s => s.toLowerCase().includes(p.toLowerCase())
             || p.toLowerCase().includes(s.toLowerCase()) || s === p)),
@@ -8025,7 +8025,7 @@ async function generateLeagueTable() {
         doc.text(`CLASS LEAGUE TABLE  —  ${gradeLabel}  |  ${termLabel}  |  ${new Date().toLocaleDateString()}`, pageWidth/2, 14, { align: 'center' });
     };
 
-    const dynamicSubjects = [...new Set(ranked.flatMap(({s}) => getSubjects(s)))];
+    const dynamicSubjects = [...new Set(ranked.flatMap(({s}) => getSubjects_rc(s)))];
 
     const headers = [['#', 'Name', 'Adm No', 'Gender', ...dynamicSubjects, 'Total Pts', 'Avg %', 'Level']];
     const body = ranked.map(({s, stats}, i) => [
@@ -8096,7 +8096,7 @@ async function generateSubjectAnalysis() {
     if (pool.length === 0) { NotificationManager.warning('No students found for the selected terms.'); return; }
 
     const termLabel = [...selectedGrades].join(' + ');
-    const allSubjects = [...new Set(pool.flatMap(s => getSubjects(s)))];
+    const allSubjects = [...new Set(pool.flatMap(s => getSubjects_rc(s)))];
     const logoRes = await loadLogo();
     const doc = new jsPDF('portrait');
     const pageWidth = doc.internal.pageSize.width;
@@ -8164,7 +8164,7 @@ window.generateSubjectAnalysis = generateSubjectAnalysis;
 
 // ─── 5. MISSING DATA HIGHLIGHTER ─────────────────────────────────────────
 function highlightMissingScores(doc, student, tableStartY) {
-    const subjects = getSubjects(student);
+    const subjects = getSubjects_rc(student);
     const missing = subjects.filter(s => {
         const v = student[s];
         return v === null || v === undefined || v === '' || isNaN(parseFloat(v));
@@ -8276,7 +8276,7 @@ function showGradeDashboard() {
     const overallAvg = (totalAvg / pool.length).toFixed(1);
     const total = pool.length;
 
-    const allSubjects = [...new Set(pool.flatMap(s => getSubjects(s)))];
+    const allSubjects = [...new Set(pool.flatMap(s => getSubjects_rc(s)))];
     const subjAvgs = allSubjects.map(subj => {
         const sc = pool.map(s => parseFloat(s[subj])).filter(v => !isNaN(v));
         return { subj, avg: sc.length ? (sc.reduce((a,b)=>a+b,0)/sc.length).toFixed(1) : 0 };
@@ -8389,7 +8389,7 @@ function _doExportToExcel() {
         parseFloat(calculateStudentStats(b).average) - parseFloat(calculateStudentStats(a).average)
     );
 
-    const dynSubjects = [...new Set(sorted.flatMap(s => getSubjects(s)))];
+    const dynSubjects = [...new Set(sorted.flatMap(s => getSubjects_rc(s)))];
 
     const headers = ['#','Name','Adm No','UPI','Gender','Grade','Term',
         ...dynSubjects, 'Total Marks','Avg %','Total Points','Max Points','Level'];
@@ -8467,7 +8467,7 @@ window.previewReportCard = previewReportCard;
 // ─── 10. BULK WHATSAPP/SMS SHARE ─────────────────────────────────────────
 function generateWhatsAppText(student) {
     const stats = calculateStudentStats(student);
-    const subjects = getSubjects(student);
+    const subjects = getSubjects_rc(student);
     const termLabel = [...selectedGrades].join(' + ');
     const lines = subjects.map(subj => {
         const sc = student[subj];
@@ -8628,7 +8628,7 @@ document.addEventListener('click', function(e) {
         // Copy from the main portal's allData
         if (typeof allData !== 'undefined' && allData.length) {
           studentsData = allData.map(r => ({...r}));
-          populateFilters(studentsData);
+          populateFilters_rc(studentsData);
           buildTermSelector();
           applyFilters();
           loader.style.display = 'none';
