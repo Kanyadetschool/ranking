@@ -906,7 +906,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     <!-- Tab switcher -->
     <div style="display:flex;gap:0;margin-bottom:20px;border:1.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
       <button id="tab-email-btn" onclick="switchLoginTab('email')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s">✉️ Email</button>
-      <button id="tab-google-btn" onclick="switchLoginTab('google')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s" disabled>🔵 Google</button>
+      <button id="tab-google-btn" onclick="switchLoginTab('google')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s" >🔵 Google</button>
     </div>
 
     <!-- Email/Password tab -->
@@ -1021,10 +1021,10 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         <a href="./Report-Cards/Termly-ReportsRmks.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
           <div class="auth-qlink-dot"></div>🎓 All Terms Merged Rmks<span class="auth-qlink-arrow">→</span>
         </a>
-         <a href="./Report-Cards/Results.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
+         <a href="./Report-Cards/Results.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1" disabled>
           <div class="auth-qlink-dot"></div>🎓 Results<span class="auth-qlink-arrow">→</span>
         </a>
- <a href="./cleaner.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
+ <a href="./cleaner.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1" disabled>
           <div class="auth-qlink-dot"></div>Cleaner<span class="auth-qlink-arrow">→</span>
         </a>
         <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
@@ -2100,9 +2100,7 @@ function tryLoadLogo(){
     // Replace login screen icon with logo
     const loginIcon=document.getElementById('login-logo-icon');
     if(loginIcon){
-      loginIcon.innerHTML=`<img src="./imgs/logo.png" alt="Logo" style="width:100%;height:100%;object-fit:contain;border-radius:0;">`;
-      loginIcon.style.background='none';
-      loginIcon.style.boxShadow='none';
+      loginIcon.innerHTML=`<img src="./imgs/logo.png" alt="Logo" style="width:80%;height:80%;object-fit:contain;border-radius:0;">`;
     }
   };
   // onerror: silently keep emoji — no crash
@@ -5475,10 +5473,23 @@ async function loadLogo() {
 async function loadStudentImage(studentName, grade) {
     const g    = extractGrade(grade);
     const name = (studentName || '').trim();
-    let r = await loadImg(`./student_images/${g}/${name}.jpg`);
-    if (r.loaded) return r;
-    r = await loadImg(`./student_images/${g}/${encodeURIComponent(name)}.jpg`);
-    if (r.loaded) return r;
+    const encG = encodeURIComponent(g);
+    const encN = encodeURIComponent(name);
+    // Try same paths as portal's loadStudentPhoto — Report-Cards/ prefix first
+    const paths = [
+        `./Report-Cards/student_images/${g}/${name}.jpg`,
+        `./Report-Cards/student_images/${encG}/${encN}.jpg`,
+        `./Report-Cards/student_images/${g}/${encN}.jpg`,
+        `./student_images/${g}/${name}.jpg`,
+        `./student_images/${g}/${encN}.jpg`,
+    ];
+    for (const path of paths) {
+        const r = await loadImg(path);
+        if (r.loaded) return r;
+    }
+    // Final fallback: shared default avatar
+    let def = await loadImg('./Report-Cards/student_images/default.jpg');
+    if (def.loaded) return def;
     return loadImg('./student_images/default.jpg');
 }
 
