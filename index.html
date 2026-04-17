@@ -905,12 +905,12 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 
     <!-- Tab switcher -->
     <div style="display:flex;gap:0;margin-bottom:20px;border:1.5px solid var(--border);border-radius:var(--radius-md);overflow:hidden">
-      <button id="tab-email-btn" onclick="switchLoginTab('email')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s">✉️ Email</button>
-      <button id="tab-google-btn" onclick="switchLoginTab('google')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s" >🔵 Google</button>
+      <button id="tab-google-btn" onclick="switchLoginTab('google')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s">🔵 Google</button>
+      <button id="tab-email-btn" onclick="switchLoginTab('email')" style="flex:1;padding:9px;font-size:12px;font-weight:700;border:none;cursor:pointer;background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;transition:all .2s">✉️ Email</button>
     </div>
 
     <!-- Email/Password tab -->
-    <div id="tab-email">
+    <div id="tab-email" style="display:none">
       <div class="fg">
         <label>EMAIL ADDRESS</label>
         <input type="email" id="inp-user" placeholder="admin@kanyadet.ac.ke" autocomplete="email">
@@ -923,7 +923,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     </div>
 
     <!-- Google tab -->
-    <div id="tab-google" style="display:none;text-align:center">
+    <div id="tab-google" style="display:block;text-align:center">
       <p style="font-size:12px;color:var(--text2);margin-bottom:18px">Sign in with your Google account. Only authorized school emails can access this portal.</p>
       <button class="login-btn" onclick="doGoogleLogin()" id="google-btn" style="background:linear-gradient(135deg,#4285f4,#1a73e8);display:flex;align-items:center;justify-content:center;gap:10px">
         <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.7 20-21 0-1.4-.1-2.7-.5-4z"/></svg>
@@ -1021,12 +1021,12 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         <a href="./Report-Cards/Termly-ReportsRmks.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
           <div class="auth-qlink-dot"></div>🎓 All Terms Merged Rmks<span class="auth-qlink-arrow">→</span>
         </a>
-         <a href="./Report-Cards/Results.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1" disabled>
+         <!-- <a href="./Report-Cards/Results.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
           <div class="auth-qlink-dot"></div>🎓 Results<span class="auth-qlink-arrow">→</span>
-        </a>
- <a href="./cleaner.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1" disabled>
+        </a> -->
+ <!-- <a href="./cleaner.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1">
           <div class="auth-qlink-dot"></div>Cleaner<span class="auth-qlink-arrow">→</span>
-        </a>
+        </a> -->
         <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
           <div class="auth-qlink-dot"></div>🎓 Students Portal<span class="auth-qlink-arrow">→</span>
         </a>
@@ -2507,7 +2507,7 @@ async function doSignOut(){
   if(btn){btn.disabled=false;btn.textContent='🚀 Sign In';}
   const gbtn=document.getElementById('google-btn');
   if(gbtn){gbtn.disabled=false;gbtn.innerHTML='<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.7 20-21 0-1.4-.1-2.7-.5-4z"/></svg> Continue with Google';}
-  switchLoginTab('email');
+  switchLoginTab('google');
   notify('👋 Signed out.','info');
   tryLoadLogo();
 }
