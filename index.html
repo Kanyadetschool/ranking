@@ -3489,6 +3489,8 @@ function filterResults(){
     if(grade&&gShort(r['Grade'])!==grade) return false;
     return true;
   });
+  // Sort by average descending (highest first)
+  filteredResults.sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg));
   resultsPage=1;
   renderResultsTable();
 }
