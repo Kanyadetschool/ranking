@@ -4245,10 +4245,10 @@ function runSmartSearch(q){
   });
 
   let results=Object.values(byAsm).filter(({best,all})=>{
-    const name=(best['Official Student Name']||'').toLowerCase();
-    const upi=(best['UPI']||'').toLowerCase();
-    const adm=(best['Assessment No']||'').toLowerCase();
-    const grade=(best['Grade']||'').toLowerCase();
+    const name=String(best['Official Student Name']||'').toLowerCase();
+    const upi=String(best['UPI']||'').toLowerCase();
+    const adm=String(best['Assessment No']||'').toLowerCase();
+    const grade=String(best['Grade']||'').toLowerCase();
     const avg=parseFloat(calcStats(best).avg);
     if(q&&!name.includes(q.toLowerCase())&&!upi.includes(q.toLowerCase())&&!adm.includes(q.toLowerCase())&&!grade.includes(q.toLowerCase()))return false;
     if(scoreFilter){
