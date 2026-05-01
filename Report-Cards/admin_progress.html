@@ -378,6 +378,144 @@ body::before{
 .err-msg.on{display:block;animation:shake .4s ease;}
 @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
 
+/* Google Sign-In button */
+.google-btn{
+  width:100%;padding:13px 16px;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  background:#fff;
+  border:1.5px solid rgba(0,0,0,.18);
+  border-radius:var(--radius-sm);
+  color:#3c4043;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:14px;font-weight:700;
+  cursor:pointer;
+  transition:var(--transition);
+  box-shadow:0 2px 10px rgba(0,0,0,.10);
+  margin-bottom:18px;
+  letter-spacing:.01em;
+}
+.google-btn:hover{
+  background:#f8f9fa;
+  box-shadow:0 4px 16px rgba(0,0,0,.16);
+  transform:translateY(-2px);
+  border-color:rgba(66,133,244,.4);
+}
+.google-btn:active{transform:translateY(0);}
+.google-btn svg{flex-shrink:0;}
+.or-divider{
+  display:flex;align-items:center;gap:12px;
+  margin-bottom:18px;
+}
+.or-divider::before,.or-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.or-divider span{
+  font-size:11px;font-weight:700;color:var(--text3);
+  text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;
+}
+[data-theme="light"] .google-btn{background:#fff;border-color:rgba(0,0,0,.15);color:#3c4043;}
+[data-theme="dark"] .google-btn{background:#1e2d3d;border-color:rgba(255,255,255,.12);color:#e4f0fb;}
+[data-theme="dark"] .google-btn:hover{background:#243648;border-color:rgba(66,133,244,.5);}
+
+/* Guest login button */
+.guest-btn{
+  width:100%;padding:11px 16px;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  background:transparent;
+  border:1.5px dashed var(--border-strong);
+  border-radius:var(--radius-sm);
+  color:var(--text2);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:600;
+  cursor:pointer;
+  transition:var(--transition);
+  margin-top:12px;
+}
+.guest-btn:hover{
+  border-color:var(--blue-lt);color:var(--blue-lt);
+  background:rgba(93,173,226,.06);
+}
+
+/* Locked action buttons (guest mode) */
+.btn-locked{
+  position:relative;
+  opacity:.55 !important;
+  cursor:not-allowed !important;
+  pointer-events:all !important;
+}
+.btn-locked::after{
+  content:'🔒';
+  position:absolute;top:-8px;right:-8px;
+  font-size:11px;
+  background:var(--surface2);
+  border-radius:50%;
+  width:20px;height:20px;
+  display:flex;align-items:center;justify-content:center;
+  border:1.5px solid var(--border-strong);
+  line-height:1;padding:2px;
+}
+.btn-locked:hover{ transform:none !important; box-shadow:none !important; }
+
+/* Guest mode banner inside admin selector */
+.guest-banner{
+  display:none;
+  align-items:center;gap:10px;
+  background:rgba(243,156,18,.10);
+  border:1px solid rgba(243,156,18,.38);
+  border-radius:var(--radius-sm);
+  padding:9px 14px;
+  margin-bottom:14px;
+  font-size:11.5px;color:var(--gold);font-weight:600;
+}
+.guest-banner.on{ display:flex; }
+.guest-banner a{
+  margin-left:auto;color:var(--blue-lt);text-decoration:underline;
+  cursor:pointer;font-weight:700;white-space:nowrap;
+}
+
+/* Auth-wall modal */
+#auth-wall-modal{
+  display:none;position:fixed;inset:0;z-index:999;
+  background:rgba(0,0,0,.55);backdrop-filter:blur(6px);
+  -webkit-backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;padding:20px;
+}
+#auth-wall-modal.on{ display:flex; }
+.aw-card{
+  background:var(--surface);border:1px solid var(--border-strong);
+  border-radius:var(--radius-lg);
+  padding:32px 28px 24px;max-width:360px;width:100%;
+  text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.38);
+  animation:awIn .25s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes awIn{from{transform:scale(.88);opacity:0}to{transform:scale(1);opacity:1}}
+.aw-icon{font-size:44px;margin-bottom:12px;}
+.aw-card h3{font-size:17px;font-weight:800;color:var(--text);margin-bottom:6px;}
+.aw-card p{font-size:12.5px;color:var(--text2);line-height:1.65;margin-bottom:14px;}
+.aw-features{
+  display:flex;flex-direction:column;gap:5px;
+  background:var(--surface2);border-radius:var(--radius-sm);
+  padding:12px 14px;margin-bottom:18px;text-align:left;
+}
+.aw-feature{font-size:11.5px;color:var(--text2);}
+.aw-actions{display:flex;flex-direction:column;gap:9px;}
+.aw-signin-btn{
+  width:100%;padding:12px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));
+  border:none;border-radius:var(--radius-sm);color:#fff;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:800;cursor:pointer;transition:var(--transition);
+  box-shadow:0 4px 14px rgba(41,128,185,.35);
+}
+.aw-signin-btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(41,128,185,.45);}
+.aw-cancel-btn{
+  width:100%;padding:10px;background:transparent;
+  border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:12px;font-weight:600;cursor:pointer;transition:var(--transition);
+}
+.aw-cancel-btn:hover{border-color:var(--blue-lt);color:var(--blue-lt);}
+
 /* ════════════════════════════════════════════
    DASHBOARD
 ════════════════════════════════════════════ */
@@ -1028,6 +1166,57 @@ body::before{
 @media(max-width:640px){
   #selector-grid{grid-template-columns:1fr!important;}
 }
+
+/* ════════════════════════════════════════════
+   GUEST SCREENSHOT PREVENTION
+════════════════════════════════════════════ */
+#screenshot-cover{
+  display:none;
+  position:fixed;inset:0;z-index:99999;
+  background:#000;
+  align-items:center;justify-content:center;
+  flex-direction:column;gap:16px;
+  color:#fff;text-align:center;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+#screenshot-cover.on{ display:flex; }
+#screenshot-cover .sc-icon{ font-size:64px; }
+#screenshot-cover .sc-title{ font-size:20px;font-weight:800; }
+#screenshot-cover .sc-sub{ font-size:13px;opacity:.65;max-width:300px;line-height:1.6; }
+
+#guest-watermark{
+  display:none;
+  position:fixed;inset:0;z-index:9000;
+  pointer-events:none;overflow:hidden;
+}
+#guest-watermark.on{ display:block; }
+#guest-watermark::before{
+  content:'GUEST VIEW \B7 CONFIDENTIAL \B7 GUEST VIEW \B7 CONFIDENTIAL \B7 GUEST VIEW \B7 CONFIDENTIAL \B7 ';
+  position:absolute;inset:-300px;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:16px;font-weight:800;
+  color:rgba(255,255,255,.05);
+  letter-spacing:.14em;
+  white-space:pre-wrap;
+  word-break:break-all;
+  transform:rotate(-35deg);
+  line-height:3.5;
+  pointer-events:none;
+  text-transform:uppercase;
+}
+[data-theme="light"] #guest-watermark::before{
+  color:rgba(0,0,0,.06);
+}
+body.guest-active{
+  -webkit-user-select:none;
+  -moz-user-select:none;
+  user-select:none;
+}
+body.guest-active img,
+body.guest-active canvas{
+  pointer-events:none;
+  -webkit-user-drag:none;
+}
 </style>
 </head>
 <body>
@@ -1038,6 +1227,16 @@ body::before{
   <div class="ld-bar"><div class="ld-fill"></div></div>
   <div class="ld-txt">Loading Student Portal…</div>
 </div>
+
+<!-- GUEST SCREENSHOT COVER -->
+<div id="screenshot-cover">
+  <div class="sc-icon">🚫</div>
+  <div class="sc-title">Screenshots Disabled</div>
+  <div class="sc-sub">Screenshots are not permitted in Guest mode.<br>Sign in as an admin for full access.</div>
+</div>
+
+<!-- GUEST WATERMARK -->
+<div id="guest-watermark"></div>
 
 <!-- PARTICLES -->
 <div class="particles" id="particles"></div>
@@ -1082,6 +1281,18 @@ body::before{
     <div class="login-card">
       <h2>🔐 Administrator Sign In</h2>
       <div class="err-msg" id="err-msg"></div>
+      <!-- Google Sign-In (default / primary) -->
+      <button class="google-btn" onclick="doGoogleLogin()" id="google-login-btn">
+        <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        <span id="google-btn-txt">Continue with Google</span>
+      </button>
+      <div class="or-divider"><span>or sign in with email</span></div>
       <div class="fg">
         <label>Admin Email</label>
         <div class="iw">
@@ -1107,6 +1318,27 @@ body::before{
           view full dashboards, download report cards and more.
         </p>
       </div>
+      <button class="guest-btn" onclick="doGuestLogin()">
+        👁️ Continue as Guest &nbsp;<span style="font-size:10px;opacity:.7;font-weight:500">(view-only — no downloads)</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── AUTH WALL MODAL (guest trying restricted action) ── -->
+<div id="auth-wall-modal">
+  <div class="aw-card">
+    <div class="aw-icon">🔒</div>
+    <h3>Sign In Required</h3>
+    <p>This feature is only available to authenticated admins. Sign in to unlock:</p>
+    <div class="aw-features">
+      <div class="aw-feature"><span>📥</span>Download PDF report cards</div>
+      <div class="aw-feature"><span>🖨️</span>Print report cards</div>
+      <div class="aw-feature"><span>🔗</span>Share &amp; export score cards</div>
+    </div>
+    <div class="aw-actions">
+      <button class="aw-signin-btn" onclick="goToSignIn()">🚀 Sign In as Admin</button>
+      <button class="aw-cancel-btn" onclick="closeAuthWall()">Continue as Guest</button>
     </div>
   </div>
 </div>
@@ -1116,14 +1348,20 @@ body::before{
 
   <!-- Admin welcome strip -->
   <div style="display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,rgba(41,128,185,.18),rgba(41,128,185,.06));border:1px solid var(--border-strong);border-radius:var(--radius-lg);padding:16px 20px;margin-bottom:18px;">
-    <div style="font-size:36px">🛡️</div>
+    <div style="font-size:36px" id="selector-icon">🛡️</div>
     <div>
-      <div style="font-size:15px;font-weight:800;color:var(--text)">Admin Dashboard</div>
+      <div style="font-size:15px;font-weight:800;color:var(--text)" id="selector-title">Admin Dashboard</div>
       <div style="font-size:11px;color:var(--text2);margin-top:2px">Select a class and student to view their full academic profile</div>
     </div>
     <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
       <span id="admin-record-count" style="font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 12px;"></span>
     </div>
+  </div>
+
+  <!-- Guest mode banner -->
+  <div class="guest-banner" id="guest-banner">
+    👁️ <strong>Guest Mode</strong> — browsing as read-only. Downloads, printing &amp; sharing are disabled.
+    <a onclick="goToSignIn()">Sign in to unlock →</a>
   </div>
 
   <!-- Selector controls row -->
@@ -1389,13 +1627,16 @@ body::before{
     getAuth,
     signInWithEmailAndPassword,
     signOut as fbSignOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    GoogleAuthProvider,
+    signInWithPopup
   } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
   window._fb = {
     initializeApp, getApps,
     getDatabase, ref, get,
     getStorage, sRef, getDownloadURL,
-    getAuth, signInWithEmailAndPassword, fbSignOut, onAuthStateChanged
+    getAuth, signInWithEmailAndPassword, fbSignOut, onAuthStateChanged,
+    GoogleAuthProvider, signInWithPopup
   };
 </script>
 
@@ -1578,6 +1819,7 @@ let allStudentsData  = {};
 let allClassMap      = {};
 let adminLoggedIn    = false;
 let currentAdminEmail = '';
+let guestMode        = false;
 
 // ═══════════════════════════════════════════════════
 //  FETCH ALL STUDENTS (after auth)
@@ -1658,6 +1900,132 @@ async function doAdminLogin(){
   }
 }
 window.doAdminLogin = doAdminLogin;
+
+// ═══════════════════════════════════════════════════
+//  GOOGLE LOGIN
+// ═══════════════════════════════════════════════════
+async function doGoogleLogin(){
+  const btn = document.getElementById('google-btn-txt');
+  const googleBtn = document.getElementById('google-login-btn');
+  btn.textContent = '🔄 Signing in…';
+  googleBtn.disabled = true;
+  try{
+    const { GoogleAuthProvider, signInWithPopup } = window._fb;
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    const cred = await signInWithPopup(auth, provider);
+    await fetchAllStudents(cred.user);
+  }catch(err){
+    let msg = err.message || 'Google sign-in failed.';
+    if(err.code==='auth/popup-closed-by-user'||err.code==='auth/cancelled-popup-request'){
+      msg = 'Sign-in cancelled. Please try again.';
+    } else if(err.code==='auth/popup-blocked'){
+      msg = 'Pop-up blocked by browser. Please allow pop-ups for this site and try again.';
+    } else if(err.code==='auth/unauthorized-domain'){
+      msg = 'This domain is not authorised for Google sign-in. Add it in Firebase Console → Authentication → Settings.';
+    }
+    showErr(msg);
+    btn.textContent = 'Continue with Google';
+    googleBtn.disabled = false;
+  }
+}
+window.doGoogleLogin = doGoogleLogin;
+
+// ═══════════════════════════════════════════════════
+//  GUEST LOGIN (no auth, read-only)
+// ═══════════════════════════════════════════════════
+async function doGuestLogin(){
+  const btn = document.querySelector('.guest-btn');
+  if(btn){ btn.textContent = '⏳ Loading records…'; btn.disabled = true; }
+
+  try{
+    const { ref, get } = window._fb;
+    const snap = await get(ref(db, DB_PATH));
+    const data  = snap.val();
+    if(!data){
+      showErr('No student records found in database.');
+      if(btn){ btn.innerHTML = '👁️ Continue as Guest <span style="font-size:10px;opacity:.7;font-weight:500">(view-only — no downloads)</span>'; btn.disabled=false; }
+      return;
+    }
+
+    allStudentsData = {};
+    allClassMap     = {};
+    for(const key in data){
+      const s = data[key];
+      const aNo   = String(s['Assessment No']||'').trim();
+      const grade = String(s['Grade']||s['Class']||'Unknown').trim();
+      if(!aNo) continue;
+      if(!allStudentsData[aNo]) allStudentsData[aNo] = [];
+      allStudentsData[aNo].push({id:key,...s});
+      if(!allClassMap[grade]) allClassMap[grade] = new Set();
+      allClassMap[grade].add(aNo);
+    }
+    for(const g in allClassMap) allClassMap[g] = [...allClassMap[g]];
+    for(const aNo in allStudentsData){
+      allStudentsData[aNo].sort((a,b)=>String(a['Term']||'').localeCompare(String(b['Term']||'')));
+    }
+
+    guestMode = true;
+    adminLoggedIn = false;
+    currentAdminEmail = '';
+
+    const total   = Object.keys(allStudentsData).length;
+    const records = Object.values(allStudentsData).reduce((s,r)=>s+r.length,0);
+    notify(`👁️ Browsing as <strong>Guest</strong> — <strong>${total}</strong> students · <strong>${records}</strong> records loaded. Downloads &amp; printing are disabled.`,'info',6000);
+    showGuestSelector();
+  }catch(err){
+    showErr('Connection error: '+err.message);
+    if(btn){ btn.innerHTML = '👁️ Continue as Guest <span style="font-size:10px;opacity:.7;font-weight:500">(view-only — no downloads)</span>'; btn.disabled=false; }
+  }
+}
+window.doGuestLogin = doGuestLogin;
+
+function showGuestSelector(){
+  document.getElementById('login-screen').style.display   = 'none';
+  document.getElementById('admin-selector').style.display = 'block';
+  document.getElementById('dashboard').classList.remove('on');
+  // User pill shows Guest
+  document.getElementById('user-pill').classList.add('on');
+  document.getElementById('pill-name').textContent  = 'Guest';
+  document.getElementById('pill-grade').textContent = 'View-only';
+  document.getElementById('pill-av').style.background = 'linear-gradient(135deg,#636e72,#2d3436)';
+  document.getElementById('pill-av').textContent = '👁️';
+  // Show sign-out (back to login)
+  document.getElementById('signout-btn').classList.add('on');
+  document.getElementById('signout-btn').textContent = '🚪 Exit Guest';
+  // Selector header
+  document.getElementById('selector-icon').textContent = '👁️';
+  document.getElementById('selector-title').textContent = 'Guest Browser';
+  // Guest banner
+  document.getElementById('guest-banner').classList.add('on');
+  // Record count
+  const total = Object.keys(allStudentsData).length;
+  const classes = Object.keys(allClassMap).length;
+  document.getElementById('admin-record-count').textContent = `${total} students · ${classes} classes`;
+  populateClassDropdown();
+  // Activate screenshot protection for guests
+  if(window._guestProtect) window._guestProtect.activate();
+}
+
+// Auth-wall: call this before any restricted action
+function requireAuth(action){
+  if(guestMode){
+    openAuthWall();
+    return false;
+  }
+  return true;
+}
+
+function openAuthWall(){ document.getElementById('auth-wall-modal').classList.add('on'); }
+function closeAuthWall(){ document.getElementById('auth-wall-modal').classList.remove('on'); }
+function goToSignIn(){
+  closeAuthWall();
+  // Sign out guest and return to login
+  doSignOut();
+}
+window.openAuthWall  = openAuthWall;
+window.closeAuthWall = closeAuthWall;
+window.goToSignIn    = goToSignIn;
 
 function tryLoadLogo(){
   const logoImg = new Image();
@@ -1894,12 +2262,24 @@ function doSignOut(){
   sessionStorage.removeItem('kss_recs');
   sessionStorage.removeItem('kss_admin');
   allRecs=[]; activeIdx=0;
-  allStudentsData={}; allClassMap={}; adminLoggedIn=false; currentAdminEmail='';
+  allStudentsData={}; allClassMap={}; adminLoggedIn=false; currentAdminEmail=''; guestMode=false;
+  if(window._guestProtect) window._guestProtect.deactivate();
   document.getElementById('dashboard').classList.remove('on');
   document.getElementById('admin-selector').style.display = 'none';
   document.getElementById('login-screen').style.display   = 'flex';
   document.getElementById('user-pill').classList.remove('on');
   document.getElementById('signout-btn').classList.remove('on');
+  document.getElementById('signout-btn').textContent = '🚪 Sign Out';
+  // Reset pill avatar styling
+  document.getElementById('pill-av').style.background = 'linear-gradient(135deg,#8e44ad,#6c3483)';
+  document.getElementById('pill-av').textContent = '🛡️';
+  // Reset selector header
+  document.getElementById('selector-icon').textContent = '🛡️';
+  document.getElementById('selector-title').textContent = 'Admin Dashboard';
+  // Hide guest banner
+  document.getElementById('guest-banner').classList.remove('on');
+  const dbBanner = document.getElementById('dashboard-guest-banner');
+  if(dbBanner) dbBanner.remove();
   document.getElementById('inp-admin-user').value = '';
   document.getElementById('inp-admin-pass').value = '';
   document.getElementById('admin-class-select').innerHTML  = '<option value="">— Choose a class —</option>';
@@ -2288,6 +2668,7 @@ async function drawPage(doc, rec, logoRes){
 //  DOWNLOAD PDF — THIS TERM
 // ═══════════════════════════════════════════════════
 async function dlThisTerm(){
+  if(!requireAuth('download')) return;
   if(!window.jspdf){ notify('PDF library not loaded — please refresh.','error'); return; }
   const rec = allRecs[activeIdx];
   if(!rec){ notify('No record loaded.','error'); return; }
@@ -2312,6 +2693,7 @@ window.dlThisTerm = dlThisTerm;
 //  DOWNLOAD PDF — ALL TERMS
 // ═══════════════════════════════════════════════════
 async function dlAllTerms(){
+  if(!requireAuth('download')) return;
   if(!window.jspdf){ notify('PDF library not loaded — please refresh.','error'); return; }
   if(!allRecs.length){ notify('No records loaded.','error'); return; }
 
@@ -2345,6 +2727,7 @@ window.dlAllTerms = dlAllTerms;
 //  PRINT REPORT CARD
 // ═══════════════════════════════════════════════════
 function doPrint(){
+  if(!requireAuth('print')) return;
   const rec = allRecs[activeIdx];
   if(!rec){ notify('No record loaded.','error'); return; }
   // Open preview first if not open, then print
@@ -2617,6 +3000,7 @@ document.addEventListener('keydown', e=>{
   const dashOpen  = document.getElementById('dashboard').classList.contains('on');
 
   if(e.key==='Escape' && modalOpen){ closeModal(); return; }
+  if(e.key==='Escape' && document.getElementById('auth-wall-modal').classList.contains('on')){ closeAuthWall(); return; }
   if(!dashOpen) return;
 
   if(e.key==='ArrowLeft' && activeIdx>0 && !modalOpen){
@@ -2654,7 +3038,140 @@ renderDash = function(){
   renderHeatmap();
   renderStudyTips(s);
   maybeFireConfetti(stats);
+  // Apply guest locks
+  applyGuestLocks();
 };
+
+// ═══════════════════════════════════════════════════
+//  GUEST LOCK STYLING
+// ═══════════════════════════════════════════════════
+function applyGuestLocks(){
+  // Buttons that guests cannot use
+  const restricted = [
+    document.querySelector('.btn-orange[onclick*="dlThisTerm"]'),
+    document.querySelector('.btn-green[onclick*="dlAllTerms"]'),
+    document.querySelector('.btn-outline[onclick*="doPrint"]'),
+    document.querySelector('.btn-outline[onclick*="openShareModal"]'),
+  ];
+  restricted.forEach(btn=>{
+    if(!btn) return;
+    if(guestMode){
+      btn.classList.add('btn-locked');
+      btn.title = '🔒 Sign in to unlock this feature';
+    } else {
+      btn.classList.remove('btn-locked');
+      btn.title = '';
+    }
+  });
+  // Show or hide guest banner in dashboard area
+  let db_banner = document.getElementById('dashboard-guest-banner');
+  if(guestMode){
+    if(!db_banner){
+      db_banner = document.createElement('div');
+      db_banner.id = 'dashboard-guest-banner';
+      db_banner.className = 'guest-banner on';
+      db_banner.style.marginBottom = '14px';
+      db_banner.innerHTML = '👁️ <strong>Guest Mode</strong> — view-only. Downloads, printing &amp; sharing are locked. <a onclick="goToSignIn()">Sign in to unlock →</a>';
+      const dash = document.getElementById('dashboard');
+      dash.insertBefore(db_banner, dash.firstChild);
+    }
+    db_banner.classList.add('on');
+  } else {
+    if(db_banner) db_banner.classList.remove('on');
+  }
+}
+window.applyGuestLocks = applyGuestLocks;
+
+// ═══════════════════════════════════════════════════
+//  GUEST SCREENSHOT PREVENTION
+// ═══════════════════════════════════════════════════
+(function(){
+  const BLACKOUT_MS = 1800; // how long blackout stays visible
+  let blackoutTimer = null;
+
+  function showBlackout(){
+    const cover = document.getElementById('screenshot-cover');
+    if(!cover) return;
+    cover.classList.add('on');
+    clearTimeout(blackoutTimer);
+    blackoutTimer = setTimeout(()=>cover.classList.remove('on'), BLACKOUT_MS);
+  }
+
+  function activateGuestProtection(){
+    document.body.classList.add('guest-active');
+    document.getElementById('guest-watermark').classList.add('on');
+
+    // Block right-click context menu
+    document.addEventListener('contextmenu', blockCtx, true);
+    // Block PrintScreen, Cmd+Shift+3/4/5, Ctrl+P, Ctrl+S, Win+PrintScreen
+    document.addEventListener('keydown', blockKeys, true);
+    // Blackout on window blur (user switches away — common screenshot method)
+    window.addEventListener('blur', onBlur);
+    // Blackout on visibility hidden
+    document.addEventListener('visibilitychange', onVisibility);
+  }
+
+  function deactivateGuestProtection(){
+    document.body.classList.remove('guest-active');
+    const wm = document.getElementById('guest-watermark');
+    if(wm) wm.classList.remove('on');
+    const cover = document.getElementById('screenshot-cover');
+    if(cover) cover.classList.remove('on');
+    document.removeEventListener('contextmenu', blockCtx, true);
+    document.removeEventListener('keydown', blockKeys, true);
+    window.removeEventListener('blur', onBlur);
+    document.removeEventListener('visibilitychange', onVisibility);
+  }
+
+  function blockCtx(e){
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  function blockKeys(e){
+    // PrintScreen
+    if(e.key === 'PrintScreen' || e.code === 'PrintScreen'){
+      e.preventDefault();
+      showBlackout();
+      // Also zero the clipboard on browsers that allow it
+      try{ navigator.clipboard.writeText(''); }catch(_){}
+      return;
+    }
+    // Mac: Cmd+Shift+3, Cmd+Shift+4, Cmd+Shift+5, Cmd+Shift+6
+    if((e.metaKey||e.ctrlKey) && e.shiftKey && ['3','4','5','6'].includes(e.key)){
+      e.preventDefault();
+      showBlackout();
+      return;
+    }
+    // Ctrl+P (print → also blocked by requireAuth but belt+braces)
+    if((e.ctrlKey||e.metaKey) && e.key==='p'){
+      e.preventDefault();
+      showBlackout();
+      return;
+    }
+    // Ctrl+S (save page)
+    if((e.ctrlKey||e.metaKey) && e.key==='s'){
+      e.preventDefault();
+    }
+    // F12 / DevTools — just cover briefly as deterrent
+    if(e.key==='F12'){
+      e.preventDefault();
+      showBlackout();
+    }
+  }
+
+  function onBlur(){
+    // Window lost focus — could be switching to screenshot tool
+    showBlackout();
+  }
+
+  function onVisibility(){
+    if(document.hidden) showBlackout();
+  }
+
+  // Expose so showGuestSelector/doSignOut can call
+  window._guestProtect = { activate: activateGuestProtection, deactivate: deactivateGuestProtection };
+})();
 
 // ═══════════════════════════════════════════════════
 //  CONFETTI
@@ -2836,6 +3353,7 @@ window.openScaleModal=openScaleModal; window.closeScaleModal=closeScaleModal;
 //  SHARE CARD
 // ═══════════════════════════════════════════════════
 function openShareModal(){
+  if(!requireAuth('share')) return;
   const rec = allRecs[activeIdx];
   if(!rec){ notify('No record loaded.','error'); return; }
   const stats = calcStats(rec);
