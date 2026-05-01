@@ -1442,17 +1442,16 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>Grade</th>
                   <th>Student Name</th>
-                  <th id="missing-field-header">Missing Field Value</th>
-                  <th>Adm No</th>
-                  <th>UPI</th>
+                  <th>Grade</th>
                   <th>Term</th>
+                  <th>Adm No</th>
+                  <th id="missing-field-header">Missing Field</th>
                   <th style="text-align:center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text3)">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">
                   Sign in and load data to see student records.
                 </td></tr>
               </tbody>
@@ -7156,24 +7155,46 @@ function renderCurrentPage() {
         const row = tableBody.insertRow();
         row.dataset.studentId = student.id;
         row.dataset.rowIndex = startIndex + index;
-        
+
+        // #
         const indexCell = row.insertCell(0);
         indexCell.textContent = (startIndex + index + 1).toString();
-        
-        row.insertCell(1).textContent = student['Grade'] || 'N/A';
-        row.insertCell(2).textContent = student['Official Student Name'] || 'N/A'; 
-        row.insertCell(3).textContent = student['Assessment No'] || student.id || 'N/A'; 
-        row.insertCell(4).textContent = student['UPI'] || student.id || 'N/A'; 
-        row.insertCell(5).textContent = student['Term'] || 'N/A';
-        
-        const missingValueCell = row.insertCell(6);
+
+        // Student Name (with avatar)
+        const nameCell = row.insertCell(1);
+        const avatarHtml = typeof makePhotoAvatar === 'function'
+            ? makePhotoAvatar(student['Official Student Name'] || '', student['Grade'] || '', 'stu-av-sm')
+            : '';
+        nameCell.innerHTML = `<div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="font-weight:700;color:var(--text)">${student['Official Student Name'] || '—'}</span></div>`;
+
+        // Grade (short)
+        const gradeCell = row.insertCell(2);
+        const shortGrade = typeof gShort === 'function' ? gShort(student['Grade']) : (student['Grade'] || '—');
+        gradeCell.innerHTML = `<span style="font-size:11px;font-weight:700;color:var(--blue-lt)">${shortGrade || '—'}</span>`;
+
+        // Term (raw)
+        const termCell = row.insertCell(3);
+        termCell.style.fontSize = '11px';
+        termCell.style.color = 'var(--text2)';
+        termCell.textContent = student['Term'] || '—';
+
+        // Adm No
+        const admCell = row.insertCell(4);
+        admCell.style.fontFamily = "'JetBrains Mono', monospace";
+        admCell.style.fontSize = '11px';
+        admCell.textContent = student['Assessment No'] || '—';
+
+        // Missing Field Value (editable)
+        const missingValueCell = row.insertCell(5);
         if (selectedField) {
             createEditableCell(missingValueCell, student, selectedField, row);
         } else {
-            missingValueCell.textContent = '-'; 
+            missingValueCell.textContent = '—';
+            missingValueCell.style.color = 'var(--text3)';
         }
-        
-        const actionCell = row.insertCell(7);
+
+        // Actions
+        const actionCell = row.insertCell(6);
         createActionButtons(actionCell, student, selectedField, row);
     });
 
