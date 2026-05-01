@@ -857,21 +857,27 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
    REPORT CARD — TERM / GRADE CHIPS
 ══════════════════════════════════════════ */
 .term-chip{
-  display:inline-flex;align-items:center;gap:6px;
-  padding:6px 12px;border-radius:20px;
+  display:inline-flex;align-items:center;gap:7px;
+  padding:8px 14px;border-radius:12px;
   border:1.5px solid var(--border-strong);
   background:var(--surface2);color:var(--text2);
   font-size:11px;font-weight:700;cursor:pointer;
   transition:var(--transition);user-select:none;
-  max-width:200px;overflow:hidden;
+  max-width:220px;box-shadow:0 1px 4px rgba(0,0,0,.07);
+  position:relative;
 }
-.term-chip:hover{border-color:var(--blue-lt);color:var(--text);background:rgba(41,128,185,.08);}
+.term-chip:hover{border-color:var(--blue-lt);color:var(--text);background:rgba(41,128,185,.08);transform:translateY(-1px);box-shadow:0 4px 12px rgba(41,128,185,.15);}
 .term-chip.tc-active{
-  background:linear-gradient(135deg,rgba(41,128,185,.18),rgba(41,128,185,.06));
-  border-color:var(--blue-lt);color:var(--blue-lt);
+  background:linear-gradient(135deg,rgba(41,128,185,.2),rgba(41,128,185,.08));
+  border-color:var(--blue);color:var(--blue-lt);
+  box-shadow:0 3px 12px rgba(41,128,185,.25);
 }
-.chip-tick{display:none;font-size:10px;flex-shrink:0;}
-.term-chip.tc-active .chip-tick{display:inline;}
+.chip-tick{
+  display:none;width:16px;height:16px;border-radius:50%;flex-shrink:0;
+  background:var(--blue);color:#fff;font-size:9px;
+  align-items:center;justify-content:center;font-weight:900;
+}
+.term-chip.tc-active .chip-tick{display:inline-flex;}
 
 /* ══════════════════════════════════════════
    REPORT CARD — MISSING VALUE INDICATOR
@@ -1377,19 +1383,21 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <div class="view" id="view-reports">
         <div class="sec-hdr"><h2>📄 Report Cards &amp; Student Data Manager</h2></div>
 
-        <!-- ── TERM / GRADE SELECTOR BAR ── -->
-        <div id="term-selector-bar" style="display:none;flex-wrap:wrap;align-items:flex-start;gap:14px;
-          padding:16px 20px;background:var(--surface);border:1px solid var(--border);
-          border-radius:var(--radius-lg);margin-bottom:16px;box-shadow:var(--card-shadow)">
-          <div style="min-width:160px">
-            <div style="font-size:11px;font-weight:800;color:var(--blue-lt);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Report Card Grades</div>
-            <div style="font-size:11px;color:var(--text2)">Select 1 or more grade nodes to generate report cards</div>
+        <!-- ++ TERM / GRADE SELECTOR BAR ++ -->
+        <div id="term-selector-bar" style="display:none;flex-direction:column;gap:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:16px;box-shadow:var(--card-shadow);overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;padding:14px 20px;background:linear-gradient(135deg,rgba(41,128,185,.1),rgba(22,160,133,.06));border-bottom:1px solid var(--border)">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,var(--blue),var(--blue-dk));display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 3px 10px var(--blue-glow)">📋</div>
+              <div>
+                <div style="font-size:13px;font-weight:900;color:var(--text);letter-spacing:.01em">Report Card Grades</div>
+                <div style="font-size:11px;color:var(--text2);margin-top:1px">Select one or more grade nodes to generate report cards</div>
+              </div>
+            </div>
+            <span id="term-count-badge" style="font-size:11px;font-weight:800;padding:6px 14px;border-radius:20px;background:linear-gradient(135deg,#7f8c8d,#636e72);color:#fff;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.15);letter-spacing:.02em">None Selected</span>
           </div>
-          <div id="term-chips" style="display:flex;flex-wrap:wrap;gap:7px;flex:1"></div>
-          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0">
-            <span id="term-count-badge" style="font-size:11px;font-weight:700;padding:5px 12px;border-radius:14px;
-              background:linear-gradient(135deg,#7f8c8d,#636e72);color:#fff;white-space:nowrap">None Selected</span>
-            <div id="term-validation-msg" style="display:none;font-size:11px;color:var(--orange);font-weight:600"></div>
+          <div style="padding:14px 20px">
+            <div id="term-chips" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+            <div id="term-validation-msg" style="display:none;font-size:11px;color:var(--orange);font-weight:600;margin-top:10px;padding:8px 12px;background:rgba(230,126,34,.08);border-radius:8px;border:1px solid rgba(230,126,34,.2)"></div>
           </div>
         </div>
 
@@ -6566,12 +6574,6 @@ function buildGradeSelector() {
 
     _updateGradeBadge(badge);
     bar.style.display = allGrades.length > 0 ? 'flex' : 'none';
-
-    // Update the bar label text to match new purpose
-    const labelDiv = bar.querySelector('div > div:first-child');
-    if (labelDiv) labelDiv.textContent = 'Report Card Grades';
-    const subDiv = bar.querySelector('div > div:last-child');
-    if (subDiv) subDiv.textContent = 'Select 1 or more grade nodes to generate report cards';
 }
 
 // Keep legacy name as alias so old call-sites don't break
