@@ -514,9 +514,9 @@ body::before{
   display:flex;align-items:center;gap:12px;
   padding:10px 14px;background:var(--surface2);
   border:1px solid var(--border);border-radius:var(--radius-md);
-  transition:var(--transition);
+  transition:var(--transition);cursor:pointer;
 }
-.rank-item:hover{border-color:var(--border-strong);}
+.rank-item:hover{border-color:var(--border-strong);background:var(--surface3);transform:translateX(2px);}
 .rank-num{
   width:26px;height:26px;border-radius:8px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
@@ -2882,7 +2882,7 @@ function renderTopStudents(){
     const numClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-rest';
     const termInfo=term==='all'?`<span style="font-size:9px;color:var(--text3);margin-left:4px">(${getRecordTerm(r)})</span>`:'';
     const _rkAv=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-rank');
-    return `<div class="rank-item">
+    return `<div class="rank-item" onclick="openRecordsModal('${r.id}')" title="Click to view student records">
       <div class="rank-num ${numClass}">${i+1}</div>
       ${_rkAv}
       <div style="flex:1;min-width:0">
