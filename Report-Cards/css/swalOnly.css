@@ -34,7 +34,7 @@
 
   
   .swal2-popup.swal2-modal.swal2-show{
-
+z-index: 10000;
       background-color: #ffffff9d;
       border: 2px solid lavender;
       box-shadow: 0 0 20px 1px rgba(0, 0, 0, 0.1);
@@ -42,6 +42,8 @@
   }
   
      .swal2-popup{
+z-index: 10000;
+
     border: 2px solid gray;
     background-size: cover;
     backdrop-filter: blur(5px);
@@ -81,6 +83,8 @@
   
   div:where(.swal2-container) div:where(.swal2-popup) {
     display: none;
+z-index: 10000;
+
     position: relative;
     box-sizing: border-box;
     grid-template-columns: minmax(0, 100%);
@@ -184,6 +188,7 @@
         word-wrap: break-word;
     }
     .swal2-popup.swal2-modal.swal2-show{
+z-index: 10000;
 
       background-color: #ffffff9d;
       border: 1px solid lavender !important;
