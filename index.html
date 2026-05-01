@@ -2253,6 +2253,43 @@ function calcStats(rec){
   return {total:total.toFixed(1),avg:avg.toFixed(1),pts:g.pts,level:g.level,label:g.label,cls:g.cls,assessed:scores.length,max:scores.length*100};
 }
 
+/* ══════════════════════════════════════════
+   COMPUTED POSITION
+   Ranks a student within their exact Grade+Term
+   group by average score (descending).
+   Used everywhere r['Position'] is blank/missing.
+══════════════════════════════════════════ */
+function getComputedPosition(rec){
+  // If the DB actually has a position, use it
+  const stored = String(rec['Position']||'').trim();
+  if(stored && stored!=='N/A' && stored!=='—') return stored;
+
+  // Group key = grade field (which encodes grade + term + exam type)
+  const groupKey = rec['Grade'] || rec['Term'] || '';
+  if(!groupKey) return 'N/A';
+
+  // Gather all records in the same group
+  const group = allData.filter(r => (r['Grade']||r['Term']||'') === groupKey);
+  if(group.length === 0) return 'N/A';
+
+  // Sort descending by average; ties share the same rank
+  const ranked = group
+    .map(r => ({ id: r.id, avg: parseFloat(calcStats(r).avg) }))
+    .filter(x => !isNaN(x.avg))
+    .sort((a, b) => b.avg - a.avg);
+
+  const myAvg = parseFloat(calcStats(rec).avg);
+  if(isNaN(myAvg)) return 'N/A';
+
+  // Find position (1-based); equal averages get the same rank
+  let pos = 1;
+  for(let i = 0; i < ranked.length; i++){
+    if(i > 0 && ranked[i].avg < ranked[i-1].avg) pos = i + 1;
+    if(ranked[i].id === rec.id) return pos + '/' + ranked.length;
+  }
+  return 'N/A';
+}
+
 // Grade field: "Grade 4-2026-01-Opener-Term 2" | Term field: "Grade 4-2026-01-Opener-Term 2-01"
 // parseGradeField: extracts grade, year, examType, term from either field
 // Handles multiple formats flexibly
@@ -3096,7 +3133,7 @@ function renderStudentsTable(){
       <td>${r['Gender']||'—'}</td>
       <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}" id="rec-avg-${r.id}">${st.avg}%</td>
       <td id="rec-lvl-${r.id}"><span class="gp ${gradePillClass(st.cls)}">${st.level}</span></td>
-      <td id="rec-pos-${r.id}">${r['Position']||'—'}</td>
+      <td id="rec-pos-${r.id}">${getComputedPosition(r)}</td>
       <td onclick="event.stopPropagation()">
         <div style="display:flex;gap:5px">
           <button class="btn btn-blue btn-xs" id="rec-view-${r.id}" onclick="viewStudent('${r.id}')">👁 View</button>
@@ -3167,7 +3204,7 @@ function viewStudent(id){
           ${(()=>{const e=getExamType(rec);return e?`<span class="bdg" style="background:rgba(142,68,173,.12);border-color:rgba(142,68,173,.25);color:#c39bd3">📝 ${e}</span>`:''})()}
 
           <span class="bdg green">🏆 ${st.level} — ${st.label}</span>
-          <span class="bdg">📍 Position: ${rec['Position']||'N/A'}</span>
+          <span class="bdg">📍 Position: ${getComputedPosition(rec)}</span>
         </div>
       </div>
     </div>
@@ -3242,7 +3279,7 @@ function switchStudentRecord(masterId, idx){
   const posCell = document.getElementById('rec-pos-'+masterId);
   if(avgCell){ avgCell.textContent=st.avg+'%'; avgCell.style.color=color; }
   if(lvlCell) lvlCell.innerHTML=`<span class="gp ${gradePillClass(st.cls)}">${st.level}</span>`;
-  if(posCell) posCell.textContent=rec['Position']||'—';
+  if(posCell) posCell.textContent=getComputedPosition(rec);
 
   // Highlight active record row inside tooltip
   const tt = document.getElementById('tt-'+masterId);
@@ -3474,7 +3511,7 @@ function renderResultsTable(){
       <td style="font-size:10px;color:var(--text2)">${(()=>{const p=parseGradeField(r['Grade']||r['Term']||'');return [p.term,p.examType,p.year].filter(Boolean).join(' · ')||r['Grade']||'—';})()}</td>
       <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}">${st.avg}%</td>
       <td><span class="gp ${gradePillClass(st.cls)}">${st.level}</span></td>
-      <td>${r['Position']||'—'}</td>
+      <td>${getComputedPosition(r)}</td>
       <td style="font-size:10px;color:var(--text3)">${subjects.length} subjects</td>
       <td>
         <div style="display:flex;gap:5px">
@@ -4114,7 +4151,7 @@ function renderRecordContent(allRecs, idx){
       ${p.examType?`<span class="bdg" style="background:rgba(142,68,173,.12);border-color:rgba(142,68,173,.25);color:#c39bd3">📝 ${p.examType}</span>`:''}
       ${p.year?`<span class="bdg" style="background:rgba(22,160,133,.12);border-color:rgba(22,160,133,.25);color:#1abc9c">📆 ${p.year}</span>`:''}
       <span class="bdg green">🏆 ${st.level} · ${st.label}</span>
-      <span class="bdg">📍 Pos: ${rec['Position']||'N/A'}</span>
+      <span class="bdg">📍 Pos: ${getComputedPosition(rec)}</span>
     </div>
 
     <!-- Stats row — uses CSS class so responsive rules apply -->
@@ -4205,7 +4242,7 @@ function copyRecordData(){
     'Average: ' + st.avg + '%',
     'Level: ' + st.level + ' (' + st.label + ')',
     'Points: ' + st.pts,
-    'Position: ' + (rec['Position']||'N/A'),
+    'Position: ' + getComputedPosition(rec),
     '---',
     ...subjects.map(s=>s+': '+(rec[s]??'N/A')),
     '---',
@@ -4735,7 +4772,7 @@ async function generateEOTPDF(){
 
   // Table
   const sorted=data.sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg));
-  const tableData=sorted.map((r,i)=>{const st=calcStats(r);return[i+1,r['Official Student Name']||'',r['Assessment No']||'',r['Grade']||'',st.avg+'%',st.level,r['Position']||''];});
+  const tableData=sorted.map((r,i)=>{const st=calcStats(r);return[i+1,r['Official Student Name']||'',r['Assessment No']||'',r['Grade']||'',st.avg+'%',st.level,getComputedPosition(r)];});
   doc.autoTable({head:[['#','Student','Adm No','Grade','Average','Level','Position']],body:tableData,startY:52,margin:{left:10,right:10},styles:{fontSize:7,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255]},
     didParseCell:(d)=>{if(d.column.index===4&&d.section==='body'){const v=parseFloat(d.cell.raw);d.cell.styles.textColor=v>=75?[39,174,96]:v>=41?[230,126,34]:[231,76,60];}}
   });
@@ -8598,7 +8635,7 @@ function generateWhatsAppText(student) {
         `  Mean Score: ${stats.average}%`,
         `  Total Points: ${stats.totalPoints} / ${stats.maxPoints}`,
         `  Performance Level: ${stats.comment}`,
-        `  Position: ${student['Position'] || 'N/A'}`,
+        `  Position: ${getComputedPosition(student)}`,
         ``,
         `_Generated by Kanyadet School System_`
     ].join('\n');
