@@ -936,6 +936,10 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
            <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
           <div class="auth-qlink-dot"></div>🎓 Students Portal<span class="auth-qlink-arrow">→</span>
         </a>
+ <a href="./Report-Cards/admin.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
+          <div class="auth-qlink-dot"></div>🎓 All Students progress<span class="auth-qlink-arrow">→</span>
+        </a>
+
   </div>
 </div>
 
@@ -2013,9 +2017,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <!-- Firebase -->
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import { getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  import { getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
   import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut };
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut };
 </script>
 
 <script>
@@ -2373,6 +2377,7 @@ window.addEventListener('load',()=>{
         set: window._fb && window._fb.set ? window._fb.set : undefined,
         update: window._fb && window._fb.update ? window._fb.update : undefined,
         onValue: window._fb && window._fb.onValue ? window._fb.onValue : undefined,
+        off: window._fb && window._fb.off ? window._fb.off : undefined,
         get: window._fb && window._fb.get ? window._fb.get : undefined,
       });
       // Listen for auth state — auto-login if session persists
@@ -2539,6 +2544,11 @@ async function doSignOut(){
   clearTimeout(_inactivityTimer);clearInterval(_countdownTimer);
   document.getElementById('inactivity-banner').classList.remove('on');
   logActivity('🚪 Admin signed out','act-orange',currentAdminName);
+  // Detach real-time listener so it doesn't fire after sign-out
+  if(_realtimeUnsubscribe){
+    try{ _realtimeUnsubscribe(); }catch(e){}
+    _realtimeUnsubscribe = null;
+  }
   try{
     const{signOut}=window._fb;
     await signOut(auth);
@@ -2559,26 +2569,70 @@ async function doSignOut(){
 window.doSignOut=doSignOut;
 
 /* ══════════════════════════════════════════
-   LOAD DATA
+   LOAD DATA — REAL-TIME LISTENER
 ══════════════════════════════════════════ */
-async function loadAllData(){
+let _realtimeUnsubscribe = null; // holds the Firebase unsubscribe function
+let _firstLoad = true;           // distinguish initial load from live updates
+
+function loadAllData(){
+  // Detach any existing listener before attaching a new one
+  if(_realtimeUnsubscribe){
+    try{ _realtimeUnsubscribe(); }catch(e){}
+    _realtimeUnsubscribe = null;
+  }
+  _firstLoad = true;
+
   try{
-    const{ref,get}=window._fb;
-    const snap=await get(ref(db,DB_PATH));
-    const data=snap.val();
-    if(!data){notify('No data found in database.','warn');allData=[];renderAll();return;}
-    allData=Object.entries(data).map(([key,val])=>({id:key,...val}));
-    notify(`✅ Loaded <strong>${allData.length}</strong> records from Firebase.`,'success');
-    renderAll();
+    const{ref,onValue}=window._fb;
+    const dbRef = ref(db, DB_PATH);
+
+    // onValue fires immediately with current data, then on every change
+    _realtimeUnsubscribe = onValue(dbRef, (snap) => {
+      const data = snap.val();
+      if(!data){
+        if(_firstLoad) notify('No data found in database.','warn');
+        allData = [];
+        renderAll();
+        _firstLoad = false;
+        return;
+      }
+      allData = Object.entries(data).map(([key,val])=>({id:key,...val}));
+      if(_firstLoad){
+        notify(`✅ Loaded <strong>${allData.length}</strong> records from Firebase.`,'success');
+        _firstLoad = false;
+      } else {
+        // Live update — flash a subtle indicator instead of a disruptive toast
+        _showLiveUpdatePulse();
+      }
+      renderAll();
+    }, (err) => {
+      notify('Real-time listener error: '+err.message,'error');
+    });
+
   }catch(e){
-    notify('Error loading data: '+e.message,'error');
+    notify('Error setting up real-time listener: '+e.message,'error');
   }
 }
 
+// Show a brief "Live update received" pulse on the status dot in the topbar
+function _showLiveUpdatePulse(){
+  const dot = document.querySelector('.status-dot');
+  if(!dot) return;
+  dot.style.background = 'var(--orange)';
+  dot.style.boxShadow  = '0 0 10px var(--orange)';
+  setTimeout(()=>{
+    dot.style.background = 'var(--green)';
+    dot.style.boxShadow  = '0 0 8px var(--green)';
+  }, 1200);
+  // Also show a brief topbar toast
+  notify('🔄 Database updated — view refreshed.','info',2500);
+}
+
+// refreshData: detaches and re-attaches listener (forces re-sync)
 async function refreshData(){
-  notify('🔄 Refreshing data…','info',2000);
-  await loadAllData();
-  logActivity('🔄 Data refreshed','act-blue',currentAdminName);
+  notify('🔄 Re-connecting real-time listener…','info',1500);
+  loadAllData();
+  logActivity('🔄 Real-time listener reconnected','act-blue',currentAdminName);
 }
 window.refreshData=refreshData;
 
