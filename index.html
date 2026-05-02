@@ -1448,9 +1448,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                   <th style="text-align:center">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="rc-table-tbody">
                 <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">
-                  Sign in and load data to see student records.
+                  ⏳ Loading student records…
                 </td></tr>
               </tbody>
             </table>
@@ -5125,7 +5125,7 @@ const gradeFilter = document.getElementById('grade-filter');
 const fieldFilter = document.getElementById('field-filter');
 const searchInput = document.getElementById('search-input');
 const itemsPerPageSelect = document.getElementById('items-per-page');
-const tableBody = document.querySelector('#missing-data-table tbody');
+const tableBody = document.querySelector('#missing-data-table #rc-table-tbody') || document.querySelector('#missing-data-table tbody');
 const missingFieldHeader = document.getElementById('missing-field-header');
 const reportSummary = document.getElementById('report-summary');
 const paginationInfo = document.getElementById('pagination-info');
@@ -8778,7 +8778,6 @@ document.addEventListener('click', function(e) {
 
       // Override fetchStudentsData to use allData from the main portal.
       // This is called from handleSignIn inside the RC module.
-      const _origFetch = fetchStudentsData;
       window.fetchStudentsData = function() {
         // Copy from the main portal's allData
         if (typeof allData !== 'undefined' && allData.length) {
@@ -8787,10 +8786,27 @@ document.addEventListener('click', function(e) {
           buildTermSelector();
           applyFilters();
           loader.style.display = 'none';
-          NotificationManager.success('Loaded ' + studentsData.length + ' records from portal data.', 3000);
         } else {
-          // allData not ready yet — retry once
-          setTimeout(() => window.fetchStudentsData(), 800);
+          // allData not ready yet — show loading state and retry
+          if (tableBody) {
+            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">⏳ Loading student records…</td></tr>';
+          }
+          setTimeout(() => window.fetchStudentsData(), 600);
+        }
+      };
+
+      // Hook into renderAll so the RC table auto-refreshes whenever allData updates
+      const _origRenderAll = window.renderAll;
+      window.renderAll = function() {
+        if (typeof _origRenderAll === 'function') _origRenderAll.apply(this, arguments);
+        // If RC system is signed-in (studentsData was previously populated or
+        // allData just became available), refresh the RC table silently.
+        if (typeof allData !== 'undefined' && allData.length &&
+            typeof studentsData !== 'undefined') {
+          studentsData = allData.map(r => ({...r}));
+          if (typeof populateFilters_rc === 'function') populateFilters_rc(studentsData);
+          if (typeof buildTermSelector === 'function') buildTermSelector();
+          if (typeof applyFilters === 'function') applyFilters();
         }
       };
 
