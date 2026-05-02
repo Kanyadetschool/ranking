@@ -1443,16 +1443,15 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <tr>
                   <th>#</th>
                   <th>Student Name</th>
-                  <th>Grade</th>
                   <th>Term</th>
-                  <th>Adm No</th>
+                  <th>Assessment No</th>
                   <th id="missing-field-header">Missing Field</th>
                   <th style="text-align:center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">
-                  ⏳ Loading student records…
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">
+                  Sign in and load data to see student records.
                 </td></tr>
               </tbody>
             </table>
@@ -2719,9 +2718,11 @@ function renderAll(){
 function _bridgeReportCardSystem(){
   try{
     if(typeof studentsData!=='undefined'){
+      // Sync portal data into RC system
       studentsData=allData.map(r=>({...r}));
-      if(typeof populateFilters_rc==='function'){
-        try{ populateFilters_rc(studentsData); }catch(e){}
+      // Re-populate RC filters and grade chips
+      if(typeof populateFilters==='function'){
+        try{ populateFilters(studentsData); }catch(e){}
       }
       if(typeof buildTermSelector==='function') buildTermSelector();
       if(typeof applyFilters==='function') applyFilters();
@@ -6734,17 +6735,54 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeAppAndSetListeners() {
-    // Bridge mode: main portal owns Firebase init & auth.
-    // Only wire UI event listeners; auth+data handled by patchRCSystem().
+    const { initializeApp, getDatabase, getAuth, onAuthStateChanged, getApps, getApp } = firebaseImports || window._fb || {};
     try {
-        gradeFilter.addEventListener('change', () => { currentPage = 1; applyFilters(); });
-        fieldFilter.addEventListener('change', () => { currentPage = 1; applyFilters(); });
+        // Reuse the existing Firebase app initialised by the main portal
+        let app;
+        if (typeof getApps === 'function' && getApps().length > 0) {
+            app = (typeof getApp === 'function') ? getApp() : getApps()[0];
+        } else if (typeof initializeApp === 'function') {
+            app = initializeApp(customFirebaseConfig);
+        } else {
+            // Firebase not available — use bridges set by the portal
+            db = window._rcDb || db;
+            auth = window._rcAuth || auth;
+            return;
+        }
+        db = getDatabase(app);
+        auth = getAuth(app);
+        
+        controlsDiv.style.display = 'none';
+        printAreaDiv.style.display = 'none';
+        reportSummary.textContent = 'Please sign in to load the data.';
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                handleSignIn(user);
+            } else {
+                handleSignOut();
+            }
+        });
+
+        gradeFilter.addEventListener('change', () => {
+            currentPage = 1;
+            applyFilters();
+        });
+        fieldFilter.addEventListener('change', () => {
+            currentPage = 1;
+            applyFilters();
+        });
         searchInput.addEventListener('input', handleSearch);
         itemsPerPageSelect.addEventListener('change', handleItemsPerPageChange);
         signInBtn.addEventListener('click', signInWithGoogle);
         signOutBtn.addEventListener('click', signOutUser);
+        
+
     } catch (e) {
-        console.error("RC listener setup error:", e);
+        console.error("Firebase Initialization Error:", e);
+        userInfo.textContent = `Error initializing Firebase: ${e.message}`;
+        loader.style.display = 'none';
+        NotificationManager.error(`Firebase initialization failed: ${e.message}`);
     }
 }
 
@@ -7044,7 +7082,7 @@ function applyFilters() {
             return false;
         });
     } else {
-        missingFieldHeader.textContent = "Missing Field Value";
+        missingFieldHeader.textContent = "Missing Field";
     }
 
     if (searchQuery) {
@@ -7100,7 +7138,7 @@ function renderCurrentPage() {
     if (studentsToRender.length === 0) {
         const row = tableBody.insertRow();
         const cell = row.insertCell(0);
-        cell.colSpan = 7;
+        cell.colSpan = 6;
         cell.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: #7f8c8d;">
                 <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
@@ -7128,25 +7166,20 @@ function renderCurrentPage() {
             : '';
         nameCell.innerHTML = `<div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="font-weight:700;color:var(--text)">${student['Official Student Name'] || '—'}</span></div>`;
 
-        // Grade (short)
-        const gradeCell = row.insertCell(2);
-        const shortGrade = typeof gShort === 'function' ? gShort(student['Grade']) : (student['Grade'] || '—');
-        gradeCell.innerHTML = `<span style="font-size:11px;font-weight:700;color:var(--blue-lt)">${shortGrade || '—'}</span>`;
-
         // Term (raw)
-        const termCell = row.insertCell(3);
+        const termCell = row.insertCell(2);
         termCell.style.fontSize = '11px';
         termCell.style.color = 'var(--text2)';
         termCell.textContent = student['Term'] || '—';
 
-        // Adm No
-        const admCell = row.insertCell(4);
+        // Assessment No
+        const admCell = row.insertCell(3);
         admCell.style.fontFamily = "'JetBrains Mono', monospace";
         admCell.style.fontSize = '11px';
         admCell.textContent = student['Assessment No'] || '—';
 
         // Missing Field Value (editable)
-        const missingValueCell = row.insertCell(5);
+        const missingValueCell = row.insertCell(4);
         if (selectedField) {
             createEditableCell(missingValueCell, student, selectedField, row);
         } else {
@@ -7155,7 +7188,7 @@ function renderCurrentPage() {
         }
 
         // Actions
-        const actionCell = row.insertCell(6);
+        const actionCell = row.insertCell(5);
         createActionButtons(actionCell, student, selectedField, row);
     });
 
@@ -8743,35 +8776,38 @@ document.addEventListener('click', function(e) {
 // Override the JS module's internal _bootApp / initializeAppAndSetListeners
 // so it doesn't try to call initializeApp() a second time (which throws).
 ;(function patchRCSystem(){
-  // The main portal owns Firebase. _bridgeReportCardSystem() inside renderAll()
-  // already syncs allData → studentsData every time Firebase data arrives.
-  // This bridge only needs to: set firebaseImports, override fetchStudentsData
-  // (so handleSignIn doesn't try to read Firebase directly), and call handleSignIn.
-
+  // Wait until the main portal has finished its own Firebase init
+  // (db and auth are set in the main script's waitFB callback above).
+  // We poll for them then inject the RC system's dependencies.
   function tryBoot(attempts) {
+    // `db` and `auth` come from the outer (main portal) script scope.
     if (typeof db !== 'undefined' && db && typeof auth !== 'undefined' && auth) {
-
+      // Feed the RC module's globals
       window._fb = window._fb || {};
       firebaseImports = window._fb;
 
-      // Override fetchStudentsData — called by handleSignIn.
-      // Real data sync happens via _bridgeReportCardSystem inside renderAll().
+      // Override fetchStudentsData to use allData from the main portal.
+      // This is called from handleSignIn inside the RC module.
+      const _origFetch = fetchStudentsData;
       window.fetchStudentsData = function() {
+        // Copy from the main portal's allData
         if (typeof allData !== 'undefined' && allData.length) {
           studentsData = allData.map(r => ({...r}));
           populateFilters_rc(studentsData);
           buildTermSelector();
           applyFilters();
-          if (loader) loader.style.display = 'none';
+          loader.style.display = 'none';
+          NotificationManager.success('Loaded ' + studentsData.length + ' records from portal data.', 3000);
         } else {
-          // allData not ready yet — renderAll will call _bridgeReportCardSystem
-          // once Firebase data lands, so no manual retry needed here.
-          if (loader) loader.style.display = 'none';
+          // allData not ready yet — retry once
+          setTimeout(() => window.fetchStudentsData(), 800);
         }
       };
 
-      // Call handleSignIn — user is already authenticated by the main portal.
+      // Now manually call handleSignIn — the user is already signed in
+      // (the main portal already authenticated them).
       if (typeof handleSignIn === 'function') {
+        // Use a fake user object — display name comes from currentAdminName
         handleSignIn({ displayName: currentAdminName || 'Admin', email: currentAdminEmail || '' });
       }
 
@@ -8781,7 +8817,7 @@ document.addEventListener('click', function(e) {
       console.warn('[RC Bridge] db/auth not ready after 12s — skipping RC boot.');
     }
   }
-
+  // Start polling after a short delay so main portal Firebase init can finish
   setTimeout(() => tryBoot(0), 500);
 })();
 </script>
