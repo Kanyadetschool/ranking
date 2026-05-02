@@ -1212,7 +1212,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
         </div>
         <div class="filter-row">
           <div class="search-input-wrap">
-            <input class="search-input" id="student-search" placeholder="Search by name, assessment no, UPI, grade… or score range (e.g. >70)" oninput="filterStudents()">
+            <input class="search-input" id="student-search" placeholder="Search by name, adm no, UPI, grade… or score range (e.g. >70)" oninput="filterStudents()">
           </div>
           <select class="sel" id="filter-grade" onchange="filterStudents()">
             <option value="">All Grades</option>
@@ -1244,7 +1244,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <tr>
                   <th>#</th>
                   <th class="sortable" onclick="sortStudents('name')">Name ↕</th>
-                  <th>Assessment No</th>
+                  <th>Adm No</th>
                   <th class="sortable" onclick="sortStudents('grade')">Grade / Term ↕</th>
                   <th>Gender</th>
                   <th class="sortable" onclick="sortStudents('avg')">Best Avg ↕</th>
@@ -1416,7 +1416,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <option value="">Select Field to Check…</option>
               </select>
               <div class="search-input-wrap" style="min-width:220px">
-                <input class="search-input" id="search-input" type="search" placeholder="Search name, assessment no, UPI, grade…">
+                <input class="search-input" id="search-input" type="search" placeholder="Search name, adm no, UPI, grade…">
               </div>
               <select class="sel" id="items-per-page" onchange="itemsPerPage=+this.value;currentPage=1;renderCurrentPage ? renderCurrentPage() : null">
                 <option value="10">10 / page</option>
@@ -1443,13 +1443,15 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <tr>
                   <th>#</th>
                   <th>Student Name</th>
+                  <th>Grade</th>
                   <th>Term</th>
-                  <th>Assessment No</th>
+                  <th>Adm No</th>
+                  <th id="missing-field-header">Missing Field</th>
                   <th style="text-align:center">Actions</th>
                 </tr>
               </thead>
-              <tbody id="rc-table-tbody">
-                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">
+              <tbody>
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">
                   ⏳ Loading student records…
                 </td></tr>
               </tbody>
@@ -1660,7 +1662,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
               <thead><tr>
                 <th>#</th>
                 <th>Student</th>
-                <th>Assessment No</th>
+                <th>Adm No</th>
                 <th>Grade</th>
                 <th>Average</th>
                 <th>Worst Subject</th>
@@ -1916,7 +1918,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   <div class="modal-box" style="margin-top:60px;align-self:flex-start">
     <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px">
       <span style="font-size:16px">🔍</span>
-      <input id="smart-search-input" type="text" placeholder="Search by name, UPI, assessment no, grade, or score range (e.g. avg>70)…"
+      <input id="smart-search-input" type="text" placeholder="Search by name, UPI, adm no, grade, or score range (e.g. avg>70)…"
         style="flex:1;border:none;background:transparent;font-size:14px;color:var(--text);outline:none;font-family:'Plus Jakarta Sans',sans-serif"
         oninput="runSmartSearch(this.value)" onkeydown="searchKeyNav(event)">
       <span style="font-size:11px;color:var(--text3)">ESC to close</span>
@@ -2717,11 +2719,9 @@ function renderAll(){
 function _bridgeReportCardSystem(){
   try{
     if(typeof studentsData!=='undefined'){
-      // Sync portal data into RC system
       studentsData=allData.map(r=>({...r}));
-      // Re-populate RC filters and grade chips
-      if(typeof populateFilters==='function'){
-        try{ populateFilters(studentsData); }catch(e){}
+      if(typeof populateFilters_rc==='function'){
+        try{ populateFilters_rc(studentsData); }catch(e){}
       }
       if(typeof buildTermSelector==='function') buildTermSelector();
       if(typeof applyFilters==='function') applyFilters();
@@ -2895,7 +2895,7 @@ function renderTopStudents(){
   // When 'all terms': de-dup to each student's best record
   let ranked=[];
   if(term&&term!=='all'){
-    // Direct list — one record per student for that term; deduplicate by assessment no, keep highest
+    // Direct list — one record per student for that term; deduplicate by adm no, keep highest
     const byStudent={};
     data.forEach(r=>{
       const key=String(r['Assessment No']||r['Official Student Name']||'').trim();
@@ -4243,7 +4243,7 @@ function copyRecordData(){
   const subjects = getSubjects(rec);
   const lines = [
     'Student: ' + (rec['Official Student Name']||'N/A'),
-    'Assessment No: ' + (rec['Assessment No']||'N/A'),
+    'Adm No: ' + (rec['Assessment No']||'N/A'),
     'UPI: ' + (rec['UPI']||'N/A'),
     'Grade: ' + (rec['Grade']||'N/A'),
     'Average: ' + st.avg + '%',
@@ -4661,7 +4661,7 @@ function exportAtRiskCSV(){
     if(term!=='all'&&getRecordTerm(r)!==term)return false;
     return parseFloat(calcStats(r).avg)<41;
   });
-  const rows=data.map(r=>{const st=calcStats(r);return{'Name':r['Official Student Name']||'','Assessment No':r['Assessment No']||'','Grade':r['Grade']||'','Average':st.avg,'Level':st.level,'Position':r['Position']||''};});
+  const rows=data.map(r=>{const st=calcStats(r);return{'Name':r['Official Student Name']||'','Adm No':r['Assessment No']||'','Grade':r['Grade']||'','Average':st.avg,'Level':st.level,'Position':r['Position']||''};});
   const keys=Object.keys(rows[0]||{});
   const csv=keys.join(',')+'\n'+rows.map(r=>keys.map(k=>'"'+(String(r[k]||'').replace(/"/g,'""'))+'"').join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='AtRisk_Students.csv';a.click();
@@ -4688,7 +4688,7 @@ async function generateAtRiskPDF(){
   doc.setTextColor(0,0,0);
   const data=allData.filter(r=>parseFloat(calcStats(r).avg)<41);
   const tableData=data.map(r=>{const st=calcStats(r);return[r['Official Student Name']||'',r['Assessment No']||'',r['Grade']||'',st.avg+'%',st.level];});
-  doc.autoTable({head:[['Student','Assessment No','Grade / Term','Average','Level']],body:tableData,startY:32,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[231,76,60],textColor:[255,255,255]}});
+  doc.autoTable({head:[['Student','Adm No','Grade / Term','Average','Level']],body:tableData,startY:32,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[231,76,60],textColor:[255,255,255]}});
   doc.save('AtRisk_Alert_'+new Date().toISOString().split('T')[0]+'.pdf');
   notify('📄 At-Risk PDF downloaded!','success');
   logActivity(`📄 At-Risk PDF downloaded`,'act-red',currentAdminName);
@@ -4780,7 +4780,7 @@ async function generateEOTPDF(){
   // Table
   const sorted=data.sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg));
   const tableData=sorted.map((r,i)=>{const st=calcStats(r);return[i+1,r['Official Student Name']||'',r['Assessment No']||'',r['Grade']||'',st.avg+'%',st.level,getComputedPosition(r)];});
-  doc.autoTable({head:[['#','Student','Assessment No','Grade','Average','Level','Position']],body:tableData,startY:52,margin:{left:10,right:10},styles:{fontSize:7,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255]},
+  doc.autoTable({head:[['#','Student','Adm No','Grade','Average','Level','Position']],body:tableData,startY:52,margin:{left:10,right:10},styles:{fontSize:7,cellPadding:2.5},headStyles:{fillColor:[41,128,185],textColor:[255,255,255]},
     didParseCell:(d)=>{if(d.column.index===4&&d.section==='body'){const v=parseFloat(d.cell.raw);d.cell.styles.textColor=v>=75?[39,174,96]:v>=41?[230,126,34]:[231,76,60];}}
   });
   doc.save(`ClassReport_${grade}_${term}.pdf`.replace(/\s+/g,'_'));
@@ -5125,7 +5125,7 @@ const gradeFilter = document.getElementById('grade-filter');
 const fieldFilter = document.getElementById('field-filter');
 const searchInput = document.getElementById('search-input');
 const itemsPerPageSelect = document.getElementById('items-per-page');
-const tableBody = document.querySelector('#missing-data-table #rc-table-tbody') || document.querySelector('#missing-data-table tbody');
+const tableBody = document.querySelector('#missing-data-table tbody');
 const missingFieldHeader = document.getElementById('missing-field-header');
 const reportSummary = document.getElementById('report-summary');
 const paginationInfo = document.getElementById('pagination-info');
@@ -5896,7 +5896,7 @@ async function generateStudentReportCard(student, includeWatermark = true) {
 // ═══════════════════════════════════════════════════════════
 //  MULTI-TERM REPORT PAGE RENDERER
 //  Draws one report card page merging scores from multiple
-//  selected grade nodes for a single student (matched by Assessment No).
+//  selected grade nodes for a single student (matched by Adm No).
 //  - Grade chip labels & report header = raw DB Grade field values
 //  - Last column = Avg across selected grades + CBC Rubric code
 //  - Summary box = full drawSummary approach on averaged scores
@@ -6734,54 +6734,17 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializeAppAndSetListeners() {
-    const { initializeApp, getDatabase, getAuth, onAuthStateChanged, getApps, getApp } = firebaseImports || window._fb || {};
+    // Bridge mode: main portal owns Firebase init & auth.
+    // Only wire UI event listeners; auth+data handled by patchRCSystem().
     try {
-        // Reuse the existing Firebase app initialised by the main portal
-        let app;
-        if (typeof getApps === 'function' && getApps().length > 0) {
-            app = (typeof getApp === 'function') ? getApp() : getApps()[0];
-        } else if (typeof initializeApp === 'function') {
-            app = initializeApp(customFirebaseConfig);
-        } else {
-            // Firebase not available — use bridges set by the portal
-            db = window._rcDb || db;
-            auth = window._rcAuth || auth;
-            return;
-        }
-        db = getDatabase(app);
-        auth = getAuth(app);
-        
-        controlsDiv.style.display = 'none';
-        printAreaDiv.style.display = 'none';
-        reportSummary.textContent = 'Please sign in to load the data.';
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                handleSignIn(user);
-            } else {
-                handleSignOut();
-            }
-        });
-
-        gradeFilter.addEventListener('change', () => {
-            currentPage = 1;
-            applyFilters();
-        });
-        fieldFilter.addEventListener('change', () => {
-            currentPage = 1;
-            applyFilters();
-        });
+        gradeFilter.addEventListener('change', () => { currentPage = 1; applyFilters(); });
+        fieldFilter.addEventListener('change', () => { currentPage = 1; applyFilters(); });
         searchInput.addEventListener('input', handleSearch);
         itemsPerPageSelect.addEventListener('change', handleItemsPerPageChange);
         signInBtn.addEventListener('click', signInWithGoogle);
         signOutBtn.addEventListener('click', signOutUser);
-        
-
     } catch (e) {
-        console.error("Firebase Initialization Error:", e);
-        userInfo.textContent = `Error initializing Firebase: ${e.message}`;
-        loader.style.display = 'none';
-        NotificationManager.error(`Firebase initialization failed: ${e.message}`);
+        console.error("RC listener setup error:", e);
     }
 }
 
@@ -7137,7 +7100,7 @@ function renderCurrentPage() {
     if (studentsToRender.length === 0) {
         const row = tableBody.insertRow();
         const cell = row.insertCell(0);
-        cell.colSpan = 5;
+        cell.colSpan = 7;
         cell.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: #7f8c8d;">
                 <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
@@ -7165,20 +7128,34 @@ function renderCurrentPage() {
             : '';
         nameCell.innerHTML = `<div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="font-weight:700;color:var(--text)">${student['Official Student Name'] || '—'}</span></div>`;
 
+        // Grade (short)
+        const gradeCell = row.insertCell(2);
+        const shortGrade = typeof gShort === 'function' ? gShort(student['Grade']) : (student['Grade'] || '—');
+        gradeCell.innerHTML = `<span style="font-size:11px;font-weight:700;color:var(--blue-lt)">${shortGrade || '—'}</span>`;
+
         // Term (raw)
-        const termCell = row.insertCell(2);
+        const termCell = row.insertCell(3);
         termCell.style.fontSize = '11px';
         termCell.style.color = 'var(--text2)';
         termCell.textContent = student['Term'] || '—';
 
-        // Assessment No
-        const admCell = row.insertCell(3);
+        // Adm No
+        const admCell = row.insertCell(4);
         admCell.style.fontFamily = "'JetBrains Mono', monospace";
         admCell.style.fontSize = '11px';
         admCell.textContent = student['Assessment No'] || '—';
 
+        // Missing Field Value (editable)
+        const missingValueCell = row.insertCell(5);
+        if (selectedField) {
+            createEditableCell(missingValueCell, student, selectedField, row);
+        } else {
+            missingValueCell.textContent = '—';
+            missingValueCell.style.color = 'var(--text3)';
+        }
+
         // Actions
-        const actionCell = row.insertCell(4);
+        const actionCell = row.insertCell(6);
         createActionButtons(actionCell, student, selectedField, row);
     });
 
@@ -8182,7 +8159,7 @@ async function generateLeagueTable() {
 
     const dynamicSubjects = [...new Set(ranked.flatMap(({s}) => getSubjects_rc(s)))];
 
-    const headers = [['#', 'Name', 'Assessment No', 'Gender', ...dynamicSubjects, 'Total Pts', 'Avg %', 'Level']];
+    const headers = [['#', 'Name', 'Adm No', 'Gender', ...dynamicSubjects, 'Total Pts', 'Avg %', 'Level']];
     const body = ranked.map(({s, stats}, i) => [
         String(i + 1),
         s['Official Student Name'] || 'N/A',
@@ -8357,7 +8334,7 @@ function detectDuplicates() {
         dupes.push({ type: 'Duplicate Name', students: arr });
     });
     Object.values(byAdm).filter(arr => arr.length > 1).forEach(arr => {
-        dupes.push({ type: 'Duplicate Assessment No', students: arr });
+        dupes.push({ type: 'Duplicate Adm No', students: arr });
     });
 
     if (dupes.length === 0) {
@@ -8546,7 +8523,7 @@ function _doExportToExcel() {
 
     const dynSubjects = [...new Set(sorted.flatMap(s => getSubjects_rc(s)))];
 
-    const headers = ['#','Name','Assessment No','UPI','Gender','Grade','Term',
+    const headers = ['#','Name','Adm No','UPI','Gender','Grade','Term',
         ...dynSubjects, 'Total Marks','Avg %','Total Points','Max Points','Level'];
 
     const rows = sorted.map((s, i) => {
@@ -8763,67 +8740,45 @@ document.addEventListener('click', function(e) {
 });
 
 // ── BRIDGE: wire RC system to portal's existing Firebase session ──────────
+// Override the JS module's internal _bootApp / initializeAppAndSetListeners
+// so it doesn't try to call initializeApp() a second time (which throws).
 ;(function patchRCSystem(){
+  // The main portal owns Firebase. _bridgeReportCardSystem() inside renderAll()
+  // already syncs allData → studentsData every time Firebase data arrives.
+  // This bridge only needs to: set firebaseImports, override fetchStudentsData
+  // (so handleSignIn doesn't try to read Firebase directly), and call handleSignIn.
 
-  let _rcLoaded = false;   // prevent double-population
-
-  // ── Step 1: populate the RC table from allData ──────────────────────────
-  function _loadRCData() {
-    if (typeof allData === 'undefined' || !allData.length) return false;
-    studentsData = allData.map(r => ({...r}));
-    populateFilters_rc(studentsData);
-    buildTermSelector();
-    applyFilters();
-    if (loader) loader.style.display = 'none';
-    _rcLoaded = true;
-    return true;
-  }
-
-  // ── Step 2: poll until allData is ready (Firebase onValue is async) ─────
-  function waitForData(attempts) {
-    if (_loadRCData()) return;           // success — done
-    if (attempts < 150) {                // up to 30 seconds (150 × 200ms)
-      setTimeout(() => waitForData(attempts + 1), 200);
-    } else {
-      console.warn('[RC Bridge] allData never populated after 30 s.');
-      if (tableBody) {
-        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">⚠️ Could not load data. Please refresh.</td></tr>';
-      }
-    }
-  }
-
-  // ── Step 3: override fetchStudentsData so handleSignIn delegates here ───
-  window.fetchStudentsData = function() { waitForData(0); };
-
-  // ── Step 4: keep RC table in sync with future allData changes ───────────
-  // Since renderAll() is a local function (not on window) we can't wrap it,
-  // so we use a lightweight setInterval that checks allData for changes.
-  let _lastAllDataLen = -1;
-  setInterval(() => {
-    if (typeof allData === 'undefined') return;
-    if (allData.length === _lastAllDataLen) return;   // no change
-    _lastAllDataLen = allData.length;
-    if (allData.length && typeof studentsData !== 'undefined') {
-      studentsData = allData.map(r => ({...r}));
-      if (typeof populateFilters_rc === 'function') populateFilters_rc(studentsData);
-      if (typeof buildTermSelector  === 'function') buildTermSelector();
-      if (typeof applyFilters       === 'function') applyFilters();
-    }
-  }, 1500);
-
-  // ── Step 5: wait for db/auth then call handleSignIn ─────────────────────
   function tryBoot(attempts) {
     if (typeof db !== 'undefined' && db && typeof auth !== 'undefined' && auth) {
+
       window._fb = window._fb || {};
       firebaseImports = window._fb;
 
+      // Override fetchStudentsData — called by handleSignIn.
+      // Real data sync happens via _bridgeReportCardSystem inside renderAll().
+      window.fetchStudentsData = function() {
+        if (typeof allData !== 'undefined' && allData.length) {
+          studentsData = allData.map(r => ({...r}));
+          populateFilters_rc(studentsData);
+          buildTermSelector();
+          applyFilters();
+          if (loader) loader.style.display = 'none';
+        } else {
+          // allData not ready yet — renderAll will call _bridgeReportCardSystem
+          // once Firebase data lands, so no manual retry needed here.
+          if (loader) loader.style.display = 'none';
+        }
+      };
+
+      // Call handleSignIn — user is already authenticated by the main portal.
       if (typeof handleSignIn === 'function') {
         handleSignIn({ displayName: currentAdminName || 'Admin', email: currentAdminEmail || '' });
       }
+
     } else if (attempts < 60) {
       setTimeout(() => tryBoot(attempts + 1), 200);
     } else {
-      console.warn('[RC Bridge] db/auth not ready after 12 s — skipping RC boot.');
+      console.warn('[RC Bridge] db/auth not ready after 12s — skipping RC boot.');
     }
   }
 
