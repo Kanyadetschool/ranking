@@ -6884,7 +6884,7 @@ function goToPage(page) {
     const totalPages = Math.ceil(filteredAndSearchedStudents.length / itemsPerPage);
     if (page < 1 || page > totalPages) return;
     
-    currentPage = page;
+    rc_currentPage = page;
     renderCurrentPage();
     
     document.querySelector('#missing-data-table').scrollIntoView({ 
@@ -7231,15 +7231,15 @@ function renderPaginationControls(totalPages) {
     const firstBtn = document.createElement('button');
     firstBtn.innerHTML = '⟨⟨';
     firstBtn.title = 'First page';
-    firstBtn.style.cssText = currentPage === 1 ? disabledButtonStyle : buttonStyle;
-    firstBtn.disabled = currentPage === 1;
+    firstBtn.style.cssText = rc_currentPage === 1 ? disabledButtonStyle : buttonStyle;
+    firstBtn.disabled = rc_currentPage === 1;
     firstBtn.onclick = () => goToPage(1);
     paginationControls.appendChild(firstBtn);
 
     const prevBtn = document.createElement('button');
     prevBtn.innerHTML = '⟨ Previous';
-    prevBtn.style.cssText = currentPage === 1 ? disabledButtonStyle : buttonStyle;
-    prevBtn.disabled = currentPage === 1;
+    prevBtn.style.cssText = rc_currentPage === 1 ? disabledButtonStyle : buttonStyle;
+    prevBtn.disabled = rc_currentPage === 1;
     prevBtn.onclick = () => goToPage(rc_currentPage - 1);
     paginationControls.appendChild(prevBtn);
 
@@ -7282,16 +7282,16 @@ function renderPaginationControls(totalPages) {
 
     const nextBtn = document.createElement('button');
     nextBtn.innerHTML = 'Next ⟩';
-    nextBtn.style.cssText = currentPage === totalPages ? disabledButtonStyle : buttonStyle;
-    nextBtn.disabled = currentPage === totalPages;
+    nextBtn.style.cssText = rc_currentPage === totalPages ? disabledButtonStyle : buttonStyle;
+    nextBtn.disabled = rc_currentPage === totalPages;
     nextBtn.onclick = () => goToPage(rc_currentPage + 1);
     paginationControls.appendChild(nextBtn);
 
     const lastBtn = document.createElement('button');
     lastBtn.innerHTML = '⟩⟩';
     lastBtn.title = 'Last page';
-    lastBtn.style.cssText = currentPage === totalPages ? disabledButtonStyle : buttonStyle;
-    lastBtn.disabled = currentPage === totalPages;
+    lastBtn.style.cssText = rc_currentPage === totalPages ? disabledButtonStyle : buttonStyle;
+    lastBtn.disabled = rc_currentPage === totalPages;
     lastBtn.onclick = () => goToPage(totalPages);
     paginationControls.appendChild(lastBtn);
 }
