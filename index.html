@@ -8763,67 +8763,70 @@ document.addEventListener('click', function(e) {
 });
 
 // ── BRIDGE: wire RC system to portal's existing Firebase session ──────────
-// Override the JS module's internal _bootApp / initializeAppAndSetListeners
-// so it doesn't try to call initializeApp() a second time (which throws).
 ;(function patchRCSystem(){
-  // Wait until the main portal has finished its own Firebase init
-  // (db and auth are set in the main script's waitFB callback above).
-  // We poll for them then inject the RC system's dependencies.
+
+  let _rcLoaded = false;   // prevent double-population
+
+  // ── Step 1: populate the RC table from allData ──────────────────────────
+  function _loadRCData() {
+    if (typeof allData === 'undefined' || !allData.length) return false;
+    studentsData = allData.map(r => ({...r}));
+    populateFilters_rc(studentsData);
+    buildTermSelector();
+    applyFilters();
+    if (loader) loader.style.display = 'none';
+    _rcLoaded = true;
+    return true;
+  }
+
+  // ── Step 2: poll until allData is ready (Firebase onValue is async) ─────
+  function waitForData(attempts) {
+    if (_loadRCData()) return;           // success — done
+    if (attempts < 150) {                // up to 30 seconds (150 × 200ms)
+      setTimeout(() => waitForData(attempts + 1), 200);
+    } else {
+      console.warn('[RC Bridge] allData never populated after 30 s.');
+      if (tableBody) {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">⚠️ Could not load data. Please refresh.</td></tr>';
+      }
+    }
+  }
+
+  // ── Step 3: override fetchStudentsData so handleSignIn delegates here ───
+  window.fetchStudentsData = function() { waitForData(0); };
+
+  // ── Step 4: keep RC table in sync with future allData changes ───────────
+  // Since renderAll() is a local function (not on window) we can't wrap it,
+  // so we use a lightweight setInterval that checks allData for changes.
+  let _lastAllDataLen = -1;
+  setInterval(() => {
+    if (typeof allData === 'undefined') return;
+    if (allData.length === _lastAllDataLen) return;   // no change
+    _lastAllDataLen = allData.length;
+    if (allData.length && typeof studentsData !== 'undefined') {
+      studentsData = allData.map(r => ({...r}));
+      if (typeof populateFilters_rc === 'function') populateFilters_rc(studentsData);
+      if (typeof buildTermSelector  === 'function') buildTermSelector();
+      if (typeof applyFilters       === 'function') applyFilters();
+    }
+  }, 1500);
+
+  // ── Step 5: wait for db/auth then call handleSignIn ─────────────────────
   function tryBoot(attempts) {
-    // `db` and `auth` come from the outer (main portal) script scope.
     if (typeof db !== 'undefined' && db && typeof auth !== 'undefined' && auth) {
-      // Feed the RC module's globals
       window._fb = window._fb || {};
       firebaseImports = window._fb;
 
-      // Override fetchStudentsData to use allData from the main portal.
-      // This is called from handleSignIn inside the RC module.
-      window.fetchStudentsData = function() {
-        // Copy from the main portal's allData
-        if (typeof allData !== 'undefined' && allData.length) {
-          studentsData = allData.map(r => ({...r}));
-          populateFilters_rc(studentsData);
-          buildTermSelector();
-          applyFilters();
-          loader.style.display = 'none';
-        } else {
-          // allData not ready yet — show loading state and retry
-          if (tableBody) {
-            tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">⏳ Loading student records…</td></tr>';
-          }
-          setTimeout(() => window.fetchStudentsData(), 600);
-        }
-      };
-
-      // Hook into renderAll so the RC table auto-refreshes whenever allData updates
-      const _origRenderAll = window.renderAll;
-      window.renderAll = function() {
-        if (typeof _origRenderAll === 'function') _origRenderAll.apply(this, arguments);
-        // If RC system is signed-in (studentsData was previously populated or
-        // allData just became available), refresh the RC table silently.
-        if (typeof allData !== 'undefined' && allData.length &&
-            typeof studentsData !== 'undefined') {
-          studentsData = allData.map(r => ({...r}));
-          if (typeof populateFilters_rc === 'function') populateFilters_rc(studentsData);
-          if (typeof buildTermSelector === 'function') buildTermSelector();
-          if (typeof applyFilters === 'function') applyFilters();
-        }
-      };
-
-      // Now manually call handleSignIn — the user is already signed in
-      // (the main portal already authenticated them).
       if (typeof handleSignIn === 'function') {
-        // Use a fake user object — display name comes from currentAdminName
         handleSignIn({ displayName: currentAdminName || 'Admin', email: currentAdminEmail || '' });
       }
-
     } else if (attempts < 60) {
       setTimeout(() => tryBoot(attempts + 1), 200);
     } else {
-      console.warn('[RC Bridge] db/auth not ready after 12s — skipping RC boot.');
+      console.warn('[RC Bridge] db/auth not ready after 12 s — skipping RC boot.');
     }
   }
-  // Start polling after a short delay so main portal Firebase init can finish
+
   setTimeout(() => tryBoot(0), 500);
 })();
 </script>
