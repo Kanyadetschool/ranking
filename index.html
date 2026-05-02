@@ -2719,9 +2719,9 @@ function _bridgeReportCardSystem(){
     if(typeof studentsData!=='undefined'){
       // Sync portal data into RC system
       studentsData=allData.map(r=>({...r}));
-      // Re-populate RC filters and grade chips
-      if(typeof populateFilters==='function'){
-        try{ populateFilters(studentsData); }catch(e){}
+      // Re-populate RC filters using the RC-specific filter function
+      if(typeof populateFilters_rc==='function'){
+        try{ populateFilters_rc(studentsData); }catch(e){}
       }
       if(typeof buildTermSelector==='function') buildTermSelector();
       if(typeof applyFilters==='function') applyFilters();
@@ -6972,55 +6972,22 @@ async function generateSearchReportCards() {
 }
 
 function fetchStudentsData() {
-    loader.style.display = 'flex'; 
+    loader.style.display = 'flex';
 
-    const { ref, onValue } = firebaseImports;
-    const studentsRef = ref(db, `Results/${sanitizedAppId}/students`);
-    
-    onValue(studentsRef, (snapshot) => {
-        const students = [];
-        const data = snapshot.val();
-        
-        if (data) {
-            for (let key in data) {
-                const student = { id: key, ...data[key] };
-                
-                const gradeMatch = student['Grade']?.match(/^Grade\s+\d+/);
-                const extractedGrade = gradeMatch ? gradeMatch[0] : null;
-                
-                if (!GRADE_FILTER_CONFIG.enabled || 
-                    (extractedGrade && GRADE_FILTER_CONFIG.allowedGrades.includes(extractedGrade))) {
-                    students.push(student);
-                }
-            }
-        }
-        
-        students.sort((a, b) => {
-            const assessmentNoA = parseFloat(a['Assessment No']) || Infinity;
-            const assessmentNoB = parseFloat(b['Assessment No']) || Infinity;
-            return assessmentNoA - assessmentNoB;
-        });
+    // If the main portal's allData is already loaded, use it directly
+    // to avoid a separate Firebase fetch that may return incomplete data.
+    if (typeof allData !== 'undefined' && allData.length) {
+        studentsData = allData.map(r => ({...r}));
+        populateFilters_rc(studentsData);
+        buildTermSelector();
+        applyFilters();
+        loader.style.display = 'none';
+        NotificationManager.success('Loaded ' + studentsData.length + ' records from portal data.', 3000);
+        return;
+    }
 
-        studentsData = students;
-        populateFilters_rc(students);
-        buildTermSelector();   // ← rebuild term chips now that we have real data
-        applyFilters(); 
-        loader.style.display = 'none';
-        
-        const totalRecords = Object.keys(data || {}).length;
-        if (GRADE_FILTER_CONFIG.enabled) {
-            NotificationManager.success(
-                `Loaded ${students.length} student records from ${GRADE_FILTER_CONFIG.allowedGrades.join(', ')} (${totalRecords} total records in database)`
-            );
-        } else {
-            NotificationManager.success(`Loaded ${students.length} student records successfully`);
-        }
-    }, (error) => {
-        console.error("Error fetching students:", error);
-        reportSummary.textContent = `Error fetching data: ${error.message}. Please check your Firebase Security Rules.`;
-        loader.style.display = 'none';
-        NotificationManager.error(`Failed to fetch data: ${error.message}`);
-    });
+    // Fallback: allData not ready yet, retry after short delay
+    setTimeout(() => fetchStudentsData(), 600);
 }
 
 function populateFilters_rc(students) {
