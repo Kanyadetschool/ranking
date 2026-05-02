@@ -914,7 +914,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div id="login-screen">
   <div class="login-card">
     <div class="login-icon" id="login-logo-icon">🔐</div>
-    <h1>I.C.T EXAM DEPT..</h1>
+    <h1>I.C.T EXAM DEPT</h1>
     <p>Kanyadet PRI &amp; Junior School — Restricted Access</p>
     <div class="login-err" id="login-err"></div>
 
@@ -1443,13 +1443,15 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <tr>
                   <th>#</th>
                   <th>Student Name</th>
+                  <th>Grade</th>
                   <th>Term</th>
-                  <th>Assessment No</th>
+                  <th>Adm No</th>
+                  <th id="missing-field-header">Missing Field</th>
                   <th style="text-align:center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">
                   Sign in and load data to see student records.
                 </td></tr>
               </tbody>
@@ -2719,9 +2721,9 @@ function _bridgeReportCardSystem(){
     if(typeof studentsData!=='undefined'){
       // Sync portal data into RC system
       studentsData=allData.map(r=>({...r}));
-      // Re-populate RC filters using the RC-specific filter function
-      if(typeof populateFilters_rc==='function'){
-        try{ populateFilters_rc(studentsData); }catch(e){}
+      // Re-populate RC filters and grade chips
+      if(typeof populateFilters==='function'){
+        try{ populateFilters(studentsData); }catch(e){}
       }
       if(typeof buildTermSelector==='function') buildTermSelector();
       if(typeof applyFilters==='function') applyFilters();
@@ -6884,7 +6886,7 @@ function goToPage(page) {
     const totalPages = Math.ceil(filteredAndSearchedStudents.length / itemsPerPage);
     if (page < 1 || page > totalPages) return;
     
-    rc_currentPage = page;
+    currentPage = page;
     renderCurrentPage();
     
     document.querySelector('#missing-data-table').scrollIntoView({ 
@@ -6972,22 +6974,55 @@ async function generateSearchReportCards() {
 }
 
 function fetchStudentsData() {
-    loader.style.display = 'flex';
+    loader.style.display = 'flex'; 
 
-    // If the main portal's allData is already loaded, use it directly
-    // to avoid a separate Firebase fetch that may return incomplete data.
-    if (typeof allData !== 'undefined' && allData.length) {
-        studentsData = allData.map(r => ({...r}));
-        populateFilters_rc(studentsData);
-        buildTermSelector();
-        applyFilters();
+    const { ref, onValue } = firebaseImports;
+    const studentsRef = ref(db, `Results/${sanitizedAppId}/students`);
+    
+    onValue(studentsRef, (snapshot) => {
+        const students = [];
+        const data = snapshot.val();
+        
+        if (data) {
+            for (let key in data) {
+                const student = { id: key, ...data[key] };
+                
+                const gradeMatch = student['Grade']?.match(/^Grade\s+\d+/);
+                const extractedGrade = gradeMatch ? gradeMatch[0] : null;
+                
+                if (!GRADE_FILTER_CONFIG.enabled || 
+                    (extractedGrade && GRADE_FILTER_CONFIG.allowedGrades.includes(extractedGrade))) {
+                    students.push(student);
+                }
+            }
+        }
+        
+        students.sort((a, b) => {
+            const assessmentNoA = parseFloat(a['Assessment No']) || Infinity;
+            const assessmentNoB = parseFloat(b['Assessment No']) || Infinity;
+            return assessmentNoA - assessmentNoB;
+        });
+
+        studentsData = students;
+        populateFilters_rc(students);
+        buildTermSelector();   // ← rebuild term chips now that we have real data
+        applyFilters(); 
         loader.style.display = 'none';
-        NotificationManager.success('Loaded ' + studentsData.length + ' records from portal data.', 3000);
-        return;
-    }
-
-    // Fallback: allData not ready yet, retry after short delay
-    setTimeout(() => fetchStudentsData(), 600);
+        
+        const totalRecords = Object.keys(data || {}).length;
+        if (GRADE_FILTER_CONFIG.enabled) {
+            NotificationManager.success(
+                `Loaded ${students.length} student records from ${GRADE_FILTER_CONFIG.allowedGrades.join(', ')} (${totalRecords} total records in database)`
+            );
+        } else {
+            NotificationManager.success(`Loaded ${students.length} student records successfully`);
+        }
+    }, (error) => {
+        console.error("Error fetching students:", error);
+        reportSummary.textContent = `Error fetching data: ${error.message}. Please check your Firebase Security Rules.`;
+        loader.style.display = 'none';
+        NotificationManager.error(`Failed to fetch data: ${error.message}`);
+    });
 }
 
 function populateFilters_rc(students) {
@@ -7036,7 +7071,7 @@ function applyFilters() {
     }
 
     if (selectedField) {
-        if (missingFieldHeader) missingFieldHeader.textContent = `Missing: ${selectedField}`;
+        missingFieldHeader.textContent = `Missing: ${selectedField}`;
         filtered = filtered.filter(student => {
             const value = student[selectedField];
             if (value === undefined || value === null || value === "") {
@@ -7048,7 +7083,7 @@ function applyFilters() {
             return false;
         });
     } else {
-        if (missingFieldHeader) missingFieldHeader.textContent = "Missing Field";
+        missingFieldHeader.textContent = "Missing Field Value";
     }
 
     if (searchQuery) {
@@ -7104,7 +7139,7 @@ function renderCurrentPage() {
     if (studentsToRender.length === 0) {
         const row = tableBody.insertRow();
         const cell = row.insertCell(0);
-        cell.colSpan = 5;
+        cell.colSpan = 7;
         cell.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: #7f8c8d;">
                 <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
@@ -7132,20 +7167,34 @@ function renderCurrentPage() {
             : '';
         nameCell.innerHTML = `<div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="font-weight:700;color:var(--text)">${student['Official Student Name'] || '—'}</span></div>`;
 
+        // Grade (short)
+        const gradeCell = row.insertCell(2);
+        const shortGrade = typeof gShort === 'function' ? gShort(student['Grade']) : (student['Grade'] || '—');
+        gradeCell.innerHTML = `<span style="font-size:11px;font-weight:700;color:var(--blue-lt)">${shortGrade || '—'}</span>`;
+
         // Term (raw)
-        const termCell = row.insertCell(2);
+        const termCell = row.insertCell(3);
         termCell.style.fontSize = '11px';
         termCell.style.color = 'var(--text2)';
         termCell.textContent = student['Term'] || '—';
 
-        // Assessment No
-        const admCell = row.insertCell(3);
+        // Adm No
+        const admCell = row.insertCell(4);
         admCell.style.fontFamily = "'JetBrains Mono', monospace";
         admCell.style.fontSize = '11px';
         admCell.textContent = student['Assessment No'] || '—';
 
+        // Missing Field Value (editable)
+        const missingValueCell = row.insertCell(5);
+        if (selectedField) {
+            createEditableCell(missingValueCell, student, selectedField, row);
+        } else {
+            missingValueCell.textContent = '—';
+            missingValueCell.style.color = 'var(--text3)';
+        }
+
         // Actions
-        const actionCell = row.insertCell(4);
+        const actionCell = row.insertCell(6);
         createActionButtons(actionCell, student, selectedField, row);
     });
 
@@ -7198,15 +7247,15 @@ function renderPaginationControls(totalPages) {
     const firstBtn = document.createElement('button');
     firstBtn.innerHTML = '⟨⟨';
     firstBtn.title = 'First page';
-    firstBtn.style.cssText = rc_currentPage === 1 ? disabledButtonStyle : buttonStyle;
-    firstBtn.disabled = rc_currentPage === 1;
+    firstBtn.style.cssText = currentPage === 1 ? disabledButtonStyle : buttonStyle;
+    firstBtn.disabled = currentPage === 1;
     firstBtn.onclick = () => goToPage(1);
     paginationControls.appendChild(firstBtn);
 
     const prevBtn = document.createElement('button');
     prevBtn.innerHTML = '⟨ Previous';
-    prevBtn.style.cssText = rc_currentPage === 1 ? disabledButtonStyle : buttonStyle;
-    prevBtn.disabled = rc_currentPage === 1;
+    prevBtn.style.cssText = currentPage === 1 ? disabledButtonStyle : buttonStyle;
+    prevBtn.disabled = currentPage === 1;
     prevBtn.onclick = () => goToPage(rc_currentPage - 1);
     paginationControls.appendChild(prevBtn);
 
@@ -7249,16 +7298,16 @@ function renderPaginationControls(totalPages) {
 
     const nextBtn = document.createElement('button');
     nextBtn.innerHTML = 'Next ⟩';
-    nextBtn.style.cssText = rc_currentPage === totalPages ? disabledButtonStyle : buttonStyle;
-    nextBtn.disabled = rc_currentPage === totalPages;
+    nextBtn.style.cssText = currentPage === totalPages ? disabledButtonStyle : buttonStyle;
+    nextBtn.disabled = currentPage === totalPages;
     nextBtn.onclick = () => goToPage(rc_currentPage + 1);
     paginationControls.appendChild(nextBtn);
 
     const lastBtn = document.createElement('button');
     lastBtn.innerHTML = '⟩⟩';
     lastBtn.title = 'Last page';
-    lastBtn.style.cssText = rc_currentPage === totalPages ? disabledButtonStyle : buttonStyle;
-    lastBtn.disabled = rc_currentPage === totalPages;
+    lastBtn.style.cssText = currentPage === totalPages ? disabledButtonStyle : buttonStyle;
+    lastBtn.disabled = currentPage === totalPages;
     lastBtn.onclick = () => goToPage(totalPages);
     paginationControls.appendChild(lastBtn);
 }
