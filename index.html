@@ -1445,12 +1445,11 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                   <th>Student Name</th>
                   <th>Term</th>
                   <th>Assessment No</th>
-                  <th id="missing-field-header">Missing Field</th>
                   <th style="text-align:center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">
+                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">
                   Sign in and load data to see student records.
                 </td></tr>
               </tbody>
@@ -7070,7 +7069,7 @@ function applyFilters() {
     }
 
     if (selectedField) {
-        missingFieldHeader.textContent = `Missing: ${selectedField}`;
+        if (missingFieldHeader) missingFieldHeader.textContent = `Missing: ${selectedField}`;
         filtered = filtered.filter(student => {
             const value = student[selectedField];
             if (value === undefined || value === null || value === "") {
@@ -7082,7 +7081,7 @@ function applyFilters() {
             return false;
         });
     } else {
-        missingFieldHeader.textContent = "Missing Field";
+        if (missingFieldHeader) missingFieldHeader.textContent = "Missing Field";
     }
 
     if (searchQuery) {
@@ -7138,7 +7137,7 @@ function renderCurrentPage() {
     if (studentsToRender.length === 0) {
         const row = tableBody.insertRow();
         const cell = row.insertCell(0);
-        cell.colSpan = 6;
+        cell.colSpan = 5;
         cell.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: #7f8c8d;">
                 <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
@@ -7178,17 +7177,8 @@ function renderCurrentPage() {
         admCell.style.fontSize = '11px';
         admCell.textContent = student['Assessment No'] || '—';
 
-        // Missing Field Value (editable)
-        const missingValueCell = row.insertCell(4);
-        if (selectedField) {
-            createEditableCell(missingValueCell, student, selectedField, row);
-        } else {
-            missingValueCell.textContent = '—';
-            missingValueCell.style.color = 'var(--text3)';
-        }
-
         // Actions
-        const actionCell = row.insertCell(5);
+        const actionCell = row.insertCell(4);
         createActionButtons(actionCell, student, selectedField, row);
     });
 
