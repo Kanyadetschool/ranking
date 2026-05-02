@@ -2655,7 +2655,7 @@ function loadAllData(){
       }
       allData = Object.entries(data).map(([key,val])=>({id:key,...val}));
       if(_firstLoad){
-        notify(`✅ Loaded <strong>${allData.length}</strong> records from Firebase.`,'success');
+        // notify(`✅ Loaded <strong>${allData.length}</strong> records from Firebase.`,'success');
         _firstLoad = false;
       } else {
         // Live update — flash a subtle indicator instead of a disruptive toast
