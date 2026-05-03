@@ -2032,7 +2032,13 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div class="modal-overlay" id="progress-modal" onclick="if(event.target===this)closeProgressModal()">
   <div class="modal-box modal-wide">
     <div class="modal-hdr">
-      <div><h3 id="progress-modal-name">Student Progress</h3><div id="progress-modal-sub" style="font-size:11px;color:var(--text3)"></div></div>
+      <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">
+        <div class="stu-av-wrap stu-av-md" id="progress-modal-av">?</div>
+        <div style="min-width:0">
+          <h3 id="progress-modal-name">Student Progress</h3>
+          <div id="progress-modal-sub" style="font-size:11px;color:var(--text3)"></div>
+        </div>
+      </div>
       <button class="modal-close" onclick="closeProgressModal()">✕</button>
     </div>
     <div class="modal-body">
@@ -4672,8 +4678,18 @@ function openProgressModal(masterId){
   if(!entry)return;
   const allRecs=(entry._allRecords||[entry]).sort((a,b)=>getRecordTerm(a).localeCompare(getRecordTerm(b)));
   const name=entry['Official Student Name']||'Student';
+  const grade=entry['Grade']||'';
   document.getElementById('progress-modal-name').textContent=name+' — Progress';
   document.getElementById('progress-modal-sub').textContent=allRecs.length+' term'+( allRecs.length>1?'s':'');
+
+  // Avatar
+  const pmAv=document.getElementById('progress-modal-av');
+  if(pmAv){
+    const ini=(name).split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
+    pmAv.textContent=ini;
+    pmAv.querySelectorAll('img').forEach(el=>el.remove());
+    injectPhoto('progress-modal-av',name,grade);
+  }
 
   const labels=allRecs.map(r=>getRecordTerm(r));
   const avgs=allRecs.map(r=>parseFloat(calcStats(r).avg));
