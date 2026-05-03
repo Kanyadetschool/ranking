@@ -646,7 +646,6 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .app-shell.sidebar-collapsed .sidebar{
   width:64px;
   overflow:visible;
-  overflow-y:visible;
 }
 .app-shell.sidebar-collapsed .sidebar .brand-text,
 .app-shell.sidebar-collapsed .sidebar .s-label,
@@ -656,17 +655,16 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .app-shell.sidebar-collapsed .sidebar .qlinks-section{
   display:none!important;
 }
-/* Nav items: icon-only. Clip overflowing text by fixed width + overflow hidden */
+/* Nav items: icon-only via font-size trick */
 .app-shell.sidebar-collapsed .sidebar .nav-item{
   justify-content:center;
   padding:10px 0;
-  width:64px;
-  overflow:hidden;
-  white-space:nowrap;
-  font-size:0; /* hide text nodes */
+  font-size:0; /* hides bare text nodes */
+  position:relative;
+  overflow:visible;
 }
 .app-shell.sidebar-collapsed .sidebar .nav-item .nav-icon{
-  font-size:20px; /* restore icon size */
+  font-size:20px;
   flex-shrink:0;
 }
 .app-shell.sidebar-collapsed .sidebar .sidebar-brand{
@@ -682,19 +680,22 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   margin-left:64px;
   max-width:calc(100vw - 64px);
 }
-/* Tooltip on collapsed nav items */
-.app-shell.sidebar-collapsed .nav-item{
-  position:relative;
-}
-.app-shell.sidebar-collapsed .nav-item:hover::after{
-  content:attr(data-label);
-  position:absolute;left:68px;top:50%;transform:translateY(-50%);
-  background:var(--surface);border:1px solid var(--border-strong);
-  color:var(--text);font-size:12px;font-weight:700;
-  padding:6px 12px;border-radius:var(--radius-md);
-  white-space:nowrap;z-index:700;
+/* Sidebar tooltip (injected via JS as fixed element) */
+#sidebar-tooltip{
+  display:none;
+  position:fixed;
+  left:72px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  color:var(--text);
+  font-size:12px;font-weight:700;
+  font-family:'Plus Jakarta Sans',sans-serif;
+  padding:6px 12px;border-radius:8px;
+  white-space:nowrap;
+  z-index:9999;
   box-shadow:0 8px 24px rgba(0,0,0,.25);
   pointer-events:none;
+  transform:translateY(-50%);
 }
 
 /* ══════════════════════════════════════════
@@ -1031,6 +1032,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 
   </div>
 </div>
+
+<!-- SIDEBAR TOOLTIP (fixed, for collapsed state) -->
+<div id="sidebar-tooltip"></div>
 
 <!-- SIDEBAR BACKDROP -->
 <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
@@ -2787,10 +2791,18 @@ function renderAll(){
 
 function _bridgeReportCardSystem(){
   try{
-    if(typeof studentsData!=='undefined'){
+    if(typeof studentsData!=='undefined' && typeof allData!=='undefined' && allData.length){
       // Sync portal data into RC system
       studentsData=allData.map(r=>({...r}));
+      // Show controls (RC module hides them on init waiting for auth)
+      const ctrl=document.querySelector('.controls');
+      if(ctrl) ctrl.style.display='flex';
+      const printA=document.getElementById('print-area');
+      if(printA) printA.style.display='block';
       // Re-populate RC filters and grade chips
+      if(typeof populateFilters_rc==='function'){
+        try{ populateFilters_rc(studentsData); }catch(e){}
+      }
       if(typeof populateFilters==='function'){
         try{ populateFilters(studentsData); }catch(e){}
       }
@@ -3764,6 +3776,7 @@ function navTo(view,el){
   document.getElementById('topbar-title').textContent=el?.querySelector('span+*')?.textContent||view.charAt(0).toUpperCase()+view.slice(1);
   document.getElementById('topbar-crumb').textContent=views[view]||'';
   if(view==='auditlog') renderAuditView();
+  if(view==='reports') setTimeout(_bridgeReportCardSystem, 50);
   if(window.innerWidth<768) closeSidebar();
 }
 window.navTo=navTo;
@@ -3812,10 +3825,36 @@ function toggleDesktopSidebar(){
   const collapsed = shell.classList.toggle('sidebar-collapsed');
   const btn = document.getElementById('desktop-sidebar-toggle');
   if(btn) btn.textContent = collapsed ? '»' : '☰';
-  // persist preference
   try{ localStorage.setItem('sidebarCollapsed', collapsed?'1':'0'); }catch(e){}
 }
 window.toggleDesktopSidebar = toggleDesktopSidebar;
+
+// Sidebar tooltip for collapsed state
+(function initSidebarTooltip(){
+  const tip = document.getElementById('sidebar-tooltip');
+  if(!tip) return;
+  function attachTooltips(){
+    document.querySelectorAll('.nav-item[data-label]').forEach(item=>{
+      item.addEventListener('mouseenter', function(e){
+        const shell = document.getElementById('app-shell');
+        if(!shell || !shell.classList.contains('sidebar-collapsed')) return;
+        const rect = item.getBoundingClientRect();
+        tip.textContent = item.getAttribute('data-label');
+        tip.style.top = (rect.top + rect.height/2) + 'px';
+        tip.style.display = 'block';
+      });
+      item.addEventListener('mouseleave', function(){
+        tip.style.display = 'none';
+      });
+    });
+  }
+  // Run after DOM ready
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded', attachTooltips);
+  } else {
+    attachTooltips();
+  }
+})();
 
 // Restore sidebar collapsed state on load
 (function restoreSidebarState(){
