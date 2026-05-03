@@ -71,7 +71,7 @@ body::before{
   display:flex;flex-direction:column;
   position:fixed;top:0;left:0;height:100vh;
   z-index:600;
-  transition:var(--transition),transform .3s;
+  transition:var(--transition),transform .3s,width .25s cubic-bezier(.4,0,.2,1);
   overflow-y:auto;overflow-x:hidden;
   pointer-events:auto;
 }
@@ -124,6 +124,7 @@ body::before{
 .main-content{
   margin-left:var(--sidebar-w);flex:1;display:flex;flex-direction:column;min-height:100vh;
   min-width:0;max-width:calc(100vw - var(--sidebar-w));overflow-x:hidden;
+  transition:margin-left .25s cubic-bezier(.4,0,.2,1), max-width .25s cubic-bezier(.4,0,.2,1);
 }
 
 /* ══════════════════════════════════════════
@@ -629,6 +630,65 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 @media(min-width:769px){.sidebar-backdrop{display:none!important;}}
 
 /* ══════════════════════════════════════════
+   DESKTOP SIDEBAR TOGGLE
+══════════════════════════════════════════ */
+.desktop-toggle{
+  display:flex;width:36px;height:36px;border-radius:var(--radius-sm);
+  background:var(--surface2);border:1px solid var(--border);
+  cursor:pointer;align-items:center;justify-content:center;font-size:16px;
+  flex-shrink:0;transition:var(--transition);color:var(--text2);
+}
+.desktop-toggle:hover{background:rgba(41,128,185,.12);border-color:var(--blue-lt);color:var(--blue-lt);}
+@media(max-width:768px){.desktop-toggle{display:none;}}
+
+/* Collapsed sidebar */
+.app-shell.sidebar-collapsed .sidebar{
+  width:64px;
+}
+.app-shell.sidebar-collapsed .sidebar .brand-text,
+.app-shell.sidebar-collapsed .sidebar .s-label,
+.app-shell.sidebar-collapsed .sidebar .nav-item > *:not(.nav-icon),
+.app-shell.sidebar-collapsed .sidebar .nav-badge,
+.app-shell.sidebar-collapsed .sidebar .admin-info,
+.app-shell.sidebar-collapsed .sidebar .btn-xs,
+.app-shell.sidebar-collapsed .sidebar .qlinks-section{
+  display:none!important;
+}
+.app-shell.sidebar-collapsed .sidebar .nav-item{
+  justify-content:center;padding:10px;
+}
+.app-shell.sidebar-collapsed .sidebar .sidebar-brand{
+  justify-content:center;padding:16px 10px;
+}
+.app-shell.sidebar-collapsed .sidebar .sidebar-footer{
+  justify-content:center;padding:14px 10px;
+}
+.app-shell.sidebar-collapsed .sidebar .admin-av{
+  margin:0;
+}
+.app-shell.sidebar-collapsed .main-content{
+  margin-left:64px;
+  max-width:calc(100vw - 64px);
+}
+.app-shell.sidebar-collapsed .sidebar{
+  overflow:visible;
+}
+/* Tooltip on collapsed nav items */
+.app-shell.sidebar-collapsed .nav-item{
+  position:relative;
+}
+.app-shell.sidebar-collapsed .nav-item:hover::after{
+  content:attr(data-label);
+  position:absolute;left:72px;top:50%;transform:translateY(-50%);
+  background:var(--surface);border:1px solid var(--border-strong);
+  color:var(--text);font-size:12px;font-weight:700;
+  padding:6px 12px;border-radius:var(--radius-md);
+  white-space:nowrap;z-index:700;
+  box-shadow:0 8px 24px rgba(0,0,0,.2);
+  pointer-events:none;
+}
+
+/* ══════════════════════════════════════════
    TOPBAR MOBILE MORE MENU
 ══════════════════════════════════════════ */
 /* Desktop: hide the ⋮ button */
@@ -981,20 +1041,20 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 
     <div class="sidebar-section">
       <div class="s-label">Main</div>
-      <div class="nav-item active" onclick="navTo('dashboard',this)">
+      <div class="nav-item active" onclick="navTo('dashboard',this)" data-label="Dashboard">
         <span class="nav-icon">📊</span> Dashboard
       </div>
-      <div class="nav-item" onclick="navTo('students',this)">
+      <div class="nav-item" onclick="navTo('students',this)" data-label="Students">
         <span class="nav-icon">👨‍🎓</span> Students
         <span class="nav-badge" id="nav-count">—</span>
       </div>
-      <div class="nav-item" onclick="navTo('results',this)">
+      <div class="nav-item" onclick="navTo('results',this)" data-label="Results & Grades">
         <span class="nav-icon">📋</span> Results &amp; Grades
       </div>
-      <div class="nav-item" onclick="navTo('analytics',this)">
+      <div class="nav-item" onclick="navTo('analytics',this)" data-label="Analytics">
         <span class="nav-icon">📈</span> Analytics
       </div>
-      <div class="nav-item" onclick="navTo('atrisk',this)">
+      <div class="nav-item" onclick="navTo('atrisk',this)" data-label="At-Risk">
         <span class="nav-icon">🚨</span> At-Risk
         <span class="nav-badge" id="nav-atrisk-count" style="background:var(--red)">—</span>
       </div>
@@ -1002,19 +1062,19 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 
     <div class="sidebar-section">
       <div class="s-label">Management</div>
-      <div class="nav-item" onclick="navTo('reports',this)">
+      <div class="nav-item" onclick="navTo('reports',this)" data-label="Report Cards">
         <span class="nav-icon">📄</span> Report Cards
       </div>
-      <div class="nav-item" onclick="navTo('import',this)">
+      <div class="nav-item" onclick="navTo('import',this)" data-label="Import Data">
         <span class="nav-icon">📥</span> Import Data
       </div>
-      <div class="nav-item" onclick="navTo('announcements',this)">
+      <div class="nav-item" onclick="navTo('announcements',this)" data-label="Announcements">
         <span class="nav-icon">📢</span> Announcements
       </div>
-      <div class="nav-item" onclick="navTo('settings',this)">
+      <div class="nav-item" onclick="navTo('settings',this)" data-label="Settings">
         <span class="nav-icon">⚙️</span> Settings
       </div>
-      <div class="nav-item" onclick="navTo('auditlog',this)">
+      <div class="nav-item" onclick="navTo('auditlog',this)" data-label="Audit Log">
         <span class="nav-icon">🗂️</span> Audit Log
       </div>
     </div>
@@ -1075,6 +1135,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar-left">
+        <div class="desktop-toggle" id="desktop-sidebar-toggle" onclick="toggleDesktopSidebar()" title="Toggle sidebar">☰</div>
         <div class="hamburger" id="hamburger" onclick="toggleSidebar()">☰</div>
         <div>
           <div class="page-title" id="topbar-title">Dashboard</div>
@@ -3737,6 +3798,30 @@ function closeSidebar(){
 }
 window.toggleSidebar=toggleSidebar;window.closeSidebar=closeSidebar;
 
+/* Desktop sidebar collapse */
+function toggleDesktopSidebar(){
+  if(window.innerWidth<=768) return;
+  const shell = document.getElementById('app-shell');
+  const collapsed = shell.classList.toggle('sidebar-collapsed');
+  const btn = document.getElementById('desktop-sidebar-toggle');
+  if(btn) btn.textContent = collapsed ? '»' : '☰';
+  // persist preference
+  try{ localStorage.setItem('sidebarCollapsed', collapsed?'1':'0'); }catch(e){}
+}
+window.toggleDesktopSidebar = toggleDesktopSidebar;
+
+// Restore sidebar collapsed state on load
+(function restoreSidebarState(){
+  try{
+    if(localStorage.getItem('sidebarCollapsed')==='1'){
+      const shell=document.getElementById('app-shell');
+      if(shell){ shell.classList.add('sidebar-collapsed'); }
+      const btn=document.getElementById('desktop-sidebar-toggle');
+      if(btn) btn.textContent='»';
+    }
+  }catch(e){}
+})();
+
 /* Clear backdrop if user resizes to desktop */
 window.addEventListener('resize',()=>{
   if(window.innerWidth>768){
@@ -4637,11 +4722,21 @@ function renderAtRisk(){
     const subjects=getSubjects(worst);
     const worstSubj=subjects.reduce((a,s)=>{const v=parseFloat(worst[s]);return(!isNaN(v)&&(a===null||v<parseFloat(worst[a])))?s:a;},null);
     const worstVal=worstSubj?parseFloat(worst[worstSubj]):null;
+    const name=worst['Official Student Name']||'—';
+    const grade=worst['Grade']||'';
+    const ini=(name).split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
+    const avId='ar-av-'+i;
     return `<tr>
       <td>${i+1}</td>
-      <td><div style="font-size:12px;font-weight:700;color:var(--text)">${worst['Official Student Name']||'—'}</div><div style="font-size:10px;color:var(--text3)">UPI: ${worst['UPI']||'N/A'}</div></td>
+      <td><div style="display:flex;align-items:center;gap:10px">
+        <div class="stu-av-wrap stu-av-sm" id="${avId}" style="flex-shrink:0">${ini}</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:var(--text)">${name}</div>
+          <div style="font-size:10px;color:var(--text3)">UPI: ${worst['UPI']||'N/A'}</div>
+        </div>
+      </div></td>
       <td>${worst['Assessment No']||'—'}</td>
-      <td style="font-size:10px;max-width:160px;word-break:break-word">${worst['Grade']||'—'}</td>
+      <td style="font-size:10px;max-width:160px;word-break:break-word">${grade||'—'}</td>
       <td style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color}">${st.avg}%</td>
       <td style="font-size:11px;color:var(--red)">${worstSubj||'—'} ${worstVal!==null?'('+worstVal+')':''}</td>
       <td><span style="font-weight:800;font-size:11px;color:${count>=2?'var(--red)':'var(--text3)'}">${count>=2?'🔴 '+count+'x':'1x'}</span></td>
@@ -4651,6 +4746,12 @@ function renderAtRisk(){
       </div></td>
     </tr>`;
   }).join('');
+  // Inject photos async for each avatar
+  rows.forEach(({worst},i)=>{
+    const name=worst['Official Student Name']||'';
+    const grade=worst['Grade']||'';
+    injectPhoto('ar-av-'+i, name, grade);
+  });
 }
 window.renderAtRisk=renderAtRisk;
 
