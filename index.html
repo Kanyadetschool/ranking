@@ -1518,13 +1518,15 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <tr>
                   <th>#</th>
                   <th>Student Name</th>
+                  <th style="display:none">Grade</th>
                   <th>Term</th>
                   <th>Adm No</th>
+                  <th id="missing-field-header" style="display:none">Missing Field</th>
                   <th style="text-align:center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">
+                <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text3)">
                   Sign in and load data to see student records.
                 </td></tr>
               </tbody>
@@ -7287,7 +7289,7 @@ function renderCurrentPage() {
     if (studentsToRender.length === 0) {
         const row = tableBody.insertRow();
         const cell = row.insertCell(0);
-        cell.colSpan = 5;
+        cell.colSpan = 7;
         cell.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: #7f8c8d;">
                 <div style="font-size: 48px; margin-bottom: 16px;">🔍</div>
@@ -7315,20 +7317,36 @@ function renderCurrentPage() {
             : '';
         nameCell.innerHTML = `<div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="font-weight:700;color:var(--text)">${student['Official Student Name'] || '—'}</span></div>`;
 
+        // Grade (short) — hidden
+        const gradeCell = row.insertCell(2);
+        gradeCell.style.display = 'none';
+        const shortGrade = typeof gShort === 'function' ? gShort(student['Grade']) : (student['Grade'] || '—');
+        gradeCell.innerHTML = `<span style="font-size:11px;font-weight:700;color:var(--blue-lt)">${shortGrade || '—'}</span>`;
+
         // Term (raw)
-        const termCell = row.insertCell(2);
+        const termCell = row.insertCell(3);
         termCell.style.fontSize = '11px';
         termCell.style.color = 'var(--text2)';
         termCell.textContent = student['Term'] || '—';
 
         // Adm No
-        const admCell = row.insertCell(3);
+        const admCell = row.insertCell(4);
         admCell.style.fontFamily = "'JetBrains Mono', monospace";
         admCell.style.fontSize = '11px';
         admCell.textContent = student['Assessment No'] || '—';
 
+        // Missing Field Value (editable) — hidden
+        const missingValueCell = row.insertCell(5);
+        missingValueCell.style.display = 'none';
+        if (selectedField) {
+            createEditableCell(missingValueCell, student, selectedField, row);
+        } else {
+            missingValueCell.textContent = '—';
+            missingValueCell.style.color = 'var(--text3)';
+        }
+
         // Actions
-        const actionCell = row.insertCell(4);
+        const actionCell = row.insertCell(6);
         createActionButtons(actionCell, student, selectedField, row);
     });
 
