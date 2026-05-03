@@ -644,18 +644,28 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 /* Collapsed sidebar */
 .app-shell.sidebar-collapsed .sidebar{
   width:64px;
+  overflow:visible;
 }
 .app-shell.sidebar-collapsed .sidebar .brand-text,
 .app-shell.sidebar-collapsed .sidebar .s-label,
-.app-shell.sidebar-collapsed .sidebar .nav-item > *:not(.nav-icon),
 .app-shell.sidebar-collapsed .sidebar .nav-badge,
 .app-shell.sidebar-collapsed .sidebar .admin-info,
 .app-shell.sidebar-collapsed .sidebar .btn-xs,
 .app-shell.sidebar-collapsed .sidebar .qlinks-section{
   display:none!important;
 }
+/* Nav items: icon-only. Clip overflowing text by fixed width + overflow hidden */
 .app-shell.sidebar-collapsed .sidebar .nav-item{
-  justify-content:center;padding:10px;
+  justify-content:center;
+  padding:10px 0;
+  width:64px;
+  overflow:hidden;
+  white-space:nowrap;
+  font-size:0; /* hide text nodes */
+}
+.app-shell.sidebar-collapsed .sidebar .nav-item .nav-icon{
+  font-size:20px; /* restore icon size */
+  flex-shrink:0;
 }
 .app-shell.sidebar-collapsed .sidebar .sidebar-brand{
   justify-content:center;padding:16px 10px;
@@ -670,21 +680,18 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   margin-left:64px;
   max-width:calc(100vw - 64px);
 }
-.app-shell.sidebar-collapsed .sidebar{
-  overflow:visible;
-}
 /* Tooltip on collapsed nav items */
 .app-shell.sidebar-collapsed .nav-item{
   position:relative;
 }
 .app-shell.sidebar-collapsed .nav-item:hover::after{
   content:attr(data-label);
-  position:absolute;left:72px;top:50%;transform:translateY(-50%);
+  position:absolute;left:68px;top:50%;transform:translateY(-50%);
   background:var(--surface);border:1px solid var(--border-strong);
   color:var(--text);font-size:12px;font-weight:700;
   padding:6px 12px;border-radius:var(--radius-md);
   white-space:nowrap;z-index:700;
-  box-shadow:0 8px 24px rgba(0,0,0,.2);
+  box-shadow:0 8px 24px rgba(0,0,0,.25);
   pointer-events:none;
 }
 
