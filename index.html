@@ -2559,7 +2559,7 @@ const ALLOWED_ADMINS = [
   'sarahochola90@gmail.com',
   'priscaakinyiger@gmail.com',
   'opiyojacky@gmail.com',
-  'oduorgeofrey141@gmail.com',
+  'ombohoaggrey@gmail.com',
 
 
 ];
@@ -2573,7 +2573,7 @@ async function rejectUnauthorized(email) {
   // Immediately sign the unauthorized user back out of Firebase
   try { const{signOut}=window._fb; await signOut(auth); } catch(e) {}
   const err = document.getElementById('login-err');
-  err.textContent = `⛔ Access denied. "${email}" is not an authorised admin account. Contact the school administrator.`;
+  err.textContent = `⛔ Access denied. "${email}" is not an authorised account. Contact the ICT Dept for assistance.`;
   err.classList.add('on');
   // Reset Google button
   const gbtn = document.getElementById('google-btn');
