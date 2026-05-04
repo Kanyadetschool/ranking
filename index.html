@@ -2120,7 +2120,8 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
   import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut };
+  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, getFirestore, doc, getDoc };
 </script>
 
 <script>
@@ -2263,6 +2264,8 @@ const DB_PATH = 'Results/default-app-id/students';
 const AUDIT_PATH = 'audit_logs';
 let currentAdminName = 'Admin';
 let currentAdminEmail = '';
+let isAdvancedAdmin = false; // set to true after Firestore confirms Advancedadmin:true
+let firestoreDb = null;      // Firestore instance
 
 const META_KEYS = new Set([
   'id','Term','Grade','Class','Gender','UPI','Official Student Name',
@@ -2498,10 +2501,11 @@ window.addEventListener('load',()=>{
   tryLoadLogo();
   waitFB(()=>{
     try{
-      const{initializeApp,getApps,getDatabase,getAuth,onAuthStateChanged}=window._fb;
+      const{initializeApp,getApps,getDatabase,getAuth,onAuthStateChanged,getFirestore}=window._fb;
       const app=getApps().length===0?initializeApp(FB_CONFIG):getApps()[0];
       db=getDatabase(app);
       auth=getAuth(app);
+      firestoreDb=getFirestore(app);
       // Expose db/auth for the Report Card JS bridge
       window._rcDb = db;
       window._rcAuth = auth;
@@ -2526,7 +2530,7 @@ window.addEventListener('load',()=>{
             await rejectUnauthorized(user.email);
             return;
           }
-          const userData={user:user.email,name:user.displayName||user.email.split('@')[0],role:'Admin',photoURL:user.photoURL||''};
+          const userData={user:user.email,uid:user.uid,name:user.displayName||user.email.split('@')[0],role:'Admin',photoURL:user.photoURL||''};
           showApp(userData);
         }
       });
@@ -2610,7 +2614,7 @@ async function doEmailLogin(){
       await rejectUnauthorized(u.email);
       return;
     }
-    const userData={user:u.email,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
+    const userData={user:u.email,uid:u.uid,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
     showApp(userData);
   }catch(e){
     const msg=e.code==='auth/invalid-credential'||e.code==='auth/wrong-password'?'Incorrect email or password.':
@@ -2642,7 +2646,7 @@ async function doGoogleLogin(){
       await rejectUnauthorized(u.email);
       return;
     }
-    const userData={user:u.email,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
+    const userData={user:u.email,uid:u.uid,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
     showApp(userData);
   }catch(e){
     const msg=e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':
@@ -2676,9 +2680,45 @@ function showApp(userData){
   resetInactivity();
   loadAllData();
   loadAuditLogs();
+  checkAdvancedAdmin(userData.uid);
+}
+
+/* ══════════════════════════════════════════
+   ADVANCED ADMIN CHECK — Firestore users/{uid}
+   Shows Import Data nav + Quick Links only when
+   the user document has Advancedadmin:true
+══════════════════════════════════════════ */
+async function checkAdvancedAdmin(uid){
+  // Hide both sections by default until confirmed
+  const importNav = document.querySelector('.nav-item[data-label="Import Data"]');
+  const qlinksSection = document.querySelector('.qlinks-section');
+  if(importNav) importNav.style.display = 'none';
+  if(qlinksSection) qlinksSection.style.display = 'none';
+
+  if(!uid || !firestoreDb){
+    console.warn('[AdvancedAdmin] uid or firestoreDb not ready — defaulting to basic access.');
+    return;
+  }
+  try{
+    const {doc, getDoc} = window._fb;
+    const snap = await getDoc(doc(firestoreDb, 'users', uid));
+    if(snap.exists() && snap.data().Advancedadmin === true){
+      isAdvancedAdmin = true;
+      if(importNav) importNav.style.display = 'flex';
+      if(qlinksSection) qlinksSection.style.display = 'block';
+      console.log('[AdvancedAdmin] Advanced access granted.');
+    } else {
+      isAdvancedAdmin = false;
+      console.log('[AdvancedAdmin] Standard access — Import Data & Quick Links hidden.');
+    }
+  }catch(e){
+    console.warn('[AdvancedAdmin] Firestore check failed:', e.message);
+    // Fail closed — keep sections hidden on error
+  }
 }
 
 async function doSignOut(){
+  isAdvancedAdmin = false;
   clearTimeout(_inactivityTimer);clearInterval(_countdownTimer);
   document.getElementById('inactivity-banner').classList.remove('on');
   logActivity('🚪 Admin signed out','act-orange',currentAdminName);
