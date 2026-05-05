@@ -3099,39 +3099,75 @@ window._atLoadTeachers = async function(){
       container.innerHTML = '<p style="font-size:12px;color:var(--text3)">No teacher accounts yet.</p>';
       return;
     }
-    teachers.sort((a,b)=>((a.name||a.displayName||'')).localeCompare((b.name||b.displayName||'')));
-    container.innerHTML = `
-      <style>
-        .at-teachers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
-        .at-tcard{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;position:relative}
-        .at-tcard-name{font-size:13px;font-weight:800;margin-bottom:2px}
-        .at-tcard-email{font-size:11px;color:var(--text3);margin-bottom:6px;word-break:break-all}
-        .at-tcard-meta{font-size:11px;color:var(--text2);line-height:1.7}
-        .at-tcard-grades{margin-top:6px;font-size:11px;font-weight:700;color:var(--blue)}
-        .at-tcard-del{position:absolute;top:10px;right:10px;background:none;border:none;
-          cursor:pointer;color:var(--text3);font-size:14px;padding:2px 5px;border-radius:4px}
-        .at-tcard-del:hover{background:rgba(231,76,60,.1);color:var(--red)}
-      </style>
-      <div class="at-teachers-grid">
-        ${teachers.map(u=>{
-          const grades = Array.isArray(u.assignedGrades) && u.assignedGrades.length
-            ? u.assignedGrades.join(', ')
-            : (u.assignedGrade || '—');
-          return `
-          <div class="at-tcard">
-            <button class="at-tcard-del" title="Remove teacher" onclick="_atDeleteTeacher('${u.uid}','${(u.name||u.displayName||'').replace(/'/g,"\'")}')">✕</button>
-            <div class="at-tcard-name">${u.name||u.displayName||'—'}</div>
-            <div class="at-tcard-email">${u.email||'—'}</div>
-            <div class="at-tcard-meta">
-              ${u.staffId ? `<span>🪪 ${u.staffId}</span><br>` : ''}
-              ${u.phone   ? `<span>📞 ${u.phone}</span><br>`   : ''}
-              ${u.subject ? `<span>📚 ${u.subject}</span><br>` : ''}
-            </div>
-            <div class="at-tcard-grades">🎓 ${grades}</div>
-          </div>`;
-        }).join('')}
-      </div>
-    `;
+    teachers.sort((a,b)=>((a.displayName||a.name||'')).localeCompare((b.displayName||b.name||'')));
+
+    function _buildTeacherCard(u){
+      var dn   = u.displayName || u.name || '';
+      var em   = u.email || '-';
+      var ph   = u.phoneNumber || u.phone || '';
+      var tscV = u.tscNumber;
+      var tsc  = (tscV !== null && tscV !== undefined && String(tscV).trim() !== '') ? String(tscV) : (u.staffId || '');
+      var sub  = u.subject || '';
+      var purl = u.photoURL || '';
+      var role = u.role || 'Teacher';
+      var cat  = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'}) : '';
+      var gr   = (Array.isArray(u.assignedGrades) && u.assignedGrades.length)
+                 ? u.assignedGrades.join(' | ') : (u.assignedGrade || '-');
+      var ini  = dn.split(' ').map(function(w){return w[0]||'';}).slice(0,2).join('').toUpperCase() || '?';
+      var sn   = dn.replace(/'/g,'&#39;');
+      var sp   = purl.replace(/"/g,'&quot;');
+      var sa   = dn.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+
+      var av = purl
+        ? '<img class="at-avatar" src="'+sp+'" alt="'+sa+'" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">'
+          +'<div class="at-avatar-fallback" style="display:none">'+ini+'</div>'
+        : '<div class="at-avatar-fallback">'+ini+'</div>';
+
+      var bd = '<div class="at-tcard-row"><span class="ic">&#9993;</span><span class="val">'+em+'</span></div>';
+      if(ph)  bd += '<div class="at-tcard-row"><span class="ic">&#128222;</span><span class="val">'+ph+'</span></div>';
+      if(tsc) bd += '<div class="at-tcard-row"><span class="ic">&#129706;</span><span class="val">TSC: '+tsc+'</span></div>';
+      if(sub) bd += '<div class="at-tcard-row"><span class="ic">&#128218;</span><span class="val">'+sub+'</span></div>';
+      if(!ph && !tsc && !sub) bd += '<div class="at-tcard-row"><span class="val muted">No additional details</span></div>';
+
+      return '<div class="at-tcard'+(u.disabled?' at-tcard-is-disabled':'') +'">'
+        +(u.disabled?'<div class="at-disabled-badge">Disabled</div>':'')
+        +'<div class="at-tcard-header">'+av
+          +'<div class="at-tcard-headinfo">'
+            +'<div class="at-tcard-name" title="'+sa+'">'+(dn||'-')+'</div>'
+            +'<div class="at-tcard-role">'+role+'</div>'
+          +'</div></div>'
+        +'<div class="at-tcard-body">'+bd+'</div>'
+        +'<div class="at-tcard-footer">'
+          +'<div class="at-tcard-grades" title="'+gr+'">&#127891; '+gr+'</div>'
+          +(cat?'<div class="at-tcard-date">Added '+cat+'</div>':'')
+          +'<button class="at-tcard-del" onclick="_atDeleteTeacher(\''+u.uid+'\',\''+sn+'\')" title="Disable">&#10005;</button>'
+        +'</div></div>';
+    }
+
+    var cardCSS = '<style>'
+      +'.at-teachers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:4px}'
+      +'.at-tcard{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;position:relative;display:flex;flex-direction:column;transition:box-shadow .2s}'
+      +'.at-tcard:hover{box-shadow:0 4px 18px rgba(0,0,0,.12)}'
+      +'.at-tcard-header{display:flex;align-items:center;gap:12px;padding:14px 14px 10px;background:linear-gradient(135deg,rgba(41,128,185,.08),rgba(22,160,133,.05));border-bottom:1px solid var(--border)}'
+      +'.at-avatar{width:52px;height:52px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--blue)}'
+      +'.at-avatar-fallback{width:52px;height:52px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--blue),var(--blue-dk));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;border:2px solid var(--blue)}'
+      +'.at-tcard-headinfo{flex:1;min-width:0}'
+      +'.at-tcard-name{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}'
+      +'.at-tcard-role{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--blue);background:rgba(41,128,185,.12);padding:2px 7px;border-radius:10px;display:inline-block;margin-top:3px}'
+      +'.at-tcard-body{padding:10px 14px;flex:1;display:flex;flex-direction:column;gap:5px}'
+      +'.at-tcard-row{display:flex;align-items:flex-start;gap:7px;font-size:12px;color:var(--text2)}'
+      +'.at-tcard-row .ic{font-size:13px;flex-shrink:0;margin-top:1px}'
+      +'.at-tcard-row .val{word-break:break-all;line-height:1.4}'
+      +'.at-tcard-row .val.muted{color:var(--text3);font-style:italic}'
+      +'.at-tcard-footer{padding:8px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--surface)}'
+      +'.at-tcard-grades{font-size:11px;font-weight:700;color:var(--blue);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      +'.at-tcard-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:4px 7px;border-radius:6px;flex-shrink:0;transition:.15s}'
+      +'.at-tcard-del:hover{background:rgba(231,76,60,.12);color:var(--red)}'
+      +'.at-tcard-date{font-size:10px;color:var(--text3);flex-shrink:0}'
+      +'.at-disabled-badge{position:absolute;top:8px;right:8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:rgba(231,76,60,.15);color:var(--red);padding:2px 7px;border-radius:8px}'
+      +'</style>';
+
+    container.innerHTML = cardCSS + '<div class="at-teachers-grid">' + teachers.map(_buildTeacherCard).join('') + '</div>';
   }catch(e){
     container.innerHTML = `<p style="font-size:12px;color:var(--red)">Error: ${e.message}</p>`;
   }
