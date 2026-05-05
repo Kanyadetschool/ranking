@@ -3241,8 +3241,10 @@ function renderAll(){
 function _bridgeReportCardSystem(){
   try{
     if(typeof studentsData!=='undefined' && typeof allData!=='undefined' && allData.length){
-      // Sync portal data into RC system
-      studentsData=allData.map(r=>({...r}));
+      // Sync portal data into RC system — scope to teacher's assigned grades
+      studentsData = allData
+        .filter(r => _teacherCanSeeGrade(r['Grade']))
+        .map(r => ({...r}));
       // Show controls (RC module hides them on init waiting for auth)
       const ctrl=document.querySelector('.controls');
       if(ctrl) ctrl.style.display='flex';
@@ -7612,7 +7614,17 @@ function buildGradeSelector() {
     if (!bar || !chips) return;
 
     // Collect all unique full Grade values from loaded data
-    const allGrades = [...new Set(studentsData.map(s => s['Grade']).filter(Boolean))].sort();
+    const allGradesRaw = [...new Set(studentsData.map(s => s['Grade']).filter(Boolean))].sort();
+
+    // ── Scope to teacher's assigned grades (teachers must not print other classes) ──
+    const allGrades = (isAdvancedAdmin || (!currentAssignedGrade && !currentAssignedGrades.length))
+      ? allGradesRaw  // Advanced Admin → all grades
+      : allGradesRaw.filter(g => {
+          const short = typeof gShort === 'function' ? gShort(g) : g;
+          if (currentAssignedGrades && currentAssignedGrades.length)
+            return currentAssignedGrades.includes(short) || currentAssignedGrades.includes(g);
+          return short === currentAssignedGrade || g === currentAssignedGrade;
+        });
 
     selectedGrades = new Set();   // start with none selected — user must choose
 
@@ -9890,7 +9902,8 @@ document.addEventListener('click', function(e) {
       window.fetchStudentsData = function() {
         // Copy from the main portal's allData
         if (typeof allData !== 'undefined' && allData.length) {
-          studentsData = allData.map(r => ({...r}));
+          // Scope to teacher's assigned grades — teachers must not see/print other classes
+          studentsData = allData.filter(r => _teacherCanSeeGrade(r['Grade'])).map(r => ({...r}));
           populateFilters_rc(studentsData);
           buildTermSelector();
           applyFilters();
