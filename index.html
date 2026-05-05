@@ -2312,7 +2312,8 @@ const AUDIT_PATH = 'audit_logs';
 let currentAdminName = 'Admin';
 let currentAdminEmail = '';
 let isAdvancedAdmin = false;     // set to true after Firestore confirms Advancedadmin:true
-let currentAssignedGrade = null; // null = see all; "Grade 7" = teacher scoped to that grade
+let currentAssignedGrade = null; // null = see all; "__NONE__" = no grades assigned
+let currentAssignedGrades = []; // array of assigned grades for multi-class teachers
 let firestoreDb = null;          // Firestore instance
 
 const META_KEYS = new Set([
@@ -2504,10 +2505,10 @@ function gradePillClass(cls){ return{ee1:'g-ee1',ee2:'g-ee2',me1:'g-me1',me2:'g-
 function getUniqueGrades(){
   const gs=[...new Set(allData.map(r=>gShort(r['Grade'])).filter(Boolean))];
   const sorted = gs.sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''));const nb=parseInt(b.replace(/\D/g,''));return na-nb;});
-  // Teachers only see their assigned grade in dropdowns
-  if(currentAssignedGrade && currentAssignedGrade!=='__NONE__'){
-    return sorted.filter(g=>g===currentAssignedGrade);
-  }
+  // Teachers only see their assigned grade(s) in dropdowns
+  if(currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length) return [];
+  if(currentAssignedGrades.length) return sorted.filter(g=>currentAssignedGrades.includes(g));
+  if(currentAssignedGrade && currentAssignedGrade!=='__NONE__') return sorted.filter(g=>g===currentAssignedGrade);
   return sorted;
 }
 function getUniqueTerms(){
@@ -2782,16 +2783,23 @@ async function checkAdvancedAdmin(uid){
       _renderGradeAssignmentPanel();
     } else {
       isAdvancedAdmin = false;
-      // Read assigned grade — teachers can only see their own grade
-      const raw = (data.assignedGrade || '').trim();
-      currentAssignedGrade = raw || null;
-      if(currentAssignedGrade){
-        console.log(`[GradeScope] Teacher scoped to: ${currentAssignedGrade}`);
+      // Support both legacy assignedGrade (string) and new assignedGrades (array)
+      let grades = [];
+      if(Array.isArray(data.assignedGrades) && data.assignedGrades.length){
+        grades = data.assignedGrades.map(g=>g.trim()).filter(Boolean);
+      } else if(data.assignedGrade && data.assignedGrade.trim()){
+        grades = [data.assignedGrade.trim()]; // legacy single-grade fallback
+      }
+      currentAssignedGrades = grades;
+      currentAssignedGrade = grades.length ? grades[0] : null; // keep legacy compat
+      if(grades.length){
+        console.log(`[GradeScope] Teacher scoped to: ${grades.join(', ')}`);
         _applyGradeScope();
         _showGradeScopeBanner();
       } else {
         console.log('[GradeScope] No grade assigned — data restricted to nothing until assigned.');
-        currentAssignedGrade = '__NONE__'; // block all data until assigned
+        currentAssignedGrade = '__NONE__';
+        currentAssignedGrades = [];
         _applyGradeScope();
         _showGradeScopeBanner();
       }
@@ -2803,38 +2811,83 @@ async function checkAdvancedAdmin(uid){
 
 /* ─── Apply grade scope: refilter allData view ─────── */
 function _applyGradeScope(){
-  // Re-trigger all renders so they respect currentAssignedGrade
+  // Re-trigger all renders so they respect currentAssignedGrades
   renderAll();
 }
 
-/* ─── Banner telling teacher which grade they see ────── */
+/* ─── Helper: can the current teacher see this grade? ─────── */
+function _teacherCanSeeGrade(grade){
+  if(isAdvancedAdmin || (!currentAssignedGrade && !currentAssignedGrades.length)) return true; // full access
+  if(currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length) return false; // no grade assigned
+  const g = gShort ? gShort(grade) : grade;
+  if(currentAssignedGrades.length) return currentAssignedGrades.includes(g);
+  return g === currentAssignedGrade; // legacy single-grade fallback
+}
+
+/* ─── Banner telling teacher which grade(s) they see (auto-dismisses) ────── */
 function _showGradeScopeBanner(){
-  let banner = document.getElementById('grade-scope-banner');
-  if(!banner){
-    banner = document.createElement('div');
-    banner.id = 'grade-scope-banner';
-    banner.style.cssText = `
-      position:fixed;top:0;left:0;right:0;z-index:9999;
-      background:linear-gradient(90deg,var(--blue-dk),var(--blue));
-      color:#fff;text-align:center;padding:7px 16px;font-size:12px;font-weight:700;
-      letter-spacing:.03em;box-shadow:0 2px 12px rgba(0,0,0,.3);
-    `;
-    document.body.prepend(banner);
-    // Push app shell down so banner doesn't overlap content
-    const shell = document.getElementById('app-shell');
-    if(shell) shell.style.marginTop = '33px';
-  }
-  if(currentAssignedGrade === '__NONE__'){
+  // Remove any existing banner first
+  const existing = document.getElementById('grade-scope-banner');
+  if(existing) existing.remove();
+  const shell = document.getElementById('app-shell');
+
+  const banner = document.createElement('div');
+  banner.id = 'grade-scope-banner';
+  banner.style.cssText = `
+    position:fixed;top:0;left:0;right:0;z-index:9999;
+    background:linear-gradient(90deg,var(--blue-dk),var(--blue));
+    color:#fff;text-align:center;padding:7px 48px 7px 16px;font-size:12px;font-weight:700;
+    letter-spacing:.03em;box-shadow:0 2px 12px rgba(0,0,0,.3);
+    transition:transform .5s cubic-bezier(.4,0,.2,1),opacity .5s ease;
+    transform:translateY(0);opacity:1;
+  `;
+
+  const isNone = (currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length);
+
+  if(isNone){
     banner.innerHTML = '⚠️ No grade assigned to your account yet. Contact the administrator. You currently see no student data.';
     banner.style.background = 'linear-gradient(90deg,#c0392b,#e74c3c)';
   } else {
-    banner.innerHTML = `🎓 You are viewing <strong>${currentAssignedGrade}</strong> only. Contact the administrator to change your grade assignment.`;
+    const gradeList = currentAssignedGrades.length
+      ? currentAssignedGrades.map(g=>`<strong>${g}</strong>`).join(', ')
+      : `<strong>${currentAssignedGrade}</strong>`;
+    banner.innerHTML = `🎓 You are viewing ${gradeList}. Contact the administrator to change your grade assignment.`;
   }
+
+  // Close button
+  const closeBtn = document.createElement('button');
+  closeBtn.innerHTML = '✕';
+  closeBtn.style.cssText = `
+    position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    background:rgba(255,255,255,.25);border:none;color:#fff;
+    border-radius:4px;padding:1px 7px;cursor:pointer;font-size:13px;font-weight:700;
+    line-height:1.4;
+  `;
+  closeBtn.onclick = () => _dismissBanner();
+  banner.appendChild(closeBtn);
+
+  document.body.prepend(banner);
+  if(shell) shell.style.marginTop = '33px';
+
+  // Auto-dismiss after 6 s (non-error) or 12 s (error / no grade)
+  const delay = isNone ? 12000 : 6000;
+  setTimeout(() => _dismissBanner(), delay);
+}
+
+function _dismissBanner(){
+  const banner = document.getElementById('grade-scope-banner');
+  if(!banner) return;
+  banner.style.transform = 'translateY(-110%)';
+  banner.style.opacity = '0';
+  setTimeout(() => {
+    banner.remove();
+    const shell = document.getElementById('app-shell');
+    if(shell) shell.style.marginTop = '';
+  }, 520);
 }
 
 /* ─── Grade Assignment Panel (Advanced Admin only) ─── */
 function _renderGradeAssignmentPanel(){
-  // Inject into settings view if it doesn't already exist
   const settingsView = document.getElementById('view-settings');
   if(!settingsView || document.getElementById('grade-assignment-panel')) return;
 
@@ -2848,74 +2901,89 @@ function _renderGradeAssignmentPanel(){
       <button class="btn btn-outline btn-sm" onclick="loadGradeAssignments()">🔄 Refresh</button>
     </div>
     <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.8;padding:10px 14px;background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
-      Assign each teacher to a specific grade. Teachers will only see students from their assigned grade across the entire portal. Only Advanced Admins can change these assignments.
+      Assign each teacher to one or more grades. Teachers will only see students from their assigned grades across the entire portal. Only Advanced Admins can change these assignments.
     </p>
     <div id="grade-assignments-list">
-      <p style="font-size:12px;color:var(--text3)">Loading admin accounts…</p>
+      <p style="font-size:12px;color:var(--text3)">Loading accounts…</p>
     </div>
   `;
   settingsView.appendChild(panel);
   loadGradeAssignments();
 }
 
-/* ─── Load all users from Firestore and render assignment rows ─── */
+/* ─── Load all users from Firestore and render multi-grade checkboxes ─── */
 window.loadGradeAssignments = async function(){
   const container = document.getElementById('grade-assignments-list');
   if(!container) return;
   if(!firestoreDb){ container.innerHTML='<p style="font-size:12px;color:var(--text3)">Firestore not ready.</p>'; return; }
   container.innerHTML='<p style="font-size:12px;color:var(--text3)">⏳ Loading…</p>';
   try{
-    const grades = getUniqueGrades().length
+    const allGrades = getUniqueGrades().length
       ? getUniqueGrades()
       : ['Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9'];
 
-    // Fetch all user docs
     const {collection, getDocs} = window._fb;
-
     let users = [];
     const snap = await getDocs(collection(firestoreDb,'users'));
     snap.forEach(d=>{ users.push({uid:d.id,...d.data()}); });
 
     if(!users.length){ container.innerHTML='<p style="font-size:12px;color:var(--text3)">No user documents found in Firestore.</p>'; return; }
 
-    // Only show non-AdvancedAdmin users (teachers)
     const teachers = users.filter(u => !u.Advancedadmin);
-
     if(!teachers.length){ container.innerHTML='<p style="font-size:12px;color:var(--text3)">No teacher accounts found. Accounts with Advancedadmin:true are excluded.</p>'; return; }
-
-    const gradeOptions = ['', ...grades].map(g=>
-      `<option value="${g}">${g||'— Unassigned —'}</option>`
-    ).join('');
 
     container.innerHTML = `
       <table class="data-table" style="font-size:12px">
         <thead><tr>
-          <th>Name</th><th>Email</th><th>Assigned Grade</th><th>Action</th>
+          <th>Name</th><th>Email</th><th>Assigned Grades (select multiple)</th><th>Action</th>
         </tr></thead>
         <tbody>
-          ${teachers.map(u=>`
+          ${teachers.map(u=>{
+            // Resolve current assignments — support legacy single string + new array
+            let currentGrades = [];
+            if(Array.isArray(u.assignedGrades) && u.assignedGrades.length) currentGrades = u.assignedGrades;
+            else if(u.assignedGrade) currentGrades = [u.assignedGrade];
+
+            const checkboxes = allGrades.map(g=>`
+              <label style="display:inline-flex;align-items:center;gap:4px;margin:3px 6px 3px 0;
+                font-size:11px;cursor:pointer;white-space:nowrap;">
+                <input type="checkbox" class="grade-chk-${u.uid}"
+                  value="${g}" ${currentGrades.includes(g)?'checked':''}
+                  style="accent-color:var(--blue);width:13px;height:13px;">
+                ${g}
+              </label>`).join('');
+
+            return `
             <tr id="row-${u.uid}">
               <td style="font-weight:700">${u.name||u.displayName||'—'}</td>
               <td style="color:var(--text3)">${u.email||'—'}</td>
               <td>
-                <select class="sel" id="grade-sel-${u.uid}" style="font-size:11px;padding:5px 10px">
-                  ${gradeOptions}
-                </select>
+                <div style="display:flex;flex-wrap:wrap;gap:2px;padding:4px 0">
+                  ${checkboxes}
+                </div>
+                <div id="sel-summary-${u.uid}" style="font-size:10px;color:var(--text3);margin-top:4px">
+                  ${currentGrades.length ? currentGrades.join(', ') : '— Unassigned —'}
+                </div>
               </td>
               <td>
                 <button class="btn btn-sm" style="background:var(--blue);color:#fff;font-size:11px"
                   onclick="saveGradeAssignment('${u.uid}')">💾 Save</button>
               </td>
-            </tr>
-          `).join('')}
+            </tr>`;
+          }).join('')}
         </tbody>
       </table>
     `;
 
-    // Pre-select existing assignments
+    // Live summary update as checkboxes change
     teachers.forEach(u=>{
-      const sel = document.getElementById(`grade-sel-${u.uid}`);
-      if(sel && u.assignedGrade) sel.value = u.assignedGrade;
+      document.querySelectorAll(`.grade-chk-${u.uid}`).forEach(chk=>{
+        chk.addEventListener('change', ()=>{
+          const selected = [...document.querySelectorAll(`.grade-chk-${u.uid}:checked`)].map(c=>c.value);
+          const summary = document.getElementById(`sel-summary-${u.uid}`);
+          if(summary) summary.textContent = selected.length ? selected.join(', ') : '— Unassigned —';
+        });
+      });
     });
 
   }catch(e){
@@ -2923,28 +2991,24 @@ window.loadGradeAssignments = async function(){
   }
 };
 
-/* ─── Save a grade assignment for one teacher ─────── */
+/* ─── Save multi-grade assignment for one teacher ─────── */
 window.saveGradeAssignment = async function(uid){
-  const sel = document.getElementById(`grade-sel-${uid}`);
-  if(!sel) return;
-  const grade = sel.value.trim();
+  const checked = [...document.querySelectorAll(`.grade-chk-${uid}:checked`)].map(c=>c.value);
   try{
-    const {doc, getDoc} = window._fb;
-    // Use update if available, else set merge
-    const {updateDoc, setDoc} = window._fb;
-    if(updateDoc){
-      await updateDoc(doc(firestoreDb,'users',uid), {assignedGrade: grade});
+    const {doc, getDoc, updateDoc} = window._fb;
+    const updatePayload = { assignedGrades: checked, assignedGrade: checked[0] || '' };
+    if(typeof updateDoc === 'function'){
+      await updateDoc(doc(firestoreDb,'users',uid), updatePayload);
     } else {
-      // Fallback: read + merge manually using set isn't available via _fb, so use REST workaround
-      // Actually we have set — but we want merge. Use a field update approach:
       const snap = await getDoc(doc(firestoreDb,'users',uid));
       const existing = snap.exists() ? snap.data() : {};
       const {set} = window._fb;
-      await set(doc(firestoreDb,'users',uid), {...existing, assignedGrade: grade});
+      await set(doc(firestoreDb,'users',uid), {...existing, ...updatePayload});
     }
-    notify(`✅ Grade assignment saved: ${grade||'Unassigned'}`,'success');
-    logActivity(`⚙️ Assigned ${grade||'(none)'} to teacher ${uid}`,'act-orange',currentAdminName,{
-      category:'system', extra:`UID: ${uid} → assignedGrade: "${grade}"`
+    const label = checked.length ? checked.join(', ') : 'Unassigned';
+    notify(`✅ Grades saved: ${label}`,'success');
+    logActivity(`⚙️ Assigned grades [${label}] to teacher ${uid}`,'act-orange',currentAdminName,{
+      category:'system', extra:`UID: ${uid} → assignedGrades: [${label}]`
     });
   }catch(e){
     notify('Error saving assignment: '+e.message,'error');
@@ -2954,6 +3018,7 @@ window.saveGradeAssignment = async function(uid){
 async function doSignOut(){
   isAdvancedAdmin = false;
   currentAssignedGrade = null;
+  currentAssignedGrades = [];
   // Remove grade scope banner if present
   const banner = document.getElementById('grade-scope-banner');
   if(banner){ banner.remove(); const shell=document.getElementById('app-shell'); if(shell) shell.style.marginTop=''; }
@@ -3071,8 +3136,10 @@ function renderAll(){
   renderAtRisk();
   populatePrintSelectors();
   // Nav count: show scoped count for teachers, total for advanced admins
-  const visibleCount = (currentAssignedGrade && currentAssignedGrade!=='__NONE__')
-    ? allData.filter(r=>gShort(r['Grade'])===currentAssignedGrade).length
+  const visibleCount = (currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length)
+    ? 0
+    : (currentAssignedGrades.length || (currentAssignedGrade && currentAssignedGrade!=='__NONE__'))
+    ? allData.filter(r=>_teacherCanSeeGrade(r['Grade'])).length
     : allData.length;
   document.getElementById('nav-count').textContent = visibleCount;
   // ── Bridge: sync allData into the Report Card JS system ──
@@ -3139,7 +3206,8 @@ function populateFilters(){
     el.appendChild(first);
     grades.forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; el.appendChild(o); });
     // Auto-select the teacher's assigned grade
-    if(currentAssignedGrade && currentAssignedGrade!=='__NONE__') el.value=currentAssignedGrade;
+    if(currentAssignedGrades.length) el.value=currentAssignedGrades[0];
+    else if(currentAssignedGrade && currentAssignedGrade!=='__NONE__') el.value=currentAssignedGrade;
   });
   ['results-term-sel','print-term','top-term-sel'].forEach(id=>{
     const el=document.getElementById(id);
@@ -3154,7 +3222,8 @@ function populateFilters(){
     const first=el.options[0];
     el.innerHTML=''; el.appendChild(first);
     grades.forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; el.appendChild(o); });
-    if(currentAssignedGrade && currentAssignedGrade!=='__NONE__') el.value=currentAssignedGrade;
+    if(currentAssignedGrades.length) el.value=currentAssignedGrades[0];
+    else if(currentAssignedGrade && currentAssignedGrade!=='__NONE__') el.value=currentAssignedGrade;
   });
 }
 
@@ -3165,9 +3234,11 @@ function populatePrintSelectors(){populateFilters();}
 ══════════════════════════════════════════ */
 function renderKPIs(){
   // Scope data to assigned grade for non-advanced-admin teachers
-  const scopedData = (currentAssignedGrade && currentAssignedGrade!=='__NONE__')
-    ? allData.filter(r=>gShort(r['Grade'])===currentAssignedGrade)
-    : (currentAssignedGrade==='__NONE__' ? [] : allData);
+  const scopedData = (currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length)
+    ? []
+    : (currentAssignedGrades.length || (currentAssignedGrade && currentAssignedGrade!=='__NONE__'))
+    ? allData.filter(r=>_teacherCanSeeGrade(r['Grade']))
+    : allData;
 
   const unique=new Set(scopedData.map(r=>String(r['Assessment No']||r['Official Student Name']||'').trim()).filter(Boolean)).size;
   document.getElementById('kpi-students').textContent=unique||scopedData.length;
@@ -3577,8 +3648,8 @@ function filterStudents(){
   // First filter all matching rows
   const matchedRows=allData.filter(r=>{
     // ── Grade scope: teachers only see their assigned grade ──
-    if(currentAssignedGrade === '__NONE__') return false;
-    if(currentAssignedGrade && gShort(r['Grade']) !== currentAssignedGrade) return false;
+    if(currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length) return false;
+    if(!_teacherCanSeeGrade(r['Grade'])) return false;
     if(ql){
       const name=(String(r['Official Student Name']||'')).toLowerCase();
       const asm=(String(r['Assessment No']||'')).toLowerCase();
@@ -4033,8 +4104,8 @@ function filterResults(){
   const grade=document.getElementById('results-grade-sel')?.value||'';
   filteredResults=allData.filter(r=>{
     // ── Grade scope: teachers only see their assigned grade ──
-    if(currentAssignedGrade === '__NONE__') return false;
-    if(currentAssignedGrade && gShort(r['Grade']) !== currentAssignedGrade) return false;
+    if(currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length) return false;
+    if(!_teacherCanSeeGrade(r['Grade'])) return false;
     if(term&&getRecordTerm(r)!==term) return false;
     if(grade&&gShort(r['Grade'])!==grade) return false;
     return true;
