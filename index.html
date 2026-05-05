@@ -3296,11 +3296,10 @@ window.createTeacherAccount = async function(){
   }
 };
 
-/* ─── Advanced Admin Role Assignment Panel (AdvancedAdmin only) ─── */
-/* Lets an AdvancedAdmin grant or revoke the AdvancedAdmin role for any teacher.
-   The list auto-updates in real-time via Firestore onSnapshot.              */
+/* ─── Advanced Admin Role Assignment Panel ─── */
 
-let _advRoleUnsubscribe = null; // Firestore real-time listener handle
+let _advRoleUnsubscribe = null;
+let _arpInteracting     = false; // blocks onSnapshot re-render while confirm is open
 
 function _renderAdvancedAdminRolePanel(){
   const settingsView = document.getElementById('view-settings');
@@ -3310,261 +3309,228 @@ function _renderAdvancedAdminRolePanel(){
   panel.id = 'adv-role-panel';
   panel.className = 'card';
   panel.style.marginTop = '20px';
-  panel.innerHTML = `
-    <style>
-      #adv-role-panel .arp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px}
-      .arp-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;
-        display:flex;flex-direction:column;gap:10px;transition:box-shadow .2s,border-color .2s;position:relative}
-      .arp-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.12)}
-      .arp-card.is-adv-admin{border-color:rgba(142,68,173,.4);background:rgba(142,68,173,.06)}
-      .arp-card-header{display:flex;align-items:center;gap:12px}
-      .arp-avatar{width:46px;height:46px;border-radius:50%;flex-shrink:0;
-        background:linear-gradient(135deg,var(--blue),var(--blue-dk));
-        display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;border:2px solid var(--blue)}
-      .arp-avatar img{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid var(--blue)}
-      .arp-avatar.adv{background:linear-gradient(135deg,#8e44ad,#6c3483);border-color:#8e44ad}
-      .arp-name{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .arp-email{font-size:11px;color:var(--text3);word-break:break-all}
-      .arp-badge{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;
-        padding:2px 8px;border-radius:10px;margin-top:4px}
-      .arp-badge.teacher{background:rgba(41,128,185,.12);color:var(--blue-lt);border:1px solid rgba(41,128,185,.25)}
-      .arp-badge.advadmin{background:rgba(142,68,173,.15);color:#c39bd3;border:1px solid rgba(142,68,173,.3)}
-      .arp-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
-        padding:10px 12px;border-radius:var(--radius-md);background:var(--surface);border:1px solid var(--border)}
-      .arp-toggle-label{font-size:12px;font-weight:700;color:var(--text2)}
-      .arp-toggle-sub{font-size:10px;color:var(--text3);margin-top:2px}
-      /* Toggle switch */
-      .arp-switch{position:relative;width:44px;height:24px;flex-shrink:0}
-      .arp-switch input{opacity:0;width:0;height:0;position:absolute}
-      .arp-slider{position:absolute;inset:0;border-radius:12px;background:var(--surface3);
-        border:1px solid var(--border);cursor:pointer;transition:.25s}
-      .arp-slider::after{content:'';position:absolute;left:3px;top:3px;width:16px;height:16px;
-        border-radius:50%;background:#fff;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
-      .arp-switch input:checked + .arp-slider{background:linear-gradient(135deg,#8e44ad,#6c3483);border-color:#8e44ad}
-      .arp-switch input:checked + .arp-slider::after{transform:translateX(20px)}
-      .arp-switch input:disabled + .arp-slider{opacity:.5;cursor:not-allowed}
-      .arp-saving{position:absolute;top:8px;right:8px;font-size:10px;color:var(--blue);font-weight:700;
-        display:none;animation:pulse 1s infinite}
-      .arp-info-box{font-size:12px;color:var(--text2);line-height:1.8;padding:10px 14px;
-        background:rgba(142,68,173,.06);border-radius:var(--radius-md);border:1px solid rgba(142,68,173,.2);margin-bottom:16px}
-      .arp-rt-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);
-        margin-right:6px;box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}
-      .arp-empty{font-size:12px;color:var(--text3);text-align:center;padding:20px 0}
-      .arp-loading{font-size:12px;color:var(--text3);padding:10px 0}
-      .arp-filter-row{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
-      .arp-search{flex:1;min-width:140px;padding:8px 12px 8px 32px;border-radius:var(--radius-md);
-        border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;position:relative}
-      .arp-search-wrap{position:relative;flex:1;min-width:140px}
-      .arp-search-wrap::before{content:'🔍';position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;pointer-events:none}
-      .arp-search-wrap input{width:100%;padding:8px 12px 8px 30px;border-radius:var(--radius-md);
-        border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;
-        font-family:inherit;outline:none;transition:border-color .15s}
-      .arp-search-wrap input:focus{border-color:var(--blue)}
-      .arp-count{font-size:11px;color:var(--text3);font-weight:600;white-space:nowrap}
-    </style>
 
-    <div class="sec-hdr" style="margin-bottom:14px">
-      <h3 style="font-size:15px;font-weight:800">🛡️ Advanced Admin Role Management</h3>
-      <div style="display:flex;align-items:center;gap:8px">
-        <span class="arp-rt-dot"></span>
-        <span style="font-size:11px;color:var(--text3);font-weight:600">Real-time</span>
-      </div>
-    </div>
+  // Build HTML with a plain string — no template literals to avoid escaping issues
+  panel.innerHTML = [
+    '<style>',
+    '#adv-role-panel .arp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px}',
+    '.arp-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;display:flex;flex-direction:column;gap:10px;transition:box-shadow .2s,border-color .2s;position:relative}',
+    '.arp-card:hover{box-shadow:0 4px 18px rgba(0,0,0,.12)}',
+    '.arp-card.is-adv-admin{border-color:rgba(142,68,173,.4);background:rgba(142,68,173,.06)}',
+    '.arp-card-header{display:flex;align-items:center;gap:12px}',
+    '.arp-avatar{width:46px;height:46px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--blue),var(--blue-dk));display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff;border:2px solid var(--blue)}',
+    '.arp-avatar img{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid var(--blue)}',
+    '.arp-avatar.adv{background:linear-gradient(135deg,#8e44ad,#6c3483);border-color:#8e44ad}',
+    '.arp-name{font-size:13px;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.arp-email{font-size:11px;color:var(--text3);word-break:break-all}',
+    '.arp-badge{display:inline-block;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;padding:2px 8px;border-radius:10px;margin-top:4px}',
+    '.arp-badge.teacher{background:rgba(41,128,185,.12);color:var(--blue-lt);border:1px solid rgba(41,128,185,.25)}',
+    '.arp-badge.advadmin{background:rgba(142,68,173,.15);color:#c39bd3;border:1px solid rgba(142,68,173,.3)}',
+    '.arp-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:var(--radius-md);background:var(--surface);border:1px solid var(--border)}',
+    '.arp-toggle-label{font-size:12px;font-weight:700;color:var(--text2)}',
+    '.arp-toggle-sub{font-size:10px;color:var(--text3);margin-top:2px}',
+    '.arp-switch{position:relative;width:44px;height:24px;flex-shrink:0}',
+    '.arp-switch input{opacity:0;width:0;height:0;position:absolute}',
+    '.arp-slider{position:absolute;inset:0;border-radius:12px;background:var(--surface3);border:1px solid var(--border);cursor:pointer;transition:.25s}',
+    '.arp-slider::after{content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;background:#fff;transition:.25s;box-shadow:0 1px 3px rgba(0,0,0,.3)}',
+    '.arp-switch input:checked + .arp-slider{background:linear-gradient(135deg,#8e44ad,#6c3483);border-color:#8e44ad}',
+    '.arp-switch input:checked + .arp-slider::after{transform:translateX(20px)}',
+    '.arp-switch input:disabled + .arp-slider{opacity:.5;cursor:not-allowed}',
+    '.arp-saving{position:absolute;top:8px;right:8px;font-size:10px;color:var(--blue);font-weight:700;display:none}',
+    '.arp-rt-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px;box-shadow:0 0 6px var(--green);animation:pulse 2s infinite}',
+    '.arp-empty{font-size:12px;color:var(--text3);text-align:center;padding:20px 0}',
+    '.arp-search-wrap{position:relative;flex:1;min-width:140px}',
+    '.arp-search-wrap input{width:100%;padding:8px 12px 8px 30px;border-radius:var(--radius-md);border:1.5px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border-color .15s}',
+    '.arp-search-wrap input:focus{border-color:var(--blue)}',
+    '.arp-count{font-size:11px;color:var(--text3);font-weight:600;white-space:nowrap}',
+    '.arp-info-box{font-size:12px;color:var(--text2);line-height:1.8;padding:10px 14px;background:rgba(142,68,173,.06);border-radius:var(--radius-md);border:1px solid rgba(142,68,173,.2);margin-bottom:16px}',
+    '</style>',
+    '<div class="sec-hdr" style="margin-bottom:14px">',
+      '<h3 style="font-size:15px;font-weight:800">Advanced Admin Role Management</h3>',
+      '<div style="display:flex;align-items:center;gap:8px">',
+        '<span class="arp-rt-dot"></span>',
+        '<span style="font-size:11px;color:var(--text3);font-weight:600">Real-time</span>',
+      '</div>',
+    '</div>',
+    '<div class="arp-info-box">Grant or revoke <strong>Advanced Admin</strong> privileges for any teacher. Advanced Admins can see all grades, import data, manage teachers, and assign roles. Changes take effect immediately.</div>',
+    '<div style="display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap">',
+      '<div class="arp-search-wrap">',
+        '<input type="text" id="arp-search-input" placeholder="Search teachers...">',
+      '</div>',
+      '<span class="arp-count" id="arp-count-label"></span>',
+    '</div>',
+    '<div id="adv-role-list"><p class="arp-empty">Connecting...</p></div>'
+  ].join('');
 
-    <div class="arp-info-box">
-      Grant or revoke <strong>Advanced Admin</strong> privileges for any teacher. Advanced Admins can
-      see all grades, import data, manage teachers, and assign roles. Changes take effect
-      immediately — the teacher's portal updates in real-time without requiring a re-login.
-    </div>
-
-    <div class="arp-filter-row">
-      <div class="arp-search-wrap">
-        <input type="text" id="arp-search-input" placeholder="Search teachers…" oninput="_arpFilterCards()">
-      </div>
-      <span class="arp-count" id="arp-count-label"></span>
-    </div>
-
-    <div id="adv-role-list">
-      <p class="arp-loading">⏳ Connecting to real-time feed…</p>
-    </div>
-  `;
   settingsView.appendChild(panel);
+
+  // Search input listener — attached via JS, not inline attribute
+  var searchInput = document.getElementById('arp-search-input');
+  if(searchInput) searchInput.addEventListener('input', function(){ _arpFilterCards(); });
+
+  // Event delegation for toggle switches — attached to the list container
+  var listEl = document.getElementById('adv-role-list');
+  if(listEl){
+    listEl.addEventListener('change', function(e){
+      var inp = e.target;
+      if(inp.type !== 'checkbox' || inp.disabled) return;
+      var card = inp.closest('.arp-card');
+      if(!card) return;
+      var uid  = card.dataset.uid;
+      var name = card.dataset.name;
+      if(!uid) return;
+      _arpToggleRole(uid, name, inp.checked);
+    });
+  }
+
   _startAdvRoleListener();
 }
 
-/* ─── Real-time Firestore listener for the role panel ─── */
 function _startAdvRoleListener(){
-  if(!firestoreDb){ 
-    const c=document.getElementById('adv-role-list');
-    if(c) c.innerHTML='<p class="arp-empty">Firestore not ready.</p>';
+  if(!firestoreDb){
+    var c = document.getElementById('adv-role-list');
+    if(c) c.innerHTML = '<p class="arp-empty">Firestore not ready.</p>';
     return;
   }
-  // Detach any previous listener
   if(_advRoleUnsubscribe){ try{ _advRoleUnsubscribe(); }catch(e){} }
-
-  const { collection, onSnapshot } = window._fb;
-  _advRoleUnsubscribe = onSnapshot(
-    collection(firestoreDb, 'users'),
-    (snap) => {
-      const users = [];
-      snap.forEach(d => users.push({ uid: d.id, ...d.data() }));
+  var col = window._fb.collection(firestoreDb, 'users');
+  _advRoleUnsubscribe = window._fb.onSnapshot(col,
+    function(snap){
+      var users = [];
+      snap.forEach(function(d){ users.push(Object.assign({ uid: d.id }, d.data())); });
+      if(_arpInteracting){ window._arpPendingSnapshot = users; return; }
       _arpRenderCards(users);
     },
-    (err) => {
-      const c=document.getElementById('adv-role-list');
-      if(c) c.innerHTML=`<p class="arp-empty" style="color:var(--red)">⚠️ Real-time error: ${err.message}</p>`;
+    function(err){
+      var c = document.getElementById('adv-role-list');
+      if(c) c.innerHTML = '<p class="arp-empty" style="color:var(--red)">Real-time error: ' + err.message + '</p>';
     }
   );
 }
 
-/* ─── Render all teacher cards ─── */
 function _arpRenderCards(allUsers){
-  const container = document.getElementById('adv-role-list');
+  var container = document.getElementById('adv-role-list');
   if(!container) return;
-
-  // Exclude the current user (can't revoke your own AdvancedAdmin from the UI)
-  const currentUid = (window._currentUser && window._currentUser.uid) || '';
-
-  // Filter: only real teacher/advancedAdmin accounts (exclude plain 'admin' role)
-  const users = allUsers.filter(u => {
-    const role = (u.role||'').trim().toLowerCase();
-    if(role === 'admin' && u.Advancedadmin !== true) return false; // plain admin — not a teacher
+  var currentUid = (window._currentUser && window._currentUser.uid) || '';
+  var users = allUsers.filter(function(u){
+    var role = (u.role || '').trim().toLowerCase();
+    if(role === 'admin' && u.Advancedadmin !== true) return false;
     return true;
   });
-
-  users.sort((a,b)=>((a.name||a.displayName||'')).localeCompare((b.name||b.displayName||'')));
-
-  // Store globally for filtering
+  users.sort(function(a,b){
+    return (a.name || a.displayName || '').localeCompare(b.name || b.displayName || '');
+  });
   window._arpAllCards = users;
-
-  // Apply current search filter
   _arpFilterCards(users);
-
-  // Update count
-  const countEl = document.getElementById('arp-count-label');
-  if(countEl) countEl.textContent = `${users.length} account${users.length!==1?'s':''}`;
+  var countEl = document.getElementById('arp-count-label');
+  if(countEl) countEl.textContent = users.length + ' account' + (users.length !== 1 ? 's' : '');
 }
 
-/* ─── Filter cards by search term ─── */
 window._arpFilterCards = function(users){
-  const container = document.getElementById('adv-role-list');
+  var container = document.getElementById('adv-role-list');
   if(!container) return;
-
-  const src = users || window._arpAllCards || [];
-  const q   = (document.getElementById('arp-search-input')?.value||'').toLowerCase().trim();
-  const filtered = q ? src.filter(u=>{
-    const name  = (u.name||u.displayName||'').toLowerCase();
-    const email = (u.email||'').toLowerCase();
-    return name.includes(q) || email.includes(q);
+  var src = users || window._arpAllCards || [];
+  var sinp = document.getElementById('arp-search-input');
+  var q = sinp ? sinp.value.toLowerCase().trim() : '';
+  var filtered = q ? src.filter(function(u){
+    return (u.name||u.displayName||'').toLowerCase().includes(q) || (u.email||'').toLowerCase().includes(q);
   }) : src;
 
   if(!filtered.length){
-    container.innerHTML = `<p class="arp-empty">${q?'No teachers match "'+q+'"':'No teacher accounts found.'}</p>`;
+    container.innerHTML = '<p class="arp-empty">' + (q ? 'No teachers match "' + q + '"' : 'No teacher accounts found.') + '</p>';
     return;
   }
 
-  const currentUid = (window._currentUser && window._currentUser.uid) || '';
+  var currentUid = (window._currentUser && window._currentUser.uid) || '';
+  var html = '<div class="arp-grid">';
+  filtered.forEach(function(u){
+    var dn   = u.name || u.displayName || '';
+    var em   = u.email || '';
+    var isAdv= u.Advancedadmin === true;
+    var isMe = u.uid === currentUid;
+    var ini  = dn.split(' ').map(function(w){ return w[0]||''; }).slice(0,2).join('').toUpperCase() || '?';
+    var purl = u.photoURL || '';
 
-  container.innerHTML = `<div class="arp-grid">${filtered.map(u => {
-    const dn   = u.name || u.displayName || '';
-    const em   = u.email || '';
-    const isAdv= u.Advancedadmin === true;
-    const isMe = u.uid === currentUid;
-    const ini  = dn.split(' ').map(w=>w[0]||'').slice(0,2).join('').toUpperCase() || '?';
-    const purl = u.photoURL || '';
+    var avatarHtml = purl
+      ? '<img src="' + purl.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '" alt="" style="width:46px;height:46px;border-radius:50%;object-fit:cover">'
+      : ini;
 
-    const avatarInner = purl
-      ? `<img src="${purl.replace(/"/g,'&quot;')}" alt="${dn}" onerror="this.style.display='none';this.nextSibling&&(this.nextSibling.style.display='flex')">`
-      : `${ini}`;
-
-    return `
-    <div class="arp-card${isAdv?' is-adv-admin':''}" id="arp-card-${u.uid}">
-      <span class="arp-saving" id="arp-saving-${u.uid}">⏳ Saving…</span>
-      <div class="arp-card-header">
-        <div class="arp-avatar${isAdv?' adv':''}">${avatarInner}</div>
-        <div style="flex:1;min-width:0">
-          <div class="arp-name" title="${dn}">${dn||'—'}</div>
-          <div class="arp-email">${em}</div>
-          <span class="arp-badge ${isAdv?'advadmin':'teacher'}">${isAdv?'⭐ Advanced Admin':'Teacher'}</span>
-          ${isMe ? '<span class="arp-badge" style="background:rgba(39,174,96,.1);color:var(--green);border-color:rgba(39,174,96,.3);margin-left:4px">You</span>' : ''}
-        </div>
-      </div>
-      <div class="arp-toggle-row">
-        <div>
-          <div class="arp-toggle-label">Advanced Admin Access</div>
-          <div class="arp-toggle-sub">${isAdv?'Full access: all grades, import, manage teachers':'Standard teacher access'}</div>
-        </div>
-        <label class="arp-switch" title="${isMe?'Cannot change your own role':'Toggle Advanced Admin role'}">
-          <input type="checkbox" ${isAdv?'checked':''} ${isMe?'disabled':''}
-            onchange="_arpToggleRole('${u.uid}','${dn.replace(/'/g,"\\'")}',this.checked)">
-          <span class="arp-slider"></span>
-        </label>
-      </div>
-    </div>`;
-  }).join('')}</div>`;
+    // data-uid and data-name on the card — event delegation reads these, NO inline onchange
+    html += '<div class="arp-card' + (isAdv ? ' is-adv-admin' : '') + '"'
+          + ' data-uid="' + u.uid + '"'
+          + ' data-name="' + dn.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '"'
+          + ' id="arp-card-' + u.uid + '">';
+    html += '<span class="arp-saving" id="arp-saving-' + u.uid + '">Saving...</span>';
+    html += '<div class="arp-card-header">';
+    html += '<div class="arp-avatar' + (isAdv ? ' adv' : '') + '">' + avatarHtml + '</div>';
+    html += '<div style="flex:1;min-width:0">';
+    html += '<div class="arp-name">' + dn.replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>';
+    html += '<div class="arp-email">' + em.replace(/</g,'&lt;') + '</div>';
+    html += '<span class="arp-badge ' + (isAdv ? 'advadmin' : 'teacher') + '">' + (isAdv ? 'Advanced Admin' : 'Teacher') + '</span>';
+    if(isMe) html += '<span class="arp-badge" style="background:rgba(39,174,96,.1);color:var(--green);border-color:rgba(39,174,96,.3);margin-left:4px">You</span>';
+    html += '</div></div>';
+    html += '<div class="arp-toggle-row">';
+    html += '<div><div class="arp-toggle-label">Advanced Admin Access</div>';
+    html += '<div class="arp-toggle-sub">' + (isAdv ? 'Full access: all grades, import, manage teachers' : 'Standard teacher access') + '</div></div>';
+    html += '<label class="arp-switch"><input type="checkbox"' + (isAdv ? ' checked' : '') + (isMe ? ' disabled' : '') + '>';
+    html += '<span class="arp-slider"></span></label>';
+    html += '</div>';
+    html += '</div>';
+  });
+  html += '</div>';
+  container.innerHTML = html;
 };
 
-/* ─── Toggle AdvancedAdmin role for a teacher ─── */
 window._arpToggleRole = async function(uid, name, grantAccess){
-  const savingEl = document.getElementById(`arp-saving-${uid}`);
-  const toggle   = document.querySelector(`#arp-card-${uid} input[type=checkbox]`);
+  _arpInteracting = true;
+  window._arpPendingSnapshot = null;
 
+  var savingEl = document.getElementById('arp-saving-' + uid);
+  var toggle   = document.querySelector('#arp-card-' + uid + ' input[type=checkbox]');
   if(savingEl) savingEl.style.display = 'block';
   if(toggle)   toggle.disabled = true;
 
-  const confirmTitle = grantAccess ? 'Grant Advanced Admin' : 'Revoke Advanced Admin';
-  const confirmMsg   = grantAccess
-    ? `Grant Advanced Admin role to ${name}? They will see all grades, import data, manage teachers and assign roles.`
-    : `Revoke Advanced Admin role from ${name}? They will revert to a standard teacher account with limited access.`;
-  const confirmIcon  = grantAccess ? '⭐' : '🔒';
-  const confirmLabel = grantAccess ? 'Grant Access' : 'Revoke Access';
-  const confirmClass = grantAccess ? 'btn-green' : 'btn-red';
-  const confirmed    = await showConfirm(confirmTitle, confirmMsg, confirmIcon, confirmLabel, confirmClass);
+  var confirmTitle = grantAccess ? 'Grant Advanced Admin' : 'Revoke Advanced Admin';
+  var confirmMsg   = grantAccess
+    ? 'Grant Advanced Admin role to ' + name + '? They will see all grades, import data, manage teachers and assign roles.'
+    : 'Revoke Advanced Admin role from ' + name + '? They will revert to a standard teacher account with limited access.';
+  var confirmIcon  = grantAccess ? 'Grant' : 'Revoke';
+  var confirmLabel = grantAccess ? 'Grant Access' : 'Revoke Access';
+  var confirmClass = grantAccess ? 'btn-green' : 'btn-red';
+  var confirmed    = await showConfirm(confirmTitle, confirmMsg, confirmIcon, confirmLabel, confirmClass);
 
   if(!confirmed){
-    // Revert toggle visually (onSnapshot will reconcile anyway)
     if(toggle){ toggle.checked = !grantAccess; toggle.disabled = false; }
     if(savingEl) savingEl.style.display = 'none';
+    _arpInteracting = false;
+    if(window._arpPendingSnapshot){ _arpRenderCards(window._arpPendingSnapshot); window._arpPendingSnapshot = null; }
     return;
   }
 
   try{
-    const { doc, updateDoc } = window._fb;
-    const updatePayload = {
-      Advancedadmin: grantAccess,
-      advancedAdminUpdatedAt: new Date().toISOString(),
-      advancedAdminUpdatedBy: currentAdminName || 'AdvancedAdmin',
-    };
-    // If granting, ensure no grade restrictions linger
-    if(grantAccess){
-      updatePayload.assignedGrade  = '';
-      updatePayload.assignedGrades = [];
-    }
-    await updateDoc(doc(firestoreDb, 'users', uid), updatePayload);
-
-    const action = grantAccess ? 'granted' : 'revoked';
-    notify(`✅ Advanced Admin access ${action} for <strong>${name}</strong>.`, 'success', 6000);
-    logActivity(
-      `🛡️ Advanced Admin role ${action}: ${name} (${uid})`,
-      grantAccess ? 'act-green' : 'act-orange',
-      currentAdminName,
-      { category: 'system', extra: `UID: ${uid} → Advancedadmin: ${grantAccess}` }
-    );
-    // onSnapshot will automatically refresh the card UI
+    var payload = { Advancedadmin: grantAccess, advancedAdminUpdatedAt: new Date().toISOString(), advancedAdminUpdatedBy: currentAdminName || 'Admin' };
+    if(grantAccess){ payload.assignedGrade = ''; payload.assignedGrades = []; }
+    await window._fb.updateDoc(window._fb.doc(firestoreDb, 'users', uid), payload);
+    var action = grantAccess ? 'granted' : 'revoked';
+    notify('Advanced Admin access ' + action + ' for <strong>' + name + '</strong>.', 'success', 6000);
+    logActivity('Advanced Admin role ' + action + ': ' + name, grantAccess ? 'act-green' : 'act-orange', currentAdminName, { category: 'system' });
   } catch(e){
-    notify('❌ Error updating role: ' + e.message, 'error');
+    notify('Error updating role: ' + e.message, 'error');
     if(toggle){ toggle.checked = !grantAccess; toggle.disabled = false; }
   } finally {
     if(savingEl) savingEl.style.display = 'none';
     if(toggle)   toggle.disabled = false;
+    _arpInteracting = false;
+    if(window._arpPendingSnapshot){ _arpRenderCards(window._arpPendingSnapshot); window._arpPendingSnapshot = null; }
   }
 };
 
-/* ─── Clean up the real-time listener on sign-out ─── */
-const _origDoSignOut = window._advRoleCleanup || null;
 window._advRoleCleanup = function(){
-  if(_advRoleUnsubscribe){ try{ _advRoleUnsubscribe(); }catch(e){} _advRoleUnsubscribe=null; }
+  if(_advRoleUnsubscribe){ try{ _advRoleUnsubscribe(); }catch(e){} _advRoleUnsubscribe = null; }
+  _arpInteracting = false;
+  window._arpPendingSnapshot = null;
 };
+
 
 /* ─── Grade Assignment Panel (Advanced Admin only) ─── */
 function _renderGradeAssignmentPanel(){
@@ -3708,7 +3674,6 @@ async function doSignOut(){
   isAdvancedAdmin = false;
   currentAssignedGrade = null;
   currentAssignedGrades = [];
-  // Detach AdvancedAdmin role real-time listener
   if(typeof window._advRoleCleanup === 'function') window._advRoleCleanup();
   // Remove grade scope banner if present
   const banner = document.getElementById('grade-scope-banner');
