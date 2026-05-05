@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kanyadet School — Results Portal</title>
+<title>Kanyadet School — Admin Portal</title>
 <script src="./image-popup.js"></script>
 <link rel="icon" type="image/x-icon" href="./images/logo.png">
 
@@ -1011,7 +1011,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div id="loader">
   <div class="ld-logo">🏫</div>
   <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-txt">Initializing Results Portal…</div>
+  <div class="ld-txt">Initializing Admin Portal…</div>
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -1084,7 +1084,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <div class="brand-icon">🏫</div>
       <div class="brand-text">
         <div class="b-name">Kanyadet School</div>
-        <div class="b-role">Results Portal</div>
+        <div class="b-role">Admin Portal</div>
       </div>
     </div>
 
@@ -3512,18 +3512,14 @@ window._arpToggleRole = async function(uid, name, grantAccess){
   if(savingEl) savingEl.style.display = 'block';
   if(toggle)   toggle.disabled = true;
 
-  const confirmed = await new Promise(res=>{
-    showConfirm(
-      grantAccess
-        ? `Grant <strong>Advanced Admin</strong> role to <strong>${name}</strong>?<br>
-           <small style="color:var(--text3)">They will see all grades, can import data, manage teachers, and assign roles.</small>`
-        : `Revoke <strong>Advanced Admin</strong> role from <strong>${name}</strong>?<br>
-           <small style="color:var(--text3)">They will revert to a standard teacher account with limited access.</small>`,
-      ()=>res(true), ()=>res(false),
-      { icon: grantAccess?'⭐':'🔒', title: grantAccess?'Grant Advanced Admin':'Revoke Advanced Admin',
-        okLabel: grantAccess?'Grant Access':'Revoke Access', danger: !grantAccess }
-    );
-  });
+  const confirmTitle = grantAccess ? 'Grant Advanced Admin' : 'Revoke Advanced Admin';
+  const confirmMsg   = grantAccess
+    ? `Grant Advanced Admin role to ${name}? They will see all grades, import data, manage teachers and assign roles.`
+    : `Revoke Advanced Admin role from ${name}? They will revert to a standard teacher account with limited access.`;
+  const confirmIcon  = grantAccess ? '⭐' : '🔒';
+  const confirmLabel = grantAccess ? 'Grant Access' : 'Revoke Access';
+  const confirmClass = grantAccess ? 'btn-green' : 'btn-red';
+  const confirmed    = await showConfirm(confirmTitle, confirmMsg, confirmIcon, confirmLabel, confirmClass);
 
   if(!confirmed){
     // Revert toggle visually (onSnapshot will reconcile anyway)
