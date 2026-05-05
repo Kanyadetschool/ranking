@@ -1789,11 +1789,49 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <!-- ══════ IMPORT VIEW ══════ -->
       <div class="view" id="view-import">
         <div class="sec-hdr"><h2>📥 Import Data</h2></div>
+
+        <!-- ══ TEACHER BULK RESULTS TEMPLATE ══ -->
+        <div class="card" style="margin-bottom:20px;border:1.5px solid rgba(41,128,185,.3);background:linear-gradient(135deg,rgba(41,128,185,.05),rgba(22,160,133,.04))">
+          <div class="card-hdr">
+            <div class="card-title">📋 Teacher Bulk Results Upload</div>
+            <span style="font-size:10px;font-weight:700;background:rgba(41,128,185,.15);color:var(--blue-lt);padding:3px 9px;border-radius:6px;letter-spacing:.06em;text-transform:uppercase">Quick Upload</span>
+          </div>
+          <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:16px">
+            Download a pre-filled Excel template with your assigned students — Official Name, UPI, Grade and Term are already filled in.
+            Just enter scores in the subject columns and upload. The system will match and update each student automatically.
+          </p>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">Filter by Grade</label>
+              <select id="tpl-grade" class="sel" style="width:100%;font-size:12px">
+                <option value="">— All my grades —</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">Exam / Term <span style="color:var(--red)">*</span></label>
+              <select id="tpl-term" class="sel" style="width:100%;font-size:12px">
+                <option value="">— Select exam term —</option>
+              </select>
+            </div>
+          </div>
+          <div style="background:rgba(41,128,185,.06);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;font-size:11px;color:var(--text2);margin-bottom:14px;line-height:1.8">
+            📌 <strong>These are new results</strong> — each upload creates fresh records for the selected exam. Re-uploading the same term template will detect duplicates and skip them automatically.
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            <button class="btn" style="background:linear-gradient(135deg,var(--green),var(--green-dk));color:#fff;font-size:12px;font-weight:700;gap:6px;display:flex;align-items:center"
+              onclick="downloadResultsTemplate()">
+              <span style="font-size:16px">📥</span> Download Excel Template
+            </button>
+            <div id="tpl-info" style="font-size:11px;color:var(--text3)">Select the exam/term then download — your students will be pre-filled.</div>
+          </div>
+        </div>
+
+        <!-- ══ BULK UPLOAD DROP ZONE ══ -->
         <div class="grid-2">
           <div class="card">
-            <div class="card-hdr"><div class="card-title">📂 Upload CSV / Excel</div></div>
+            <div class="card-hdr"><div class="card-title">📂 Upload Completed Template</div></div>
             <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px">
-              Drag &amp; drop your results file or click to browse. Supported formats: <strong>.csv</strong>, <strong>.xlsx</strong>, <strong>.xls</strong>. The importer will detect columns automatically.
+              Upload your filled-in Excel template. Student records are matched by <strong>UPI</strong> or <strong>Official Name + Grade</strong>. Scores are written into the matched record; meta fields are preserved.
             </p>
             <div id="import-dropzone" onclick="document.getElementById('import-file-input').click()"
               style="border:2px dashed var(--border-strong);border-radius:var(--radius-lg);padding:40px 20px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--surface2)"
@@ -1801,7 +1839,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
               ondragleave="this.style.borderColor='var(--border-strong)'"
               ondrop="handleImportDrop(event)">
               <div style="font-size:36px;margin-bottom:10px">📂</div>
-              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Drop file here or click to browse</div>
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px">Drop completed template here or click to browse</div>
               <div style="font-size:11px;color:var(--text3)">.csv, .xlsx, .xls — max 10MB</div>
               <input type="file" id="import-file-input" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFile(this.files[0])">
             </div>
@@ -5583,37 +5621,340 @@ function showImportPreview(rows,dupes){
 
 async function commitImport(){
   if(!_importData.length){notify('No data to import.','warn');return;}
-  const{ref,push}=window._fb;
+  const{ref,push,update}=window._fb;
   if(!db){notify('Database not connected.','error');return;}
   const btn=document.getElementById('import-commit-btn');
   btn.disabled=true;btn.textContent='⏳ Importing…';
-  let count=0;
+
+  // ── Detect if this is a teacher template upload ──────────────────────
+  // Template files have _Grade_Compound or 'Exam/Term (DO NOT EDIT)' column
+  const isTemplateUpload = _importHeaders.includes('_Grade_Compound')
+    || _importHeaders.includes('Exam/Term (DO NOT EDIT)')
+    || (_importHeaders.includes('UPI') && _importHeaders.includes('Official Student Name'));
+
+  // For template uploads, resolve which column holds the compound Grade value
+  const compoundCol = _importHeaders.includes('_Grade_Compound') ? '_Grade_Compound'
+    : _importHeaders.includes('Exam/Term (DO NOT EDIT)') ? 'Exam/Term (DO NOT EDIT)'
+    : null;
+
+  let count=0, skipped=0, created=0;
   try{
-    for(const row of _importData){
-      const rec={};
-      DB_FIELDS.forEach(f=>{const col=_importMapping[f];if(col&&row[col]!==undefined)rec[f]=String(row[col]).trim();});
-      // Pass through any unmapped columns as subject scores
-      Object.keys(row).forEach(k=>{
-        const mapped=Object.values(_importMapping).includes(k);
-        if(!mapped){const v=parseFloat(row[k]);if(!isNaN(v))rec[k]=v;}
+    if(isTemplateUpload){
+      // ── Template mode: ALWAYS create new records (new exam results) ───────
+      // But skip true duplicates: same student + same compound Grade already exists
+      // Build a set of "UPI|compoundGrade" and "name|compoundGrade" that exist
+      const existingKeys = new Set();
+      allData.forEach(r => {
+        const compound = (r['Grade']||'').trim().toLowerCase();
+        const upi  = String(r['UPI']||'').trim().toLowerCase();
+        const name = String(r['Official Student Name']||'').trim().toLowerCase();
+        if(upi && compound)  existingKeys.add('upi:'  + upi  + '|' + compound);
+        if(name && compound) existingKeys.add('name:' + name + '|' + compound);
       });
-      if(!rec['Official Student Name']&&!rec['Assessment No'])continue;
-      await push(ref(db,DB_PATH),rec);
-      count++;
+
+      for(const row of _importData){
+        const name     = String(row['Official Student Name']||'').trim();
+        const upi      = String(row['UPI']||'').trim();
+        const asmNo    = String(row['Assessment No']||'').trim();
+        const compound = compoundCol ? String(row[compoundCol]||'').trim()
+          : String(row['Grade']||row['Term']||'').trim();
+
+        if(!name && !upi) continue; // no student identity
+
+        // ── Duplicate check: skip if this exact student+exam already exists ─
+        const upiKey  = ('upi:'  + upi.toLowerCase()  + '|' + compound.toLowerCase());
+        const nameKey = ('name:' + name.toLowerCase() + '|' + compound.toLowerCase());
+        const isDupe  = (upi && existingKeys.has(upiKey)) || existingKeys.has(nameKey);
+        if(isDupe){ skipped++; continue; }
+
+        // ── Collect subject scores from the row ─────────────────────────────
+        const scores = {};
+        Object.keys(row).forEach(k => {
+          // Skip meta/identity columns
+          if(['Official Student Name','UPI','Assessment No','_Grade_Compound',
+              'Exam/Term (DO NOT EDIT)','Grade','Term'].includes(k)) return;
+          if(META_KEYS.has(k)) return;
+          const v = parseFloat(row[k]);
+          if(!isNaN(v)) scores[k] = v;
+        });
+
+        if(!Object.keys(scores).length) continue; // no scores entered — skip blank rows
+
+        // ── Build the new record ──────────────────────────────────────────
+        const rec = {
+          'Official Student Name': name,
+          'UPI':          upi,
+          'Assessment No':asmNo,
+          'Grade':        compound, // the compound term IS the Grade field
+          ...scores
+        };
+
+        await push(ref(db, DB_PATH), rec);
+        created++;
+        count++;
+      }
+
+      let msg = `✅ Bulk upload complete — <strong>${created}</strong> new result records created.`;
+      if(skipped) msg += ` <span style="color:var(--orange)">${skipped} skipped (already exist for this exam).</span>`;
+      notify(msg, 'success', 7000);
+
+    } else {
+      // ── Legacy CSV mode: push every row as a new record ─────────────────
+      for(const row of _importData){
+        const rec={};
+        DB_FIELDS.forEach(f=>{const col=_importMapping[f];if(col&&row[col]!==undefined)rec[f]=String(row[col]).trim();});
+        Object.keys(row).forEach(k=>{
+          const mapped=Object.values(_importMapping).includes(k);
+          if(!mapped){const v=parseFloat(row[k]);if(!isNaN(v))rec[k]=v;}
+        });
+        if(!rec['Official Student Name']&&!rec['Assessment No'])continue;
+        await push(ref(db,DB_PATH),rec);
+        count++;
+      }
+      notify(`✅ Imported <strong>${count}</strong> records successfully!`,'success');
     }
-    notify(`✅ Imported <strong>${count}</strong> records successfully!`,'success');
+
     btn.textContent='✅ Done!';
-    logActivity(`📥 Imported ${count} records via CSV upload`,'act-green',currentAdminName,{
+    logActivity(`📥 Imported ${count} records via ${isTemplateUpload?'teacher bulk template':'CSV'} upload`,'act-green',currentAdminName,{
       category:'import',
-      extra:`File: ${window._lastImportFilename||'unknown'} · Records imported: ${count}`
+      extra:`File: ${window._lastImportFilename||'unknown'} · Created: ${created}${skipped?' · Skipped (dupes): '+skipped:''}`
     });
-    setTimeout(()=>refreshData(),1500);
+    setTimeout(()=>{ refreshData(); btn.disabled=false; btn.textContent='✅ Commit to Database'; },1500);
   }catch(err){
     notify('Import error: '+err.message,'error');
     btn.disabled=false;btn.textContent='✅ Commit to Database';
   }
 }
 window.commitImport=commitImport;
+
+/* ══════════════════════════════════════════
+   TEACHER BULK RESULTS TEMPLATE
+══════════════════════════════════════════ */
+
+/** Populate the grade and term selects in the Teacher Bulk Upload card.
+ *  Called from navTo() when the import view is activated. */
+function _populateTemplateSelectors(){
+  // ── Grade selector ──────────────────────────────────────────────────────
+  const gradeEl = document.getElementById('tpl-grade');
+  if(gradeEl){
+    while(gradeEl.options.length > 1) gradeEl.remove(1);
+    const myGrades = currentAssignedGrades.length
+      ? currentAssignedGrades
+      : (currentAssignedGrade && currentAssignedGrade !== '__NONE__' ? [currentAssignedGrade] : getUniqueGrades());
+    myGrades.forEach(g => {
+      const o = document.createElement('option');
+      o.value = g; o.textContent = g;
+      gradeEl.appendChild(o);
+    });
+    if(myGrades.length === 1) gradeEl.value = myGrades[0];
+  }
+
+  // ── Exam/Term selector — shows the full compound Grade strings ─────────
+  // These are the raw values from allData (e.g. "Grade 9-2024-01-Opener-Term 1")
+  // The teacher picks which exam they are entering results for.
+  const termEl = document.getElementById('tpl-term');
+  if(termEl){
+    while(termEl.options.length > 1) termEl.remove(1);
+
+    // Scope to teacher's grades so they only see their own exams
+    const myGrades = currentAssignedGrades.length
+      ? currentAssignedGrades
+      : (currentAssignedGrade && currentAssignedGrade !== '__NONE__' ? [currentAssignedGrade] : null);
+
+    // Collect unique compound Grade strings, filtered by teacher's grades
+    const termSet = new Set();
+    allData.forEach(r => {
+      const g = gShort(r['Grade']);
+      if(myGrades && !myGrades.includes(g)) return;
+      const raw = r['Grade'] || r['Term'];
+      if(raw && raw !== 'Unknown') termSet.add(raw);
+    });
+
+    const terms = [...termSet].sort((a,b)=>a.localeCompare(b));
+    terms.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t;
+      // Show a friendlier label but keep compound value
+      const parsed = parseGradeField(t);
+      o.textContent = parsed.grade
+        ? `${parsed.grade} — ${parsed.term||''}${parsed.examType?' ('+parsed.examType+')':''}${parsed.year?' '+parsed.year:''}`
+        : t;
+      termEl.appendChild(o);
+    });
+    // Do NOT auto-select — teacher must consciously choose the exam
+  }
+}
+
+/** Download an Excel (.xlsx) template pre-filled with students for the
+ *  selected grade(s) and term.  Subject columns are included (empty). */
+window.downloadResultsTemplate = function(){
+  if(!window.XLSX){
+    notify('⏳ XLSX library not yet loaded — please wait a moment and try again.','warn');
+    return;
+  }
+
+  const gradeEl = document.getElementById('tpl-grade');
+  const termEl  = document.getElementById('tpl-term');
+  const selGrade     = gradeEl ? gradeEl.value.trim() : '';
+  const selCompound  = termEl  ? termEl.value.trim()  : ''; // full compound Grade string e.g. "Grade 9-2024-01-Opener-Term 1"
+
+  if(!selCompound){
+    notify('⚠️ Please select an exam / term before downloading the template.','warn');
+    return;
+  }
+
+  // ── Collect unique students from allData for the teacher's grades ──────
+  // De-duplicate by UPI first, then by name — one row per student person
+  const myGrades = currentAssignedGrades.length
+    ? currentAssignedGrades
+    : (currentAssignedGrade && currentAssignedGrade !== '__NONE__' ? [currentAssignedGrade] : null);
+
+  const seenUPI  = new Set();
+  const seenName = new Set();
+  const students = [];
+
+  allData.forEach(r => {
+    // Grade scope filter
+    if(selGrade){
+      if(gShort(r['Grade']) !== selGrade && r['Grade'] !== selGrade) return;
+    } else if(myGrades){
+      if(!myGrades.includes(gShort(r['Grade'])) && !myGrades.includes(r['Grade'])) return;
+    }
+    const upi  = String(r['UPI']||'').trim();
+    const name = String(r['Official Student Name']||'').trim().toLowerCase();
+    if(!name) return;
+    if(upi && seenUPI.has(upi))  return;
+    if(seenName.has(name)) return;
+    if(upi) seenUPI.add(upi);
+    seenName.add(name);
+    students.push(r);
+  });
+
+  if(!students.length){
+    notify('⚠️ No students found for the selected grade. Make sure data is loaded.','warn');
+    return;
+  }
+
+  students.sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
+
+  // ── Collect all known subjects for the grade ─────────────────────────
+  const subjectSet = new Set();
+  const gradeForSubjects = selGrade || (myGrades ? myGrades[0] : null);
+  allData.forEach(r => {
+    if(gradeForSubjects && gShort(r['Grade']) !== gradeForSubjects && r['Grade'] !== gradeForSubjects) return;
+    getSubjects(r).forEach(s => subjectSet.add(s));
+  });
+  // Fallback to all subjects if none found
+  if(!subjectSet.size) allData.forEach(r => getSubjects(r).forEach(s => subjectSet.add(s)));
+  const subjects = [...subjectSet].sort();
+
+  // ── Build rows ────────────────────────────────────────────────────────
+  // The Grade column gets the FULL compound term string — this IS the record identity
+  // _tpl_compound is a hidden marker so the importer knows the Grade to use
+  const META_COLS  = ['Official Student Name', 'UPI', 'Assessment No', '_Grade_Compound'];
+  const SCORE_COLS = subjects;
+  const header     = [...META_COLS, ...SCORE_COLS];
+
+  const rows = students.map(r => {
+    const row = {};
+    row['Official Student Name'] = r['Official Student Name'] || '';
+    row['UPI']                   = r['UPI'] || '';
+    row['Assessment No']         = r['Assessment No'] || '';
+    row['_Grade_Compound']       = selCompound; // the chosen exam term — DO NOT EDIT
+    SCORE_COLS.forEach(s => { row[s] = ''; });
+    return row;
+  });
+
+  // ── Build workbook ────────────────────────────────────────────────────
+  const ws = window.XLSX.utils.json_to_sheet(rows, { header });
+
+  ws['!cols'] = header.map((h, i) => ({
+    wch: i < META_COLS.length ? Math.max(h.length + 4, 26) : Math.max(h.length + 2, 12)
+  }));
+
+  const range = window.XLSX.utils.decode_range(ws['!ref']);
+
+  // Rename _Grade_Compound header cell to a friendly label
+  const compoundHeaderAddr = window.XLSX.utils.encode_cell({ r: 0, c: 3 });
+  if(ws[compoundHeaderAddr]) ws[compoundHeaderAddr].v = 'Exam/Term (DO NOT EDIT)';
+
+  header.forEach((h, ci) => {
+    const cellAddr = window.XLSX.utils.encode_cell({ r: 0, c: ci });
+    if(!ws[cellAddr]) return;
+    const isMeta = ci < META_COLS.length;
+    ws[cellAddr].s = {
+      font:      { bold: true, color: { rgb: 'FFFFFF' } },
+      fill:      { fgColor: { rgb: isMeta ? '1A5276' : '1D6A3A' } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border:    { bottom: { style: 'medium', color: { rgb: isMeta ? '2980B9' : '27AE60' } } }
+    };
+  });
+
+  for(let ri = 1; ri <= range.e.r; ri++){
+    META_COLS.forEach((_, ci) => {
+      const addr = window.XLSX.utils.encode_cell({ r: ri, c: ci });
+      if(!ws[addr]) ws[addr] = { t: 's', v: '' };
+      ws[addr].s = { fill: { fgColor: { rgb: 'EBF5FB' } }, font: { color: { rgb: '1A5276' } }, alignment: { vertical: 'center' } };
+    });
+    SCORE_COLS.forEach((_, ci) => {
+      const addr = window.XLSX.utils.encode_cell({ r: ri, c: META_COLS.length + ci });
+      if(!ws[addr]) ws[addr] = { t: 'n', v: null };
+      ws[addr].s = { fill: { fgColor: { rgb: 'EAFAF1' } }, alignment: { horizontal: 'center', vertical: 'center' } };
+    });
+  }
+
+  // Instructions sheet
+  const instrRows = [
+    { Column: 'Official Student Name',  Notes: 'DO NOT EDIT — used to identify the student' },
+    { Column: 'UPI',                    Notes: 'DO NOT EDIT — primary matching key' },
+    { Column: 'Assessment No',          Notes: 'DO NOT EDIT — fallback match key' },
+    { Column: 'Exam/Term (DO NOT EDIT)',Notes: `DO NOT EDIT — set to: ${selCompound}` },
+    ...subjects.map(s => ({ Column: s, Notes: 'Enter score 0–100. Leave blank if not assessed.' })),
+    { Column: '', Notes: '' },
+    { Column: 'UPLOAD STEPS', Notes: '1) Fill in subject scores  2) Save file  3) Go to Import Data  4) Drop file in upload zone  5) Click Commit to Database' },
+    { Column: 'DUPLICATE SAFETY',  Notes: 'Re-uploading the same template is safe — records with the same student + exam/term are skipped automatically.' },
+  ];
+  const wsInstr = window.XLSX.utils.json_to_sheet(instrRows);
+  wsInstr['!cols'] = [{ wch: 30 }, { wch: 80 }];
+
+  const wb = window.XLSX.utils.book_new();
+  window.XLSX.utils.book_append_sheet(wb, ws, 'Results Template');
+  window.XLSX.utils.book_append_sheet(wb, wsInstr, 'Instructions');
+
+  const gradeLabel = selGrade ? selGrade.replace(/\s/g,'') : 'MyGrades';
+  const termLabel  = selCompound.replace(/[^a-zA-Z0-9]/g,'_').replace(/_+/g,'_');
+  const filename   = `Results_Template_${gradeLabel}_${termLabel}_${new Date().toISOString().slice(0,10)}.xlsx`;
+
+  try {
+    window.XLSX.writeFile(wb, filename, { cellStyles: true, bookSST: false });
+  } catch(e) {
+    window.XLSX.writeFile(wb, filename);
+  }
+  notify(`✅ Template downloaded — <strong>${students.length} students</strong>, <strong>${subjects.length} subject columns</strong>. Fill in scores then upload below.`, 'success', 7000);
+  logActivity(`📋 Downloaded results template: ${gradeLabel} · ${selCompound} · ${students.length} students`, 'act-blue', currentAdminName, { category:'export' });
+
+  const info = document.getElementById('tpl-info');
+  if(info) info.innerHTML = `<span style="color:var(--green);font-weight:700">✅ ${students.length} students · ${subjects.length} subjects</span> — fill in scores and upload below.`;
+};
+
+/** Call _populateTemplateSelectors whenever the import nav is opened. */
+(function _patchNavToForImport(){
+  const _origNavTo = window.navTo;
+  if(typeof _origNavTo === 'function'){
+    window.navTo = function(view, el){
+      _origNavTo(view, el);
+      if(view === 'import') setTimeout(_populateTemplateSelectors, 100);
+    };
+  } else {
+    // navTo not yet defined — hook via MutationObserver once
+    document.addEventListener('DOMContentLoaded', ()=>{
+      if(typeof window.navTo === 'function'){
+        const _o = window.navTo;
+        window.navTo = function(view, el){ _o(view, el); if(view==='import') setTimeout(_populateTemplateSelectors, 100); };
+      }
+    });
+  }
+})();
 
 /* ══════════════════════════════════════════
    SETTINGS
