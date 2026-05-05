@@ -2221,9 +2221,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-  import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, getFirestore, doc, getDoc, collection, getDocs, updateDoc };
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc };
 </script>
 
 <script>
@@ -2838,6 +2838,7 @@ async function checkAdvancedAdmin(uid){
       if(qlinksSection) qlinksSection.style.display = 'block';
       console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
       _renderGradeAssignmentPanel();
+      _renderAddTeacherPanel();
     } else {
       isAdvancedAdmin = false;
       // Teachers always get Import Data so they can upload bulk results
@@ -2945,6 +2946,318 @@ function _dismissBanner(){
   }, 520);
 }
 
+/* ─── Add Teacher Panel (Advanced Admin only) ─────────── */
+function _renderAddTeacherPanel(){
+  const settingsView = document.getElementById('view-settings');
+  if(!settingsView || document.getElementById('add-teacher-panel')) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'add-teacher-panel';
+  panel.className = 'card';
+  panel.style.marginTop = '20px';
+  panel.innerHTML = `
+    <style>
+      #add-teacher-panel .at-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+      #add-teacher-panel .at-field{display:flex;flex-direction:column;gap:5px}
+      #add-teacher-panel .at-label{font-size:11px;font-weight:700;color:var(--text2);letter-spacing:.04em}
+      #add-teacher-panel .at-input{padding:9px 12px;border-radius:var(--radius-md);border:1px solid var(--border);
+        background:var(--surface2);color:var(--text);font-size:13px;outline:none;transition:border-color .15s;width:100%;box-sizing:border-box}
+      #add-teacher-panel .at-input:focus{border-color:var(--blue)}
+      #add-teacher-panel .at-grades-wrap{display:flex;flex-wrap:wrap;gap:6px;padding:8px 0 4px}
+      #add-teacher-panel .at-grade-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;
+        padding:4px 10px;border-radius:20px;border:1px solid var(--border);background:var(--surface);transition:.15s;user-select:none}
+      #add-teacher-panel .at-grade-pill:has(input:checked){background:rgba(41,128,185,.15);border-color:var(--blue);color:var(--blue);font-weight:700}
+      #add-teacher-panel .at-grade-pill input{accent-color:var(--blue);width:13px;height:13px}
+      #add-teacher-panel .at-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:4px}
+      #add-teacher-panel .at-result{font-size:12px;margin-top:12px;padding:10px 14px;border-radius:var(--radius-md);display:none}
+      #add-teacher-panel .at-result.ok{background:rgba(39,174,96,.1);border:1px solid rgba(39,174,96,.3);color:var(--green)}
+      #add-teacher-panel .at-result.err{background:rgba(231,76,60,.1);border:1px solid rgba(231,76,60,.3);color:var(--red)}
+      #add-teacher-panel .at-pwd-wrap{position:relative}
+      #add-teacher-panel .at-pwd-wrap .at-input{padding-right:38px}
+      #add-teacher-panel .at-pwd-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+        background:none;border:none;cursor:pointer;font-size:15px;color:var(--text3);padding:0}
+    </style>
+
+    <div class="sec-hdr" style="margin-bottom:6px">
+      <h3 style="font-size:15px;font-weight:800">👤 Add New Teacher Account</h3>
+    </div>
+    <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:16px;padding:10px 14px;
+      background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
+      Creates a Firebase Authentication account and writes the teacher profile to Firestore.
+      The teacher can sign in immediately with the credentials you set here.
+    </p>
+
+    <div class="at-grid">
+      <div class="at-field">
+        <label class="at-label" for="at-fname">First Name <span style="color:var(--red)">*</span></label>
+        <input class="at-input" id="at-fname" type="text" placeholder="e.g. Jane" autocomplete="off">
+      </div>
+      <div class="at-field">
+        <label class="at-label" for="at-lname">Last Name <span style="color:var(--red)">*</span></label>
+        <input class="at-input" id="at-lname" type="text" placeholder="e.g. Mwangi" autocomplete="off">
+      </div>
+      <div class="at-field">
+        <label class="at-label" for="at-email">Email Address <span style="color:var(--red)">*</span></label>
+        <input class="at-input" id="at-email" type="email" placeholder="teacher@school.ac.ke" autocomplete="off">
+      </div>
+      <div class="at-field">
+        <label class="at-label" for="at-phone">Phone Number</label>
+        <input class="at-input" id="at-phone" type="tel" placeholder="e.g. 0712 345 678" autocomplete="off">
+      </div>
+      <div class="at-field">
+        <label class="at-label" for="at-staffid">Staff ID / TSC No.</label>
+        <input class="at-input" id="at-staffid" type="text" placeholder="e.g. TSC/0012345" autocomplete="off">
+      </div>
+      <div class="at-field">
+        <label class="at-label" for="at-subject">Main Subject</label>
+        <input class="at-input" id="at-subject" type="text" placeholder="e.g. Mathematics" autocomplete="off">
+      </div>
+      <div class="at-field">
+        <label class="at-label" for="at-password">Password <span style="color:var(--red)">*</span></label>
+        <div class="at-pwd-wrap">
+          <input class="at-input" id="at-password" type="password" placeholder="Min 8 characters" autocomplete="new-password">
+          <button class="at-pwd-toggle" type="button" onclick="_atTogglePwd()" title="Show/hide password">👁</button>
+        </div>
+      </div>
+      <div class="at-field">
+        <label class="at-label" for="at-password2">Confirm Password <span style="color:var(--red)">*</span></label>
+        <div class="at-pwd-wrap">
+          <input class="at-input" id="at-password2" type="password" placeholder="Repeat password" autocomplete="new-password">
+          <button class="at-pwd-toggle" type="button" onclick="_atTogglePwd2()" title="Show/hide password">👁</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="at-field" style="margin-bottom:14px">
+      <label class="at-label">Assign Grades (optional — can be set later)</label>
+      <div class="at-grades-wrap" id="at-grade-pills">
+        ${['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9']
+          .map(g=>`<label class="at-grade-pill">
+            <input type="checkbox" name="at-grade" value="${g}"> ${g}
+          </label>`).join('')}
+      </div>
+    </div>
+
+    <div class="at-actions">
+      <button class="btn" style="background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;font-size:13px;font-weight:700;min-width:180px"
+        onclick="createTeacherAccount()" id="at-submit-btn">
+        ➕ Create Teacher Account
+      </button>
+      <button class="btn btn-outline btn-sm" onclick="_atResetForm()">✕ Clear Form</button>
+    </div>
+    <div class="at-result" id="at-result"></div>
+
+    <!-- Teacher list table -->
+    <div style="margin-top:24px">
+      <div class="sec-hdr" style="margin-bottom:10px">
+        <span style="font-size:13px;font-weight:800">Existing Teacher Accounts</span>
+        <button class="btn btn-outline btn-sm" onclick="_atLoadTeachers()">🔄 Refresh</button>
+      </div>
+      <div id="at-teachers-list"><p style="font-size:12px;color:var(--text3)">Loading…</p></div>
+    </div>
+  `;
+  settingsView.appendChild(panel);
+  _atLoadTeachers();
+}
+
+window._atTogglePwd  = ()=>{ const i=document.getElementById('at-password');  i.type=i.type==='password'?'text':'password'; };
+window._atTogglePwd2 = ()=>{ const i=document.getElementById('at-password2'); i.type=i.type==='password'?'text':'password'; };
+
+window._atResetForm = function(){
+  ['at-fname','at-lname','at-email','at-phone','at-staffid','at-subject','at-password','at-password2']
+    .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.querySelectorAll('input[name="at-grade"]').forEach(c=>c.checked=false);
+  const res=document.getElementById('at-result');
+  if(res){ res.style.display='none'; res.className='at-result'; res.innerHTML=''; }
+};
+
+function _atShowResult(msg, type='ok'){
+  const res = document.getElementById('at-result');
+  if(!res) return;
+  res.innerHTML = msg;
+  res.className = `at-result ${type}`;
+  res.style.display = 'block';
+  res.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+/* ── Load existing teachers into the panel list ── */
+window._atLoadTeachers = async function(){
+  const container = document.getElementById('at-teachers-list');
+  if(!container || !firestoreDb) return;
+  container.innerHTML = '<p style="font-size:12px;color:var(--text3)">⏳ Loading…</p>';
+  try{
+    const { collection, getDocs } = window._fb;
+    const snap = await getDocs(collection(firestoreDb, 'users'));
+    const teachers = [];
+    snap.forEach(d => {
+      const u = { uid: d.id, ...d.data() };
+      if(u.Advancedadmin === true) return;
+      if((u.role||'').trim().toLowerCase() === 'admin') return;
+      teachers.push(u);
+    });
+    if(!teachers.length){
+      container.innerHTML = '<p style="font-size:12px;color:var(--text3)">No teacher accounts yet.</p>';
+      return;
+    }
+    teachers.sort((a,b)=>((a.name||a.displayName||'')).localeCompare((b.name||b.displayName||'')));
+    container.innerHTML = `
+      <style>
+        .at-teachers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+        .at-tcard{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 14px;position:relative}
+        .at-tcard-name{font-size:13px;font-weight:800;margin-bottom:2px}
+        .at-tcard-email{font-size:11px;color:var(--text3);margin-bottom:6px;word-break:break-all}
+        .at-tcard-meta{font-size:11px;color:var(--text2);line-height:1.7}
+        .at-tcard-grades{margin-top:6px;font-size:11px;font-weight:700;color:var(--blue)}
+        .at-tcard-del{position:absolute;top:10px;right:10px;background:none;border:none;
+          cursor:pointer;color:var(--text3);font-size:14px;padding:2px 5px;border-radius:4px}
+        .at-tcard-del:hover{background:rgba(231,76,60,.1);color:var(--red)}
+      </style>
+      <div class="at-teachers-grid">
+        ${teachers.map(u=>{
+          const grades = Array.isArray(u.assignedGrades) && u.assignedGrades.length
+            ? u.assignedGrades.join(', ')
+            : (u.assignedGrade || '—');
+          return `
+          <div class="at-tcard">
+            <button class="at-tcard-del" title="Remove teacher" onclick="_atDeleteTeacher('${u.uid}','${(u.name||u.displayName||'').replace(/'/g,"\'")}')">✕</button>
+            <div class="at-tcard-name">${u.name||u.displayName||'—'}</div>
+            <div class="at-tcard-email">${u.email||'—'}</div>
+            <div class="at-tcard-meta">
+              ${u.staffId ? `<span>🪪 ${u.staffId}</span><br>` : ''}
+              ${u.phone   ? `<span>📞 ${u.phone}</span><br>`   : ''}
+              ${u.subject ? `<span>📚 ${u.subject}</span><br>` : ''}
+            </div>
+            <div class="at-tcard-grades">🎓 ${grades}</div>
+          </div>`;
+        }).join('')}
+      </div>
+    `;
+  }catch(e){
+    container.innerHTML = `<p style="font-size:12px;color:var(--red)">Error: ${e.message}</p>`;
+  }
+};
+
+/* ── Delete teacher from Firestore (does not delete Auth account) ── */
+window._atDeleteTeacher = async function(uid, name){
+  const confirmed = await new Promise(res=>{
+    showConfirm(
+      `Remove teacher <strong>${name}</strong> from the system?<br><small style="color:var(--text3)">This removes their Firestore profile. Their login account is deactivated separately via Firebase Console.</small>`,
+      ()=>res(true), ()=>res(false),
+      { icon:'🗑️', title:'Remove Teacher', okLabel:'Remove', danger:true }
+    );
+  });
+  if(!confirmed) return;
+  try{
+    const { doc, updateDoc } = window._fb;
+    // Mark as disabled rather than hard-delete — preserves audit trail
+    await updateDoc(doc(firestoreDb,'users',uid), { disabled: true, disabledAt: new Date().toISOString(), disabledBy: currentAdminName });
+    notify(`✅ Teacher <strong>${name}</strong> disabled successfully.`, 'success');
+    logActivity(`🗑️ Disabled teacher: ${name} (${uid})`, 'act-red', currentAdminName, { category:'system' });
+    _atLoadTeachers();
+  }catch(e){
+    notify('Error: '+e.message, 'error');
+  }
+};
+
+/* ── Create teacher: Firebase Auth + Firestore doc ── */
+window.createTeacherAccount = async function(){
+  const fname    = document.getElementById('at-fname').value.trim();
+  const lname    = document.getElementById('at-lname').value.trim();
+  const email    = document.getElementById('at-email').value.trim().toLowerCase();
+  const phone    = document.getElementById('at-phone').value.trim();
+  const staffId  = document.getElementById('at-staffid').value.trim();
+  const subject  = document.getElementById('at-subject').value.trim();
+  const password = document.getElementById('at-password').value;
+  const password2= document.getElementById('at-password2').value;
+  const grades   = [...document.querySelectorAll('input[name="at-grade"]:checked')].map(c=>c.value);
+
+  // ── Validation ────────────────────────────────────────────────────────
+  if(!fname || !lname){ _atShowResult('⚠️ Please enter both first and last name.','err'); return; }
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){ _atShowResult('⚠️ Please enter a valid email address.','err'); return; }
+  if(!password){ _atShowResult('⚠️ Please set a password.','err'); return; }
+  if(password.length < 8){ _atShowResult('⚠️ Password must be at least 8 characters.','err'); return; }
+  if(password !== password2){ _atShowResult('⚠️ Passwords do not match.','err'); return; }
+
+  const btn = document.getElementById('at-submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Creating account…';
+  _atShowResult('⏳ Creating Firebase account…', 'ok');
+
+  try{
+    const { createUserWithEmailAndPassword, getAuth, initializeApp, getApps } = window._fb;
+
+    // ── Use a secondary Firebase app so we don't sign out the current admin ──
+    const SECONDARY_APP_NAME = '__teacher_creator__';
+    let secondaryApp = getApps().find(a => a.name === SECONDARY_APP_NAME);
+    if(!secondaryApp){
+      // Get config from the primary app
+      const { initializeApp: init2 } = window._fb;
+      const primaryApp = getApps()[0];
+      const cfg = primaryApp.options;
+      secondaryApp = init2(cfg, SECONDARY_APP_NAME);
+    }
+    const secondaryAuth = getAuth(secondaryApp);
+
+    // ── Create Auth user ──────────────────────────────────────────────────
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const uid  = cred.user.uid;
+
+    // Sign out from secondary app immediately (keeps primary admin session intact)
+    await secondaryAuth.signOut();
+
+    // ── Write Firestore profile ───────────────────────────────────────────
+    const { doc, setDoc } = window._fb;
+    const fullName = `${fname} ${lname}`;
+    const teacherDoc = {
+      name:          fullName,
+      firstName:     fname,
+      lastName:      lname,
+      email:         email,
+      role:          'Teacher',
+      phone:         phone    || null,
+      staffId:       staffId  || null,
+      subject:       subject  || null,
+      assignedGrades: grades,
+      assignedGrade:  grades[0] || '',
+      Advancedadmin:  false,
+      createdAt:      new Date().toISOString(),
+      createdBy:      currentAdminName,
+      disabled:       false,
+    };
+    // Remove null fields to keep Firestore clean
+    Object.keys(teacherDoc).forEach(k => teacherDoc[k] === null && delete teacherDoc[k]);
+
+    await setDoc(doc(firestoreDb, 'users', uid), teacherDoc);
+
+    // ── Success ───────────────────────────────────────────────────────────
+    _atShowResult(
+      `✅ Teacher account created successfully!<br>
+       <strong>${fullName}</strong> &nbsp;·&nbsp; ${email}<br>
+       ${grades.length ? `🎓 Assigned: ${grades.join(', ')}<br>` : ''}
+       <span style="color:var(--text3);font-size:11px">UID: ${uid}</span>`,
+      'ok'
+    );
+    logActivity(
+      `👤 Created teacher account: ${fullName} (${email})`,
+      'act-green', currentAdminName,
+      { category:'system', extra:`UID: ${uid}${grades.length ? ' · Grades: '+grades.join(', ') : ''}` }
+    );
+    notify(`✅ Teacher <strong>${fullName}</strong> added successfully.`, 'success', 6000);
+    _atResetForm();
+    _atLoadTeachers();
+
+  }catch(e){
+    let msg = e.message;
+    if(e.code === 'auth/email-already-in-use') msg = 'This email is already registered. Use a different email.';
+    if(e.code === 'auth/invalid-email')        msg = 'Invalid email address format.';
+    if(e.code === 'auth/weak-password')        msg = 'Password is too weak. Use at least 8 characters.';
+    _atShowResult(`❌ Error: ${msg}`, 'err');
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = '➕ Create Teacher Account';
+  }
+};
+
 /* ─── Grade Assignment Panel (Advanced Admin only) ─── */
 function _renderGradeAssignmentPanel(){
   const settingsView = document.getElementById('view-settings');
@@ -2979,7 +3292,7 @@ window.loadGradeAssignments = async function(){
   try{
     const allGrades = getUniqueGrades().length
       ? getUniqueGrades()
-      : ['Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9'];
+      : ['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9'];
 
     const {collection, getDocs} = window._fb;
     let users = [];
@@ -2988,66 +3301,75 @@ window.loadGradeAssignments = async function(){
 
     if(!users.length){ container.innerHTML='<p style="font-size:12px;color:var(--text3)">No user documents found in Firestore.</p>'; return; }
 
-    const teachers = users.filter(u => !u.Advancedadmin);
+    // Exclude Advanced Admins AND any user whose role is 'admin' (case-insensitive)
+    // so only genuine teacher accounts appear in the assignment panel
+    const teachers = users.filter(u => {
+      if(u.Advancedadmin === true) return false;
+      const role = (u.role||'').trim().toLowerCase();
+      if(role === 'admin') return false;
+      return true;
+    });
     if(!teachers.length){ container.innerHTML='<p style="font-size:12px;color:var(--text3)">No teacher accounts found. Accounts with Advancedadmin:true are excluded.</p>'; return; }
 
+    // Responsive card layout — works on mobile and desktop
     container.innerHTML = `
-      <table class="data-table" style="font-size:12px">
-        <thead><tr>
-          <th>Name</th><th>Email</th><th>Assigned Grades (select multiple)</th><th>Action</th>
-        </tr></thead>
-        <tbody>
-          ${teachers.map(u=>{
-            // Resolve current assignments — support legacy single string + new array
-            let currentGrades = [];
-            if(Array.isArray(u.assignedGrades) && u.assignedGrades.length) currentGrades = u.assignedGrades;
-            else if(u.assignedGrade) currentGrades = [u.assignedGrade];
+      <style>
+        .teacher-assign-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:4px}
+        .teacher-assign-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px}
+        .teacher-assign-card .tac-name{font-size:13px;font-weight:800;color:var(--text);margin-bottom:2px}
+        .teacher-assign-card .tac-email{font-size:11px;color:var(--text3);margin-bottom:10px;word-break:break-all}
+        .teacher-assign-card .tac-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:6px}
+        .teacher-assign-card .tac-grades{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+        .tac-chk-label{display:inline-flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;
+          padding:4px 9px;border-radius:20px;border:1px solid var(--border);background:var(--surface);
+          transition:background .15s,border-color .15s;user-select:none}
+        .tac-chk-label:has(input:checked){background:rgba(41,128,185,.15);border-color:var(--blue);color:var(--blue);font-weight:700}
+        .tac-chk-label input{accent-color:var(--blue);width:13px;height:13px}
+        .teacher-assign-card .tac-summary{font-size:10px;color:var(--text3);min-height:14px;margin-bottom:10px}
+        .teacher-assign-card .tac-save{width:100%}
+      </style>
+      <div class="teacher-assign-grid">
+        ${teachers.map(u=>{
+          let currentGrades = [];
+          if(Array.isArray(u.assignedGrades) && u.assignedGrades.length) currentGrades = u.assignedGrades;
+          else if(u.assignedGrade) currentGrades = [u.assignedGrade];
 
-            const checkboxes = allGrades.map(g=>`
-              <label style="display:inline-flex;align-items:center;gap:4px;margin:3px 6px 3px 0;
-                font-size:11px;cursor:pointer;white-space:nowrap;">
-                <input type="checkbox" class="grade-chk-${u.uid}"
-                  value="${g}" ${currentGrades.includes(g)?'checked':''}
-                  style="accent-color:var(--blue);width:13px;height:13px;">
-                ${g}
-              </label>`).join('');
+          const checkboxes = allGrades.map(g=>`
+            <label class="tac-chk-label">
+              <input type="checkbox" class="grade-chk-${u.uid}"
+                value="${g}" ${currentGrades.includes(g)?'checked':''}
+                onchange="_updateGradeSummary('${u.uid}')">
+              ${g}
+            </label>`).join('');
 
-            return `
-            <tr id="row-${u.uid}">
-              <td style="font-weight:700">${u.name||u.displayName||'—'}</td>
-              <td style="color:var(--text3)">${u.email||'—'}</td>
-              <td>
-                <div style="display:flex;flex-wrap:wrap;gap:2px;padding:4px 0">
-                  ${checkboxes}
-                </div>
-                <div id="sel-summary-${u.uid}" style="font-size:10px;color:var(--text3);margin-top:4px">
-                  ${currentGrades.length ? currentGrades.join(', ') : '— Unassigned —'}
-                </div>
-              </td>
-              <td>
-                <button class="btn btn-sm" style="background:var(--blue);color:#fff;font-size:11px"
-                  onclick="saveGradeAssignment('${u.uid}')">💾 Save</button>
-              </td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table>
+          const summaryText = currentGrades.length ? currentGrades.join(', ') : '— No grades assigned yet —';
+
+          return `
+          <div class="teacher-assign-card" id="row-${u.uid}">
+            <div class="tac-name">${u.name||u.displayName||'—'}</div>
+            <div class="tac-email">${u.email||'—'}</div>
+            <div class="tac-label">Assigned Grades</div>
+            <div class="tac-grades">${checkboxes}</div>
+            <div class="tac-summary" id="sel-summary-${u.uid}">${summaryText}</div>
+            <button class="btn btn-sm tac-save" style="background:var(--blue);color:#fff;font-size:12px"
+              onclick="saveGradeAssignment('${u.uid}')">💾 Save Assignment</button>
+          </div>`;
+        }).join('')}
+      </div>
     `;
 
-    // Live summary update as checkboxes change
-    teachers.forEach(u=>{
-      document.querySelectorAll(`.grade-chk-${u.uid}`).forEach(chk=>{
-        chk.addEventListener('change', ()=>{
-          const selected = [...document.querySelectorAll(`.grade-chk-${u.uid}:checked`)].map(c=>c.value);
-          const summary = document.getElementById(`sel-summary-${u.uid}`);
-          if(summary) summary.textContent = selected.length ? selected.join(', ') : '— Unassigned —';
-        });
-      });
-    });
+    // Summary helper now called via onchange inline attribute
 
   }catch(e){
     container.innerHTML=`<p style="font-size:12px;color:var(--red)">Error: ${e.message}</p>`;
   }
+};
+
+/* ─── Live grade summary update helper ──────────────────── */
+window._updateGradeSummary = function(uid){
+  const selected = [...document.querySelectorAll(`.grade-chk-${uid}:checked`)].map(c=>c.value);
+  const summary  = document.getElementById(`sel-summary-${uid}`);
+  if(summary) summary.textContent = selected.length ? selected.join(', ') : '— No grades assigned yet —';
 };
 
 /* ─── Save multi-grade assignment for one teacher ─────── */
@@ -5653,7 +5975,7 @@ function showImportPreview(rows,dupes){
     }).join('')}</tbody>
   </table>`;
   document.getElementById('import-preview-table').innerHTML=html;
-  const isTemplateFmt = _importHeaders.includes('_Grade_Compound') || _importHeaders.includes('Exam/Term (DO NOT EDIT)');
+  const isTemplateFmt = _importHeaders.includes('UPI') && _importHeaders.includes('Official Student Name');
   if(dupes.length){
     const msg = isTemplateFmt
       ? `⚠️ ${dupes.length} rows already exist in the database for this exam/term and will be <strong>skipped</strong> automatically on commit.`
@@ -5672,15 +5994,12 @@ async function commitImport(){
   btn.disabled=true;btn.textContent='⏳ Importing…';
 
   // ── Detect if this is a teacher template upload ──────────────────────
-  // Template files have _Grade_Compound or 'Exam/Term (DO NOT EDIT)' column
-  const isTemplateUpload = _importHeaders.includes('_Grade_Compound')
-    || _importHeaders.includes('Exam/Term (DO NOT EDIT)')
-    || (_importHeaders.includes('UPI') && _importHeaders.includes('Official Student Name'));
+  // Template files always have both 'UPI' and 'Official Student Name' columns
+  // The compound Grade value lives in the 'Term' column of the template
+  const isTemplateUpload = _importHeaders.includes('UPI') && _importHeaders.includes('Official Student Name');
 
-  // For template uploads, resolve which column holds the compound Grade value
-  const compoundCol = _importHeaders.includes('_Grade_Compound') ? '_Grade_Compound'
-    : _importHeaders.includes('Exam/Term (DO NOT EDIT)') ? 'Exam/Term (DO NOT EDIT)'
-    : null;
+  // The template's 'Term' column holds the compound Grade string
+  const compoundCol = _importHeaders.includes('Term') ? 'Term' : null;
 
   let count=0, skipped=0, created=0;
   try{
@@ -5716,8 +6035,7 @@ async function commitImport(){
         const scores = {};
         Object.keys(row).forEach(k => {
           // Skip meta/identity columns
-          if(['Official Student Name','UPI','Assessment No','_Grade_Compound',
-              'Exam/Term (DO NOT EDIT)','Grade','Term'].includes(k)) return;
+          if(['Official Student Name','UPI','Assessment No','Term','Grade'].includes(k)) return;
           if(META_KEYS.has(k)) return;
           const v = parseFloat(row[k]);
           if(!isNaN(v)) scores[k] = v;
@@ -5828,7 +6146,8 @@ function _populateTemplateSelectors(){
     allData.forEach(r => {
       const g = gShort(r['Grade']);
       if(myGrades && !myGrades.includes(g)) return;
-      const raw = r['Grade'] || r['Term'];
+      // Use the full compound Grade string as the term identifier
+      const raw = (r['Grade'] || r['Term'] || '').trim();
       if(raw && raw !== 'Unknown') termSet.add(raw);
     });
 
@@ -5913,7 +6232,7 @@ window.downloadResultsTemplate = function(){
   // ── Build rows ────────────────────────────────────────────────────────
   // The Grade column gets the FULL compound term string — this IS the record identity
   // _tpl_compound is a hidden marker so the importer knows the Grade to use
-  const META_COLS  = ['Official Student Name', 'UPI', 'Assessment No', '_Grade_Compound'];
+  const META_COLS  = ['Official Student Name', 'UPI', 'Assessment No', 'Term'];
   const SCORE_COLS = subjects;
   const header     = [...META_COLS, ...SCORE_COLS];
 
@@ -5922,7 +6241,7 @@ window.downloadResultsTemplate = function(){
     row['Official Student Name'] = r['Official Student Name'] || '';
     row['UPI']                   = r['UPI'] || '';
     row['Assessment No']         = r['Assessment No'] || '';
-    row['_Grade_Compound']       = selCompound; // the chosen exam term — DO NOT EDIT
+    row['Term']                  = selCompound; // the chosen exam term — stored as Grade compound key
     SCORE_COLS.forEach(s => { row[s] = ''; });
     return row;
   });
@@ -5936,9 +6255,7 @@ window.downloadResultsTemplate = function(){
 
   const range = window.XLSX.utils.decode_range(ws['!ref']);
 
-  // Rename _Grade_Compound header cell to a friendly label
-  const compoundHeaderAddr = window.XLSX.utils.encode_cell({ r: 0, c: 3 });
-  if(ws[compoundHeaderAddr]) ws[compoundHeaderAddr].v = 'Exam/Term (DO NOT EDIT)';
+  // Term column header — already named 'Term' from META_COLS; no rename needed
 
   header.forEach((h, ci) => {
     const cellAddr = window.XLSX.utils.encode_cell({ r: 0, c: ci });
@@ -5970,7 +6287,7 @@ window.downloadResultsTemplate = function(){
     { Column: 'Official Student Name',  Notes: 'DO NOT EDIT — used to identify the student' },
     { Column: 'UPI',                    Notes: 'DO NOT EDIT — primary matching key' },
     { Column: 'Assessment No',          Notes: 'DO NOT EDIT — fallback match key' },
-    { Column: 'Exam/Term (DO NOT EDIT)',Notes: `DO NOT EDIT — set to: ${selCompound}` },
+    { Column: 'Term',                  Notes: `DO NOT EDIT — set to: ${selCompound}` },
     ...subjects.map(s => ({ Column: s, Notes: 'Enter score 0–100. Leave blank if not assessed.' })),
     { Column: '', Notes: '' },
     { Column: 'UPLOAD STEPS', Notes: '1) Fill in subject scores  2) Save file  3) Go to Import Data  4) Drop file in upload zone  5) Click Commit to Database' },
