@@ -1824,10 +1824,27 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
             </button>
             <div id="tpl-info" style="font-size:11px;color:var(--text3)">Select the exam/term then download — your students will be pre-filled.</div>
           </div>
+
+          <!-- Teacher upload zone — shown when legacy CSV section is hidden -->
+          <div id="teacher-upload-zone" style="margin-top:20px;display:none">
+            <div style="font-size:11px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px">Step 2 — Upload Filled Template</div>
+            <div onclick="document.getElementById('teacher-file-input').click()"
+              style="border:2px dashed var(--border-strong);border-radius:var(--radius-lg);padding:28px 20px;text-align:center;cursor:pointer;transition:var(--transition);background:var(--surface2)"
+              ondragover="event.preventDefault();this.style.borderColor='var(--blue-lt)'"
+              ondragleave="this.style.borderColor='var(--border-strong)'"
+              ondrop="_teacherHandleDrop(event)">
+              <div style="font-size:30px;margin-bottom:8px">📂</div>
+              <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px">Drop completed template here or click to browse</div>
+              <div style="font-size:11px;color:var(--text3)">.xlsx, .xls, .csv</div>
+              <input type="file" id="teacher-file-input" accept=".csv,.xlsx,.xls" style="display:none"
+                onchange="handleImportFile(this.files[0])">
+            </div>
+            <div id="teacher-upload-status" style="margin-top:10px;font-size:12px"></div>
+          </div>
         </div>
 
         <!-- ══ BULK UPLOAD DROP ZONE ══ -->
-        <div class="grid-2">
+        <div class="grid-2" id="import-legacy-section">
           <div class="card">
             <div class="card-hdr"><div class="card-title">📂 Upload Completed Template</div></div>
             <p style="font-size:12px;color:var(--text2);line-height:1.7;margin-bottom:16px">
@@ -2805,6 +2822,8 @@ async function checkAdvancedAdmin(uid){
 
   if(!uid || !firestoreDb){
     console.warn('[AdvancedAdmin] uid or firestoreDb not ready — defaulting to basic access.');
+    // Still show Import Data for teachers even if Firestore check fails
+    if(importNav) importNav.style.display = 'flex';
     return;
   }
   try{
@@ -2821,6 +2840,8 @@ async function checkAdvancedAdmin(uid){
       _renderGradeAssignmentPanel();
     } else {
       isAdvancedAdmin = false;
+      // Teachers always get Import Data so they can upload bulk results
+      if(importNav) importNav.style.display = 'flex';
       // Support both legacy assignedGrade (string) and new assignedGrades (array)
       let grades = [];
       if(Array.isArray(data.assignedGrades) && data.assignedGrades.length){
@@ -5527,17 +5548,33 @@ let _importData=[];let _importHeaders=[];let _importMapping={};
 
 function handleImportDrop(e){
   e.preventDefault();
-  document.getElementById('import-dropzone').style.borderColor='var(--border-strong)';
+  const dz=document.getElementById('import-dropzone');
+  if(dz) dz.style.borderColor='var(--border-strong)';
   const file=e.dataTransfer.files[0];
   if(file)handleImportFile(file);
 }
 window.handleImportDrop=handleImportDrop;
 
+// Teacher drop handler — same as above but for the teacher upload zone
+window._teacherHandleDrop=function(e){
+  e.preventDefault();
+  e.currentTarget.style.borderColor='var(--border-strong)';
+  const file=e.dataTransfer.files[0];
+  if(file)handleImportFile(file);
+};
+
+/** Write a status message to whichever status div is visible */
+function _setImportStatus(html){
+  const adminStatus   = document.getElementById('import-status');
+  const teacherStatus = document.getElementById('teacher-upload-status');
+  if(adminStatus)   adminStatus.innerHTML   = html;
+  if(teacherStatus) teacherStatus.innerHTML = html;
+}
+
 async function handleImportFile(file){
   if(!file)return;
   window._lastImportFilename = file.name;
-  const status=document.getElementById('import-status');
-  status.innerHTML=`<div style="font-size:12px;color:var(--text2)">⏳ Reading ${file.name}…</div>`;
+  _setImportStatus(`<div style="font-size:12px;color:var(--text2)">⏳ Reading ${file.name}…</div>`);
   document.getElementById('import-preview-card').style.display='none';
 
   try{
@@ -5563,18 +5600,18 @@ async function handleImportFile(file){
       _importHeaders=Object.keys(rows[0]||{});
     }
 
-    if(!rows.length){status.innerHTML=`<div style="font-size:12px;color:var(--red)">❌ No data rows found in file.</div>`;return;}
+    if(!rows.length){_setImportStatus(`<div style="font-size:12px;color:var(--red)">❌ No data rows found in file.</div>`);return;}
     _importData=rows;
 
     // Duplicate detection
     const existing=new Set(allData.map(r=>String(r['Assessment No']||'').trim()).filter(Boolean));
     const dupes=rows.filter(r=>{const v=r['Assessment No']!==undefined?r['Assessment No']:(Object.values(r).find((_,i)=>_importHeaders[i]==='Assessment No')||'');return existing.has(String(v).trim());});
 
-    status.innerHTML=`<div style="font-size:12px;color:var(--green)">✅ Loaded <strong>${rows.length}</strong> rows, <strong>${_importHeaders.length}</strong> columns${dupes.length?` · <span style="color:var(--orange)">${dupes.length} possible duplicates</span>`:''}</div>`;
+    _setImportStatus(`<div style="font-size:12px;color:var(--green)">✅ Loaded <strong>${rows.length}</strong> rows, <strong>${_importHeaders.length}</strong> columns${dupes.length?` · <span style="color:var(--orange)">${dupes.length} possible duplicates</span>`:''}</div>`);
     buildColumnMapping();
     showImportPreview(rows,dupes);
   }catch(err){
-    status.innerHTML=`<div style="font-size:12px;color:var(--red)">❌ Error: ${err.message}</div>`;
+    _setImportStatus(`<div style="font-size:12px;color:var(--red)">❌ Error: ${err.message}</div>`);
   }
 }
 window.handleImportFile=handleImportFile;
@@ -5583,6 +5620,8 @@ const DB_FIELDS=['Official Student Name','Assessment No','UPI','Grade','Term','G
 
 function buildColumnMapping(){
   const map=document.getElementById('import-mapping');
+  // For teachers the mapping panel is hidden — skip silently
+  if(!map || !isAdvancedAdmin) return;
   map.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
     ${DB_FIELDS.map(f=>{
       const isReq=f==='Official Student Name'||f==='Assessment No'||f==='Grade';
@@ -5614,8 +5653,14 @@ function showImportPreview(rows,dupes){
     }).join('')}</tbody>
   </table>`;
   document.getElementById('import-preview-table').innerHTML=html;
+  const isTemplateFmt = _importHeaders.includes('_Grade_Compound') || _importHeaders.includes('Exam/Term (DO NOT EDIT)');
   if(dupes.length){
-    document.getElementById('import-dup-warning').innerHTML=`<div style="background:rgba(230,126,34,.1);border:1px solid rgba(230,126,34,.3);border-radius:var(--radius-md);padding:10px 14px;font-size:12px;color:var(--orange)">⚠️ ${dupes.length} rows highlighted in orange may be duplicates based on Assessment No. They will still be imported as new records.</div>`;
+    const msg = isTemplateFmt
+      ? `⚠️ ${dupes.length} rows already exist in the database for this exam/term and will be <strong>skipped</strong> automatically on commit.`
+      : `⚠️ ${dupes.length} rows highlighted in orange may be duplicates based on Assessment No. They will still be imported as new records.`;
+    document.getElementById('import-dup-warning').innerHTML=`<div style="background:rgba(230,126,34,.1);border:1px solid rgba(230,126,34,.3);border-radius:var(--radius-md);padding:10px 14px;font-size:12px;color:var(--orange)">${msg}</div>`;
+  } else {
+    document.getElementById('import-dup-warning').innerHTML='';
   }
 }
 
@@ -5734,6 +5779,23 @@ window.commitImport=commitImport;
 /** Populate the grade and term selects in the Teacher Bulk Upload card.
  *  Called from navTo() when the import view is activated. */
 function _populateTemplateSelectors(){
+  // ── Show/hide sections based on role ─────────────────────────────────────
+  const legacySection    = document.getElementById('import-legacy-section');
+  const teacherUpload    = document.getElementById('teacher-upload-zone');
+  const previewCard      = document.getElementById('import-preview-card');
+
+  if(isAdvancedAdmin){
+    // Admin sees everything; teacher upload zone stays hidden
+    if(legacySection)  legacySection.style.display  = '';
+    if(teacherUpload)  teacherUpload.style.display   = 'none';
+  } else {
+    // Teacher: hide legacy CSV section, show their own upload zone
+    if(legacySection)  legacySection.style.display  = 'none';
+    if(teacherUpload)  teacherUpload.style.display   = 'block';
+    // Reset preview if no file loaded yet
+    if(previewCard && !_importData.length) previewCard.style.display = 'none';
+  }
+
   // ── Grade selector ──────────────────────────────────────────────────────
   const gradeEl = document.getElementById('tpl-grade');
   if(gradeEl){
