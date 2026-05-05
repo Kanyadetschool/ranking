@@ -2597,15 +2597,16 @@ window.addEventListener('load',()=>{
 
 /* ══════════════════════════════════════════
    ADMIN AUTHORIZATION — Firestore-based
-   Access is granted only when the signed-in user's
-   document in the "users" collection has role:"Admin".
+   Access is granted when the signed-in user's document
+   in the "users" collection has role:"Admin" or role:"Teacher"
+   (case-insensitive — "admin", "ADMIN", "teacher", "Teacher" all work).
    No emails are hardcoded in client-side code.
    To grant/revoke access: update the role field
    in Firestore Console → users/{uid}.
 ══════════════════════════════════════════ */
 
 /**
- * Checks Firestore users/{uid} for  role: "Admin".
+ * Checks Firestore users/{uid} for role: "Admin" (case-insensitive) or "Teacher" (case-insensitive).
  * Returns true if granted, false for anything else.
  * Fails closed — any Firestore error → access denied.
  */
@@ -2615,7 +2616,8 @@ async function isAuthorizedFirestore(uid) {
     const { doc, getDoc } = window._fb;
     const snap = await getDoc(doc(firestoreDb, 'users', uid));
     if (!snap.exists()) return false;
-    return snap.data().role === 'Admin';
+    const role = (snap.data().role || '').trim().toLowerCase();
+    return role === 'admin' || role === 'teacher';
   } catch (e) {
     console.warn('[Auth] Firestore role check failed:', e.message);
     return false;
