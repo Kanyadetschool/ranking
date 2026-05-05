@@ -2167,8 +2167,8 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
   import { getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  import { getFirestore, doc, getDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, getFirestore, doc, getDoc };
+  import { getFirestore, doc, getDoc, collection, getDocs, updateDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, getFirestore, doc, getDoc, collection, getDocs, updateDoc };
 </script>
 
 <script>
@@ -2311,8 +2311,9 @@ const DB_PATH = 'Results/default-app-id/students';
 const AUDIT_PATH = 'audit_logs';
 let currentAdminName = 'Admin';
 let currentAdminEmail = '';
-let isAdvancedAdmin = false; // set to true after Firestore confirms Advancedadmin:true
-let firestoreDb = null;      // Firestore instance
+let isAdvancedAdmin = false;     // set to true after Firestore confirms Advancedadmin:true
+let currentAssignedGrade = null; // null = see all; "Grade 7" = teacher scoped to that grade
+let firestoreDb = null;          // Firestore instance
 
 const META_KEYS = new Set([
   'id','Term','Grade','Class','Gender','UPI','Official Student Name',
@@ -2502,7 +2503,12 @@ function gradePillClass(cls){ return{ee1:'g-ee1',ee2:'g-ee2',me1:'g-me1',me2:'g-
 
 function getUniqueGrades(){
   const gs=[...new Set(allData.map(r=>gShort(r['Grade'])).filter(Boolean))];
-  return gs.sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''));const nb=parseInt(b.replace(/\D/g,''));return na-nb;});
+  const sorted = gs.sort((a,b)=>{const na=parseInt(a.replace(/\D/g,''));const nb=parseInt(b.replace(/\D/g,''));return na-nb;});
+  // Teachers only see their assigned grade in dropdowns
+  if(currentAssignedGrade && currentAssignedGrade!=='__NONE__'){
+    return sorted.filter(g=>g===currentAssignedGrade);
+  }
+  return sorted;
 }
 function getUniqueTerms(){
   const terms=[...new Set(allData.map(r=>getRecordTerm(r)).filter(t=>t&&t!=='Unknown'))];
@@ -2573,7 +2579,8 @@ window.addEventListener('load',()=>{
       onAuthStateChanged(auth,async user=>{
         document.getElementById('loader').style.display='none';
         if(user){
-          if(!isAuthorized(user.email)){
+          const allowed = await isAuthorizedFirestore(user.uid);
+          if(!allowed){
             await rejectUnauthorized(user.email);
             return;
           }
@@ -2589,37 +2596,37 @@ window.addEventListener('load',()=>{
 });
 
 /* ══════════════════════════════════════════
-   ADMIN ALLOWLIST — only these emails can access the portal
-   Add or remove emails here. Comparison is case-insensitive.
+   ADMIN AUTHORIZATION — Firestore-based
+   Access is granted only when the signed-in user's
+   document in the "users" collection has role:"Admin".
+   No emails are hardcoded in client-side code.
+   To grant/revoke access: update the role field
+   in Firestore Console → users/{uid}.
 ══════════════════════════════════════════ */
-const ALLOWED_ADMINS = [
- 'admin@kanyadet.ac.ke',
-  // Add more authorised admin emails below:
-  'geofreyonyango167@gmail.com',
-  'oduorgeofrey141@gmail.com',
-  'wyclifowuor@gmail.com',
-  'atieunice@gmail.com',
-  'cliffeowino@yahoo.com',
-  'janetoluoch7@gmail.com',
-  'atienoberyl54@gmail.com',
-  'oumastepheno96@gmail.com',
-  'sarahochola90@gmail.com',
-  'priscaakinyiger@gmail.com',
-  'opiyojacky@gmail.com',
-  'ombohoaggrey@gmail.com',
 
-];
-
-function isAuthorized(email) {
-  if (!email) return false;
-  return ALLOWED_ADMINS.some(a => a.toLowerCase() === email.toLowerCase().trim());
+/**
+ * Checks Firestore users/{uid} for  role: "Admin".
+ * Returns true if granted, false for anything else.
+ * Fails closed — any Firestore error → access denied.
+ */
+async function isAuthorizedFirestore(uid) {
+  if (!uid || !firestoreDb) return false;
+  try {
+    const { doc, getDoc } = window._fb;
+    const snap = await getDoc(doc(firestoreDb, 'users', uid));
+    if (!snap.exists()) return false;
+    return snap.data().role === 'Admin';
+  } catch (e) {
+    console.warn('[Auth] Firestore role check failed:', e.message);
+    return false;
+  }
 }
 
 async function rejectUnauthorized(email) {
   // Immediately sign the unauthorized user back out of Firebase
   try { const{signOut}=window._fb; await signOut(auth); } catch(e) {}
   const err = document.getElementById('login-err');
-  err.textContent = `⛔ Access denied. "${email}" is not an authorised admin account. Contact the school administrator.`;
+  err.textContent = `⛔ Access denied. "${email}" does not have Admin privileges. Contact the school administrator to be granted access.`;
   err.classList.add('on');
   // Reset Google button
   const gbtn = document.getElementById('google-btn');
@@ -2668,7 +2675,8 @@ async function doEmailLogin(){
     const{signInWithEmailAndPassword}=window._fb;
     const cred=await signInWithEmailAndPassword(auth,email,pass);
     const u=cred.user;
-    if(!isAuthorized(u.email)){
+    const allowed = await isAuthorizedFirestore(u.uid);
+    if(!allowed){
       await rejectUnauthorized(u.email);
       return;
     }
@@ -2700,7 +2708,8 @@ async function doGoogleLogin(){
     provider.setCustomParameters({prompt:'select_account'});
     const cred=await signInWithPopup(auth,provider);
     const u=cred.user;
-    if(!isAuthorized(u.email)){
+    const allowed = await isAuthorizedFirestore(u.uid);
+    if(!allowed){
       await rejectUnauthorized(u.email);
       return;
     }
@@ -2747,7 +2756,7 @@ function showApp(userData){
    the user document has Advancedadmin:true
 ══════════════════════════════════════════ */
 async function checkAdvancedAdmin(uid){
-  // Hide both sections by default until confirmed
+  // Hide gated sections by default
   const importNav = document.querySelector('.nav-item[data-label="Import Data"]');
   const qlinksSection = document.querySelector('.qlinks-section');
   if(importNav) importNav.style.display = 'none';
@@ -2760,23 +2769,192 @@ async function checkAdvancedAdmin(uid){
   try{
     const {doc, getDoc} = window._fb;
     const snap = await getDoc(doc(firestoreDb, 'users', uid));
-    if(snap.exists() && snap.data().Advancedadmin === true){
+    const data = snap.exists() ? snap.data() : {};
+
+    if(data.Advancedadmin === true){
       isAdvancedAdmin = true;
+      currentAssignedGrade = null; // full access — sees all grades
       if(importNav) importNav.style.display = 'flex';
       if(qlinksSection) qlinksSection.style.display = 'block';
-      console.log('[AdvancedAdmin] Advanced access granted.');
+      console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
+      _renderGradeAssignmentPanel();
     } else {
       isAdvancedAdmin = false;
-      console.log('[AdvancedAdmin] Standard access — Import Data & Quick Links hidden.');
+      // Read assigned grade — teachers can only see their own grade
+      const raw = (data.assignedGrade || '').trim();
+      currentAssignedGrade = raw || null;
+      if(currentAssignedGrade){
+        console.log(`[GradeScope] Teacher scoped to: ${currentAssignedGrade}`);
+        _applyGradeScope();
+        _showGradeScopeBanner();
+      } else {
+        console.log('[GradeScope] No grade assigned — data restricted to nothing until assigned.');
+        currentAssignedGrade = '__NONE__'; // block all data until assigned
+        _applyGradeScope();
+        _showGradeScopeBanner();
+      }
     }
   }catch(e){
     console.warn('[AdvancedAdmin] Firestore check failed:', e.message);
-    // Fail closed — keep sections hidden on error
   }
 }
 
+/* ─── Apply grade scope: refilter allData view ─────── */
+function _applyGradeScope(){
+  // Re-trigger all renders so they respect currentAssignedGrade
+  renderAll();
+}
+
+/* ─── Banner telling teacher which grade they see ────── */
+function _showGradeScopeBanner(){
+  let banner = document.getElementById('grade-scope-banner');
+  if(!banner){
+    banner = document.createElement('div');
+    banner.id = 'grade-scope-banner';
+    banner.style.cssText = `
+      position:fixed;top:0;left:0;right:0;z-index:9999;
+      background:linear-gradient(90deg,var(--blue-dk),var(--blue));
+      color:#fff;text-align:center;padding:7px 16px;font-size:12px;font-weight:700;
+      letter-spacing:.03em;box-shadow:0 2px 12px rgba(0,0,0,.3);
+    `;
+    document.body.prepend(banner);
+    // Push app shell down so banner doesn't overlap content
+    const shell = document.getElementById('app-shell');
+    if(shell) shell.style.marginTop = '33px';
+  }
+  if(currentAssignedGrade === '__NONE__'){
+    banner.innerHTML = '⚠️ No grade assigned to your account yet. Contact the administrator. You currently see no student data.';
+    banner.style.background = 'linear-gradient(90deg,#c0392b,#e74c3c)';
+  } else {
+    banner.innerHTML = `🎓 You are viewing <strong>${currentAssignedGrade}</strong> only. Contact the administrator to change your grade assignment.`;
+  }
+}
+
+/* ─── Grade Assignment Panel (Advanced Admin only) ─── */
+function _renderGradeAssignmentPanel(){
+  // Inject into settings view if it doesn't already exist
+  const settingsView = document.getElementById('view-settings');
+  if(!settingsView || document.getElementById('grade-assignment-panel')) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'grade-assignment-panel';
+  panel.className = 'card';
+  panel.style.marginTop = '20px';
+  panel.innerHTML = `
+    <div class="sec-hdr" style="margin-bottom:14px">
+      <h3 style="font-size:15px;font-weight:800">🎓 Teacher Grade Assignments</h3>
+      <button class="btn btn-outline btn-sm" onclick="loadGradeAssignments()">🔄 Refresh</button>
+    </div>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.8;padding:10px 14px;background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
+      Assign each teacher to a specific grade. Teachers will only see students from their assigned grade across the entire portal. Only Advanced Admins can change these assignments.
+    </p>
+    <div id="grade-assignments-list">
+      <p style="font-size:12px;color:var(--text3)">Loading admin accounts…</p>
+    </div>
+  `;
+  settingsView.appendChild(panel);
+  loadGradeAssignments();
+}
+
+/* ─── Load all users from Firestore and render assignment rows ─── */
+window.loadGradeAssignments = async function(){
+  const container = document.getElementById('grade-assignments-list');
+  if(!container) return;
+  if(!firestoreDb){ container.innerHTML='<p style="font-size:12px;color:var(--text3)">Firestore not ready.</p>'; return; }
+  container.innerHTML='<p style="font-size:12px;color:var(--text3)">⏳ Loading…</p>';
+  try{
+    const grades = getUniqueGrades().length
+      ? getUniqueGrades()
+      : ['Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9'];
+
+    // Fetch all user docs
+    const {collection, getDocs} = window._fb;
+
+    let users = [];
+    const snap = await getDocs(collection(firestoreDb,'users'));
+    snap.forEach(d=>{ users.push({uid:d.id,...d.data()}); });
+
+    if(!users.length){ container.innerHTML='<p style="font-size:12px;color:var(--text3)">No user documents found in Firestore.</p>'; return; }
+
+    // Only show non-AdvancedAdmin users (teachers)
+    const teachers = users.filter(u => !u.Advancedadmin);
+
+    if(!teachers.length){ container.innerHTML='<p style="font-size:12px;color:var(--text3)">No teacher accounts found. Accounts with Advancedadmin:true are excluded.</p>'; return; }
+
+    const gradeOptions = ['', ...grades].map(g=>
+      `<option value="${g}">${g||'— Unassigned —'}</option>`
+    ).join('');
+
+    container.innerHTML = `
+      <table class="data-table" style="font-size:12px">
+        <thead><tr>
+          <th>Name</th><th>Email</th><th>Assigned Grade</th><th>Action</th>
+        </tr></thead>
+        <tbody>
+          ${teachers.map(u=>`
+            <tr id="row-${u.uid}">
+              <td style="font-weight:700">${u.name||u.displayName||'—'}</td>
+              <td style="color:var(--text3)">${u.email||'—'}</td>
+              <td>
+                <select class="sel" id="grade-sel-${u.uid}" style="font-size:11px;padding:5px 10px">
+                  ${gradeOptions}
+                </select>
+              </td>
+              <td>
+                <button class="btn btn-sm" style="background:var(--blue);color:#fff;font-size:11px"
+                  onclick="saveGradeAssignment('${u.uid}')">💾 Save</button>
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+
+    // Pre-select existing assignments
+    teachers.forEach(u=>{
+      const sel = document.getElementById(`grade-sel-${u.uid}`);
+      if(sel && u.assignedGrade) sel.value = u.assignedGrade;
+    });
+
+  }catch(e){
+    container.innerHTML=`<p style="font-size:12px;color:var(--red)">Error: ${e.message}</p>`;
+  }
+};
+
+/* ─── Save a grade assignment for one teacher ─────── */
+window.saveGradeAssignment = async function(uid){
+  const sel = document.getElementById(`grade-sel-${uid}`);
+  if(!sel) return;
+  const grade = sel.value.trim();
+  try{
+    const {doc, getDoc} = window._fb;
+    // Use update if available, else set merge
+    const {updateDoc, setDoc} = window._fb;
+    if(updateDoc){
+      await updateDoc(doc(firestoreDb,'users',uid), {assignedGrade: grade});
+    } else {
+      // Fallback: read + merge manually using set isn't available via _fb, so use REST workaround
+      // Actually we have set — but we want merge. Use a field update approach:
+      const snap = await getDoc(doc(firestoreDb,'users',uid));
+      const existing = snap.exists() ? snap.data() : {};
+      const {set} = window._fb;
+      await set(doc(firestoreDb,'users',uid), {...existing, assignedGrade: grade});
+    }
+    notify(`✅ Grade assignment saved: ${grade||'Unassigned'}`,'success');
+    logActivity(`⚙️ Assigned ${grade||'(none)'} to teacher ${uid}`,'act-orange',currentAdminName,{
+      category:'system', extra:`UID: ${uid} → assignedGrade: "${grade}"`
+    });
+  }catch(e){
+    notify('Error saving assignment: '+e.message,'error');
+  }
+};
+
 async function doSignOut(){
   isAdvancedAdmin = false;
+  currentAssignedGrade = null;
+  // Remove grade scope banner if present
+  const banner = document.getElementById('grade-scope-banner');
+  if(banner){ banner.remove(); const shell=document.getElementById('app-shell'); if(shell) shell.style.marginTop=''; }
   clearTimeout(_inactivityTimer);clearInterval(_countdownTimer);
   document.getElementById('inactivity-banner').classList.remove('on');
   logActivity('🚪 Admin signed out','act-orange',currentAdminName);
@@ -2890,7 +3068,11 @@ function renderAll(){
   renderHeatmap();
   renderAtRisk();
   populatePrintSelectors();
-  document.getElementById('nav-count').textContent=allData.length;
+  // Nav count: show scoped count for teachers, total for advanced admins
+  const visibleCount = (currentAssignedGrade && currentAssignedGrade!=='__NONE__')
+    ? allData.filter(r=>gShort(r['Grade'])===currentAssignedGrade).length
+    : allData.length;
+  document.getElementById('nav-count').textContent = visibleCount;
   // ── Bridge: sync allData into the Report Card JS system ──
   _bridgeReportCardSystem();
 }
@@ -2954,6 +3136,8 @@ function populateFilters(){
     el.innerHTML='';
     el.appendChild(first);
     grades.forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; el.appendChild(o); });
+    // Auto-select the teacher's assigned grade
+    if(currentAssignedGrade && currentAssignedGrade!=='__NONE__') el.value=currentAssignedGrade;
   });
   ['results-term-sel','print-term','top-term-sel'].forEach(id=>{
     const el=document.getElementById(id);
@@ -2968,6 +3152,7 @@ function populateFilters(){
     const first=el.options[0];
     el.innerHTML=''; el.appendChild(first);
     grades.forEach(g=>{ const o=document.createElement('option'); o.value=g; o.textContent=g; el.appendChild(o); });
+    if(currentAssignedGrade && currentAssignedGrade!=='__NONE__') el.value=currentAssignedGrade;
   });
 }
 
@@ -2977,28 +3162,26 @@ function populatePrintSelectors(){populateFilters();}
    KPIs
 ══════════════════════════════════════════ */
 function renderKPIs(){
-  // Unique students — count by unique Assessment No (same logic as Students table deduplication)
-  const unique=new Set(allData.map(r=>String(r['Assessment No']||r['Official Student Name']||'').trim()).filter(Boolean)).size;
-  document.getElementById('kpi-students').textContent=unique||allData.length;
+  // Scope data to assigned grade for non-advanced-admin teachers
+  const scopedData = (currentAssignedGrade && currentAssignedGrade!=='__NONE__')
+    ? allData.filter(r=>gShort(r['Grade'])===currentAssignedGrade)
+    : (currentAssignedGrade==='__NONE__' ? [] : allData);
 
-  // School average
-  const avgs=allData.map(r=>parseFloat(calcStats(r).avg)).filter(x=>!isNaN(x));
+  const unique=new Set(scopedData.map(r=>String(r['Assessment No']||r['Official Student Name']||'').trim()).filter(Boolean)).size;
+  document.getElementById('kpi-students').textContent=unique||scopedData.length;
+
+  const avgs=scopedData.map(r=>parseFloat(calcStats(r).avg)).filter(x=>!isNaN(x));
   const schoolAvg=avgs.length?(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(1):'N/A';
   document.getElementById('kpi-avg').textContent=schoolAvg+'%';
 
-  // EE count
-  const eeCount=allData.filter(r=>{ const a=parseFloat(calcStats(r).avg); return a>=75; }).length;
+  const eeCount=scopedData.filter(r=>{ const a=parseFloat(calcStats(r).avg); return a>=75; }).length;
   document.getElementById('kpi-ee').textContent=eeCount;
 
-  // At risk (below 41)
-  const atRisk=allData.filter(r=>{ const a=parseFloat(calcStats(r).avg); return a<41; }).length;
+  const atRisk=scopedData.filter(r=>{ const a=parseFloat(calcStats(r).avg); return a<41; }).length;
   document.getElementById('kpi-at-risk').textContent=atRisk;
 
-  // Grade levels
   document.getElementById('kpi-grades').textContent=getUniqueGrades().length;
-
-  // Total records
-  document.getElementById('kpi-records').textContent=allData.length;
+  document.getElementById('kpi-records').textContent=scopedData.length;
 }
 
 /* ══════════════════════════════════════════
@@ -3391,6 +3574,9 @@ function filterStudents(){
 
   // First filter all matching rows
   const matchedRows=allData.filter(r=>{
+    // ── Grade scope: teachers only see their assigned grade ──
+    if(currentAssignedGrade === '__NONE__') return false;
+    if(currentAssignedGrade && gShort(r['Grade']) !== currentAssignedGrade) return false;
     if(ql){
       const name=(String(r['Official Student Name']||'')).toLowerCase();
       const asm=(String(r['Assessment No']||'')).toLowerCase();
@@ -3844,6 +4030,9 @@ function filterResults(){
   const term=document.getElementById('results-term-sel')?.value||'';
   const grade=document.getElementById('results-grade-sel')?.value||'';
   filteredResults=allData.filter(r=>{
+    // ── Grade scope: teachers only see their assigned grade ──
+    if(currentAssignedGrade === '__NONE__') return false;
+    if(currentAssignedGrade && gShort(r['Grade']) !== currentAssignedGrade) return false;
     if(term&&getRecordTerm(r)!==term) return false;
     if(grade&&gShort(r['Grade'])!==grade) return false;
     return true;
