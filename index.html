@@ -2687,7 +2687,35 @@ window.addEventListener('load',()=>{
    in Firestore Console → users/{uid}.
 ══════════════════════════════════════════ */
 
+async function isAuthorizedFirestore(uid, email) {
+  try {
+    const { doc, getDoc, collection, getDocs } = window._fb;
 
+    // ── 1. Check by UID (document ID = uid) ──────────────────────────────
+    const uidDoc = await getDoc(doc(firestoreDb, 'users', uid));
+    if (uidDoc.exists()) {
+      const role = (uidDoc.data().role || '').toLowerCase();
+      if (role === 'admin' || role === 'teacher') return true;
+    }
+
+    // ── 2. Fallback: check by email field across the users collection ─────
+    if (email) {
+      const snapshot = await getDocs(collection(firestoreDb, 'users'));
+      for (const d of snapshot.docs) {
+        const data = d.data();
+        if ((data.email || '').toLowerCase() === email.toLowerCase()) {
+          const role = (data.role || '').toLowerCase();
+          if (role === 'admin' || role === 'teacher') return true;
+        }
+      }
+    }
+
+    return false;
+  } catch (e) {
+    console.error('[Auth] isAuthorizedFirestore error:', e);
+    return false;
+  }
+}
 
 async function rejectUnauthorized(email) {
   // Immediately sign the unauthorized user back out of Firebase
