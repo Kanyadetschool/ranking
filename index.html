@@ -614,53 +614,11 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   #rec-modal-content{padding:14px 12px;}
   /* Subject table: hide progress bar column on small screens */
   .rec-perf-col{display:none;}
-  /* Responsive: section header and action rows */
-  .sec-hdr{flex-direction:column;align-items:flex-start;}
-  .actions-row{width:100%;}
-  .actions-row .btn{flex:1;justify-content:center;}
-  /* Filter row stacks on mobile */
-  .filter-row{flex-direction:column;}
-  .filter-row .sel,.filter-row .search-input-wrap{width:100%;min-width:0;}
-  /* Card headers */
-  .card-hdr{flex-direction:column;align-items:flex-start;}
-  /* Data table: make it scrollable */
-  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  /* Grade assignments table on mobile */
-  #grade-assignments-list .data-table th:nth-child(2),
-  #grade-assignments-list .data-table td:nth-child(2){display:none;}
-  /* Form grid single col on mobile */
-  .form-grid{grid-template-columns:1fr!important;}
-  /* New features controls */
-  #new-features-controls{margin:0 14px 14px!important;}
-  /* Rank list */
-  .rank-name{font-size:12px;}
-  /* Student card */
-  .student-card{flex-direction:column;}
-  /* Page title */
-  .page-title{font-size:15px;}
-  .page-crumb{display:none;}
 }
 @media(max-width:480px){
   .kpi-grid{grid-template-columns:1fr;}
   .mini-stats{grid-template-columns:1fr 1fr;}
   .grid-2,.grid-3,.grid-60-40{grid-template-columns:1fr;}
-  /* Topbar: show only icon for theme toggle on very small screens */
-  .topbar{padding:8px 10px;}
-  .content-area{padding:10px;}
-  /* Card padding */
-  .card{padding:14px;}
-  /* KPI values smaller */
-  .kpi-val{font-size:22px;}
-  /* Tabs scroll */
-  .tabs{overflow-x:auto;white-space:nowrap;flex-wrap:nowrap;padding-bottom:2px;}
-  .tab{white-space:nowrap;}
-  /* Actions row: wrap neatly */
-  .actions-row .btn{font-size:11px;padding:7px 10px;}
-  /* Hide email col in grade assignment on very small screens */
-  #grade-assignments-list .data-table th:nth-child(2),
-  #grade-assignments-list .data-table td:nth-child(2){display:none;}
-  /* Grade checkboxes wrap nicely */
-  #grade-assignments-list label{font-size:10px;}
 }
 .hamburger{
   display:none;width:36px;height:36px;border-radius:var(--radius-sm);
@@ -1990,7 +1948,6 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           <label>GRADE LEVEL</label>
           <select id="edit-grade-num" onchange="updateEditGradeField()">
             <option value="">Select grade</option>
-            <option value="1">Grade 1</option><option value="2">Grade 2</option><option value="3">Grade 3</option>
             <option value="4">Grade 4</option><option value="5">Grade 5</option><option value="6">Grade 6</option>
             <option value="7">Grade 7</option><option value="8">Grade 8</option><option value="9">Grade 9</option>
           </select>
@@ -2661,7 +2618,7 @@ window.addEventListener('load',()=>{
       onAuthStateChanged(auth,async user=>{
         document.getElementById('loader').style.display='none';
         if(user){
-          const allowed = await isAuthorizedFirestore(user.uid, user.email);
+          const allowed = await isAuthorizedFirestore(user.uid);
           if(!allowed){
             await rejectUnauthorized(user.email);
             return;
@@ -2687,7 +2644,24 @@ window.addEventListener('load',()=>{
    in Firestore Console → users/{uid}.
 ══════════════════════════════════════════ */
 
-
+/**
+ * Checks Firestore users/{uid} for role: "Admin" (case-insensitive) or "Teacher" (case-insensitive).
+ * Returns true if granted, false for anything else.
+ * Fails closed — any Firestore error → access denied.
+ */
+async function isAuthorizedFirestore(uid) {
+  if (!uid || !firestoreDb) return false;
+  try {
+    const { doc, getDoc } = window._fb;
+    const snap = await getDoc(doc(firestoreDb, 'users', uid));
+    if (!snap.exists()) return false;
+    const role = (snap.data().role || '').trim().toLowerCase();
+    return role === 'admin' || role === 'teacher';
+  } catch (e) {
+    console.warn('[Auth] Firestore role check failed:', e.message);
+    return false;
+  }
+}
 
 async function rejectUnauthorized(email) {
   // Immediately sign the unauthorized user back out of Firebase
@@ -2742,7 +2716,7 @@ async function doEmailLogin(){
     const{signInWithEmailAndPassword}=window._fb;
     const cred=await signInWithEmailAndPassword(auth,email,pass);
     const u=cred.user;
-    const allowed = await isAuthorizedFirestore(u.uid, u.email);
+    const allowed = await isAuthorizedFirestore(u.uid);
     if(!allowed){
       await rejectUnauthorized(u.email);
       return;
@@ -2775,7 +2749,7 @@ async function doGoogleLogin(){
     provider.setCustomParameters({prompt:'select_account'});
     const cred=await signInWithPopup(auth,provider);
     const u=cred.user;
-    const allowed = await isAuthorizedFirestore(u.uid, u.email);
+    const allowed = await isAuthorizedFirestore(u.uid);
     if(!allowed){
       await rejectUnauthorized(u.email);
       return;
@@ -2984,7 +2958,7 @@ window.loadGradeAssignments = async function(){
   try{
     const allGrades = getUniqueGrades().length
       ? getUniqueGrades()
-      : ['Grade 1','Grade 2','Grade 3','Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9'];
+      : ['Grade 4','Grade 5','Grade 6','Grade 7','Grade 8','Grade 9'];
 
     const {collection, getDocs} = window._fb;
     let users = [];
