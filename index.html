@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kanyadet School — Assessments Portal</title>
+<title>Kanyadet School — Admin Portal</title>
 <script src="./image-popup.js"></script>
 <link rel="icon" type="image/x-icon" href="./images/logo.png">
 
@@ -848,6 +848,42 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .act-time{font-size:10px;color:var(--text3);margin-top:2px;}
 
 /* ══════════════════════════════════════════
+   DETAILED AUDIT LOG CARDS
+══════════════════════════════════════════ */
+.audit-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:10px;overflow:hidden;transition:var(--transition);}
+.audit-card:hover{border-color:var(--border-strong);}
+.audit-card-head{display:flex;align-items:center;gap:12px;padding:12px 16px;cursor:pointer;background:var(--surface2);}
+.audit-card-head:hover{background:var(--surface3);}
+.audit-icon{width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:17px;}
+.audit-main{flex:1;min-width:0;}
+.audit-action{font-size:13px;font-weight:700;color:var(--text);}
+.audit-meta{font-size:10px;color:var(--text3);margin-top:3px;display:flex;gap:10px;flex-wrap:wrap;}
+.audit-badge{font-size:9px;font-weight:800;padding:2px 8px;border-radius:8px;text-transform:uppercase;letter-spacing:.06em;flex-shrink:0;}
+.ab-edit{background:rgba(39,174,96,.15);color:#4dbb77;}
+.ab-add{background:rgba(41,128,185,.15);color:var(--blue-lt);}
+.ab-delete{background:rgba(231,76,60,.15);color:#e25b4b;}
+.ab-import{background:rgba(142,68,173,.15);color:#c39bd3;}
+.ab-export{background:rgba(243,156,18,.15);color:#e8a91a;}
+.ab-auth{background:rgba(22,160,133,.15);color:#1abc9c;}
+.ab-system{background:rgba(127,140,141,.15);color:#95a5a6;}
+.audit-chevron{font-size:13px;color:var(--text3);transition:transform .25s;flex-shrink:0;margin-left:4px;}
+.audit-card.open .audit-chevron{transform:rotate(90deg);}
+.audit-body{display:none;padding:14px 16px;border-top:1px solid var(--border);}
+.audit-card.open .audit-body{display:block;}
+.audit-section-lbl{font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.audit-diff-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px;}
+.audit-diff-table th{padding:6px 10px;text-align:left;font-size:9px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;background:rgba(41,128,185,.06);border-bottom:1px solid var(--border);}
+.audit-diff-table td{padding:7px 10px;border-bottom:1px solid var(--border);vertical-align:top;font-size:11px;}
+.audit-diff-table tr:last-child td{border-bottom:none;}
+.audit-diff-table .field-name{font-weight:700;color:var(--text2);font-family:'JetBrains Mono',monospace;white-space:nowrap;}
+.val-before{color:#e25b4b;background:rgba(231,76,60,.07);border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;display:inline-block;}
+.val-after{color:#4dbb77;background:rgba(39,174,96,.07);border-radius:4px;padding:2px 6px;font-family:'JetBrains Mono',monospace;display:inline-block;}
+.val-only{color:var(--text);font-family:'JetBrains Mono',monospace;}
+.audit-snapshot{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text2);line-height:1.9;max-height:220px;overflow-y:auto;}
+.audit-no-diff{font-size:12px;color:var(--text3);font-style:italic;padding:4px 0;}
+.audit-summary-pill{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;padding:3px 9px;border-radius:10px;background:rgba(41,128,185,.1);color:var(--blue-lt);border:1px solid rgba(41,128,185,.2);margin-right:4px;}
+
+/* ══════════════════════════════════════════
    SUBJECT PERFORMANCE BAR
 ══════════════════════════════════════════ */
 .subj-bar-item{margin-bottom:12px;}
@@ -975,7 +1011,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div id="loader">
   <div class="ld-logo">🏫</div>
   <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-txt">Initializing ResultsPortal…</div>
+  <div class="ld-txt">Initializing Admin Portal…</div>
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -1020,15 +1056,15 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     <!-- <p class="login-hint">🔒 Authorized school personnel only</p> -->
     
            <a href="./Report-Cards/Individual-student-portal.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
-          <div class="auth-qlink-dot"></div>🎓 Real-time Students Results Portal<span class="auth-qlink-arrow">→</span>
+          <div class="auth-qlink-dot"></div>🎓 Students Portal<span class="auth-qlink-arrow">→</span>
         </a>
- <!-- <a href="./Report-Cards/admin_progress.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
+ <a href="./Report-Cards/admin_progress.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
           <div class="auth-qlink-dot"></div>🎓 All Students progress<span class="auth-qlink-arrow">→</span>
         </a>
 
 <a href="./permissions/index.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-3">
           <div class="auth-qlink-dot"></div>🎓 Permissions & Leave<span class="auth-qlink-arrow">→</span>
-        </a> -->
+        </a>
 
   </div>
 </div>
@@ -1048,7 +1084,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <div class="brand-icon">🏫</div>
       <div class="brand-text">
         <div class="b-name">Kanyadet School</div>
-        <div class="b-role">Results Portal</div>
+        <div class="b-role">Admin Portal</div>
       </div>
     </div>
 
@@ -1798,20 +1834,31 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           <h2>🗂️ Audit Log</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span id="audit-count" style="font-size:11px;color:var(--text3);font-weight:700"></span>
+            <button class="btn btn-outline btn-sm" onclick="exportAuditCSV()">📥 Export CSV</button>
             <button class="btn btn-outline btn-sm" onclick="loadAuditLogs()">🔄 Refresh</button>
           </div>
         </div>
         <div class="card" style="margin-bottom:0">
-          <div class="filter-row" style="margin-bottom:16px">
-            <div class="search-input-wrap" style="flex:1">
-              <input class="search-input" placeholder="Search actions, names…" oninput="auditSearch(this.value)">
+          <div class="filter-row" style="margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div class="search-input-wrap" style="flex:1;min-width:180px">
+              <input class="search-input" placeholder="Search by student, action, admin…" oninput="auditSearch(this.value)">
             </div>
-            <select class="sel" id="audit-actor-sel" onchange="auditFilter(this.value)">
+            <select class="sel" id="audit-actor-sel" onchange="auditFilter('actor',this.value)">
               <option value="">All Admins</option>
+            </select>
+            <select class="sel" id="audit-cat-sel" onchange="auditFilter('cat',this.value)">
+              <option value="">All Categories</option>
+              <option value="edit">✏️ Edits</option>
+              <option value="add">➕ Additions</option>
+              <option value="delete">🗑️ Deletions</option>
+              <option value="import">📥 Imports</option>
+              <option value="export">📤 Exports</option>
+              <option value="auth">🔐 Auth</option>
+              <option value="system">⚙️ System</option>
             </select>
           </div>
           <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
-            📋 Every admin action (logins, edits, deletes, imports, exports, data refreshes) is recorded here with the admin's name, email, and timestamp. This log is stored permanently in Firebase so incoming admins can review all historical activity.
+            📋 Every admin action is recorded here with field-level detail — what changed, the old value, the new value, who made the change, and when. Click any entry to expand its full diff.
           </p>
           <div id="audit-log-list">
             <p style="font-size:12px;color:var(--text3)">Loading audit history…</p>
@@ -2550,18 +2597,6 @@ const ALLOWED_ADMINS = [
   // Add more authorised admin emails below:
   'geofreyonyango167@gmail.com',
   'oduorgeofrey141@gmail.com',
-  'wyclifowuor@gmail.com',
-  'atieunice@gmail.com',
-  'cliffeowino@yahoo.com',
-  'janetoluoch7@gmail.com',
-  'atienoberyl54@gmail.com',
-  'oumastepheno96@gmail.com',
-  'sarahochola90@gmail.com',
-  'priscaakinyiger@gmail.com',
-  'opiyojacky@gmail.com',
-  'ombohoaggrey@gmail.com',
-
-
 ];
 
 function isAuthorized(email) {
@@ -2573,7 +2608,7 @@ async function rejectUnauthorized(email) {
   // Immediately sign the unauthorized user back out of Firebase
   try { const{signOut}=window._fb; await signOut(auth); } catch(e) {}
   const err = document.getElementById('login-err');
-  err.textContent = `⛔ Access denied. "${email}" is not an authorised account. Contact the ICT Dept for assistance.`;
+  err.textContent = `⛔ Access denied. "${email}" is not an authorised admin account. Contact the school administrator.`;
   err.classList.add('on');
   // Reset Google button
   const gbtn = document.getElementById('google-btn');
@@ -3086,13 +3121,32 @@ window.renderTopStudents=renderTopStudents;
 ══════════════════════════════════════════ */
 const activities=[];
 
-async function logActivity(text,iconClass,actor){
-  const entry={text,iconClass,actor:actor||currentAdminName,email:currentAdminEmail||'',time:new Date().toISOString()};
+/* ── logActivity ──────────────────────────────────────────────────────────
+   text       : human-readable summary  e.g. "✏️ Updated record for John"
+   iconClass  : act-blue | act-green | act-orange | act-red
+   actor      : admin display name
+   details    : { category, targetId, targetName, before, after, extra }
+     category   : 'edit' | 'add' | 'delete' | 'import' | 'export' | 'auth' | 'system'
+     before/after: plain objects with field→value pairs (for edits)
+     extra      : freeform string (e.g. "300 records imported")
+─────────────────────────────────────────────────────────────────────────── */
+async function logActivity(text, iconClass, actor, details={}){
+  const entry={
+    text, iconClass,
+    actor : actor||currentAdminName,
+    email : currentAdminEmail||'',
+    time  : new Date().toISOString(),
+    category   : details.category   || _inferCategory(text),
+    targetId   : details.targetId   || '',
+    targetName : details.targetName || '',
+    before     : details.before     || null,
+    after      : details.after      || null,
+    extra      : details.extra      || '',
+  };
   activities.unshift(entry);
-  if(activities.length>100) activities.pop();
+  if(activities.length>300) activities.pop();
   renderActivityLog();
   renderAuditView();
-  // Persist to Firebase
   if(db){
     try{
       const{ref,push}=window._fb;
@@ -3101,11 +3155,21 @@ async function logActivity(text,iconClass,actor){
   }
 }
 
+function _inferCategory(text){
+  if(/✏️|Updated/.test(text))  return 'edit';
+  if(/➕|Added/.test(text))    return 'add';
+  if(/🗑|Deleted/.test(text))  return 'delete';
+  if(/📥|Imported/.test(text)) return 'import';
+  if(/📤|📥.*Export|Exported|PDF|CSV/.test(text)) return 'export';
+  if(/🔐|🚪|sign/.test(text))  return 'auth';
+  return 'system';
+}
+
 async function loadAuditLogs(){
   if(!db) return;
   try{
     const{ref,query,orderByChild,limitToLast,get}=window._fb;
-    const q=query(ref(db,AUDIT_PATH),orderByChild('time'),limitToLast(200));
+    const q=query(ref(db,AUDIT_PATH),orderByChild('time'),limitToLast(500));
     const snap=await get(q);
     const data=snap.val();
     if(!data) return;
@@ -3134,40 +3198,159 @@ function renderActivityLog(){
     </div>`).join('');
 }
 
-let auditSearchVal='', auditFilterActor='';
+let auditSearchVal='', auditFilterActor='', auditFilterCat='';
+
+/* ─── Category config ─────────────────────────────── */
+const _AUDIT_CAT={
+  edit   :{label:'Edit',   cls:'ab-edit',   icon:'✏️'},
+  add    :{label:'Add',    cls:'ab-add',    icon:'➕'},
+  delete :{label:'Delete', cls:'ab-delete', icon:'🗑️'},
+  import :{label:'Import', cls:'ab-import', icon:'📥'},
+  export :{label:'Export', cls:'ab-export', icon:'📤'},
+  auth   :{label:'Auth',   cls:'ab-auth',   icon:'🔐'},
+  system :{label:'System', cls:'ab-system', icon:'⚙️'},
+};
+
+/* ─── Build expanded diff body HTML ─────────────────── */
+function _buildDiffHTML(entry){
+  const cat = entry.category || _inferCategory(entry.text||'');
+  let html = '';
+
+  if(cat==='edit' && entry.before && entry.after){
+    const allKeys=[...new Set([...Object.keys(entry.before),...Object.keys(entry.after)])].sort();
+    const changed=allKeys.filter(k=>String(entry.before[k]??'')!==String(entry.after[k]??''));
+    if(!changed.length){
+      html+=`<div class="audit-no-diff">No field-level changes recorded.</div>`;
+    } else {
+      html+=`<div class="audit-section-lbl">Fields Changed (${changed.length})</div>`;
+      html+=`<table class="audit-diff-table"><thead><tr><th>Field</th><th>Before</th><th>After</th></tr></thead><tbody>`;
+      changed.forEach(k=>{
+        const bv=entry.before[k]??'—'; const av=entry.after[k]??'—';
+        html+=`<tr><td class="field-name">${k}</td><td><span class="val-before">${bv}</span></td><td><span class="val-after">${av}</span></td></tr>`;
+      });
+      html+=`</tbody></table>`;
+    }
+  } else if(cat==='add' && entry.after){
+    html+=`<div class="audit-section-lbl">New Record Created</div>`;
+    html+=`<table class="audit-diff-table"><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>`;
+    Object.entries(entry.after).filter(([,v])=>v!=null&&v!=='').forEach(([k,v])=>{
+      html+=`<tr><td class="field-name">${k}</td><td class="val-only">${v}</td></tr>`;
+    });
+    html+=`</tbody></table>`;
+  } else if(cat==='delete' && entry.before){
+    html+=`<div class="audit-section-lbl">Deleted Record Snapshot</div>`;
+    html+=`<div class="audit-snapshot">`;
+    Object.entries(entry.before).filter(([k])=>k!=='id').forEach(([k,v])=>{
+      if(v!=null&&v!=='') html+=`<div><strong>${k}:</strong> ${v}</div>`;
+    });
+    html+=`</div>`;
+  } else if(entry.extra){
+    html+=`<div class="audit-section-lbl">Details</div><div class="audit-snapshot">${entry.extra}</div>`;
+  } else {
+    html+=`<div class="audit-no-diff">No additional detail available for this action.</div>`;
+  }
+  return html;
+}
+
+/* ─── Main render ─────────────────────────────────── */
 function renderAuditView(){
   const container=document.getElementById('audit-log-list');
   if(!container) return;
-  let filtered=activities;
-  if(auditSearchVal) filtered=filtered.filter(a=>a.text.toLowerCase().includes(auditSearchVal)||a.actor.toLowerCase().includes(auditSearchVal)||(a.email||'').toLowerCase().includes(auditSearchVal));
+
+  let filtered=[...activities];
+  if(auditSearchVal)   filtered=filtered.filter(a=>(a.text||'').toLowerCase().includes(auditSearchVal)||(a.actor||'').toLowerCase().includes(auditSearchVal)||(a.email||'').toLowerCase().includes(auditSearchVal)||(a.targetName||'').toLowerCase().includes(auditSearchVal));
   if(auditFilterActor) filtered=filtered.filter(a=>a.actor===auditFilterActor);
-  if(!filtered.length){container.innerHTML='<p style="font-size:13px;color:var(--text3);padding:20px 0">No audit entries match your filter.</p>';return;}
+  if(auditFilterCat)   filtered=filtered.filter(a=>(a.category||_inferCategory(a.text||''))===auditFilterCat);
+
+  if(!filtered.length){
+    container.innerHTML='<p style="font-size:13px;color:var(--text3);padding:20px 0">No audit entries match your filter.</p>';
+    document.getElementById('audit-count').textContent='0 entries';
+    return;
+  }
+
+  /* Rebuild actor dropdown when new entries arrive */
+  const actorSel=document.getElementById('audit-actor-sel');
+  if(actorSel){
+    const current=actorSel.value;
+    while(actorSel.options.length>1) actorSel.remove(1);
+    [...new Set(activities.map(a=>a.actor).filter(Boolean))].sort().forEach(ac=>{
+      const o=document.createElement('option'); o.value=ac; o.textContent=ac;
+      actorSel.appendChild(o);
+    });
+    actorSel.value=current;
+  }
+
   container.innerHTML=filtered.map((a,i)=>{
     const d=new Date(a.time);
-    const dateStr=d.toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'});
-    const timeStr=d.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="activity-item" style="padding:12px 0;${i===0?'':''}">
-      <div class="act-icon ${a.iconClass||'act-blue'}" style="font-size:16px">${a.text.split(' ')[0]}</div>
-      <div class="act-body">
-        <div class="act-text" style="font-size:13px">${a.text.replace(/^[^\s]+\s/,'')}</div>
-        <div class="act-time" style="font-size:11px;margin-top:3px">
-          <span style="font-weight:700;color:var(--blue-lt)">${a.actor||'Admin'}</span>
-          ${a.email?`<span style="color:var(--text3)"> · ${a.email}</span>`:''}
-          <span style="margin-left:8px;color:var(--text3)">${dateStr} ${timeStr}</span>
+    const dateStr=d.toLocaleDateString('en-KE',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+    const timeStr=d.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+    const cat=a.category||_inferCategory(a.text||'');
+    const catCfg=_AUDIT_CAT[cat]||_AUDIT_CAT.system;
+    const emoji=a.text?a.text.split(' ')[0]:catCfg.icon;
+    const summary=a.text?a.text.replace(/^[^\s]+\s/,''):'(no description)';
+
+    let changePill='';
+    if(cat==='edit'&&a.before&&a.after){
+      const nChanged=Object.keys({...a.before,...a.after}).filter(k=>String(a.before[k]??'')!==String(a.after[k]??'')).length;
+      if(nChanged) changePill=`<span class="audit-summary-pill">📝 ${nChanged} field${nChanged!==1?'s':''} changed</span>`;
+    }
+
+    const diffHTML=_buildDiffHTML(a);
+
+    return `<div class="audit-card" id="acard-${i}">
+      <div class="audit-card-head" onclick="toggleAuditCard('acard-${i}')">
+        <div class="audit-icon ${a.iconClass||'act-blue'}">${emoji}</div>
+        <div class="audit-main">
+          <div class="audit-action">${summary}</div>
+          <div class="audit-meta">
+            <span>👤 <strong style="color:var(--blue-lt)">${a.actor||'Admin'}</strong>${a.email?' &lt;'+a.email+'&gt;':''}</span>
+            <span>🕐 ${dateStr} &nbsp;${timeStr}</span>
+            ${a.targetName?`<span>🎯 ${a.targetName}</span>`:''}
+          </div>
+          <div style="margin-top:5px">${changePill}<span class="audit-badge ${catCfg.cls}">${catCfg.label}</span></div>
         </div>
+        <div class="audit-chevron">▶</div>
       </div>
+      <div class="audit-body">${diffHTML}</div>
     </div>`;
   }).join('');
-  // Update unique actors for filter dropdown
-  const actorSel=document.getElementById('audit-actor-sel');
-  if(actorSel&&actorSel.options.length<=1){
-    const actors=[...new Set(activities.map(a=>a.actor).filter(Boolean))].sort();
-    actors.forEach(ac=>{const o=document.createElement('option');o.value=ac;o.textContent=ac;actorSel.appendChild(o);});
-  }
+
   document.getElementById('audit-count').textContent=filtered.length+' entries';
 }
+
+window.toggleAuditCard=function(id){const el=document.getElementById(id);if(el)el.classList.toggle('open');};
 window.auditSearch=function(v){auditSearchVal=v.toLowerCase();renderAuditView();};
-window.auditFilter=function(v){auditFilterActor=v;renderAuditView();};
+window.auditFilter=function(type,v){if(type==='actor')auditFilterActor=v;else if(type==='cat')auditFilterCat=v;renderAuditView();};
+
+/* ─── Export audit log to CSV ─────────────────────── */
+window.exportAuditCSV=function(){
+  if(!activities.length){notify('No audit entries to export.','warn');return;}
+  const headers=['Timestamp','Date','Time','Admin','Email','Category','Action','Target','Fields Changed','Before (JSON)','After (JSON)','Extra'];
+  const rows=activities.map(a=>{
+    const d=new Date(a.time);
+    const cat=a.category||_inferCategory(a.text||'');
+    let nChanged='';
+    if(cat==='edit'&&a.before&&a.after) nChanged=Object.keys({...a.before,...a.after}).filter(k=>String(a.before[k]??'')!==String(a.after[k]??'')).length;
+    return [
+      a.time,
+      d.toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'}),
+      d.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit',second:'2-digit'}),
+      a.actor||'',a.email||'',cat,
+      (a.text||'').replace(/^[^\s]+\s/,''),
+      a.targetName||'',nChanged,
+      a.before?JSON.stringify(a.before):'',
+      a.after ?JSON.stringify(a.after) :'',
+      a.extra ||'',
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`);
+  });
+  const csv=[headers.join(','),...rows.map(r=>r.join(','))].join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url; a.download=`audit-log-${new Date().toISOString().slice(0,10)}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  notify('📥 Audit log exported!','success');
+};
 
 function timeAgo(d){
   const s=Math.floor((Date.now()-new Date(d))/1000);
@@ -3578,17 +3761,30 @@ async function saveStudentRecord(){
   try{
     const{ref,set,push,update}=window._fb;
     if(editingKey){
+      /* Capture before snapshot from current allData */
+      const existing=allData.find(r=>r.id===editingKey)||{};
+      const before={};
+      const after={};
+      /* Compare all fields in the new record */
+      Object.keys(record).forEach(k=>{
+        before[k]=existing[k]??'';
+        after[k]=record[k]??'';
+      });
       await update(ref(db,`${DB_PATH}/${editingKey}`),record);
       const idx=allData.findIndex(r=>r.id===editingKey);
       if(idx>-1) allData[idx]={...allData[idx],...record};
       notify('✅ Record updated successfully!','success');
-      logActivity(`✏️ Updated record for ${name}`,'act-green',currentAdminName);
+      logActivity(`✏️ Updated record for ${name}`,'act-green',currentAdminName,{
+        category:'edit', targetId:editingKey, targetName:name, before, after
+      });
     } else {
       const newRef=push(ref(db,DB_PATH));
       await set(newRef,record);
       allData.push({id:newRef.key,...record});
       notify('✅ Student record added!','success');
-      logActivity(`➕ Added student ${name}`,'act-green',currentAdminName);
+      logActivity(`➕ Added student ${name}`,'act-green',currentAdminName,{
+        category:'add', targetId:newRef.key, targetName:name, after:record
+      });
     }
     closeEditModal();
     renderAll();
@@ -3615,10 +3811,14 @@ async function deleteStudent(id){
   if(!ok) return;
   try{
     const{ref,remove}=window._fb;
+    /* Capture full before snapshot */
+    const beforeSnap={...rec};
     await remove(ref(db,`${DB_PATH}/${id}`));
     allData=allData.filter(r=>r.id!==id);
     notify('🗑 Record deleted.','warn');
-    logActivity(`🗑 Deleted record for ${rec['Official Student Name']}`,'act-red',currentAdminName);
+    logActivity(`🗑 Deleted record for ${rec['Official Student Name']}`,'act-red',currentAdminName,{
+      category:'delete', targetId:id, targetName:rec['Official Student Name'], before:beforeSnap
+    });
     renderAll();
   }catch(e){
     notify('Error deleting: '+e.message,'error');
@@ -5024,6 +5224,7 @@ window.handleImportDrop=handleImportDrop;
 
 async function handleImportFile(file){
   if(!file)return;
+  window._lastImportFilename = file.name;
   const status=document.getElementById('import-status');
   status.innerHTML=`<div style="font-size:12px;color:var(--text2)">⏳ Reading ${file.name}…</div>`;
   document.getElementById('import-preview-card').style.display='none';
@@ -5129,7 +5330,10 @@ async function commitImport(){
     }
     notify(`✅ Imported <strong>${count}</strong> records successfully!`,'success');
     btn.textContent='✅ Done!';
-    logActivity(`📥 Imported ${count} records via CSV upload`,'act-green',currentAdminName);
+    logActivity(`📥 Imported ${count} records via CSV upload`,'act-green',currentAdminName,{
+      category:'import',
+      extra:`File: ${window._lastImportFilename||'unknown'} · Records imported: ${count}`
+    });
     setTimeout(()=>refreshData(),1500);
   }catch(err){
     notify('Import error: '+err.message,'error');
