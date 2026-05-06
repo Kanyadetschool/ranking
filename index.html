@@ -1120,6 +1120,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <div class="nav-item" onclick="navTo('announcements',this)" data-label="Announcements">
         <span class="nav-icon">📢</span> Announcements
       </div>
+      <div class="nav-item" onclick="navTo('profile',this)" data-label="My Profile" id="nav-profile">
+        <span class="nav-icon">👤</span> My Profile
+      </div>
       <div class="nav-item" onclick="navTo('settings',this)" data-label="Settings">
         <span class="nav-icon">⚙️</span> Settings
       </div>
@@ -1658,6 +1661,102 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
             </div>
             <p class="ann-body">School closes on 15th August 2025. All students are expected to collect their report cards before leaving. Next term begins 2nd September 2025.</p>
           </div>
+        </div>
+      </div>
+
+      <!-- ══════ PROFILE VIEW ══════ -->
+      <div class="view" id="view-profile">
+        <div class="sec-hdr"><h2>My Profile</h2></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px;max-width:900px">
+
+          <!-- Personal Info Card -->
+          <div class="card">
+            <div class="sec-hdr" style="margin-bottom:18px">
+              <h3 style="font-size:14px;font-weight:800">Personal Information</h3>
+              <span id="prof-info-status" style="font-size:11px;font-weight:700"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px;padding:14px;background:var(--surface2);border-radius:var(--radius-lg);border:1px solid var(--border)">
+              <div id="prof-avatar" style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dk));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0;overflow:hidden;border:2px solid var(--blue)"></div>
+              <div>
+                <div id="prof-avatar-name" style="font-size:14px;font-weight:800;color:var(--text)"></div>
+                <div id="prof-avatar-role" style="font-size:11px;color:var(--text3);margin-top:2px"></div>
+                <div id="prof-avatar-email" style="font-size:11px;color:var(--text3)"></div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">First Name</label>
+                <input id="prof-fname" class="input" type="text" placeholder="First name">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Last Name</label>
+                <input id="prof-lname" class="input" type="text" placeholder="Last name">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Phone Number</label>
+                <input id="prof-phone" class="input" type="tel" placeholder="e.g. 0712 345 678">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Subject / Department</label>
+                <input id="prof-subject" class="input" type="text" placeholder="e.g. Mathematics">
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Staff ID</label>
+                <input id="prof-staffid" class="input" type="text" placeholder="Staff ID number">
+              </div>
+            </div>
+            <div style="margin-top:18px;display:flex;gap:10px;align-items:center">
+              <button class="btn btn-primary btn-sm" onclick="profSaveInfo()" id="prof-info-btn">Save Changes</button>
+              <button class="btn btn-outline btn-sm" onclick="profLoadInfo()">Reset</button>
+            </div>
+          </div>
+
+          <!-- Change Password Card -->
+          <div class="card">
+            <div class="sec-hdr" style="margin-bottom:18px">
+              <h3 style="font-size:14px;font-weight:800">Change Password</h3>
+              <span id="prof-pw-status" style="font-size:11px;font-weight:700"></span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Current Password</label>
+                <div style="position:relative">
+                  <input id="prof-pw-current" class="input" type="password" placeholder="Your current password" style="padding-right:40px">
+                  <span onclick="profTogglePw('prof-pw-current',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;color:var(--text3)">&#128065;</span>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">New Password</label>
+                <div style="position:relative">
+                  <input id="prof-pw-new" class="input" type="password" placeholder="Minimum 8 characters" style="padding-right:40px" oninput="profCheckPwStrength(this.value)">
+                  <span onclick="profTogglePw('prof-pw-new',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;color:var(--text3)">&#128065;</span>
+                </div>
+                <div style="margin-top:8px">
+                  <div style="height:4px;border-radius:2px;background:var(--surface3);overflow:hidden">
+                    <div id="prof-pw-bar" style="height:100%;width:0%;transition:width .3s,background .3s;border-radius:2px"></div>
+                  </div>
+                  <div id="prof-pw-hint" style="font-size:10px;color:var(--text3);margin-top:4px"></div>
+                </div>
+              </div>
+              <div>
+                <label style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:5px">Confirm New Password</label>
+                <div style="position:relative">
+                  <input id="prof-pw-confirm" class="input" type="password" placeholder="Repeat new password" style="padding-right:40px">
+                  <span onclick="profTogglePw('prof-pw-confirm',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:16px;color:var(--text3)">&#128065;</span>
+                </div>
+              </div>
+            </div>
+            <div style="margin-top:14px;padding:10px 12px;background:var(--surface2);border-radius:var(--radius-md);border:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.9">
+              Password must be at least <strong>8 characters</strong> and include a <strong>number</strong> or <strong>special character</strong>.
+            </div>
+            <div style="margin-top:18px">
+              <button class="btn btn-primary btn-sm" onclick="profSavePassword()" id="prof-pw-btn" style="width:100%">Update Password</button>
+            </div>
+            <div id="prof-google-notice" style="display:none;margin-top:14px;padding:10px 12px;background:rgba(234,67,53,.06);border:1px solid rgba(234,67,53,.2);border-radius:var(--radius-md);font-size:11px;color:var(--text2)">
+              Your account uses <strong>Google Sign-In</strong>. Password changes must be done through your Google account settings.
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -2221,9 +2320,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, onSnapshot };
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, onSnapshot };
 </script>
 
 <script>
@@ -3668,6 +3767,221 @@ window.saveGradeAssignment = async function(uid){
   }
 };
 
+/* ══════════════════════════════════════════
+   MY PROFILE — info update + password change
+   ══════════════════════════════════════════ */
+
+/* ── Load current user data into the profile form ── */
+async function profLoadInfo(){
+  var uid = window._currentUser && window._currentUser.uid;
+  if(!uid || !firestoreDb) return;
+
+  // Populate avatar strip from already-loaded globals
+  var nameEl    = document.getElementById('prof-avatar-name');
+  var roleEl    = document.getElementById('prof-avatar-role');
+  var emailEl   = document.getElementById('prof-avatar-email');
+  var avatarEl  = document.getElementById('prof-avatar');
+  if(nameEl)  nameEl.textContent  = currentAdminName || '';
+  if(emailEl) emailEl.textContent = currentAdminEmail || '';
+
+  // Pull fresh doc from Firestore
+  try{
+    var snap = await window._fb.getDoc(window._fb.doc(firestoreDb,'users',uid));
+    var d    = snap.exists() ? snap.data() : {};
+
+    // Split stored name into first/last
+    var fullName = d.name || currentAdminName || '';
+    var parts    = fullName.trim().split(' ');
+    var fname    = parts[0] || '';
+    var lname    = parts.slice(1).join(' ') || '';
+
+    var setVal = function(id, val){ var el=document.getElementById(id); if(el) el.value = val||''; };
+    setVal('prof-fname',   fname);
+    setVal('prof-lname',   lname);
+    setVal('prof-phone',   d.phone   || '');
+    setVal('prof-subject', d.subject || '');
+    setVal('prof-staffid', d.staffId || '');
+
+    if(roleEl)   roleEl.textContent   = d.role || '';
+    if(emailEl)  emailEl.textContent  = d.email || currentAdminEmail || '';
+
+    // Avatar initials or photo
+    if(avatarEl){
+      var photo = d.photoURL || '';
+      if(photo){
+        avatarEl.innerHTML = '<img src="'+photo+'" style="width:56px;height:56px;object-fit:cover;border-radius:50%" referrerpolicy="no-referrer">';
+      } else {
+        avatarEl.innerHTML = '';
+        avatarEl.textContent = fullName[0] ? fullName[0].toUpperCase() : '?';
+      }
+    }
+
+    // Check if Google sign-in (no password provider)
+    var auth  = window._fb.getAuth();
+    var user  = auth.currentUser;
+    var isGoogle = user && user.providerData && user.providerData.some(function(p){ return p.providerId === 'google.com'; });
+    var pwCard = document.getElementById('prof-google-notice');
+    var pwBtn  = document.getElementById('prof-pw-btn');
+    var pwInputs = ['prof-pw-current','prof-pw-new','prof-pw-confirm'];
+    if(isGoogle){
+      if(pwCard) pwCard.style.display = 'block';
+      if(pwBtn)  pwBtn.disabled = true;
+      pwInputs.forEach(function(id){ var el=document.getElementById(id); if(el) el.disabled=true; });
+    } else {
+      if(pwCard) pwCard.style.display = 'none';
+      if(pwBtn)  pwBtn.disabled = false;
+      pwInputs.forEach(function(id){ var el=document.getElementById(id); if(el) el.disabled=false; });
+    }
+
+    profSetStatus('prof-info-status','','');
+    profSetStatus('prof-pw-status','','');
+  } catch(e){
+    profSetStatus('prof-info-status','Error loading profile: '+e.message,'err');
+  }
+}
+
+/* ── Save personal info to Firestore + Firebase Auth displayName ── */
+window.profSaveInfo = async function(){
+  var uid = window._currentUser && window._currentUser.uid;
+  if(!uid || !firestoreDb){ notify('Not signed in.','error'); return; }
+
+  var fname   = (document.getElementById('prof-fname').value || '').trim();
+  var lname   = (document.getElementById('prof-lname').value || '').trim();
+  var phone   = (document.getElementById('prof-phone').value || '').trim();
+  var subject = (document.getElementById('prof-subject').value || '').trim();
+  var staffId = (document.getElementById('prof-staffid').value || '').trim();
+
+  if(!fname){ profSetStatus('prof-info-status','First name is required.','err'); return; }
+
+  var btn = document.getElementById('prof-info-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Saving...'; }
+  profSetStatus('prof-info-status','Saving...','ok');
+
+  try{
+    var fullName = (fname + ' ' + lname).trim();
+    var payload  = { name: fullName, firstName: fname, lastName: lname };
+    if(phone)   payload.phone   = phone;
+    if(subject) payload.subject = subject;
+    if(staffId) payload.staffId = staffId;
+    payload.updatedAt = new Date().toISOString();
+
+    // Update Firestore doc
+    await window._fb.updateDoc(window._fb.doc(firestoreDb,'users',uid), payload);
+
+    // Update Firebase Auth displayName
+    var auth = window._fb.getAuth();
+    if(auth.currentUser){
+      await window._fb.updateProfile(auth.currentUser, { displayName: fullName });
+    }
+
+    // Update UI globals
+    currentAdminName = fullName;
+    window._currentUser.name = fullName;
+    var nameDisplay = document.getElementById('admin-name');
+    if(nameDisplay) nameDisplay.textContent = fullName;
+    var avatarEl = document.getElementById('admin-av');
+    if(avatarEl && !avatarEl.querySelector('img')) avatarEl.textContent = fullName[0]||'?';
+
+    // Refresh avatar strip in profile
+    var pname = document.getElementById('prof-avatar-name');
+    if(pname) pname.textContent = fullName;
+    var pavatar = document.getElementById('prof-avatar');
+    if(pavatar && !pavatar.querySelector('img')) pavatar.textContent = fullName[0]||'?';
+
+    profSetStatus('prof-info-status','Saved!','ok');
+    notify('Profile updated successfully.','success',4000);
+    logActivity('Profile updated: '+fullName,'act-blue',fullName,{category:'system'});
+  } catch(e){
+    profSetStatus('prof-info-status','Error: '+e.message,'err');
+    notify('Error saving profile: '+e.message,'error');
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent='Save Changes'; }
+  }
+};
+
+/* ── Save new password ── */
+window.profSavePassword = async function(){
+  var current = (document.getElementById('prof-pw-current').value || '');
+  var pw1     = (document.getElementById('prof-pw-new').value     || '');
+  var pw2     = (document.getElementById('prof-pw-confirm').value || '');
+
+  if(!current){ profSetStatus('prof-pw-status','Enter your current password.','err'); return; }
+  if(pw1.length < 8){ profSetStatus('prof-pw-status','New password must be at least 8 characters.','err'); return; }
+  if(pw1 !== pw2){ profSetStatus('prof-pw-status','Passwords do not match.','err'); return; }
+
+  var btn = document.getElementById('prof-pw-btn');
+  if(btn){ btn.disabled=true; btn.textContent='Updating...'; }
+  profSetStatus('prof-pw-status','Verifying...','ok');
+
+  try{
+    var auth = window._fb.getAuth();
+    var user = auth.currentUser;
+    if(!user) throw new Error('Not signed in.');
+
+    // Re-authenticate first
+    var cred = window._fb.EmailAuthProvider.credential(user.email, current);
+    await window._fb.reauthenticateWithCredential(user, cred);
+
+    // Now update password
+    await window._fb.updatePassword(user, pw1);
+
+    // Clear fields
+    ['prof-pw-current','prof-pw-new','prof-pw-confirm'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.value='';
+    });
+    document.getElementById('prof-pw-bar').style.width='0%';
+    document.getElementById('prof-pw-hint').textContent='';
+
+    profSetStatus('prof-pw-status','Password updated!','ok');
+    notify('Password changed successfully.','success',5000);
+    logActivity('Password changed','act-orange',currentAdminName,{category:'system'});
+  } catch(e){
+    var msg = e.message;
+    if(e.code==='auth/wrong-password' || e.code==='auth/invalid-credential') msg='Current password is incorrect.';
+    if(e.code==='auth/weak-password') msg='New password is too weak.';
+    if(e.code==='auth/requires-recent-login') msg='Session expired. Please sign out and sign in again.';
+    profSetStatus('prof-pw-status','Error: '+msg,'err');
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent='Update Password'; }
+  }
+};
+
+/* ── Password strength indicator ── */
+window.profCheckPwStrength = function(pw){
+  var bar  = document.getElementById('prof-pw-bar');
+  var hint = document.getElementById('prof-pw-hint');
+  if(!bar || !hint) return;
+  var score = 0;
+  if(pw.length >= 8)  score++;
+  if(pw.length >= 12) score++;
+  if(/[A-Z]/.test(pw))  score++;
+  if(/[0-9]/.test(pw))  score++;
+  if(/[^A-Za-z0-9]/.test(pw)) score++;
+  var pct   = ['0%','25%','45%','65%','85%','100%'][score];
+  var color = ['#e74c3c','#e67e22','#f1c40f','#2ecc71','#27ae60'][Math.min(score-1,4)] || '#e74c3c';
+  var label = ['','Weak','Fair','Good','Strong','Very Strong'][score] || '';
+  bar.style.width = pct;
+  bar.style.background = color;
+  hint.textContent = label;
+  hint.style.color = color;
+};
+
+/* ── Toggle password visibility ── */
+window.profTogglePw = function(inputId, iconEl){
+  var inp = document.getElementById(inputId);
+  if(!inp) return;
+  if(inp.type==='password'){ inp.type='text'; iconEl.textContent='🙈'; }
+  else { inp.type='password'; iconEl.textContent='👁'; }
+};
+
+/* ── Status helper ── */
+function profSetStatus(elId, msg, type){
+  var el = document.getElementById(elId);
+  if(!el) return;
+  el.textContent = msg;
+  el.style.color = type==='err' ? 'var(--red)' : type==='ok' ? 'var(--green)' : 'var(--text3)';
+}
+
 async function doSignOut(){
   isAdvancedAdmin = false;
   currentAssignedGrade = null;
@@ -4955,9 +5269,10 @@ function navTo(view,el){
   const viewEl=document.getElementById('view-'+view);
   if(viewEl)viewEl.classList.add('active');
   if(el)el.classList.add('active');
-  const crumbs={dashboard:'Overview & Analytics',students:'Student Directory',results:'Results & Grades',analytics:'Charts & Insights',atrisk:'Students Below 41%',reports:'Report Cards & Export',import:'CSV / Excel Import',announcements:'School Notices',settings:'Portal Configuration',auditlog:'Full Admin Audit Trail'};
-  const titles={dashboard:'Dashboard',students:'Students',results:'Results',analytics:'Analytics',atrisk:'At-Risk Students',reports:'Report Cards',import:'Import Data',announcements:'Announcements',settings:'Settings',auditlog:'Audit Log'};
+  const crumbs={dashboard:'Overview & Analytics',students:'Student Directory',results:'Results & Grades',analytics:'Charts & Insights',atrisk:'Students Below 41%',reports:'Report Cards & Export',import:'CSV / Excel Import',announcements:'School Notices',settings:'Portal Configuration',auditlog:'Full Admin Audit Trail',profile:'Edit Your Profile & Password'};
+  const titles={dashboard:'Dashboard',students:'Students',results:'Results',analytics:'Analytics',atrisk:'At-Risk Students',reports:'Report Cards',import:'Import Data',announcements:'Announcements',settings:'Settings',auditlog:'Audit Log',profile:'My Profile'};
   if(document.getElementById('topbar-title'))document.getElementById('topbar-title').textContent=titles[view]||view;
+  if(view==='profile') profLoadInfo();
   if(document.getElementById('topbar-crumb'))document.getElementById('topbar-crumb').textContent=crumbs[view]||'';
   if(el) el.classList.add('active');
   document.getElementById('topbar-title').textContent=el?.querySelector('span+*')?.textContent||view.charAt(0).toUpperCase()+view.slice(1);
