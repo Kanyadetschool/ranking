@@ -3027,10 +3027,12 @@ async function checkAdvancedAdmin(uid){
         currentAssignedGrades = [];
         _applyGradeScope();
         _showGradeScopeBanner();
-        // ── Security: hide Report Cards nav for unassigned teachers ──────
+        // ── Security: hide Report Cards & At-Risk nav for unassigned teachers ──
         const reportsNav = document.querySelector('.nav-item[data-label="Report Cards"]');
         if(reportsNav) reportsNav.style.display = 'none';
-        // ────────────────────────────────────────────────────────────────
+        const atriskNav = document.querySelector('.nav-item[data-label="At-Risk"]');
+        if(atriskNav) atriskNav.style.display = 'none';
+        // ──────────────────────────────────────────────────────────────────
       }
     }
   }catch(e){
@@ -5358,8 +5360,9 @@ function navTo(view,el){
   // ── Security: block unassigned teachers from Report Cards ──────────────
   const isUnassigned = !isAdvancedAdmin &&
     currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
-  if(isUnassigned && view === 'reports'){
-    notify('⛔ Access Denied — Report Cards are only available to teachers with an assigned grade. Contact your administrator.','error',5000);
+  if(isUnassigned && (view === 'reports' || view === 'atrisk')){
+    const label = view === 'reports' ? 'Report Cards' : 'At-Risk Students';
+    notify('⛔ Access Denied — ' + label + ' are only available to teachers with an assigned grade. Contact your administrator.','error',5000);
     return;
   }
   // ───────────────────────────────────────────────────────────────────────
@@ -6350,6 +6353,19 @@ window.openProgressFromRecords=openProgressFromRecords;
    FEATURE: AT-RISK VIEW
 ══════════════════════════════════════════ */
 function renderAtRisk(){
+  // ── Security: unassigned teachers cannot see At-Risk data ─────────────
+  const isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+  if(isUnassigned){
+    const tbody=document.getElementById('atrisk-tbody');
+    if(tbody) tbody.innerHTML='<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text3)">⛔ No grade assigned — At-Risk view not available.</td></tr>';
+    document.getElementById('nav-atrisk-count').textContent='—';
+    ['ar-kpi-total','ar-kpi-streak','ar-kpi-avg','ar-kpi-grades'].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.textContent='—';
+    });
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────────────
   const grade=document.getElementById('atrisk-grade-sel')?.value||'all';
   const term=document.getElementById('atrisk-term-sel')?.value||'all';
   let data=allData.filter(r=>{
