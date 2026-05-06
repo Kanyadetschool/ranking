@@ -1370,7 +1370,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           </div>
 
           <!-- Recent Activity -->
-          <div class="card" style="order:2">
+          <div class="card" id="activity-log-card" style="order:2">
             <div class="card-hdr">
               <div class="card-title">🕐 Activity Log</div>
             </div>
@@ -3015,6 +3015,8 @@ function _applyTeacherProfile(data, uid){
       if(reportsNav)  reportsNav.style.display = '';
       if(atriskNav)   atriskNav.style.display = '';
       if(auditNav)    auditNav.style.display  = '';
+      const _alc = document.getElementById('activity-log-card');
+      if(_alc) _alc.style.display = '';
       console.log(`[GradeScope] Teacher scoped to: ${grades.join(', ')}`);
       if(changed){
         _applyGradeScope();
@@ -3037,6 +3039,8 @@ function _applyTeacherProfile(data, uid){
       if(reportsNav)  reportsNav.style.display = 'none';
       if(atriskNav)   atriskNav.style.display = 'none';
       if(auditNav)    auditNav.style.display  = 'none';
+      const _alc = document.getElementById('activity-log-card');
+      if(_alc) _alc.style.display = 'none';
       console.log('[GradeScope] No grade assigned — data restricted.');
       if(changed){
         _applyGradeScope();
@@ -4552,6 +4556,16 @@ async function loadAuditLogs(){
 function renderActivityLog(){
   const container=document.getElementById('activity-log');
   if(!container) return;
+  // ── Security: hide activity log for unassigned teachers ───────────────
+  const isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+  const logCard = document.getElementById('activity-log-card');
+  if(isUnassigned){
+    if(logCard) logCard.style.display = 'none';
+    return;
+  }
+  if(logCard) logCard.style.display = '';
+  // ─────────────────────────────────────────────────────────────────────
   if(!activities.length){container.innerHTML='<p style="font-size:12px;color:var(--text3)">No activity yet.</p>';return;}
   container.innerHTML=activities.slice(0,8).map(a=>`
     <div class="activity-item">
