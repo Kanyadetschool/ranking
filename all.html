@@ -2973,6 +2973,7 @@ function _applyTeacherProfile(data, uid){
   const qlinksSection = document.querySelector('.qlinks-section');
   const reportsNav   = document.querySelector('.nav-item[data-label="Report Cards"]');
   const atriskNav    = document.querySelector('.nav-item[data-label="At-Risk"]');
+  const auditNav     = document.querySelector('.nav-item[data-label="Audit Log"]');
 
   if(data.Advancedadmin === true){
     isAdvancedAdmin = true;
@@ -2982,6 +2983,7 @@ function _applyTeacherProfile(data, uid){
     if(qlinksSection) qlinksSection.style.display = 'block';
     if(reportsNav)   reportsNav.style.display = '';
     if(atriskNav)    atriskNav.style.display = '';
+    if(auditNav)     auditNav.style.display  = '';
     console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
     _renderGradeAssignmentPanel();
     _renderAddTeacherPanel();
@@ -3012,6 +3014,7 @@ function _applyTeacherProfile(data, uid){
       // ── Teacher now has grade(s) assigned ──────────────────────────
       if(reportsNav)  reportsNav.style.display = '';
       if(atriskNav)   atriskNav.style.display = '';
+      if(auditNav)    auditNav.style.display  = '';
       console.log(`[GradeScope] Teacher scoped to: ${grades.join(', ')}`);
       if(changed){
         _applyGradeScope();
@@ -3033,6 +3036,7 @@ function _applyTeacherProfile(data, uid){
       currentAssignedGrades = [];
       if(reportsNav)  reportsNav.style.display = 'none';
       if(atriskNav)   atriskNav.style.display = 'none';
+      if(auditNav)    auditNav.style.display  = 'none';
       console.log('[GradeScope] No grade assigned — data restricted.');
       if(changed){
         _applyGradeScope();
@@ -4615,8 +4619,18 @@ function _buildDiffHTML(entry){
 
 /* ─── Main render ─────────────────────────────────── */
 function renderAuditView(){
+  // ── Security: unassigned teachers cannot see the Audit Log ────────────
+  const isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
   const container=document.getElementById('audit-log-list');
   if(!container) return;
+  if(isUnassigned){
+    container.innerHTML='<p style="font-size:13px;color:var(--text3);padding:20px 0">⛔ No grade assigned — Audit Log not available. Contact the ICT DEPT.</p>';
+    const countEl=document.getElementById('audit-count');
+    if(countEl) countEl.textContent='0 entries';
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────────────
 
   let filtered=[...activities];
   if(auditSearchVal)   filtered=filtered.filter(a=>(a.text||'').toLowerCase().includes(auditSearchVal)||(a.actor||'').toLowerCase().includes(auditSearchVal)||(a.email||'').toLowerCase().includes(auditSearchVal)||(a.targetName||'').toLowerCase().includes(auditSearchVal));
@@ -5393,9 +5407,9 @@ function navTo(view,el){
   // ── Security: block unassigned teachers from Report Cards ──────────────
   const isUnassigned = !isAdvancedAdmin &&
     currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
-  if(isUnassigned && (view === 'reports' || view === 'atrisk')){
-    const label = view === 'reports' ? 'Report Cards' : 'At-Risk Students';
-    notify('⛔ Access Denied — ' + label + ' are only available to teachers with an assigned grade. Contact your administrator.','error',5000);
+  if(isUnassigned && (view === 'reports' || view === 'atrisk' || view === 'auditlog')){
+    const labels = { reports:'Report Cards', atrisk:'At-Risk Students', auditlog:'Audit Log' };
+    notify('⛔ Access Denied — ' + (labels[view]||view) + ' is only available to teachers with an assigned grade. Contact the ICT DEPT.','error',5000);
     return;
   }
   // ───────────────────────────────────────────────────────────────────────
