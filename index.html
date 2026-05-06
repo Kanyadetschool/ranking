@@ -3110,26 +3110,31 @@ function _applyTeacherProfile(data, uid){
       }
 
     } else {
-      // ── No grade assigned ───────────────────────────────────────────
+      // ── No grade assigned — show ONLY My Profile ────────────────────
       currentAssignedGrade  = '__NONE__';
       currentAssignedGrades = [];
-      if(reportsNav)  reportsNav.style.display = 'none';
-      if(atriskNav)   atriskNav.style.display = 'none';
-      if(auditNav)    auditNav.style.display  = 'none';
+
+      // Hide every nav item except My Profile
+      document.querySelectorAll('.nav-item').forEach(item => {
+        if(item.getAttribute('data-label') === 'My Profile'){
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+      // Hide section labels and quick links
+      document.querySelectorAll('.s-label, .qlinks-section').forEach(el => el.style.display = 'none');
+
       const _alc = document.getElementById('activity-log-card');
       if(_alc) _alc.style.display = 'none';
-      console.log('[GradeScope] No grade assigned — data restricted.');
+
+      console.log('[GradeScope] No grade assigned — profile only.');
+
+      // Always redirect to profile
+      navTo('profile', document.querySelector('.nav-item[data-label="My Profile"]'));
+
       if(changed){
-        _applyGradeScope();
-        _showGradeScopeBanner();
-        // Redirect away from any restricted view
-        const activeView = document.querySelector('.view.active');
-        const restricted = ['reports','atrisk','students','results','analytics'];
-        if(activeView && restricted.some(v => activeView.id === 'view-'+v)){
-          navTo('dashboard', document.querySelector('.nav-item[data-label="Dashboard"]'));
-        }
-        _bridgeReportCardSystem();
-        notify('⚠️ Your grade assignment has been removed. Contact the ICT DEPT.', 'warn', 8000);
+        notify('⚠️ You have no grade assigned. Contact the ICT DEPT. You can update your profile below.', 'warn', 10000);
       }
     }
   }
@@ -5665,13 +5670,14 @@ window.renderSubjectRanking=renderSubjectRanking;
 ══════════════════════════════════════════ */
 const views={'dashboard':'Overview & Analytics','students':'Manage Students','results':'Results & Grades','analytics':'Deep Analytics','reports':'Report Cards & Export','announcements':'School Announcements','settings':'Portal Settings','auditlog':'Full Admin Audit Trail'};
 function navTo(view,el){
-  // ── Security: block unassigned teachers from Report Cards ──────────────
+  // ── Security: unassigned users may ONLY see their profile ──────────────
   const isUnassigned = !isAdvancedAdmin &&
     currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
-  if(isUnassigned && (view === 'reports' || view === 'atrisk' || view === 'auditlog')){
-    const labels = { reports:'Report Cards', atrisk:'At-Risk Students', auditlog:'Audit Log' };
-    notify('⛔ Access Denied — ' + (labels[view]||view) + ' is only available to teachers with an assigned grade. Contact the ICT DEPT.','error',5000);
-    return;
+  if(isUnassigned && view !== 'profile'){
+    notify('⛔ You have no grade assigned. Please contact the ICT DEPT. You can only access your profile for now.','error',5000);
+    // Force them to profile
+    view = 'profile';
+    el = document.querySelector('.nav-item[data-label="My Profile"]');
   }
   // ───────────────────────────────────────────────────────────────────────
 
