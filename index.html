@@ -3094,12 +3094,12 @@ function _applyTeacherProfile(data, uid){
       document.querySelectorAll('.s-label').forEach(el => el.style.display = '');
       // Import Data and Quick Links are controlled separately (advanced admin only) — re-hide them
       if(importNav)    importNav.style.display = 'flex'; // always visible to non-advanced-admins
-      if(qlinksSection) qlinksSection.style.display = 'none'; // quick links: advanced admin only
+      if(qlinksSection) qlinksSection.style.display = 'none'; // advanced admin only
       if(reportsNav)  reportsNav.style.display = '';
       if(atriskNav)   atriskNav.style.display = '';
-      if(auditNav)    auditNav.style.display  = '';
+      if(auditNav)    auditNav.style.display  = 'none'; // advanced admin only
       const _alc = document.getElementById('activity-log-card');
-      if(_alc) _alc.style.display = '';
+      if(_alc) _alc.style.display = 'none'; // advanced admin only
       console.log(`[GradeScope] Teacher scoped to: ${grades.join(', ')}`);
       if(changed){
         _applyGradeScope();
