@@ -1403,7 +1403,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           </div>
 
           <!-- Recent Activity -->
-          <div class="card" id="activity-log-card" style="order:2">
+          <div class="card" id="activity-log-card" style="order:2;display:none">
             <div class="card-hdr">
               <div class="card-title">🕐 Activity Log</div>
             </div>
@@ -4647,11 +4647,9 @@ async function loadAuditLogs(){
 function renderActivityLog(){
   const container=document.getElementById('activity-log');
   if(!container) return;
-  // ── Security: hide activity log for unassigned teachers ───────────────
-  const isUnassigned = !isAdvancedAdmin &&
-    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+  // ── Security: activity log is advanced admin only ─────────────────────
   const logCard = document.getElementById('activity-log-card');
-  if(isUnassigned){
+  if(!isAdvancedAdmin){
     if(logCard) logCard.style.display = 'none';
     return;
   }
