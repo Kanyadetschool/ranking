@@ -1190,8 +1190,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <div class="nav-item" onclick="navTo('settings',this)" data-label="Settings">
         <span class="nav-icon">⚙️</span> Settings
       </div>
-      <div class="nav-item" onclick="navTo('auditlog',this)" data-label="Audit Log">
+      <div class="nav-item" onclick="navTo('auditlog',this)" data-label="Audit Log" id="nav-auditlog" style="display:none">
         <span class="nav-icon">🗂️</span> Audit Log
+        <span class="nav-badge" style="background:var(--purple);font-size:8px;letter-spacing:.04em">ADV</span>
       </div>
     </div>
 
@@ -2049,7 +2050,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <!-- ══════ AUDIT LOG VIEW ══════ -->
       <div class="view" id="view-auditlog">
         <div class="sec-hdr">
-          <h2>🗂️ Audit Log</h2>
+          <h2>🗂️ Audit Log <span style="font-size:10px;font-weight:800;background:linear-gradient(135deg,rgba(142,68,173,.2),rgba(142,68,173,.08));color:#c39bd3;border:1px solid rgba(142,68,173,.35);padding:3px 10px;border-radius:10px;vertical-align:middle;letter-spacing:.06em;text-transform:uppercase">🔐 Advanced Admin</span></h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span id="audit-count" style="font-size:11px;color:var(--text3);font-weight:700"></span>
             <button class="btn btn-outline btn-sm" onclick="exportAuditCSV()">📥 Export CSV</button>
@@ -2075,8 +2076,8 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
               <option value="system">⚙️ System</option>
             </select>
           </div>
-          <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
-            📋 Every admin action is recorded here with field-level detail — what changed, the old value, the new value, who made the change, and when. Click any entry to expand its full diff.
+          <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(142,68,173,.06);border-radius:var(--radius-md);border:1px solid rgba(142,68,173,.2)">
+            🔐 <strong style="color:#c39bd3">Advanced Admin Only.</strong> Every admin action is recorded here with field-level detail — what changed, the old value, the new value, who made the change, and when. Click any entry to expand its full diff. This log is not visible to regular teachers.
           </p>
           <div id="audit-log-list">
             <p style="font-size:12px;color:var(--text3)">Loading audit history…</p>
@@ -3024,6 +3025,8 @@ function _applyTeacherProfile(data, uid){
   const reportsNav   = document.querySelector('.nav-item[data-label="Report Cards"]');
   const atriskNav    = document.querySelector('.nav-item[data-label="At-Risk"]');
 
+  const auditlogNav   = document.getElementById('nav-auditlog');
+
   if(data.Advancedadmin === true){
     isAdvancedAdmin = true;
     currentAssignedGrade = null;
@@ -3032,6 +3035,7 @@ function _applyTeacherProfile(data, uid){
     if(qlinksSection) qlinksSection.style.display = 'block';
     if(reportsNav)   reportsNav.style.display = '';
     if(atriskNav)    atriskNav.style.display = '';
+    if(auditlogNav)  auditlogNav.style.display = 'flex';
     console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
     _renderGradeAssignmentPanel();
     _renderAddTeacherPanel();
@@ -3041,6 +3045,7 @@ function _applyTeacherProfile(data, uid){
   } else {
     isAdvancedAdmin = false;
     if(importNav) importNav.style.display = 'flex';
+    if(auditlogNav) auditlogNav.style.display = 'none';
 
     // Support both legacy assignedGrade (string) and new assignedGrades (array)
     let grades = [];
@@ -5440,6 +5445,11 @@ window.renderSubjectRanking=renderSubjectRanking;
 ══════════════════════════════════════════ */
 const views={'dashboard':'Overview & Analytics','students':'Manage Students','results':'Results & Grades','analytics':'Deep Analytics','reports':'Report Cards & Export','announcements':'School Announcements','settings':'Portal Settings','auditlog':'Full Admin Audit Trail'};
 function navTo(view,el){
+  // ── Security: block non-Advanced-Admins from Audit Log ────────────────
+  if(view === 'auditlog' && !isAdvancedAdmin){
+    notify('⛔ Access Denied — The Audit Log is only available to Advanced Admins. Contact your administrator.','error',5000);
+    return;
+  }
   // ── Security: block unassigned teachers from Report Cards ──────────────
   const isUnassigned = !isAdvancedAdmin &&
     currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
