@@ -1370,10 +1370,10 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
             </div>
           </div>
 
-          <!-- Recent Activity -->
-          <div class="card" style="order:2">
+          <!-- Recent Activity — Advanced Admin only -->
+          <div class="card" id="activity-log-card" style="order:2;display:none">
             <div class="card-hdr">
-              <div class="card-title">🕐 Activity Log</div>
+              <div class="card-title">🕐 Activity Log <span style="font-size:9px;font-weight:800;background:linear-gradient(135deg,rgba(142,68,173,.2),rgba(142,68,173,.08));color:#c39bd3;border:1px solid rgba(142,68,173,.35);padding:2px 8px;border-radius:8px;vertical-align:middle;letter-spacing:.06em;text-transform:uppercase;margin-left:4px">🔐 ADV</span></div>
             </div>
             <div id="activity-log"></div>
           </div>
@@ -3036,6 +3036,8 @@ function _applyTeacherProfile(data, uid){
     if(reportsNav)   reportsNav.style.display = '';
     if(atriskNav)    atriskNav.style.display = '';
     if(auditlogNav)  auditlogNav.style.display = 'flex';
+    const actLogCard = document.getElementById('activity-log-card');
+    if(actLogCard) actLogCard.style.display = '';
     console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
     _renderGradeAssignmentPanel();
     _renderAddTeacherPanel();
@@ -3046,6 +3048,8 @@ function _applyTeacherProfile(data, uid){
     isAdvancedAdmin = false;
     if(importNav) importNav.style.display = 'flex';
     if(auditlogNav) auditlogNav.style.display = 'none';
+    const actLogCard = document.getElementById('activity-log-card');
+    if(actLogCard) actLogCard.style.display = 'none';
 
     // Support both legacy assignedGrade (string) and new assignedGrades (array)
     let grades = [];
