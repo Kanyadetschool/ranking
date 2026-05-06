@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kanyadet School — Results Portal</title>
+<title>Kanyadet School — Admin Portal</title>
 <script src="./image-popup.js"></script>
 <link rel="icon" type="image/x-icon" href="./images/logo.png">
 
@@ -1011,7 +1011,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div id="loader">
   <div class="ld-logo">🏫</div>
   <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-txt">Initializing Results Portal…</div>
+  <div class="ld-txt">Initializing Admin Portal…</div>
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -1084,7 +1084,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <div class="brand-icon">🏫</div>
       <div class="brand-text">
         <div class="b-name">Kanyadet School</div>
-        <div class="b-role">Results Portal</div>
+        <div class="b-role">Admin Portal</div>
       </div>
     </div>
 
@@ -3177,13 +3177,11 @@ window._atLoadTeachers = async function(){
 
 /* ── Delete teacher from Firestore (does not delete Auth account) ── */
 window._atDeleteTeacher = async function(uid, name){
-  const confirmed = await new Promise(res=>{
-    showConfirm(
-      `Remove teacher <strong>${name}</strong> from the system?<br><small style="color:var(--text3)">This removes their Firestore profile. Their login account is deactivated separately via Firebase Console.</small>`,
-      ()=>res(true), ()=>res(false),
-      { icon:'🗑️', title:'Remove Teacher', okLabel:'Remove', danger:true }
-    );
-  });
+  const confirmed = await showConfirm(
+    'Remove Teacher',
+    'Remove teacher <strong>' + name + '</strong> from the system?<br><small style="color:var(--text3)">This removes their Firestore profile. Their login account is deactivated separately via Firebase Console.</small>',
+    '🗑️', 'Remove', 'btn-red'
+  );
   if(!confirmed) return;
   try{
     const { doc, updateDoc } = window._fb;
@@ -3413,9 +3411,9 @@ function _arpRenderCards(allUsers){
   if(!container) return;
   var currentUid = (window._currentUser && window._currentUser.uid) || '';
   var users = allUsers.filter(function(u){
+    // Show all teachers AND admins — exclude only system/service accounts with no role
     var role = (u.role || '').trim().toLowerCase();
-    if(role === 'admin' && u.Advancedadmin !== true) return false;
-    return true;
+    return role === 'teacher' || role === 'admin' || u.Advancedadmin === true;
   });
   users.sort(function(a,b){
     return (a.name || a.displayName || '').localeCompare(b.name || b.displayName || '');
@@ -5106,7 +5104,7 @@ function showConfirm(title,msg,icon='🗑️',okLabel='Delete',okClass='btn-red'
     _confirmResolve=resolve;
     document.getElementById('confirm-icon').textContent=icon;
     document.getElementById('confirm-title').textContent=title;
-    document.getElementById('confirm-msg').textContent=msg;
+    document.getElementById('confirm-msg').innerHTML=msg;
     const okBtn=document.getElementById('confirm-ok-btn');
     okBtn.textContent=okLabel;
     okBtn.className='btn '+okClass+' btn-sm';
