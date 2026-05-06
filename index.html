@@ -1003,6 +1003,70 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   background:var(--surface);transition:all .25s;
 }
 .edit-input-advanced:focus{outline:none;border-color:var(--blue-lt);}
+
+/* ══════════════════════════════════════════
+   PROFILE VIEW — INPUT & BUTTON FIX
+══════════════════════════════════════════ */
+
+/* Generic .input class (used in profile form) */
+.input{
+  width:100%;
+  padding:10px 14px;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:var(--radius-md);
+  font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;
+  color:var(--text);
+  transition:var(--transition);
+  outline:none;
+  -webkit-appearance:none;
+  appearance:none;
+}
+.input:focus{
+  border-color:var(--blue);
+  background:var(--surface);
+  box-shadow:0 0 0 3px rgba(41,128,185,.14);
+}
+.input::placeholder{color:var(--text3);}
+.input[type="password"]{letter-spacing:.08em;}
+
+/* btn-primary alias (same as btn-blue) */
+.btn-primary{
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));
+  color:#fff;
+  box-shadow:0 3px 12px var(--blue-glow);
+}
+.btn-primary:hover{
+  transform:translateY(-2px);
+  box-shadow:0 6px 20px var(--blue-glow);
+}
+
+/* Profile view layout — responsive */
+#view-profile .profile-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(min(320px,100%),1fr));
+  gap:20px;
+  max-width:900px;
+}
+
+/* Password toggle eye icon alignment when input is full-width */
+#view-profile [style*="position:relative"] .input{
+  width:100%;
+  padding-right:44px;
+}
+
+/* Responsive tweaks for profile */
+@media(max-width:680px){
+  #view-profile > div{
+    grid-template-columns:1fr !important;
+    max-width:100% !important;
+  }
+  #view-profile .card{padding:16px 14px;}
+  #prof-avatar{width:48px !important;height:48px !important;font-size:18px !important;}
+  #view-profile [style*="margin-top:18px"][style*="display:flex"]{flex-direction:column;}
+  #view-profile [style*="margin-top:18px"][style*="display:flex"] .btn{width:100%;justify-content:center;}
+}
 </style>
 </head>
 <body>
