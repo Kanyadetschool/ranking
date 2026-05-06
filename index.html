@@ -2847,7 +2847,7 @@ async function rejectUnauthorized(email) {
   // Immediately sign the unauthorized user back out of Firebase
   try { const{signOut}=window._fb; await signOut(auth); } catch(e) {}
   const err = document.getElementById('login-err');
-  err.textContent = `⛔ Access denied. "${email}" does not have clearance level . Contact the school ICT DEPT to be granted access.`;
+  err.textContent = `⛔ Access denied. "${email}" does not have Admin privileges. Contact the school administrator to be granted access.`;
   err.classList.add('on');
   // Reset Google button
   const gbtn = document.getElementById('google-btn');
@@ -2978,7 +2978,10 @@ function showApp(userData){
    Shows Import Data nav + Quick Links only when
    the user document has Advancedadmin:true
 ══════════════════════════════════════════ */
-async function checkAdvancedAdmin(uid){
+/* ─── Real-time listener unsubscribe handle for teacher's own profile ─── */
+let _teacherProfileUnsubscribe = null;
+
+function checkAdvancedAdmin(uid){
   // Hide gated sections by default
   const importNav = document.querySelector('.nav-item[data-label="Import Data"]');
   const qlinksSection = document.querySelector('.qlinks-section');
@@ -2987,57 +2990,113 @@ async function checkAdvancedAdmin(uid){
 
   if(!uid || !firestoreDb){
     console.warn('[AdvancedAdmin] uid or firestoreDb not ready — defaulting to basic access.');
-    // Still show Import Data for teachers even if Firestore check fails
     if(importNav) importNav.style.display = 'flex';
     return;
   }
-  try{
-    const {doc, getDoc} = window._fb;
-    const snap = await getDoc(doc(firestoreDb, 'users', uid));
-    const data = snap.exists() ? snap.data() : {};
 
-    if(data.Advancedadmin === true){
-      isAdvancedAdmin = true;
-      currentAssignedGrade = null; // full access — sees all grades
-      if(importNav) importNav.style.display = 'flex';
-      if(qlinksSection) qlinksSection.style.display = 'block';
-      console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
-      _renderGradeAssignmentPanel();
-      _renderAddTeacherPanel();
-      _renderAdvancedAdminRolePanel();
-    } else {
-      isAdvancedAdmin = false;
-      // Teachers always get Import Data so they can upload bulk results
-      if(importNav) importNav.style.display = 'flex';
-      // Support both legacy assignedGrade (string) and new assignedGrades (array)
-      let grades = [];
-      if(Array.isArray(data.assignedGrades) && data.assignedGrades.length){
-        grades = data.assignedGrades.map(g=>g.trim()).filter(Boolean);
-      } else if(data.assignedGrade && data.assignedGrade.trim()){
-        grades = [data.assignedGrade.trim()]; // legacy single-grade fallback
+  // Detach any previous listener (e.g. on re-login)
+  if(_teacherProfileUnsubscribe){
+    try{ _teacherProfileUnsubscribe(); }catch(e){}
+    _teacherProfileUnsubscribe = null;
+  }
+
+  // ── Real-time listener on users/{uid} ────────────────────────────────
+  // Fires immediately with current data, then on every remote change.
+  // This means grade assignments made by the admin take effect instantly
+  // on the teacher's logged-in device — no reload required.
+  const {doc, onSnapshot} = window._fb;
+  _teacherProfileUnsubscribe = onSnapshot(
+    doc(firestoreDb, 'users', uid),
+    (snap) => {
+      const data = snap.exists() ? snap.data() : {};
+      _applyTeacherProfile(data, uid);
+    },
+    (err) => {
+      console.warn('[AdvancedAdmin] Real-time profile listener error:', err.message);
+    }
+  );
+}
+
+/* ─── Apply teacher profile data (called on every Firestore update) ─── */
+function _applyTeacherProfile(data, uid){
+  const importNav    = document.querySelector('.nav-item[data-label="Import Data"]');
+  const qlinksSection = document.querySelector('.qlinks-section');
+  const reportsNav   = document.querySelector('.nav-item[data-label="Report Cards"]');
+  const atriskNav    = document.querySelector('.nav-item[data-label="At-Risk"]');
+
+  if(data.Advancedadmin === true){
+    isAdvancedAdmin = true;
+    currentAssignedGrade = null;
+    currentAssignedGrades = [];
+    if(importNav)    importNav.style.display = 'flex';
+    if(qlinksSection) qlinksSection.style.display = 'block';
+    if(reportsNav)   reportsNav.style.display = '';
+    if(atriskNav)    atriskNav.style.display = '';
+    console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
+    _renderGradeAssignmentPanel();
+    _renderAddTeacherPanel();
+    _renderAdvancedAdminRolePanel();
+    renderAll();
+
+  } else {
+    isAdvancedAdmin = false;
+    if(importNav) importNav.style.display = 'flex';
+
+    // Support both legacy assignedGrade (string) and new assignedGrades (array)
+    let grades = [];
+    if(Array.isArray(data.assignedGrades) && data.assignedGrades.length){
+      grades = data.assignedGrades.map(g=>g.trim()).filter(Boolean);
+    } else if(data.assignedGrade && data.assignedGrade.trim()){
+      grades = [data.assignedGrade.trim()];
+    }
+
+    const prevGrade  = currentAssignedGrade;
+    const prevGrades = currentAssignedGrades.join(',');
+
+    currentAssignedGrades = grades;
+    currentAssignedGrade  = grades.length ? grades[0] : '__NONE__';
+
+    const changed = prevGrade !== currentAssignedGrade || prevGrades !== grades.join(',');
+
+    if(grades.length){
+      // ── Teacher now has grade(s) assigned ──────────────────────────
+      if(reportsNav)  reportsNav.style.display = '';
+      if(atriskNav)   atriskNav.style.display = '';
+      console.log(`[GradeScope] Teacher scoped to: ${grades.join(', ')}`);
+      if(changed){
+        _applyGradeScope();
+        _showGradeScopeBanner();
+        // If they were on a blocked view, redirect them to dashboard
+        const blockedViews = ['reports','atrisk'];
+        const activeView = document.querySelector('.view.active');
+        if(activeView && blockedViews.some(v => activeView.id === 'view-'+v)){
+          navTo('dashboard', document.querySelector('.nav-item[data-label="Dashboard"]'));
+        }
+        // Sync RC system immediately with new scoped data
+        _bridgeReportCardSystem();
+        notify('✅ Your grade assignment has been updated — you now see <strong>' + grades.join(', ') + '</strong>.', 'success', 7000);
       }
-      currentAssignedGrades = grades;
-      currentAssignedGrade = grades.length ? grades[0] : null; // keep legacy compat
-      if(grades.length){
-        console.log(`[GradeScope] Teacher scoped to: ${grades.join(', ')}`);
+
+    } else {
+      // ── No grade assigned ───────────────────────────────────────────
+      currentAssignedGrade  = '__NONE__';
+      currentAssignedGrades = [];
+      if(reportsNav)  reportsNav.style.display = 'none';
+      if(atriskNav)   atriskNav.style.display = 'none';
+      console.log('[GradeScope] No grade assigned — data restricted.');
+      if(changed){
         _applyGradeScope();
         _showGradeScopeBanner();
-      } else {
-        console.log('[GradeScope] No grade assigned — data restricted to nothing until assigned.');
-        currentAssignedGrade = '__NONE__';
-        currentAssignedGrades = [];
-        _applyGradeScope();
-        _showGradeScopeBanner();
-        // ── Security: hide Report Cards & At-Risk nav for unassigned teachers ──
-        const reportsNav = document.querySelector('.nav-item[data-label="Report Cards"]');
-        if(reportsNav) reportsNav.style.display = 'none';
-        const atriskNav = document.querySelector('.nav-item[data-label="At-Risk"]');
-        if(atriskNav) atriskNav.style.display = 'none';
-        // ──────────────────────────────────────────────────────────────────
+        // Redirect away from any restricted view
+        const activeView = document.querySelector('.view.active');
+        const restricted = ['reports','atrisk','students','results','analytics'];
+        if(activeView && restricted.some(v => activeView.id === 'view-'+v)){
+          navTo('dashboard', document.querySelector('.nav-item[data-label="Dashboard"]'));
+        }
+        _bridgeReportCardSystem();
+        notify('⚠️ Your grade assignment has been removed. Contact the ICT DEPT.', 'warn', 8000);
       }
     }
-  }catch(e){
-    console.warn('[AdvancedAdmin] Firestore check failed:', e.message);
   }
 }
 
@@ -3101,7 +3160,7 @@ function _showGradeScopeBanner(){
     const gradeList = currentAssignedGrades.length
       ? currentAssignedGrades.map(g=>`<strong>${g}</strong>`).join(', ')
       : `<strong>${currentAssignedGrade}</strong>`;
-    banner.innerHTML = `🎓 You are viewing ${gradeList}. Contact the ICT DEPT to change your grade assignment.`;
+    banner.innerHTML = `🎓 You are viewing ${gradeList}. Contact the administrator to change your grade assignment.`;
   }
 
   // Close button
@@ -4076,6 +4135,11 @@ async function doSignOut(){
   currentAssignedGrade = null;
   currentAssignedGrades = [];
   if(typeof window._advRoleCleanup === 'function') window._advRoleCleanup();
+  // Detach real-time teacher profile listener
+  if(_teacherProfileUnsubscribe){
+    try{ _teacherProfileUnsubscribe(); }catch(e){}
+    _teacherProfileUnsubscribe = null;
+  }
   // Remove grade scope banner if present
   const banner = document.getElementById('grade-scope-banner');
   if(banner){ banner.remove(); const shell=document.getElementById('app-shell'); if(shell) shell.style.marginTop=''; }
