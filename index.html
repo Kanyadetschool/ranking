@@ -3027,6 +3027,10 @@ async function checkAdvancedAdmin(uid){
         currentAssignedGrades = [];
         _applyGradeScope();
         _showGradeScopeBanner();
+        // ── Security: hide Report Cards nav for unassigned teachers ──────
+        const reportsNav = document.querySelector('.nav-item[data-label="Report Cards"]');
+        if(reportsNav) reportsNav.style.display = 'none';
+        // ────────────────────────────────────────────────────────────────
       }
     }
   }catch(e){
@@ -4178,11 +4182,19 @@ function renderAll(){
   _bridgeReportCardSystem();
 }
 
+/* ── Helper: return allData scoped to the teacher's assigned grades ── */
+function _getScopedData(){
+  if(isAdvancedAdmin || (!currentAssignedGrade && !currentAssignedGrades.length)){
+    return allData.map(r=>({...r})); // full access
+  }
+  return allData.filter(r=>_teacherCanSeeGrade(r['Grade'])).map(r=>({...r}));
+}
+
 function _bridgeReportCardSystem(){
   try{
     if(typeof studentsData!=='undefined' && typeof allData!=='undefined' && allData.length){
-      // Sync portal data into RC system
-      studentsData=allData.map(r=>({...r}));
+      // Sync portal data into RC system — scoped to teacher's assigned grades
+      studentsData=_getScopedData();
       // Show controls (RC module hides them on init waiting for auth)
       const ctrl=document.querySelector('.controls');
       if(ctrl) ctrl.style.display='flex';
@@ -4362,6 +4374,22 @@ function renderGradeBars(){
    TOP STUDENTS
 ══════════════════════════════════════════ */
 function renderTopStudents(){
+  // ── Security: unassigned teachers see nothing in the Top 10 ───────────
+  const isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+  const container=document.getElementById('top-students-list');
+  if(isUnassigned){
+    if(container) container.innerHTML='<p style="font-size:12px;color:var(--text3);padding:8px 0">⛔ No grade assigned — Top 10 not available.</p>';
+    // Also hide the entire Top 10 card
+    const topCard = container ? container.closest('.card') : null;
+    if(topCard) topCard.style.display = 'none';
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────────────
+  // Restore card visibility (in case it was hidden on a previous render)
+  const topCard = container ? container.closest('.card') : null;
+  if(topCard) topCard.style.display = '';
+
   const grade=document.getElementById('top-grade-sel')?.value||'all';
   const term=document.getElementById('top-term-sel')?.value||'all';
   // Filter by grade
@@ -4391,7 +4419,6 @@ function renderTopStudents(){
     ranked=Object.values(byStudent);
   }
   const sorted=ranked.sort((a,b)=>parseFloat(calcStats(b).avg)-parseFloat(calcStats(a).avg)).slice(0,10);
-  const container=document.getElementById('top-students-list');
   if(!sorted.length){container.innerHTML='<p style="font-size:12px;color:var(--text3)">No data for selected filter.</p>';return;}
   // Show which term is being ranked
   const termLabel=term&&term!=='all'?`<div style="font-size:10px;color:var(--blue-lt);font-weight:700;margin-bottom:10px;padding:4px 8px;background:rgba(41,128,185,.1);border-radius:6px;display:inline-block">📅 ${term}</div>`:'';
@@ -5328,6 +5355,15 @@ window.renderSubjectRanking=renderSubjectRanking;
 ══════════════════════════════════════════ */
 const views={'dashboard':'Overview & Analytics','students':'Manage Students','results':'Results & Grades','analytics':'Deep Analytics','reports':'Report Cards & Export','announcements':'School Announcements','settings':'Portal Settings','auditlog':'Full Admin Audit Trail'};
 function navTo(view,el){
+  // ── Security: block unassigned teachers from Report Cards ──────────────
+  const isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+  if(isUnassigned && view === 'reports'){
+    notify('⛔ Access Denied — Report Cards are only available to teachers with an assigned grade. Contact your administrator.','error',5000);
+    return;
+  }
+  // ───────────────────────────────────────────────────────────────────────
+
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const viewEl=document.getElementById('view-'+view);
@@ -9108,8 +9144,19 @@ function populateFilters_rc(students) {
         Object.keys(student).forEach(key => allKeys.add(key));
     });
 
+    // ── Security: restrict grade dropdown to teacher's assigned grades ──
+    const isUnassigned = !isAdvancedAdmin &&
+        (typeof currentAssignedGrade !== 'undefined') &&
+        currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+    const hasGradeScope = !isAdvancedAdmin && (
+        (typeof currentAssignedGrades !== 'undefined' && currentAssignedGrades.length) ||
+        (typeof currentAssignedGrade !== 'undefined' && currentAssignedGrade && currentAssignedGrade !== '__NONE__')
+    );
+
     gradeFilter.innerHTML = '<option value="">All Grades</option>';
     Array.from(grades).sort().forEach(grade => {
+        // Only show grades the teacher is allowed to see
+        if(hasGradeScope && typeof _teacherCanSeeGrade === 'function' && !_teacherCanSeeGrade(grade)) return;
         const option = document.createElement('option');
         option.value = grade;
         option.textContent = `Grade ${grade}`;
@@ -10870,9 +10917,9 @@ document.addEventListener('click', function(e) {
       // This is called from handleSignIn inside the RC module.
       const _origFetch = fetchStudentsData;
       window.fetchStudentsData = function() {
-        // Copy from the main portal's allData
+        // Copy from the main portal's allData — scoped to teacher's assigned grades
         if (typeof allData !== 'undefined' && allData.length) {
-          studentsData = allData.map(r => ({...r}));
+          studentsData = (typeof _getScopedData === 'function') ? _getScopedData() : allData.map(r => ({...r}));
           populateFilters_rc(studentsData);
           buildTermSelector();
           applyFilters();
