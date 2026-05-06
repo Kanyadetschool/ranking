@@ -1050,6 +1050,39 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   max-width:900px;
 }
 
+/* ══════════════════════════════════════════
+   DASHBOARD AUDIT TRAIL WIDGET
+══════════════════════════════════════════ */
+.dash-audit-stat{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-md);padding:12px 14px;text-align:center;
+}
+.dash-audit-stat-val{font-size:20px;font-weight:900;font-family:'JetBrains Mono',monospace;line-height:1;}
+.dash-audit-stat-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-top:3px;font-weight:700;}
+.dash-audit-row{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:11px 2px;border-bottom:1px solid var(--border);
+  transition:background .15s;cursor:pointer;
+}
+.dash-audit-row:last-child{border-bottom:none;}
+.dash-audit-row:hover{background:rgba(41,128,185,.04);border-radius:var(--radius-sm);}
+.dash-audit-icon{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.dash-audit-body{flex:1;min-width:0;}
+.dash-audit-action{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dash-audit-meta{font-size:10px;color:var(--text3);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;}
+.dash-audit-badge{font-size:9px;font-weight:800;padding:2px 7px;border-radius:8px;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+.dash-audit-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;}
+.dash-audit-time{font-size:10px;color:var(--text3);white-space:nowrap;}
+.dash-audit-expand{display:none;margin-top:8px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);}
+.dash-audit-row.expanded .dash-audit-expand{display:block;}
+.dash-audit-pager-btn{
+  padding:5px 11px;border-radius:var(--radius-sm);font-size:11px;font-weight:700;
+  background:var(--surface2);border:1px solid var(--border);cursor:pointer;
+  color:var(--text2);transition:var(--transition);font-family:'Plus Jakarta Sans',sans-serif;
+}
+.dash-audit-pager-btn:hover{border-color:var(--blue-lt);color:var(--blue-lt);}
+.dash-audit-pager-btn.active{background:rgba(41,128,185,.15);border-color:var(--blue);color:var(--blue-lt);}
+
 /* Password toggle eye icon alignment when input is full-width */
 #view-profile [style*="position:relative"] .input{
   width:100%;
@@ -1190,9 +1223,8 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <div class="nav-item" onclick="navTo('settings',this)" data-label="Settings">
         <span class="nav-icon">⚙️</span> Settings
       </div>
-      <div class="nav-item" onclick="navTo('auditlog',this)" data-label="Audit Log" id="nav-auditlog" style="display:none">
+      <div class="nav-item" onclick="navTo('auditlog',this)" data-label="Audit Log">
         <span class="nav-icon">🗂️</span> Audit Log
-        <span class="nav-badge" style="background:var(--purple);font-size:8px;letter-spacing:.04em">ADV</span>
       </div>
     </div>
 
@@ -1370,12 +1402,56 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
             </div>
           </div>
 
-          <!-- Recent Activity — Advanced Admin only -->
-          <div class="card" id="activity-log-card" style="order:2;display:none">
+          <!-- Recent Activity -->
+          <div class="card" id="activity-log-card" style="order:2">
             <div class="card-hdr">
-              <div class="card-title">🕐 Activity Log <span style="font-size:9px;font-weight:800;background:linear-gradient(135deg,rgba(142,68,173,.2),rgba(142,68,173,.08));color:#c39bd3;border:1px solid rgba(142,68,173,.35);padding:2px 8px;border-radius:8px;vertical-align:middle;letter-spacing:.06em;text-transform:uppercase;margin-left:4px">🔐 ADV</span></div>
+              <div class="card-title">🕐 Activity Log</div>
             </div>
             <div id="activity-log"></div>
+          </div>
+        </div>
+
+        <!-- ══ AUDIT TRAIL & ACTIVITY LOG WIDGET — Advanced Admin Only ══ -->
+        <div id="dashboard-audit-widget" style="display:none;margin-top:0">
+          <div class="card" style="margin-bottom:0">
+            <div class="card-hdr" style="margin-bottom:14px">
+              <div class="card-title" style="gap:9px">
+                🛡️ Audit Trail &amp; Activity Log
+                <span style="font-size:9px;font-weight:800;padding:2px 8px;border-radius:8px;background:linear-gradient(135deg,rgba(142,68,173,.2),rgba(142,68,173,.08));color:#c39bd3;border:1px solid rgba(142,68,173,.25);text-transform:uppercase;letter-spacing:.08em">Advanced Admin</span>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+                <!-- Category filter -->
+                <select class="sel" id="dash-audit-cat" onchange="renderDashboardAuditWidget()" style="font-size:11px">
+                  <option value="">All Actions</option>
+                  <option value="edit">✏️ Edits</option>
+                  <option value="add">➕ Additions</option>
+                  <option value="delete">🗑️ Deletions</option>
+                  <option value="import">📥 Imports</option>
+                  <option value="export">📤 Exports</option>
+                  <option value="auth">🔐 Auth</option>
+                  <option value="system">⚙️ System</option>
+                </select>
+                <!-- Actor filter -->
+                <select class="sel" id="dash-audit-actor" onchange="renderDashboardAuditWidget()" style="font-size:11px">
+                  <option value="">All Users</option>
+                </select>
+                <!-- Search -->
+                <div class="search-input-wrap" style="max-width:200px;min-width:140px">
+                  <input class="search-input" id="dash-audit-search" placeholder="Search actions…" oninput="renderDashboardAuditWidget()" style="font-size:11px">
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="exportAuditCSV()" title="Export full audit log as CSV" style="font-size:11px">📥 Export CSV</button>
+                <button class="btn btn-outline btn-sm" onclick="navTo('auditlog',document.querySelector('.nav-item[data-label=\'Audit Log\']'))" style="font-size:11px">🔎 Full Log</button>
+              </div>
+            </div>
+
+            <!-- Live stats row -->
+            <div id="dash-audit-stats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px"></div>
+
+            <!-- Entry list -->
+            <div id="dash-audit-list" style="display:flex;flex-direction:column;gap:0"></div>
+
+            <!-- Pagination -->
+            <div id="dash-audit-pager" style="display:flex;gap:6px;align-items:center;justify-content:flex-end;margin-top:14px;flex-wrap:wrap"></div>
           </div>
         </div>
       </div>
@@ -2050,7 +2126,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <!-- ══════ AUDIT LOG VIEW ══════ -->
       <div class="view" id="view-auditlog">
         <div class="sec-hdr">
-          <h2>🗂️ Audit Log <span style="font-size:10px;font-weight:800;background:linear-gradient(135deg,rgba(142,68,173,.2),rgba(142,68,173,.08));color:#c39bd3;border:1px solid rgba(142,68,173,.35);padding:3px 10px;border-radius:10px;vertical-align:middle;letter-spacing:.06em;text-transform:uppercase">🔐 Advanced Admin</span></h2>
+          <h2>🗂️ Audit Log</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span id="audit-count" style="font-size:11px;color:var(--text3);font-weight:700"></span>
             <button class="btn btn-outline btn-sm" onclick="exportAuditCSV()">📥 Export CSV</button>
@@ -2076,8 +2152,8 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
               <option value="system">⚙️ System</option>
             </select>
           </div>
-          <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(142,68,173,.06);border-radius:var(--radius-md);border:1px solid rgba(142,68,173,.2)">
-            🔐 <strong style="color:#c39bd3">Advanced Admin Only.</strong> Every admin action is recorded here with field-level detail — what changed, the old value, the new value, who made the change, and when. Click any entry to expand its full diff. This log is not visible to regular teachers.
+          <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
+            📋 Every admin action is recorded here with field-level detail — what changed, the old value, the new value, who made the change, and when. Click any entry to expand its full diff.
           </p>
           <div id="audit-log-list">
             <p style="font-size:12px;color:var(--text3)">Loading audit history…</p>
@@ -2796,14 +2872,10 @@ window.addEventListener('load',()=>{
         get: window._fb && window._fb.get ? window._fb.get : undefined,
       });
       // Listen for auth state — auto-login if session persists
-      onAuthStateChanged(auth,async user=>{
+      onAuthStateChanged(auth, user=>{
         document.getElementById('loader').style.display='none';
         if(user){
-          const allowed = await isAuthorizedFirestore(user.uid);
-          if(!allowed){
-            await rejectUnauthorized(user.email);
-            return;
-          }
+          // No role gate — data scoping handles access control per-teacher
           const userData={user:user.email,uid:user.uid,name:user.displayName||user.email.split('@')[0],role:'Admin',photoURL:user.photoURL||''};
           showApp(userData);
         }
@@ -2816,50 +2888,12 @@ window.addEventListener('load',()=>{
 });
 
 /* ══════════════════════════════════════════
-   ADMIN AUTHORIZATION — Firestore-based
-   Access is granted when the signed-in user's document
-   in the "users" collection has role:"Admin" or role:"Teacher"
-   (case-insensitive — "admin", "ADMIN", "teacher", "Teacher" all work).
-   No emails are hardcoded in client-side code.
-   To grant/revoke access: update the role field
-   in Firestore Console → users/{uid}.
+   AUTHORIZATION NOTE
+   No login gate — any Firebase Auth user can sign in.
+   Access to data is entirely controlled by grade scoping:
+   teachers see only their assigned grade(s), unassigned
+   teachers see nothing. Advanced admins see everything.
 ══════════════════════════════════════════ */
-
-/**
- * Checks Firestore users/{uid} for role: "Admin" (case-insensitive) or "Teacher" (case-insensitive).
- * Returns true if granted, false for anything else.
- * Fails closed — any Firestore error → access denied.
- */
-async function isAuthorizedFirestore(uid) {
-  if (!uid || !firestoreDb) return false;
-  try {
-    const { doc, getDoc } = window._fb;
-    const snap = await getDoc(doc(firestoreDb, 'users', uid));
-    if (!snap.exists()) return false;
-    const role = (snap.data().role || '').trim().toLowerCase();
-    return role === 'admin' || role === 'teacher';
-  } catch (e) {
-    console.warn('[Auth] Firestore role check failed:', e.message);
-    return false;
-  }
-}
-
-async function rejectUnauthorized(email) {
-  // Immediately sign the unauthorized user back out of Firebase
-  try { const{signOut}=window._fb; await signOut(auth); } catch(e) {}
-  const err = document.getElementById('login-err');
-  err.textContent = `⛔ Access denied. "${email}" does not have Admin privileges. Contact the school administrator to be granted access.`;
-  err.classList.add('on');
-  // Reset Google button
-  const gbtn = document.getElementById('google-btn');
-  if (gbtn) {
-    gbtn.disabled = false;
-    gbtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.7 20-21 0-1.4-.1-2.7-.5-4z"/></svg> Continue with Google';
-  }
-  // Reset email button
-  const ebtn = document.getElementById('login-btn');
-  if (ebtn) { ebtn.disabled = false; ebtn.textContent = '🚀 Sign In'; }
-}
 
 /* ══════════════════════════════════════════
    LOGIN TAB SWITCHER
@@ -2897,11 +2931,7 @@ async function doEmailLogin(){
     const{signInWithEmailAndPassword}=window._fb;
     const cred=await signInWithEmailAndPassword(auth,email,pass);
     const u=cred.user;
-    const allowed = await isAuthorizedFirestore(u.uid);
-    if(!allowed){
-      await rejectUnauthorized(u.email);
-      return;
-    }
+    // No role gate — data scoping handles access control per-teacher
     const userData={user:u.email,uid:u.uid,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
     showApp(userData);
   }catch(e){
@@ -2930,11 +2960,7 @@ async function doGoogleLogin(){
     provider.setCustomParameters({prompt:'select_account'});
     const cred=await signInWithPopup(auth,provider);
     const u=cred.user;
-    const allowed = await isAuthorizedFirestore(u.uid);
-    if(!allowed){
-      await rejectUnauthorized(u.email);
-      return;
-    }
+    // No role gate — data scoping handles access control per-teacher
     const userData={user:u.email,uid:u.uid,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
     showApp(userData);
   }catch(e){
@@ -3024,8 +3050,7 @@ function _applyTeacherProfile(data, uid){
   const qlinksSection = document.querySelector('.qlinks-section');
   const reportsNav   = document.querySelector('.nav-item[data-label="Report Cards"]');
   const atriskNav    = document.querySelector('.nav-item[data-label="At-Risk"]');
-
-  const auditlogNav   = document.getElementById('nav-auditlog');
+  const auditNav     = document.querySelector('.nav-item[data-label="Audit Log"]');
 
   if(data.Advancedadmin === true){
     isAdvancedAdmin = true;
@@ -3035,9 +3060,7 @@ function _applyTeacherProfile(data, uid){
     if(qlinksSection) qlinksSection.style.display = 'block';
     if(reportsNav)   reportsNav.style.display = '';
     if(atriskNav)    atriskNav.style.display = '';
-    if(auditlogNav)  auditlogNav.style.display = 'flex';
-    const actLogCard = document.getElementById('activity-log-card');
-    if(actLogCard) actLogCard.style.display = '';
+    if(auditNav)     auditNav.style.display  = '';
     console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
     _renderGradeAssignmentPanel();
     _renderAddTeacherPanel();
@@ -3047,9 +3070,6 @@ function _applyTeacherProfile(data, uid){
   } else {
     isAdvancedAdmin = false;
     if(importNav) importNav.style.display = 'flex';
-    if(auditlogNav) auditlogNav.style.display = 'none';
-    const actLogCard = document.getElementById('activity-log-card');
-    if(actLogCard) actLogCard.style.display = 'none';
 
     // Support both legacy assignedGrade (string) and new assignedGrades (array)
     let grades = [];
@@ -3071,6 +3091,9 @@ function _applyTeacherProfile(data, uid){
       // ── Teacher now has grade(s) assigned ──────────────────────────
       if(reportsNav)  reportsNav.style.display = '';
       if(atriskNav)   atriskNav.style.display = '';
+      if(auditNav)    auditNav.style.display  = '';
+      const _alc = document.getElementById('activity-log-card');
+      if(_alc) _alc.style.display = '';
       console.log(`[GradeScope] Teacher scoped to: ${grades.join(', ')}`);
       if(changed){
         _applyGradeScope();
@@ -3092,6 +3115,9 @@ function _applyTeacherProfile(data, uid){
       currentAssignedGrades = [];
       if(reportsNav)  reportsNav.style.display = 'none';
       if(atriskNav)   atriskNav.style.display = 'none';
+      if(auditNav)    auditNav.style.display  = 'none';
+      const _alc = document.getElementById('activity-log-card');
+      if(_alc) _alc.style.display = 'none';
       console.log('[GradeScope] No grade assigned — data restricted.');
       if(changed){
         _applyGradeScope();
@@ -4255,6 +4281,7 @@ function renderAll(){
   renderGradeBars();
   renderTopStudents();
   renderActivityLog();
+  renderDashboardAuditWidget();
   filterStudents();
   filterResults();
   renderSubjectPerf();
@@ -4567,6 +4594,7 @@ async function logActivity(text, iconClass, actor, details={}){
   if(activities.length>300) activities.pop();
   renderActivityLog();
   renderAuditView();
+  renderDashboardAuditWidget();
   if(db){
     try{
       const{ref,push}=window._fb;
@@ -4601,12 +4629,23 @@ async function loadAuditLogs(){
     if(activities.length>200) activities.splice(200);
     renderActivityLog();
     renderAuditView();
+    renderDashboardAuditWidget();
   }catch(e){ /* silent */ }
 }
 
 function renderActivityLog(){
   const container=document.getElementById('activity-log');
   if(!container) return;
+  // ── Security: hide activity log for unassigned teachers ───────────────
+  const isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+  const logCard = document.getElementById('activity-log-card');
+  if(isUnassigned){
+    if(logCard) logCard.style.display = 'none';
+    return;
+  }
+  if(logCard) logCard.style.display = '';
+  // ─────────────────────────────────────────────────────────────────────
   if(!activities.length){container.innerHTML='<p style="font-size:12px;color:var(--text3)">No activity yet.</p>';return;}
   container.innerHTML=activities.slice(0,8).map(a=>`
     <div class="activity-item">
@@ -4674,8 +4713,18 @@ function _buildDiffHTML(entry){
 
 /* ─── Main render ─────────────────────────────────── */
 function renderAuditView(){
+  // ── Security: unassigned teachers cannot see the Audit Log ────────────
+  const isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
   const container=document.getElementById('audit-log-list');
   if(!container) return;
+  if(isUnassigned){
+    container.innerHTML='<p style="font-size:13px;color:var(--text3);padding:20px 0">⛔ No grade assigned — Audit Log not available. Contact the ICT DEPT.</p>';
+    const countEl=document.getElementById('audit-count');
+    if(countEl) countEl.textContent='0 entries';
+    return;
+  }
+  // ─────────────────────────────────────────────────────────────────────
 
   let filtered=[...activities];
   if(auditSearchVal)   filtered=filtered.filter(a=>(a.text||'').toLowerCase().includes(auditSearchVal)||(a.actor||'').toLowerCase().includes(auditSearchVal)||(a.email||'').toLowerCase().includes(auditSearchVal)||(a.targetName||'').toLowerCase().includes(auditSearchVal));
@@ -4770,7 +4819,174 @@ window.exportAuditCSV=function(){
   a.href=url; a.download=`audit-log-${new Date().toISOString().slice(0,10)}.csv`;
   a.click(); URL.revokeObjectURL(url);
   notify('📥 Audit log exported!','success');
+  logActivity('📥 Exported audit log CSV','act-orange',currentAdminName,{category:'export'});
 };
+
+/* ══════════════════════════════════════════
+   DASHBOARD AUDIT TRAIL WIDGET — Advanced Admin Only
+══════════════════════════════════════════ */
+const _DASH_AUDIT_PAGE_SIZE = 10;
+let _dashAuditPage = 1;
+
+function renderDashboardAuditWidget(){
+  const widget = document.getElementById('dashboard-audit-widget');
+  if(!widget) return;
+
+  // ── Only visible to Advanced Admins ──────────────────────────────────
+  if(!isAdvancedAdmin){
+    widget.style.display = 'none';
+    return;
+  }
+  widget.style.display = 'block';
+
+  // ── Read filter values ───────────────────────────────────────────────
+  const catVal    = (document.getElementById('dash-audit-cat')?.value    || '').toLowerCase();
+  const actorVal  = (document.getElementById('dash-audit-actor')?.value  || '');
+  const searchVal = (document.getElementById('dash-audit-search')?.value || '').toLowerCase();
+
+  // ── Rebuild actor dropdown ───────────────────────────────────────────
+  const actorSel = document.getElementById('dash-audit-actor');
+  if(actorSel){
+    const cur = actorSel.value;
+    while(actorSel.options.length > 1) actorSel.remove(1);
+    [...new Set(activities.map(a=>a.actor).filter(Boolean))].sort().forEach(ac=>{
+      const o = document.createElement('option'); o.value = ac; o.textContent = ac;
+      actorSel.appendChild(o);
+    });
+    actorSel.value = cur;
+  }
+
+  // ── Filter entries ───────────────────────────────────────────────────
+  let filtered = [...activities];
+  if(catVal)    filtered = filtered.filter(a=>(a.category||_inferCategory(a.text||''))===catVal);
+  if(actorVal)  filtered = filtered.filter(a=>a.actor===actorVal);
+  if(searchVal) filtered = filtered.filter(a=>
+    (a.text||'').toLowerCase().includes(searchVal) ||
+    (a.actor||'').toLowerCase().includes(searchVal) ||
+    (a.email||'').toLowerCase().includes(searchVal) ||
+    (a.targetName||'').toLowerCase().includes(searchVal)
+  );
+
+  // ── Stats row ────────────────────────────────────────────────────────
+  const statsEl = document.getElementById('dash-audit-stats');
+  if(statsEl){
+    const total   = activities.length;
+    const edits   = activities.filter(a=>(a.category||_inferCategory(a.text||''))==='edit').length;
+    const adds    = activities.filter(a=>(a.category||_inferCategory(a.text||''))==='add').length;
+    const deletes = activities.filter(a=>(a.category||_inferCategory(a.text||''))==='delete').length;
+    const imports = activities.filter(a=>(a.category||_inferCategory(a.text||''))==='import').length;
+    const exports = activities.filter(a=>(a.category||_inferCategory(a.text||''))==='export').length;
+    const actors  = new Set(activities.map(a=>a.actor).filter(Boolean)).size;
+
+    // Today count
+    const todayStr = new Date().toDateString();
+    const today = activities.filter(a=>new Date(a.time).toDateString()===todayStr).length;
+
+    statsEl.innerHTML = [
+      {val:total,   lbl:'Total Events',  color:'var(--blue-lt)'},
+      {val:today,   lbl:'Today',         color:'var(--green)'},
+      {val:edits,   lbl:'Edits',         color:'var(--teal)'},
+      {val:adds,    lbl:'Additions',     color:'var(--blue)'},
+      {val:deletes, lbl:'Deletions',     color:'var(--red)'},
+      {val:imports, lbl:'Imports',       color:'#c39bd3'},
+      {val:exports, lbl:'Exports',       color:'var(--gold)'},
+      {val:actors,  lbl:'Users',         color:'var(--orange)'},
+    ].map(s=>`
+      <div class="dash-audit-stat">
+        <div class="dash-audit-stat-val" style="color:${s.color}">${s.val}</div>
+        <div class="dash-audit-stat-lbl">${s.lbl}</div>
+      </div>`).join('');
+  }
+
+  // ── Pagination ────────────────────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(filtered.length / _DASH_AUDIT_PAGE_SIZE));
+  if(_dashAuditPage > totalPages) _dashAuditPage = 1;
+  const start = (_dashAuditPage - 1) * _DASH_AUDIT_PAGE_SIZE;
+  const page  = filtered.slice(start, start + _DASH_AUDIT_PAGE_SIZE);
+
+  // ── Entry list ────────────────────────────────────────────────────────
+  const listEl = document.getElementById('dash-audit-list');
+  if(!listEl) return;
+
+  if(!filtered.length){
+    listEl.innerHTML = `<p style="font-size:12px;color:var(--text3);padding:16px 0;text-align:center">No audit entries match your filter.</p>`;
+  } else {
+    listEl.innerHTML = page.map((a, idx)=>{
+      const globalIdx = start + idx;
+      const d   = new Date(a.time);
+      const cat = a.category || _inferCategory(a.text||'');
+      const catCfg = _AUDIT_CAT[cat] || _AUDIT_CAT.system;
+      const emoji  = (a.text||'').split(' ')[0] || catCfg.icon;
+      const summary= (a.text||'').replace(/^[^\s]+\s/,'') || '(no description)';
+      const dateStr= d.toLocaleDateString('en-KE',{day:'2-digit',month:'short'});
+      const timeStr= d.toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'});
+
+      let changePill='';
+      if(cat==='edit' && a.before && a.after){
+        const n = Object.keys({...a.before,...a.after}).filter(k=>String(a.before[k]??'')!==String(a.after[k]??'')).length;
+        if(n) changePill=`<span class="dash-audit-badge ab-edit" style="margin-right:4px">📝 ${n} field${n!==1?'s':''}</span>`;
+      }
+
+      const diffHTML = _buildDiffHTML(a);
+
+      return `<div class="dash-audit-row" id="daw-${globalIdx}" onclick="toggleDashAuditRow('daw-${globalIdx}')">
+        <div class="dash-audit-icon ${a.iconClass||'act-blue'}">${emoji}</div>
+        <div class="dash-audit-body">
+          <div class="dash-audit-action">${summary}</div>
+          <div class="dash-audit-meta">
+            <span>👤 <strong style="color:var(--blue-lt)">${a.actor||'Admin'}</strong>${a.email?` &lt;${a.email}&gt;`:''}</span>
+            <span>🕐 ${dateStr} ${timeStr}</span>
+            ${a.targetName?`<span>🎯 ${a.targetName}</span>`:''}
+          </div>
+          <div style="margin-top:4px">${changePill}<span class="dash-audit-badge ${catCfg.cls}">${catCfg.label}</span></div>
+          <div class="dash-audit-expand">${diffHTML}</div>
+        </div>
+        <div class="dash-audit-right">
+          <span class="dash-audit-time">${d.toLocaleDateString('en-KE',{day:'2-digit',month:'short',year:'numeric'})}</span>
+          <span style="font-size:10px;color:var(--text3)">${timeStr}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Pager ─────────────────────────────────────────────────────────────
+  const pagerEl = document.getElementById('dash-audit-pager');
+  if(pagerEl){
+    if(totalPages <= 1){
+      pagerEl.innerHTML = `<span style="font-size:11px;color:var(--text3)">${filtered.length} entr${filtered.length!==1?'ies':'y'}</span>`;
+    } else {
+      let html = `<span style="font-size:11px;color:var(--text3);margin-right:4px">${filtered.length} entries</span>`;
+      html += `<button class="dash-audit-pager-btn" onclick="_dashAuditGo(${_dashAuditPage-1})" ${_dashAuditPage===1?'disabled':''}>‹</button>`;
+      // Show at most 5 page buttons centred on current page
+      const radius = 2;
+      let ps = Math.max(1, _dashAuditPage - radius);
+      let pe = Math.min(totalPages, _dashAuditPage + radius);
+      if(ps > 1) html += `<button class="dash-audit-pager-btn" onclick="_dashAuditGo(1)">1</button>${ps>2?'<span style="padding:0 4px;color:var(--text3)">…</span>':''}`;
+      for(let p=ps;p<=pe;p++) html += `<button class="dash-audit-pager-btn${p===_dashAuditPage?' active':''}" onclick="_dashAuditGo(${p})">${p}</button>`;
+      if(pe < totalPages) html += `${pe<totalPages-1?'<span style="padding:0 4px;color:var(--text3)">…</span>':''}<button class="dash-audit-pager-btn" onclick="_dashAuditGo(${totalPages})">${totalPages}</button>`;
+      html += `<button class="dash-audit-pager-btn" onclick="_dashAuditGo(${_dashAuditPage+1})" ${_dashAuditPage===totalPages?'disabled':''}>›</button>`;
+      pagerEl.innerHTML = html;
+    }
+  }
+}
+
+window.renderDashboardAuditWidget = renderDashboardAuditWidget;
+
+function _dashAuditGo(page){
+  const totalPages = Math.max(1, Math.ceil(activities.length / _DASH_AUDIT_PAGE_SIZE));
+  if(page < 1 || page > totalPages) return;
+  _dashAuditPage = page;
+  renderDashboardAuditWidget();
+  const widget = document.getElementById('dashboard-audit-widget');
+  if(widget) widget.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+window._dashAuditGo = _dashAuditGo;
+
+window.toggleDashAuditRow = function(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.toggle('expanded');
+};
+/* ── End Dashboard Audit Trail Widget ─────────────────────────────── */
 
 function timeAgo(d){
   const s=Math.floor((Date.now()-new Date(d))/1000);
@@ -5449,17 +5665,12 @@ window.renderSubjectRanking=renderSubjectRanking;
 ══════════════════════════════════════════ */
 const views={'dashboard':'Overview & Analytics','students':'Manage Students','results':'Results & Grades','analytics':'Deep Analytics','reports':'Report Cards & Export','announcements':'School Announcements','settings':'Portal Settings','auditlog':'Full Admin Audit Trail'};
 function navTo(view,el){
-  // ── Security: block non-Advanced-Admins from Audit Log ────────────────
-  if(view === 'auditlog' && !isAdvancedAdmin){
-    notify('⛔ Access Denied — The Audit Log is only available to Advanced Admins. Contact your administrator.','error',5000);
-    return;
-  }
   // ── Security: block unassigned teachers from Report Cards ──────────────
   const isUnassigned = !isAdvancedAdmin &&
     currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
-  if(isUnassigned && (view === 'reports' || view === 'atrisk')){
-    const label = view === 'reports' ? 'Report Cards' : 'At-Risk Students';
-    notify('⛔ Access Denied — ' + label + ' are only available to teachers with an assigned grade. Contact your administrator.','error',5000);
+  if(isUnassigned && (view === 'reports' || view === 'atrisk' || view === 'auditlog')){
+    const labels = { reports:'Report Cards', atrisk:'At-Risk Students', auditlog:'Audit Log' };
+    notify('⛔ Access Denied — ' + (labels[view]||view) + ' is only available to teachers with an assigned grade. Contact the ICT DEPT.','error',5000);
     return;
   }
   // ───────────────────────────────────────────────────────────────────────

@@ -1190,8 +1190,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <div class="nav-item" onclick="navTo('settings',this)" data-label="Settings">
         <span class="nav-icon">⚙️</span> Settings
       </div>
-      <div class="nav-item" onclick="navTo('auditlog',this)" data-label="Audit Log">
+      <div class="nav-item" onclick="navTo('auditlog',this)" data-label="Audit Log" id="nav-auditlog" style="display:none">
         <span class="nav-icon">🗂️</span> Audit Log
+        <span class="nav-badge" style="background:var(--purple);font-size:8px;letter-spacing:.04em">ADV</span>
       </div>
     </div>
 
@@ -1369,10 +1370,10 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
             </div>
           </div>
 
-          <!-- Recent Activity -->
-          <div class="card" id="activity-log-card" style="order:2">
+          <!-- Recent Activity — Advanced Admin only -->
+          <div class="card" id="activity-log-card" style="order:2;display:none">
             <div class="card-hdr">
-              <div class="card-title">🕐 Activity Log</div>
+              <div class="card-title">🕐 Activity Log <span style="font-size:9px;font-weight:800;background:linear-gradient(135deg,rgba(142,68,173,.2),rgba(142,68,173,.08));color:#c39bd3;border:1px solid rgba(142,68,173,.35);padding:2px 8px;border-radius:8px;vertical-align:middle;letter-spacing:.06em;text-transform:uppercase;margin-left:4px">🔐 ADV</span></div>
             </div>
             <div id="activity-log"></div>
           </div>
@@ -2049,7 +2050,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       <!-- ══════ AUDIT LOG VIEW ══════ -->
       <div class="view" id="view-auditlog">
         <div class="sec-hdr">
-          <h2>🗂️ Audit Log</h2>
+          <h2>🗂️ Audit Log <span style="font-size:10px;font-weight:800;background:linear-gradient(135deg,rgba(142,68,173,.2),rgba(142,68,173,.08));color:#c39bd3;border:1px solid rgba(142,68,173,.35);padding:3px 10px;border-radius:10px;vertical-align:middle;letter-spacing:.06em;text-transform:uppercase">🔐 Advanced Admin</span></h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <span id="audit-count" style="font-size:11px;color:var(--text3);font-weight:700"></span>
             <button class="btn btn-outline btn-sm" onclick="exportAuditCSV()">📥 Export CSV</button>
@@ -2075,8 +2076,8 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
               <option value="system">⚙️ System</option>
             </select>
           </div>
-          <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
-            📋 Every admin action is recorded here with field-level detail — what changed, the old value, the new value, who made the change, and when. Click any entry to expand its full diff.
+          <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(142,68,173,.06);border-radius:var(--radius-md);border:1px solid rgba(142,68,173,.2)">
+            🔐 <strong style="color:#c39bd3">Advanced Admin Only.</strong> Every admin action is recorded here with field-level detail — what changed, the old value, the new value, who made the change, and when. Click any entry to expand its full diff. This log is not visible to regular teachers.
           </p>
           <div id="audit-log-list">
             <p style="font-size:12px;color:var(--text3)">Loading audit history…</p>
@@ -2795,10 +2796,14 @@ window.addEventListener('load',()=>{
         get: window._fb && window._fb.get ? window._fb.get : undefined,
       });
       // Listen for auth state — auto-login if session persists
-      onAuthStateChanged(auth, user=>{
+      onAuthStateChanged(auth,async user=>{
         document.getElementById('loader').style.display='none';
         if(user){
-          // No role gate — data scoping handles access control per-teacher
+          const allowed = await isAuthorizedFirestore(user.uid);
+          if(!allowed){
+            await rejectUnauthorized(user.email);
+            return;
+          }
           const userData={user:user.email,uid:user.uid,name:user.displayName||user.email.split('@')[0],role:'Admin',photoURL:user.photoURL||''};
           showApp(userData);
         }
@@ -2811,12 +2816,50 @@ window.addEventListener('load',()=>{
 });
 
 /* ══════════════════════════════════════════
-   AUTHORIZATION NOTE
-   No login gate — any Firebase Auth user can sign in.
-   Access to data is entirely controlled by grade scoping:
-   teachers see only their assigned grade(s), unassigned
-   teachers see nothing. Advanced admins see everything.
+   ADMIN AUTHORIZATION — Firestore-based
+   Access is granted when the signed-in user's document
+   in the "users" collection has role:"Admin" or role:"Teacher"
+   (case-insensitive — "admin", "ADMIN", "teacher", "Teacher" all work).
+   No emails are hardcoded in client-side code.
+   To grant/revoke access: update the role field
+   in Firestore Console → users/{uid}.
 ══════════════════════════════════════════ */
+
+/**
+ * Checks Firestore users/{uid} for role: "Admin" (case-insensitive) or "Teacher" (case-insensitive).
+ * Returns true if granted, false for anything else.
+ * Fails closed — any Firestore error → access denied.
+ */
+async function isAuthorizedFirestore(uid) {
+  if (!uid || !firestoreDb) return false;
+  try {
+    const { doc, getDoc } = window._fb;
+    const snap = await getDoc(doc(firestoreDb, 'users', uid));
+    if (!snap.exists()) return false;
+    const role = (snap.data().role || '').trim().toLowerCase();
+    return role === 'admin' || role === 'teacher';
+  } catch (e) {
+    console.warn('[Auth] Firestore role check failed:', e.message);
+    return false;
+  }
+}
+
+async function rejectUnauthorized(email) {
+  // Immediately sign the unauthorized user back out of Firebase
+  try { const{signOut}=window._fb; await signOut(auth); } catch(e) {}
+  const err = document.getElementById('login-err');
+  err.textContent = `⛔ Access denied. "${email}" does not have Admin privileges. Contact the school administrator to be granted access.`;
+  err.classList.add('on');
+  // Reset Google button
+  const gbtn = document.getElementById('google-btn');
+  if (gbtn) {
+    gbtn.disabled = false;
+    gbtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 48 48"><path fill="#fff" d="M44.5 20H24v8.5h11.8C34.7 33.9 30.1 37 24 37c-7.2 0-13-5.8-13-13s5.8-13 13-13c3.1 0 5.9 1.1 8.1 2.9l6.4-6.4C34.6 5.1 29.6 3 24 3 12.4 3 3 12.4 3 24s9.4 21 21 21c10.5 0 20-7.7 20-21 0-1.4-.1-2.7-.5-4z"/></svg> Continue with Google';
+  }
+  // Reset email button
+  const ebtn = document.getElementById('login-btn');
+  if (ebtn) { ebtn.disabled = false; ebtn.textContent = '🚀 Sign In'; }
+}
 
 /* ══════════════════════════════════════════
    LOGIN TAB SWITCHER
@@ -2854,7 +2897,11 @@ async function doEmailLogin(){
     const{signInWithEmailAndPassword}=window._fb;
     const cred=await signInWithEmailAndPassword(auth,email,pass);
     const u=cred.user;
-    // No role gate — data scoping handles access control per-teacher
+    const allowed = await isAuthorizedFirestore(u.uid);
+    if(!allowed){
+      await rejectUnauthorized(u.email);
+      return;
+    }
     const userData={user:u.email,uid:u.uid,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
     showApp(userData);
   }catch(e){
@@ -2883,7 +2930,11 @@ async function doGoogleLogin(){
     provider.setCustomParameters({prompt:'select_account'});
     const cred=await signInWithPopup(auth,provider);
     const u=cred.user;
-    // No role gate — data scoping handles access control per-teacher
+    const allowed = await isAuthorizedFirestore(u.uid);
+    if(!allowed){
+      await rejectUnauthorized(u.email);
+      return;
+    }
     const userData={user:u.email,uid:u.uid,name:u.displayName||u.email.split('@')[0],role:'Admin',photoURL:u.photoURL||''};
     showApp(userData);
   }catch(e){
@@ -2973,7 +3024,8 @@ function _applyTeacherProfile(data, uid){
   const qlinksSection = document.querySelector('.qlinks-section');
   const reportsNav   = document.querySelector('.nav-item[data-label="Report Cards"]');
   const atriskNav    = document.querySelector('.nav-item[data-label="At-Risk"]');
-  const auditNav     = document.querySelector('.nav-item[data-label="Audit Log"]');
+
+  const auditlogNav   = document.getElementById('nav-auditlog');
 
   if(data.Advancedadmin === true){
     isAdvancedAdmin = true;
@@ -2983,7 +3035,9 @@ function _applyTeacherProfile(data, uid){
     if(qlinksSection) qlinksSection.style.display = 'block';
     if(reportsNav)   reportsNav.style.display = '';
     if(atriskNav)    atriskNav.style.display = '';
-    if(auditNav)     auditNav.style.display  = '';
+    if(auditlogNav)  auditlogNav.style.display = 'flex';
+    const actLogCard = document.getElementById('activity-log-card');
+    if(actLogCard) actLogCard.style.display = '';
     console.log('[AdvancedAdmin] Advanced access granted — all grades visible.');
     _renderGradeAssignmentPanel();
     _renderAddTeacherPanel();
@@ -2993,6 +3047,9 @@ function _applyTeacherProfile(data, uid){
   } else {
     isAdvancedAdmin = false;
     if(importNav) importNav.style.display = 'flex';
+    if(auditlogNav) auditlogNav.style.display = 'none';
+    const actLogCard = document.getElementById('activity-log-card');
+    if(actLogCard) actLogCard.style.display = 'none';
 
     // Support both legacy assignedGrade (string) and new assignedGrades (array)
     let grades = [];
@@ -3014,9 +3071,6 @@ function _applyTeacherProfile(data, uid){
       // ── Teacher now has grade(s) assigned ──────────────────────────
       if(reportsNav)  reportsNav.style.display = '';
       if(atriskNav)   atriskNav.style.display = '';
-      if(auditNav)    auditNav.style.display  = '';
-      const _alc = document.getElementById('activity-log-card');
-      if(_alc) _alc.style.display = '';
       console.log(`[GradeScope] Teacher scoped to: ${grades.join(', ')}`);
       if(changed){
         _applyGradeScope();
@@ -3038,9 +3092,6 @@ function _applyTeacherProfile(data, uid){
       currentAssignedGrades = [];
       if(reportsNav)  reportsNav.style.display = 'none';
       if(atriskNav)   atriskNav.style.display = 'none';
-      if(auditNav)    auditNav.style.display  = 'none';
-      const _alc = document.getElementById('activity-log-card');
-      if(_alc) _alc.style.display = 'none';
       console.log('[GradeScope] No grade assigned — data restricted.');
       if(changed){
         _applyGradeScope();
@@ -4556,16 +4607,6 @@ async function loadAuditLogs(){
 function renderActivityLog(){
   const container=document.getElementById('activity-log');
   if(!container) return;
-  // ── Security: hide activity log for unassigned teachers ───────────────
-  const isUnassigned = !isAdvancedAdmin &&
-    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
-  const logCard = document.getElementById('activity-log-card');
-  if(isUnassigned){
-    if(logCard) logCard.style.display = 'none';
-    return;
-  }
-  if(logCard) logCard.style.display = '';
-  // ─────────────────────────────────────────────────────────────────────
   if(!activities.length){container.innerHTML='<p style="font-size:12px;color:var(--text3)">No activity yet.</p>';return;}
   container.innerHTML=activities.slice(0,8).map(a=>`
     <div class="activity-item">
@@ -4633,18 +4674,8 @@ function _buildDiffHTML(entry){
 
 /* ─── Main render ─────────────────────────────────── */
 function renderAuditView(){
-  // ── Security: unassigned teachers cannot see the Audit Log ────────────
-  const isUnassigned = !isAdvancedAdmin &&
-    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
   const container=document.getElementById('audit-log-list');
   if(!container) return;
-  if(isUnassigned){
-    container.innerHTML='<p style="font-size:13px;color:var(--text3);padding:20px 0">⛔ No grade assigned — Audit Log not available. Contact the ICT DEPT.</p>';
-    const countEl=document.getElementById('audit-count');
-    if(countEl) countEl.textContent='0 entries';
-    return;
-  }
-  // ─────────────────────────────────────────────────────────────────────
 
   let filtered=[...activities];
   if(auditSearchVal)   filtered=filtered.filter(a=>(a.text||'').toLowerCase().includes(auditSearchVal)||(a.actor||'').toLowerCase().includes(auditSearchVal)||(a.email||'').toLowerCase().includes(auditSearchVal)||(a.targetName||'').toLowerCase().includes(auditSearchVal));
@@ -5418,12 +5449,17 @@ window.renderSubjectRanking=renderSubjectRanking;
 ══════════════════════════════════════════ */
 const views={'dashboard':'Overview & Analytics','students':'Manage Students','results':'Results & Grades','analytics':'Deep Analytics','reports':'Report Cards & Export','announcements':'School Announcements','settings':'Portal Settings','auditlog':'Full Admin Audit Trail'};
 function navTo(view,el){
+  // ── Security: block non-Advanced-Admins from Audit Log ────────────────
+  if(view === 'auditlog' && !isAdvancedAdmin){
+    notify('⛔ Access Denied — The Audit Log is only available to Advanced Admins. Contact your administrator.','error',5000);
+    return;
+  }
   // ── Security: block unassigned teachers from Report Cards ──────────────
   const isUnassigned = !isAdvancedAdmin &&
     currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
-  if(isUnassigned && (view === 'reports' || view === 'atrisk' || view === 'auditlog')){
-    const labels = { reports:'Report Cards', atrisk:'At-Risk Students', auditlog:'Audit Log' };
-    notify('⛔ Access Denied — ' + (labels[view]||view) + ' is only available to teachers with an assigned grade. Contact the ICT DEPT.','error',5000);
+  if(isUnassigned && (view === 'reports' || view === 'atrisk')){
+    const label = view === 'reports' ? 'Report Cards' : 'At-Risk Students';
+    notify('⛔ Access Denied — ' + label + ' are only available to teachers with an assigned grade. Contact your administrator.','error',5000);
     return;
   }
   // ───────────────────────────────────────────────────────────────────────
