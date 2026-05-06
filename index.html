@@ -3468,18 +3468,23 @@ window._atLoadTeachers = async function(){
       if(sub) bd += '<div class="at-tcard-row"><span class="ic">&#128218;</span><span class="val">'+sub+'</span></div>';
       if(!ph && !tsc && !sub) bd += '<div class="at-tcard-row"><span class="val muted">No additional details</span></div>';
 
-      return '<div class="at-tcard'+(u.disabled?' at-tcard-is-disabled':'') +'">'
-        +(u.disabled?'<div class="at-disabled-badge">Disabled</div>':'')
+      var isDisabled = !!u.disabled;
+      return '<div class="at-tcard'+(isDisabled?' at-tcard-is-disabled':'') +'">'
+        +(isDisabled?'<div class="at-disabled-badge">&#128683; Disabled</div>':'')
         +'<div class="at-tcard-header">'+av
           +'<div class="at-tcard-headinfo">'
             +'<div class="at-tcard-name" title="'+sa+'">'+(dn||'-')+'</div>'
             +'<div class="at-tcard-role">'+role+'</div>'
           +'</div></div>'
         +'<div class="at-tcard-body">'+bd+'</div>'
-        +'<div class="at-tcard-footer">'
+        +'<div class="at-tcard-grades-row">'
           +'<div class="at-tcard-grades" title="'+gr+'">&#127891; '+gr+'</div>'
           +(cat?'<div class="at-tcard-date">Added '+cat+'</div>':'')
-          +'<button class="at-tcard-del" onclick="_atDeleteTeacher(\''+u.uid+'\',\''+sn+'\')" title="Disable">&#10005;</button>'
+        +'</div>'
+        +'<div class="at-tcard-actions">'
+          +'<button class="at-act-btn at-act-pw" onclick="_atResetPassword(\''+u.uid+'\',\''+em+'\',\''+sn+'\')" title="Reset Password">&#128273; Reset PW</button>'
+          +'<button class="at-act-btn '+(isDisabled?'at-act-enable':'at-act-disable')+'" onclick="_atToggleDisable(\''+u.uid+'\',\''+sn+'\','+isDisabled+',\''+em+'\')" title="'+(isDisabled?'Enable':'Disable')+' Account">'+(isDisabled?'&#9989; Enable':'&#128683; Disable')+'</button>'
+          +'<button class="at-act-btn at-act-del" onclick="_atHardDelete(\''+u.uid+'\',\''+sn+'\',\''+em+'\')" title="Delete Account">&#128465; Delete</button>'
         +'</div></div>';
     }
 
@@ -3498,12 +3503,31 @@ window._atLoadTeachers = async function(){
       +'.at-tcard-row .ic{font-size:13px;flex-shrink:0;margin-top:1px}'
       +'.at-tcard-row .val{word-break:break-all;line-height:1.4}'
       +'.at-tcard-row .val.muted{color:var(--text3);font-style:italic}'
-      +'.at-tcard-footer{padding:8px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:6px;background:var(--surface)}'
+      +'.at-tcard-grades-row{padding:8px 14px 4px;display:flex;align-items:center;justify-content:space-between;gap:6px}'
       +'.at-tcard-grades{font-size:11px;font-weight:700;color:var(--blue);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
-      +'.at-tcard-del{background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:4px 7px;border-radius:6px;flex-shrink:0;transition:.15s}'
-      +'.at-tcard-del:hover{background:rgba(231,76,60,.12);color:var(--red)}'
       +'.at-tcard-date{font-size:10px;color:var(--text3);flex-shrink:0}'
+      +'.at-tcard-actions{padding:8px 10px;border-top:1px solid var(--border);display:flex;gap:5px;background:var(--surface)}'
+      +'.at-act-btn{flex:1;border:none;cursor:pointer;font-size:10px;font-weight:700;padding:6px 2px;border-radius:7px;transition:.15s;white-space:nowrap}'
+      +'.at-act-pw{background:rgba(41,128,185,.1);color:var(--blue)}'
+      +'.at-act-pw:hover{background:rgba(41,128,185,.22)}'
+      +'.at-act-disable{background:rgba(243,156,18,.1);color:#e67e22}'
+      +'.at-act-disable:hover{background:rgba(243,156,18,.22)}'
+      +'.at-act-enable{background:rgba(39,174,96,.1);color:var(--green)}'
+      +'.at-act-enable:hover{background:rgba(39,174,96,.22)}'
+      +'.at-act-del{background:rgba(231,76,60,.1);color:var(--red)}'
+      +'.at-act-del:hover{background:rgba(231,76,60,.22)}'
       +'.at-disabled-badge{position:absolute;top:8px;right:8px;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;background:rgba(231,76,60,.15);color:var(--red);padding:2px 7px;border-radius:8px}'
+      +'  .at-tcard-grades-row{padding:6px 14px 0;display:flex;align-items:center;justify-content:space-between;gap:6px}'
+      +'  .at-tcard-actions{padding:8px 10px;border-top:1px solid var(--border);display:flex;gap:5px;background:var(--surface)}'
+      +'  .at-act-btn{flex:1;border:none;cursor:pointer;font-size:10px;font-weight:700;padding:5px 4px;border-radius:7px;transition:.15s;white-space:nowrap}'
+      +'  .at-act-pw{background:rgba(41,128,185,.1);color:var(--blue)}'
+      +'  .at-act-pw:hover{background:rgba(41,128,185,.22)}'
+      +'  .at-act-disable{background:rgba(243,156,18,.1);color:#e67e22}'
+      +'  .at-act-disable:hover{background:rgba(243,156,18,.22)}'
+      +'  .at-act-enable{background:rgba(39,174,96,.1);color:var(--green)}'
+      +'  .at-act-enable:hover{background:rgba(39,174,96,.22)}'
+      +'  .at-act-del{background:rgba(231,76,60,.1);color:var(--red)}'
+      +'  .at-act-del:hover{background:rgba(231,76,60,.22)}'
       +'</style>';
 
     container.innerHTML = cardCSS + '<div class="at-teachers-grid">' + teachers.map(_buildTeacherCard).join('') + '</div>';
@@ -3512,23 +3536,109 @@ window._atLoadTeachers = async function(){
   }
 };
 
-/* ── Delete teacher from Firestore (does not delete Auth account) ── */
-window._atDeleteTeacher = async function(uid, name){
+/* ══════════════════════════════════════════════════════
+   ADVANCED ADMIN — USER ACCOUNT MANAGEMENT ACTIONS
+══════════════════════════════════════════════════════ */
+
+/* ── 1. Reset Password: send Firebase password-reset email ── */
+window._atResetPassword = async function(uid, email, name){
   const confirmed = await showConfirm(
-    'Remove Teacher',
-    'Remove teacher <strong>' + name + '</strong> from the system?<br><small style="color:var(--text3)">This removes their Firestore profile. Their login account is deactivated separately via Firebase Console.</small>',
-    '🗑️', 'Remove', 'btn-red'
+    'Reset Password',
+    'Send a password-reset email to <strong>' + name + '</strong>?<br><small style="color:var(--text3)">' + email + '</small>',
+    '🔑', 'Send Reset Email', 'btn-blue'
   );
   if(!confirmed) return;
   try{
+    const { sendPasswordResetEmail, getAuth } = window._fb;
+    const secAuth = getAuth();
+    await sendPasswordResetEmail(secAuth, email);
+    notify('✅ Password reset email sent to <strong>' + email + '</strong>.', 'success', 7000);
+    logActivity('🔑 Password reset sent: ' + name + ' (' + email + ')', 'act-blue', currentAdminName, { category:'system' });
+  }catch(e){
+    notify('Error sending reset email: ' + e.message, 'error');
+  }
+};
+
+/* ── 2. Disable / Enable account — Firebase Auth REST API ── */
+window._atToggleDisable = async function(uid, name, isCurrentlyDisabled, email){
+  const action  = isCurrentlyDisabled ? 'Enable' : 'Disable';
+  const icon    = isCurrentlyDisabled ? '✅' : '🚫';
+  const btnCls  = isCurrentlyDisabled ? 'btn-green' : 'btn-orange';
+  const confirmed = await showConfirm(
+    action + ' Account',
+    action + ' account for <strong>' + name + '</strong>?'
+      + (isCurrentlyDisabled
+          ? '<br><small style="color:var(--text3)">They will be able to sign in again.</small>'
+          : '<br><small style="color:var(--text3)">They will be blocked from signing in until re-enabled.</small>'),
+    icon, action, btnCls
+  );
+  if(!confirmed) return;
+  try{
+    // 1. Update Firebase Auth via Identity Toolkit REST API
+    const API_KEY = 'AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE';
+    const res = await fetch(
+      'https://identitytoolkit.googleapis.com/v1/accounts:update?key=' + API_KEY,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ localId: uid, disableUser: !isCurrentlyDisabled })
+      }
+    );
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
+
+    // 2. Mirror state in Firestore
     const { doc, updateDoc } = window._fb;
-    // Mark as disabled rather than hard-delete — preserves audit trail
-    await updateDoc(doc(firestoreDb,'users',uid), { disabled: true, disabledAt: new Date().toISOString(), disabledBy: currentAdminName });
-    notify(`✅ Teacher <strong>${name}</strong> disabled successfully.`, 'success');
-    logActivity(`🗑️ Disabled teacher: ${name} (${uid})`, 'act-red', currentAdminName, { category:'system' });
+    const updates = isCurrentlyDisabled
+      ? { disabled: false, enabledAt: new Date().toISOString(), enabledBy: currentAdminName }
+      : { disabled: true,  disabledAt: new Date().toISOString(), disabledBy: currentAdminName };
+    await updateDoc(doc(firestoreDb, 'users', uid), updates);
+
+    notify(icon + ' Account for <strong>' + name + '</strong> ' + action.toLowerCase() + 'd.', 'success');
+    logActivity(icon + ' Account ' + action.toLowerCase() + 'd: ' + name + ' (' + (email||uid) + ')', isCurrentlyDisabled ? 'act-green' : 'act-red', currentAdminName, { category:'system' });
     _atLoadTeachers();
   }catch(e){
-    notify('Error: '+e.message, 'error');
+    notify('Error: ' + e.message, 'error');
+  }
+};
+
+/* ── 3. Hard-delete: Firebase Auth REST API + Firestore doc ── */
+window._atHardDelete = async function(uid, name, email){
+  const step1 = await showConfirm(
+    '⚠️ Delete Account',
+    'Permanently delete <strong>' + name + '</strong>?<br><small style="color:var(--red)">This deletes their Firebase Auth account AND Firestore profile. This cannot be undone.</small>',
+    '🗑️', 'Yes, Delete', 'btn-red'
+  );
+  if(!step1) return;
+  const step2 = await showConfirm(
+    '🔴 Final Confirmation',
+    'Are you absolutely sure you want to delete <strong>' + name + '</strong>? There is no recovery.',
+    '🗑️', 'Delete Permanently', 'btn-red'
+  );
+  if(!step2) return;
+  try{
+    // 1. Delete from Firebase Auth via Identity Toolkit REST API
+    const API_KEY = 'AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE';
+    const res = await fetch(
+      'https://identitytoolkit.googleapis.com/v1/accounts:delete?key=' + API_KEY,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ localId: uid })
+      }
+    );
+    const data = await res.json();
+    if(data.error) throw new Error(data.error.message);
+
+    // 2. Delete Firestore doc
+    const { doc, deleteDoc } = window._fb;
+    await deleteDoc(doc(firestoreDb, 'users', uid));
+
+    notify('🗑️ Account for <strong>' + name + '</strong> permanently deleted.', 'success');
+    logActivity('🗑️ DELETED account: ' + name + ' (' + (email||uid) + ')', 'act-red', currentAdminName, { category:'system' });
+    _atLoadTeachers();
+  }catch(e){
+    notify('Error: ' + e.message, 'error');
   }
 };
 
@@ -3997,9 +4107,17 @@ window.saveGradeAssignment = async function(uid){
     }
     const label = checked.length ? checked.join(', ') : 'Unassigned';
     notify(`✅ Grades saved: ${label}`,'success');
-    logActivity(`⚙️ Assigned grades [${label}] to teacher ${uid}`,'act-orange',currentAdminName,{
-      category:'system', extra:`UID: ${uid} → assignedGrades: [${label}]`
-    });
+    // Fetch email from Firestore doc for readable audit log
+    try{
+      const snap2 = await window._fb.getDoc(window._fb.doc(firestoreDb,'users',uid));
+      const teacherEmail = snap2.exists() ? (snap2.data().email || uid) : uid;
+      const teacherName  = snap2.exists() ? (snap2.data().name  || uid) : uid;
+      logActivity(`⚙️ Assigned grades [${label}] to ${teacherName} (${teacherEmail})`,'act-orange',currentAdminName,{
+        category:'system', extra:`${teacherEmail} → assignedGrades: [${label}]`
+      });
+    }catch(_){ 
+      logActivity(`⚙️ Assigned grades [${label}] to teacher (${uid})`,'act-orange',currentAdminName,{ category:'system' });
+    }
   }catch(e){
     notify('Error saving assignment: '+e.message,'error');
   }
