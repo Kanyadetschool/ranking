@@ -724,7 +724,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   .msg-send-btn{width:48px;height:48px;font-size:20px;}
   .msg-bubble-wrap{max-width:82%;}
   .msg-actions{opacity:1!important;}
-  .msg-notif-banner{left:10px;right:10px;max-width:none;top:auto;bottom:70px;transform:translateY(120px);}
+  .msg-notif-banner{left:10px;right:10px;max-width:none;top:auto;bottom:16px;transform:translateY(120px);}
   .msg-notif-banner.show{transform:translateY(0);}
 }
 
@@ -737,23 +737,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   .main-content{margin-left:0;max-width:100vw;}
   .kpi-grid{grid-template-columns:1fr 1fr;}
   .mini-stats{grid-template-columns:1fr 1fr;}
-  /* ── Topbar moves to bottom on mobile ── */
-  .topbar{
-    position:fixed;
-    bottom:0;top:auto;
-    left:0;right:0;
-    border-bottom:none;
-    border-top:1px solid var(--border);
-    padding:8px 14px;
-    z-index:650;
-    box-shadow:0 -4px 20px rgba(0,0,0,.12);
-  }
-  /* Push content up so it's not hidden behind the bottom bar */
-  .main-content{padding-bottom:62px;}
-  /* Messages view: account for bottom bar */
-  #view-messages.active{height:calc(100vh - 132px);min-height:calc(100vh - 132px);}
-  .msg-sidebar{height:100%;}
-  .msg-main{height:100%;}
+  .topbar{padding:10px 14px;gap:8px;}
   .content-area{padding:14px;}
   .hamburger{display:flex!important;}
   /* Records modal tabs scroll on mobile */
