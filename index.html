@@ -692,6 +692,32 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .msg-no-chat-icon{font-size:56px;opacity:.3;}
 .msg-no-chat-text{font-size:14px;font-weight:700;}
 .msg-no-chat-sub{font-size:12px;opacity:.7;}
+/* ── Audit Log: mobile ── */
+@media(max-width:768px){
+  #view-auditlog{padding:10px!important;}
+  #view-auditlog .sec-hdr{flex-direction:column;align-items:flex-start;gap:8px;}
+  #view-auditlog .sec-hdr>div{flex-wrap:wrap;gap:6px;}
+  #view-auditlog .card{padding:10px!important;}
+  #view-auditlog .filter-row{flex-direction:column;gap:8px!important;}
+  #view-auditlog .search-input-wrap{min-width:unset!important;width:100%;}
+  #view-auditlog .sel{width:100%;}
+  .audit-card-head{padding:10px 12px;gap:8px;}
+  .audit-icon{width:30px;height:30px;font-size:14px;flex-shrink:0;}
+  .audit-action{font-size:12px;}
+  .audit-meta{font-size:10px;gap:6px;}
+  .audit-meta span{display:block;} /* stack meta rows vertically */
+  .audit-body{padding:10px 12px;font-size:11px;overflow-x:auto;}
+  .audit-diff-table{font-size:10px;}
+  #audit-count{font-size:11px;}
+  .audit-summary-pill{font-size:9px;}
+}
+@media(max-width:480px){
+  .audit-card-head{padding:8px 10px;}
+  .audit-action{font-size:11px;}
+  .audit-chevron{display:none;} /* save space, tap to expand still works */
+  #view-auditlog .btn{font-size:10px;padding:5px 8px;}
+}
+
 /* ── Messaging: mobile full-screen panel approach ── */
 @media(max-width:700px){
   /* Full-width container */
@@ -2272,7 +2298,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       </div>
 
       <!-- ══════ AUDIT LOG VIEW ══════ -->
-      <div class="view" id="view-auditlog">
+      <div class="view" id="view-auditlog" style="-webkit-overflow-scrolling:touch;">
         <div class="sec-hdr">
           <h2>🗂️ Audit Log</h2>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -2303,7 +2329,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           <p style="font-size:12px;color:var(--text2);line-height:1.8;margin-bottom:14px;padding:10px 14px;background:rgba(41,128,185,.06);border-radius:var(--radius-md);border:1px solid var(--border)">
             📋 Every admin action is recorded here with field-level detail — what changed, the old value, the new value, who made the change, and when. Click any entry to expand its full diff.
           </p>
-          <div id="audit-log-list">
+          <div id="audit-log-list" style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
             <p style="font-size:12px;color:var(--text3)">Loading audit history…</p>
           </div>
         </div>
