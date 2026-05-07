@@ -646,13 +646,29 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .msg-bubble-time{font-size:10px;color:var(--text3);}
 .msg-bubble-wrap.mine .msg-bubble-time{text-align:right;}
 .msg-bubble-sender{font-size:10px;font-weight:700;color:var(--blue-lt);margin-bottom:2px;padding:0 3px;}
-/* delete button */
-.msg-del-btn{opacity:0;background:none;border:none;cursor:pointer;font-size:12px;color:var(--text3);padding:2px 4px;border-radius:4px;transition:.15s;line-height:1;}
-.msg-bubble:hover ~ .msg-bubble-footer .msg-del-btn,
-.msg-bubble-footer:hover .msg-del-btn{opacity:1;}
-.msg-del-btn:hover{color:var(--red);background:rgba(231,76,60,.1);}
-/* tick marks for sent messages */
-.msg-tick{font-size:11px;color:rgba(255,255,255,.7);}
+/* message action buttons (delete + edit) */
+.msg-actions{display:flex;align-items:center;gap:2px;opacity:0;transition:opacity .15s;margin-left:4px;}
+.msg-bubble-wrap.mine .msg-actions{margin-left:0;margin-right:4px;order:-1;}
+.msg-bubble-wrap:hover .msg-actions{opacity:1;}
+.msg-act-btn{background:none;border:none;cursor:pointer;font-size:13px;padding:3px 5px;border-radius:6px;transition:.15s;line-height:1;color:var(--text3);}
+.msg-act-btn:hover{background:var(--surface2);}
+.msg-act-btn.del:hover{color:var(--red);}
+.msg-act-btn.edit:hover{color:var(--blue);}
+/* bottom footer: time + tick */
+.msg-bubble-footer{display:flex;align-items:center;gap:4px;margin-top:3px;padding:0 3px;}
+.msg-bubble-time{font-size:10px;color:var(--text3);}
+.msg-bubble-wrap.mine .msg-bubble-time{color:rgba(255,255,255,.6);}
+.msg-edited-tag{font-size:9px;color:var(--text3);font-style:italic;}
+.msg-bubble-wrap.mine .msg-edited-tag{color:rgba(255,255,255,.5);}
+/* tick marks */
+.msg-tick{font-size:11px;color:rgba(255,255,255,.65);}
+/* edit inline input */
+.msg-edit-wrap{display:flex;flex-direction:column;gap:6px;}
+.msg-edit-input{background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.4);border-radius:10px;padding:7px 10px;font-size:13px;color:#fff;outline:none;resize:none;font-family:inherit;min-width:180px;max-width:340px;}
+.msg-bubble-wrap.theirs .msg-edit-input{background:var(--surface2);border-color:var(--blue);color:var(--text);}
+.msg-edit-actions{display:flex;gap:6px;}
+.msg-edit-save{background:var(--blue);color:#fff;border:none;border-radius:7px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;}
+.msg-edit-cancel{background:var(--surface2);color:var(--text3);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;}
 /* notification banner */
 .msg-notif-banner{position:fixed;top:72px;right:18px;z-index:9999;background:var(--blue);color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;cursor:pointer;transform:translateY(-80px);opacity:0;transition:transform .35s cubic-bezier(.175,.885,.32,1.275),opacity .25s;max-width:320px;}
 .msg-notif-banner.show{transform:translateY(0);opacity:1;}
@@ -6244,25 +6260,40 @@ function _msgRenderMessages(msgs){
       }
     }
 
-    // Tick for own messages
     const tick = mine ? `<span class="msg-tick">✓✓</span>` : '';
+    const editedTag = m.edited ? `<span class="msg-edited-tag">edited</span>` : '';
+    const msgId = m.id || '';
+    const peerUid = _msgActivePeer?.uid || '';
 
-    // Delete button — only own messages can be deleted by sender; advanced admin can delete any
+    // Action buttons shown on hover
     const canDelete = mine || isAdvancedAdmin;
+    const canEdit   = mine; // only own messages
+    const now = Date.now();
+    const withinEditWindow = (now - (m.ts||0)) < 15 * 60 * 1000; // 15 min edit window
+
+    const editBtn = (canEdit && withinEditWindow)
+      ? `<button class="msg-act-btn edit" onclick="msgStartEdit('${msgId}','${peerUid}')" title="Edit">✏️</button>`
+      : '';
     const delBtn = canDelete
-      ? `<button class="msg-del-btn" onclick="msgDeleteMsg('${m.id || ''}','${_msgActivePeer?.uid||''}')" title="Delete message">🗑</button>`
+      ? `<button class="msg-act-btn del" onclick="msgDeleteMsg('${msgId}','${peerUid}')" title="Delete">🗑</button>`
+      : '';
+    const actionsHtml = (editBtn || delBtn)
+      ? `<div class="msg-actions">${editBtn}${delBtn}</div>`
       : '';
 
     return `${divider}
-    <div class="msg-row ${mine?'mine':'theirs'}">
+    <div class="msg-row ${mine?'mine':'theirs'}" id="msgrow-${msgId}">
       ${avHtml}
       <div class="msg-bubble-wrap ${mine?'mine':'theirs'}">
         ${(!mine && isNewSender) ? `<div class="msg-bubble-sender">${_msgEscape(m.senderName||'Unknown')}</div>` : ''}
-        <div class="msg-bubble">${_msgEscape(m.text)}</div>
+        <div style="display:flex;align-items:flex-end;gap:0;">
+          ${actionsHtml}
+          <div class="msg-bubble" id="msgbubble-${msgId}">${_msgEscape(m.text)}</div>
+        </div>
         <div class="msg-bubble-footer">
           <span class="msg-bubble-time">${_msgFmt(m.ts)}</span>
+          ${editedTag}
           ${tick}
-          ${delBtn}
         </div>
       </div>
     </div>`;
@@ -6276,14 +6307,63 @@ function _msgRenderMessages(msgs){
 /* ── Delete a message ── */
 window.msgDeleteMsg = async function(msgId, peerUid){
   if(!msgId || !peerUid || !db) return;
+  const confirmed = await showConfirm('Delete Message','Delete this message? It will be removed for everyone.','🗑️','Delete','btn-red');
+  if(!confirmed) return;
   const myUid  = window._currentUser.uid;
   const chatId = _msgChatId(myUid, peerUid);
   try{
     const { ref, remove } = window._fb;
     await remove(ref(db, 'messages/' + chatId + '/' + msgId));
   }catch(e){
-    notify('Could not delete message: ' + e.message, 'error');
+    notify('Could not delete: ' + e.message, 'error');
   }
+};
+
+/* ── Start inline edit ── */
+window.msgStartEdit = function(msgId, peerUid){
+  const bubbleEl = document.getElementById('msgbubble-' + msgId);
+  if(!bubbleEl) return;
+  const original = bubbleEl.innerText || bubbleEl.textContent || '';
+
+  // Replace bubble content with inline editor
+  bubbleEl.innerHTML = `
+    <div class="msg-edit-wrap">
+      <textarea class="msg-edit-input" id="msgedit-${msgId}" rows="2">${original}</textarea>
+      <div class="msg-edit-actions">
+        <button class="msg-edit-save" onclick="msgSaveEdit('${msgId}','${peerUid}')">Save</button>
+        <button class="msg-edit-cancel" onclick="msgCancelEdit('${msgId}','${peerUid}','${_msgEscape(original)}')">Cancel</button>
+      </div>
+    </div>`;
+
+  const ta = document.getElementById('msgedit-' + msgId);
+  if(ta){ ta.focus(); ta.selectionStart = ta.selectionEnd = ta.value.length; }
+};
+
+/* ── Save edited message ── */
+window.msgSaveEdit = async function(msgId, peerUid){
+  const ta = document.getElementById('msgedit-' + msgId);
+  if(!ta) return;
+  const newText = ta.value.trim();
+  if(!newText){ notify('Message cannot be empty.','error'); return; }
+  const myUid  = window._currentUser.uid;
+  const chatId = _msgChatId(myUid, peerUid);
+  try{
+    const { ref, update } = window._fb;
+    await update(ref(db, 'messages/' + chatId + '/' + msgId), {
+      text: newText,
+      edited: true,
+      editedAt: Date.now()
+    });
+    // onValue will re-render automatically
+  }catch(e){
+    notify('Could not save edit: ' + e.message, 'error');
+  }
+};
+
+/* ── Cancel edit — restore original text ── */
+window.msgCancelEdit = function(msgId, peerUid, originalHtml){
+  const bubbleEl = document.getElementById('msgbubble-' + msgId);
+  if(bubbleEl) bubbleEl.innerHTML = originalHtml;
 };
 
 function _msgEscape(t){
