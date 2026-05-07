@@ -6200,7 +6200,7 @@ window.msgOpenChat = function(peerUid){
   _msgChatListener = onValue(ref(db, 'messages/' + chatId),
     snap => {
       const data = snap.val() || {};
-      const msgs = Object.values(data).sort((a,b) => a.ts - b.ts);
+      const msgs = Object.entries(data).map(([id,m]) => ({...m, id})).sort((a,b) => a.ts - b.ts);
       _msgRenderMessages(msgs);
     },
     err => {
