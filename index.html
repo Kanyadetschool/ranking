@@ -2569,10 +2569,10 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <!-- Firebase -->
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-  import { getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+  import { getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, increment, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
   import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
   import { getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, onSnapshot, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, onSnapshot, deleteDoc };
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, set, push, update, remove, query, orderByChild, limitToLast, onValue, off, increment, serverTimestamp, getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut, updateProfile, updatePassword, EmailAuthProvider, reauthenticateWithCredential, sendPasswordResetEmail, getFirestore, doc, getDoc, setDoc, collection, getDocs, updateDoc, onSnapshot, deleteDoc };
 </script>
 
 <script>
@@ -6107,56 +6107,58 @@ window.msgFilterUsers = function(q){
 /* ── Open a chat with a peer ── */
 window.msgOpenChat = function(peerUid){
   const peer = _msgUsers.find(u => u.uid === peerUid);
-  if(!peer || !db) return;
+  if(!peer) return;
+  if(!db){ notify('Database not ready. Please refresh.','error'); return; }
   _msgActivePeer = peer;
 
   // Update sidebar active state
-  document.querySelectorAll('.msg-user-item').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('.msg-user-item').forEach(el => {
-    if(el.getAttribute('onclick') && el.getAttribute('onclick').includes(peerUid)) el.classList.add('active');
+    el.classList.toggle('active', el.getAttribute('onclick') && el.getAttribute('onclick').includes(peerUid));
   });
 
-  // Show chat panel, hide placeholder
+  // Show chat panel
   document.getElementById('msg-no-chat').style.display = 'none';
   const panel = document.getElementById('msg-chat-panel');
-  panel.style.display = 'flex';
-  panel.style.flexDirection = 'column';
-  panel.style.height = '100%';
-  panel.style.overflow = 'hidden';
+  panel.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow:hidden;';
 
-  // Set header
-  document.getElementById('msg-chat-av').innerHTML = _msgAvatar(peer, 'msg-chat-hdr-av').replace(/<div[^>]*>|<\/div>/g,'') || (peer.name||'?')[0].toUpperCase();
+  // Set header avatar
+  const av = document.getElementById('msg-chat-av');
   if(peer.photoURL){
-    document.getElementById('msg-chat-av').innerHTML = `<img src="${peer.photoURL}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    av.innerHTML = `<img src="${peer.photoURL}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
   } else {
-    document.getElementById('msg-chat-av').textContent = (peer.name||peer.email||'?')[0].toUpperCase();
-    document.getElementById('msg-chat-av').style.display = 'flex';
-    document.getElementById('msg-chat-av').style.alignItems = 'center';
-    document.getElementById('msg-chat-av').style.justifyContent = 'center';
+    av.textContent = (peer.name||peer.email||'?')[0].toUpperCase();
+    av.style.cssText = 'display:flex;align-items:center;justify-content:center;';
   }
   document.getElementById('msg-chat-name').textContent = peer.name || peer.email || 'Unknown';
   document.getElementById('msg-chat-status').textContent = peer.email || '';
 
-  // Clear old listener
+  // Detach old listener
   if(_msgChatListener){ _msgChatListener(); _msgChatListener = null; }
 
-  // Listen for messages
-  const chatId = _msgChatId(window._currentUser.uid, peerUid);
-  const { ref, onValue, update } = window._fb;
-  const msgsRef = ref(db, 'messages/' + chatId);
-  _msgChatListener = onValue(msgsRef, snap => {
-    const data = snap.val() || {};
-    const msgs = Object.entries(data)
-      .map(([id,m]) => ({id,...m}))
-      .sort((a,b) => a.ts - b.ts);
-    _msgRenderMessages(msgs);
-  });
-
-  // Clear unread for this peer
+  // Attach realtime listener for this conversation
   const myUid = window._currentUser.uid;
-  const unreadPath = 'unread/' + myUid + '/' + peerUid;
-  const { ref: refFn, set } = window._fb;
-  set(refFn(db, unreadPath), 0);
+  const chatId = _msgChatId(myUid, peerUid);
+  const { ref, onValue, set } = window._fb;
+
+  document.getElementById('msg-body').innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:var(--text3)">Loading…</div>';
+
+  _msgChatListener = onValue(ref(db, 'messages/' + chatId),
+    snap => {
+      const data = snap.val() || {};
+      const msgs = Object.values(data).sort((a,b) => a.ts - b.ts);
+      _msgRenderMessages(msgs);
+    },
+    err => {
+      console.error('[MSG] onValue error:', err.code, err.message);
+      document.getElementById('msg-body').innerHTML =
+        `<div style="padding:20px;text-align:center;font-size:12px;color:var(--red)">
+          ⚠️ Permission denied.<br><small>Check Firebase RTDB rules — "messages/$chatId" needs .read for auth != null</small>
+        </div>`;
+    }
+  );
+
+  // Clear unread counter for this peer (best-effort)
+  set(ref(db, 'unread/' + myUid + '/' + peerUid), 0).catch(() => {});
   document.getElementById('msg-input').focus();
 };
 
@@ -6196,29 +6198,32 @@ function _msgEscape(t){
 window.msgSend = async function(){
   if(!_msgActivePeer || !db) return;
   const input = document.getElementById('msg-input');
-  const text = input.value.trim();
+  const text = (input.value || '').trim();
   if(!text) return;
 
-  const myUid   = window._currentUser.uid;
-  const myName  = window._currentUser.name || currentAdminName || 'Unknown';
-  const chatId  = _msgChatId(myUid, _msgActivePeer.uid);
-  const { ref, push, set } = window._fb;
+  const myUid  = window._currentUser.uid;
+  const myName = window._currentUser.name || currentAdminName || 'Unknown';
+  const chatId = _msgChatId(myUid, _msgActivePeer.uid);
+  const { ref, push, update, increment } = window._fb;
 
   const msg = { senderUid: myUid, senderName: myName, text, ts: Date.now() };
-
+  const saved = input.value;
   input.value = '';
   input.style.height = 'auto';
 
   try{
-    await push(ref(db, 'messages/' + chatId), msg);
-    // Increment unread for recipient
-    const unreadPath = 'unread/' + _msgActivePeer.uid + '/' + myUid;
-    const unreadSnap = await window._fb.get(ref(db, unreadPath));
-    const current = unreadSnap.val() || 0;
-    await set(ref(db, unreadPath), current + 1);
+    // Write message and increment recipient unread atomically via multi-path update
+    const newMsgRef = push(ref(db, 'messages/' + chatId));
+    const updates = {};
+    updates['messages/' + chatId + '/' + newMsgRef.key] = msg;
+    updates['unread/' + _msgActivePeer.uid + '/' + myUid] = increment(1);
+    await update(ref(db), updates);
   }catch(e){
-    notify('Failed to send message: ' + e.message, 'error');
-    input.value = text;
+    console.error('[MSG] Send error:', e.code, e.message);
+    notify('Failed to send: ' + (e.code === 'PERMISSION_DENIED'
+      ? 'Permission denied — check Firebase RTDB rules.'
+      : e.message), 'error', 6000);
+    input.value = saved;
   }
 };
 
