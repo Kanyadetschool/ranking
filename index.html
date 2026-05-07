@@ -2296,6 +2296,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
                 <div class="msg-chat-hdr-name" id="msg-chat-name">—</div>
                 <div class="msg-chat-hdr-status" id="msg-chat-status">—</div>
               </div>
+              <button onclick="msgClearThread()" title="Delete entire conversation" style="background:none;border:none;cursor:pointer;padding:6px 8px;border-radius:8px;font-size:13px;color:var(--text3);transition:.15s;white-space:nowrap;" onmouseover="this.style.background='rgba(231,76,60,.1)';this.style.color='var(--red)'" onmouseout="this.style.background='none';this.style.color='var(--text3)'">🗑 Clear chat</button>
             </div>
             <div class="msg-body" id="msg-body"></div>
             <div class="msg-footer">
@@ -6364,6 +6365,40 @@ window.msgSaveEdit = async function(msgId, peerUid){
 window.msgCancelEdit = function(msgId, peerUid, originalHtml){
   const bubbleEl = document.getElementById('msgbubble-' + msgId);
   if(bubbleEl) bubbleEl.innerHTML = originalHtml;
+};
+
+/* ── Clear entire conversation thread ── */
+window.msgClearThread = async function(){
+  if(!_msgActivePeer || !db) return;
+  const peerName = _msgActivePeer.name || _msgActivePeer.email || 'this person';
+  const step1 = await showConfirm(
+    'Clear Conversation',
+    `Delete all messages between you and <strong>${peerName}</strong>?<br><small style="color:var(--text3)">This clears the entire thread for both of you. This cannot be undone.</small>`,
+    '🗑️', 'Clear All', 'btn-red'
+  );
+  if(!step1) return;
+  const step2 = await showConfirm(
+    '🔴 Are you sure?',
+    `All messages with <strong>${peerName}</strong> will be permanently deleted.`,
+    '🗑️', 'Yes, Delete All', 'btn-red'
+  );
+  if(!step2) return;
+
+  const myUid  = window._currentUser.uid;
+  const peerUid = _msgActivePeer.uid;
+  const chatId  = _msgChatId(myUid, peerUid);
+
+  try{
+    const { ref, remove, set } = window._fb;
+    // Remove entire message thread
+    await remove(ref(db, 'messages/' + chatId));
+    // Clear unread counters both ways
+    await set(ref(db, 'unread/' + myUid  + '/' + peerUid), 0);
+    await set(ref(db, 'unread/' + peerUid + '/' + myUid),  0);
+    notify('🗑️ Conversation with <strong>' + peerName + '</strong> cleared.', 'success');
+  }catch(e){
+    notify('Could not clear chat: ' + e.message, 'error');
+  }
 };
 
 function _msgEscape(t){
