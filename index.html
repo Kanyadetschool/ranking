@@ -597,6 +597,66 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   .card{box-shadow:none!important;page-break-inside:avoid}
 }
 
+/* ═══════════════════════════════════════════════════════
+   MESSAGING
+═══════════════════════════════════════════════════════ */
+#view-messages{padding:0!important;overflow:hidden;}
+#view-messages.active{display:flex!important;flex-direction:row;gap:0;}
+.msg-sidebar{width:260px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow:hidden;flex-shrink:0;height:calc(100vh - 70px);}
+.msg-sidebar-hdr{padding:16px 14px 10px;border-bottom:1px solid var(--border);font-size:13px;font-weight:900;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
+.msg-search{padding:8px 10px;border-bottom:1px solid var(--border);}
+.msg-search input{width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;}
+.msg-search input:focus{border-color:var(--blue);}
+.msg-user-list{flex:1;overflow-y:auto;padding:6px 0;}
+.msg-user-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;transition:.15s;position:relative;}
+.msg-user-item:hover{background:rgba(41,128,185,.07);}
+.msg-user-item.active{background:rgba(41,128,185,.13);border-right:3px solid var(--blue);}
+.msg-user-av{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dk));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
+.msg-user-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.msg-user-info{flex:1;min-width:0;}
+.msg-user-name{font-size:12px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.msg-user-preview{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.msg-user-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex-shrink:0;}
+.msg-user-time{font-size:10px;color:var(--text3);}
+.msg-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);display:none;}
+.msg-user-item.has-unread .msg-unread-dot{display:block;}
+.msg-user-item.has-unread .msg-user-name{color:var(--blue-lt);}
+.msg-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);height:calc(100vh - 70px);}
+.msg-chat-hdr{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface);flex-shrink:0;}
+.msg-chat-hdr-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dk));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
+.msg-chat-hdr-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.msg-chat-hdr-info{flex:1;}
+.msg-chat-hdr-name{font-size:14px;font-weight:800;color:var(--text);}
+.msg-chat-hdr-status{font-size:11px;color:var(--text3);}
+.msg-body{flex:1;overflow-y:auto;padding:18px 20px;display:flex;flex-direction:column;gap:10px;}
+.msg-bubble-wrap{display:flex;flex-direction:column;max-width:68%;}
+.msg-bubble-wrap.mine{align-self:flex-end;align-items:flex-end;}
+.msg-bubble-wrap.theirs{align-self:flex-start;align-items:flex-start;}
+.msg-bubble{padding:9px 13px;border-radius:16px;font-size:13px;line-height:1.5;word-break:break-word;}
+.msg-bubble-wrap.mine .msg-bubble{background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;border-bottom-right-radius:4px;}
+.msg-bubble-wrap.theirs .msg-bubble{background:var(--surface);color:var(--text);border:1px solid var(--border);border-bottom-left-radius:4px;}
+.msg-bubble-time{font-size:10px;color:var(--text3);margin-top:3px;padding:0 3px;}
+.msg-bubble-sender{font-size:10px;font-weight:700;color:var(--blue-lt);margin-bottom:3px;padding:0 3px;}
+.msg-date-divider{align-self:center;font-size:10px;color:var(--text3);background:var(--surface2);padding:3px 12px;border-radius:10px;border:1px solid var(--border);margin:6px 0;}
+.msg-footer{padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);flex-shrink:0;}
+.msg-input-row{display:flex;gap:10px;align-items:flex-end;}
+.msg-input-wrap{flex:1;background:var(--surface2);border:1.5px solid var(--border);border-radius:12px;display:flex;align-items:flex-end;overflow:hidden;transition:.15s;}
+.msg-input-wrap:focus-within{border-color:var(--blue);}
+.msg-input{flex:1;background:none;border:none;outline:none;padding:10px 12px;font-size:13px;color:var(--text);resize:none;max-height:120px;min-height:38px;font-family:inherit;line-height:1.4;}
+.msg-send-btn{width:42px;height:42px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--blue-dk));border:none;color:#fff;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s;}
+.msg-send-btn:hover{opacity:.85;}
+.msg-send-btn:disabled{opacity:.4;cursor:not-allowed;}
+.msg-no-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--text3);gap:14px;}
+.msg-no-chat-icon{font-size:56px;opacity:.3;}
+.msg-no-chat-text{font-size:14px;font-weight:700;}
+.msg-no-chat-sub{font-size:12px;opacity:.7;}
+@media(max-width:700px){
+  .msg-sidebar{width:64px;min-width:64px;}
+  .msg-sidebar-hdr span:last-child,.msg-user-info,.msg-user-meta{display:none;}
+  .msg-search{display:none;}
+  .msg-user-item{justify-content:center;padding:10px 0;}
+}
+
 /* ══════════════════════════════════════════
    RESPONSIVE
 ══════════════════════════════════════════ */
@@ -1216,6 +1276,10 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
       </div>
       <div class="nav-item" onclick="navTo('announcements',this)" data-label="Announcements">
         <span class="nav-icon">📢</span> Announcements
+      </div>
+      <div class="nav-item" onclick="navTo('messages',this)" data-label="Messages" id="nav-messages">
+        <span class="nav-icon">💬</span><span class="nav-label">Messages</span>
+        <span class="nav-badge" id="msg-badge" style="display:none">0</span>
       </div>
       <div class="nav-item" onclick="navTo('profile',this)" data-label="My Profile" id="nav-profile">
         <span class="nav-icon">👤</span> My Profile
@@ -2157,6 +2221,51 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           </p>
           <div id="audit-log-list">
             <p style="font-size:12px;color:var(--text3)">Loading audit history…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ MESSAGES VIEW ══ -->
+      <div class="view" id="view-messages">
+        <!-- Sidebar: user list -->
+        <div class="msg-sidebar">
+          <div class="msg-sidebar-hdr">
+            <span>💬 Messages</span>
+            <span id="msg-online-count" style="font-size:10px;color:var(--green);font-weight:700"></span>
+          </div>
+          <div class="msg-search">
+            <input id="msg-user-search" placeholder="🔍 Search people…" oninput="msgFilterUsers(this.value)">
+          </div>
+          <div class="msg-user-list" id="msg-user-list">
+            <div style="padding:20px;text-align:center;font-size:12px;color:var(--text3)">Loading…</div>
+          </div>
+        </div>
+        <!-- Main chat area -->
+        <div class="msg-main" id="msg-main">
+          <div class="msg-no-chat" id="msg-no-chat">
+            <div class="msg-no-chat-icon">💬</div>
+            <div class="msg-no-chat-text">Select a conversation</div>
+            <div class="msg-no-chat-sub">Choose someone from the list to start chatting</div>
+          </div>
+          <div id="msg-chat-panel" style="display:none;flex-direction:column;height:100%;overflow:hidden;display:none">
+            <div class="msg-chat-hdr" id="msg-chat-hdr">
+              <div class="msg-chat-hdr-av" id="msg-chat-av"></div>
+              <div class="msg-chat-hdr-info">
+                <div class="msg-chat-hdr-name" id="msg-chat-name">—</div>
+                <div class="msg-chat-hdr-status" id="msg-chat-status">—</div>
+              </div>
+            </div>
+            <div class="msg-body" id="msg-body"></div>
+            <div class="msg-footer">
+              <div class="msg-input-row">
+                <div class="msg-input-wrap">
+                  <textarea class="msg-input" id="msg-input" placeholder="Type a message…" rows="1"
+                    onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();msgSend();}"
+                    oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px'"></textarea>
+                </div>
+                <button class="msg-send-btn" onclick="msgSend()" id="msg-send-btn" title="Send (Enter)">➤</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3197,7 +3306,8 @@ function _applyTeacherProfile(data, uid){
 
       // Hide every nav item except My Profile
       document.querySelectorAll('.nav-item').forEach(item => {
-        if(item.getAttribute('data-label') === 'My Profile'){
+        const label = item.getAttribute('data-label');
+        if(label === 'My Profile' || label === 'Messages'){
           item.style.display = 'flex';
         } else {
           item.style.display = 'none';
@@ -5840,9 +5950,8 @@ function navTo(view,el){
   // ── Security: unassigned users may ONLY see their profile ──────────────
   const isUnassigned = !isAdvancedAdmin &&
     currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
-  if(isUnassigned && view !== 'profile'){
+  if(isUnassigned && view !== 'profile' && view !== 'messages'){
     notify('⛔ You have no grade assigned. Please contact the ICT DEPT. You can only access your profile for now.','error',5000);
-    // Force them to profile
     view = 'profile';
     el = document.querySelector('.nav-item[data-label="My Profile"]');
   }
@@ -5853,8 +5962,8 @@ function navTo(view,el){
   const viewEl=document.getElementById('view-'+view);
   if(viewEl)viewEl.classList.add('active');
   if(el)el.classList.add('active');
-  const crumbs={dashboard:'Overview & Analytics',students:'Student Directory',results:'Results & Grades',analytics:'Charts & Insights',atrisk:'Students Below 41%',reports:'Report Cards & Export',import:'CSV / Excel Import',announcements:'School Notices',settings:'Portal Configuration',auditlog:'Full Admin Audit Trail',profile:'Edit Your Profile & Password'};
-  const titles={dashboard:'Dashboard',students:'Students',results:'Results',analytics:'Analytics',atrisk:'At-Risk Students',reports:'Report Cards',import:'Import Data',announcements:'Announcements',settings:'Settings',auditlog:'Audit Log',profile:'My Profile'};
+  const crumbs={dashboard:'Overview & Analytics',students:'Student Directory',results:'Results & Grades',analytics:'Charts & Insights',atrisk:'Students Below 41%',reports:'Report Cards & Export',import:'CSV / Excel Import',announcements:'School Notices',messages:'Chat with teachers & staff',settings:'Portal Configuration',auditlog:'Full Admin Audit Trail',profile:'Edit Your Profile & Password'};
+  const titles={dashboard:'Dashboard',students:'Students',results:'Results',analytics:'Analytics',atrisk:'At-Risk Students',reports:'Report Cards',import:'Import Data',announcements:'Announcements',messages:'Messages',settings:'Settings',auditlog:'Audit Log',profile:'My Profile'};
   if(document.getElementById('topbar-title'))document.getElementById('topbar-title').textContent=titles[view]||view;
   if(view==='profile') profLoadInfo();
   if(document.getElementById('topbar-crumb'))document.getElementById('topbar-crumb').textContent=crumbs[view]||'';
@@ -5863,9 +5972,258 @@ function navTo(view,el){
   document.getElementById('topbar-crumb').textContent=views[view]||'';
   if(view==='auditlog') renderAuditView();
   if(view==='reports') setTimeout(_bridgeReportCardSystem, 50);
+  if(view==='messages') msgInit();
   if(window.innerWidth<768) closeSidebar();
 }
 window.navTo=navTo;
+/* ══════════════════════════════════════════════════════════════
+   REAL-TIME MESSAGING SYSTEM
+   - User list loaded from Firestore 'users' collection
+   - Messages stored in RTDB: /messages/{chatId}/{msgId}
+   - chatId = sorted UIDs joined by '_'  e.g. "uid1_uid2"
+   - Unread counts stored in RTDB: /unread/{myUid}/{theirUid}
+══════════════════════════════════════════════════════════════ */
+
+let _msgUsers         = [];          // all users except self
+let _msgFiltered      = [];          // search-filtered list
+let _msgActivePeer    = null;        // { uid, name, email, photoURL }
+let _msgChatListener  = null;        // active RTDB onValue listener
+let _msgUnreadRef     = null;        // my unread node listener
+let _msgUnreadCounts  = {};          // { peerUid: count }
+let _msgInitDone      = false;
+
+/* ── Helpers ── */
+function _msgChatId(a, b){ return [a,b].sort().join('_'); }
+
+function _msgFmt(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  if(isToday) return d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+  return d.toLocaleDateString([],{month:'short',day:'numeric'}) + ' ' + d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+}
+
+function _msgDateLabel(ts){
+  if(!ts) return '';
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if(diff === 0) return 'Today';
+  if(diff === 1) return 'Yesterday';
+  return d.toLocaleDateString([],{weekday:'long', month:'long', day:'numeric'});
+}
+
+function _msgAvatar(user, cls='msg-user-av'){
+  if(user.photoURL){
+    return `<div class="${cls}"><img src="${user.photoURL}" referrerpolicy="no-referrer"></div>`;
+  }
+  const initials = (user.name||user.email||'?')[0].toUpperCase();
+  return `<div class="${cls}">${initials}</div>`;
+}
+
+/* ── Init: load user list once per session ── */
+async function msgInit(){
+  if(!firestoreDb || !window._currentUser) return;
+  const myUid = window._currentUser.uid;
+
+  // Load users from Firestore
+  if(!_msgInitDone){
+    try{
+      const { collection, getDocs } = window._fb;
+      const snap = await getDocs(collection(firestoreDb, 'users'));
+      _msgUsers = [];
+      snap.forEach(d => {
+        if(d.id !== myUid){
+          _msgUsers.push({ uid: d.id, ...d.data() });
+        }
+      });
+      _msgUsers.sort((a,b) => (a.name||'').localeCompare(b.name||''));
+      _msgInitDone = true;
+    }catch(e){
+      console.warn('[MSG] Could not load users:', e.message);
+    }
+    // Listen for unread counts
+    _msgListenUnread(myUid);
+  }
+
+  _msgFiltered = [..._msgUsers];
+  _msgRenderUserList();
+}
+
+/* ── Listen for incoming unread counts ── */
+function _msgListenUnread(myUid){
+  if(!db) return;
+  const { ref, onValue } = window._fb;
+  const unreadRef = ref(db, 'unread/' + myUid);
+  onValue(unreadRef, snap => {
+    _msgUnreadCounts = snap.val() || {};
+    _msgRenderUserList();
+    // Update nav badge
+    const total = Object.values(_msgUnreadCounts).reduce((s,v)=>s+(v||0), 0);
+    const badge = document.getElementById('msg-badge');
+    if(badge){
+      badge.textContent = total > 99 ? '99+' : total;
+      badge.style.display = total > 0 ? '' : 'none';
+    }
+  });
+}
+
+/* ── Render user list sidebar ── */
+function _msgRenderUserList(){
+  const list = document.getElementById('msg-user-list');
+  if(!list) return;
+  if(!_msgFiltered.length){
+    list.innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:var(--text3)">No users found</div>';
+    return;
+  }
+  list.innerHTML = _msgFiltered.map(u => {
+    const unread = _msgUnreadCounts[u.uid] || 0;
+    const isActive = _msgActivePeer && _msgActivePeer.uid === u.uid;
+    return `<div class="msg-user-item${isActive?' active':''}${unread?' has-unread':''}" onclick="msgOpenChat('${u.uid}')">
+      ${_msgAvatar(u)}
+      <div class="msg-user-info">
+        <div class="msg-user-name">${u.name || u.email || u.uid}</div>
+        <div class="msg-user-preview">${u.role||'Teacher'}</div>
+      </div>
+      <div class="msg-user-meta">
+        <div class="msg-user-time"></div>
+        <div class="msg-unread-dot"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── Search filter ── */
+window.msgFilterUsers = function(q){
+  q = q.toLowerCase().trim();
+  _msgFiltered = q ? _msgUsers.filter(u =>
+    (u.name||'').toLowerCase().includes(q) ||
+    (u.email||'').toLowerCase().includes(q)
+  ) : [..._msgUsers];
+  _msgRenderUserList();
+};
+
+/* ── Open a chat with a peer ── */
+window.msgOpenChat = function(peerUid){
+  const peer = _msgUsers.find(u => u.uid === peerUid);
+  if(!peer || !db) return;
+  _msgActivePeer = peer;
+
+  // Update sidebar active state
+  document.querySelectorAll('.msg-user-item').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.msg-user-item').forEach(el => {
+    if(el.getAttribute('onclick') && el.getAttribute('onclick').includes(peerUid)) el.classList.add('active');
+  });
+
+  // Show chat panel, hide placeholder
+  document.getElementById('msg-no-chat').style.display = 'none';
+  const panel = document.getElementById('msg-chat-panel');
+  panel.style.display = 'flex';
+  panel.style.flexDirection = 'column';
+  panel.style.height = '100%';
+  panel.style.overflow = 'hidden';
+
+  // Set header
+  document.getElementById('msg-chat-av').innerHTML = _msgAvatar(peer, 'msg-chat-hdr-av').replace(/<div[^>]*>|<\/div>/g,'') || (peer.name||'?')[0].toUpperCase();
+  if(peer.photoURL){
+    document.getElementById('msg-chat-av').innerHTML = `<img src="${peer.photoURL}" referrerpolicy="no-referrer" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    document.getElementById('msg-chat-av').textContent = (peer.name||peer.email||'?')[0].toUpperCase();
+    document.getElementById('msg-chat-av').style.display = 'flex';
+    document.getElementById('msg-chat-av').style.alignItems = 'center';
+    document.getElementById('msg-chat-av').style.justifyContent = 'center';
+  }
+  document.getElementById('msg-chat-name').textContent = peer.name || peer.email || 'Unknown';
+  document.getElementById('msg-chat-status').textContent = peer.email || '';
+
+  // Clear old listener
+  if(_msgChatListener){ _msgChatListener(); _msgChatListener = null; }
+
+  // Listen for messages
+  const chatId = _msgChatId(window._currentUser.uid, peerUid);
+  const { ref, onValue, update } = window._fb;
+  const msgsRef = ref(db, 'messages/' + chatId);
+  _msgChatListener = onValue(msgsRef, snap => {
+    const data = snap.val() || {};
+    const msgs = Object.entries(data)
+      .map(([id,m]) => ({id,...m}))
+      .sort((a,b) => a.ts - b.ts);
+    _msgRenderMessages(msgs);
+  });
+
+  // Clear unread for this peer
+  const myUid = window._currentUser.uid;
+  const unreadPath = 'unread/' + myUid + '/' + peerUid;
+  const { ref: refFn, set } = window._fb;
+  set(refFn(db, unreadPath), 0);
+  document.getElementById('msg-input').focus();
+};
+
+/* ── Render messages in the chat body ── */
+function _msgRenderMessages(msgs){
+  const body = document.getElementById('msg-body');
+  if(!body) return;
+  const myUid = window._currentUser.uid;
+  const wasAtBottom = body.scrollHeight - body.scrollTop - body.clientHeight < 60;
+
+  let lastDateLabel = '';
+  body.innerHTML = msgs.length ? msgs.map(m => {
+    const mine = m.senderUid === myUid;
+    const dateLabel = _msgDateLabel(m.ts);
+    let divider = '';
+    if(dateLabel !== lastDateLabel){
+      lastDateLabel = dateLabel;
+      divider = `<div class="msg-date-divider">${dateLabel}</div>`;
+    }
+    return `${divider}<div class="msg-bubble-wrap ${mine?'mine':'theirs'}">
+      ${!mine ? `<div class="msg-bubble-sender">${m.senderName||'Unknown'}</div>` : ''}
+      <div class="msg-bubble">${_msgEscape(m.text)}</div>
+      <div class="msg-bubble-time">${_msgFmt(m.ts)}</div>
+    </div>`;
+  }).join('') : '<div class="msg-empty"><div class="msg-empty-icon">👋</div><div>No messages yet — say hello!</div></div>';
+
+  if(wasAtBottom || msgs.length <= 1){
+    body.scrollTop = body.scrollHeight;
+  }
+}
+
+function _msgEscape(t){
+  return (t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+/* ── Send a message ── */
+window.msgSend = async function(){
+  if(!_msgActivePeer || !db) return;
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if(!text) return;
+
+  const myUid   = window._currentUser.uid;
+  const myName  = window._currentUser.name || currentAdminName || 'Unknown';
+  const chatId  = _msgChatId(myUid, _msgActivePeer.uid);
+  const { ref, push, set } = window._fb;
+
+  const msg = { senderUid: myUid, senderName: myName, text, ts: Date.now() };
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  try{
+    await push(ref(db, 'messages/' + chatId), msg);
+    // Increment unread for recipient
+    const unreadPath = 'unread/' + _msgActivePeer.uid + '/' + myUid;
+    const unreadSnap = await window._fb.get(ref(db, unreadPath));
+    const current = unreadSnap.val() || 0;
+    await set(ref(db, unreadPath), current + 1);
+  }catch(e){
+    notify('Failed to send message: ' + e.message, 'error');
+    input.value = text;
+  }
+};
+
+window.msgInit = msgInit;
+
 
 /* ══════════════════════════════════════════
    SIDEBAR MOBILE
