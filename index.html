@@ -692,11 +692,53 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .msg-no-chat-icon{font-size:56px;opacity:.3;}
 .msg-no-chat-text{font-size:14px;font-weight:700;}
 .msg-no-chat-sub{font-size:12px;opacity:.7;}
+/* ── Messaging: mobile full-screen panel approach ── */
 @media(max-width:700px){
-  .msg-sidebar{width:64px;min-width:64px;}
-  .msg-sidebar-hdr span:last-child,.msg-user-info,.msg-user-meta{display:none;}
-  .msg-search{display:none;}
-  .msg-user-item{justify-content:center;padding:10px 0;}
+  /* Full-width container */
+  #view-messages.active{flex-direction:column;position:relative;overflow:hidden;}
+
+  /* Sidebar fills full screen by default */
+  .msg-sidebar{
+    width:100%!important;min-width:100%!important;
+    height:100%;border-right:none;
+    position:absolute;top:0;left:0;z-index:2;
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  /* When chat is open, slide sidebar off-screen to the left */
+  .msg-sidebar.msg-slide-out{transform:translateX(-100%);}
+
+  /* Sidebar header: bigger touch targets */
+  .msg-sidebar-hdr{padding:14px 16px;font-size:15px;}
+  .msg-search input{font-size:14px;padding:9px 12px;}
+  .msg-user-item{padding:12px 16px;gap:12px;}
+  .msg-user-av{width:42px;height:42px;font-size:16px;}
+  .msg-user-name{font-size:14px;}
+  .msg-user-preview{font-size:12px;}
+
+  /* Chat panel fills full screen */
+  .msg-main{
+    width:100%;position:absolute;top:0;left:0;z-index:3;
+    transform:translateX(100%);
+    transition:transform .28s cubic-bezier(.4,0,.2,1);
+  }
+  /* When chat is open, slide in from right */
+  .msg-main.msg-slide-in{transform:translateX(0);}
+
+  /* Back button in chat header */
+  .msg-back-btn{display:flex!important;}
+
+  /* Bigger input + send on mobile */
+  .msg-input{font-size:15px;padding:12px 14px;}
+  .msg-send-btn{width:48px;height:48px;font-size:20px;}
+
+  /* Bubbles take more width on small screens */
+  .msg-bubble-wrap{max-width:82%;}
+
+  /* Actions always visible on mobile (no hover) */
+  .msg-actions{opacity:1!important;}
+
+  /* Notification banner: full width on mobile */
+  .msg-notif-banner{left:10px;right:10px;max-width:none;}
 }
 
 /* ══════════════════════════════════════════
@@ -2291,6 +2333,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
           </div>
           <div id="msg-chat-panel" style="display:none;flex-direction:column;height:100%;overflow:hidden;display:none">
             <div class="msg-chat-hdr" id="msg-chat-hdr">
+              <button class="msg-back-btn" onclick="msgBackToList()" style="display:none;background:none;border:none;cursor:pointer;font-size:22px;padding:2px 8px 2px 0;color:var(--blue);line-height:1;" title="Back">&#8592;</button>
               <div class="msg-chat-hdr-av" id="msg-chat-av"></div>
               <div class="msg-chat-hdr-info">
                 <div class="msg-chat-hdr-name" id="msg-chat-name">—</div>
@@ -6176,6 +6219,12 @@ window.msgOpenChat = function(peerUid){
   const panel = document.getElementById('msg-chat-panel');
   panel.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow:hidden;';
 
+  // Mobile: slide sidebar out, slide chat in
+  if(window.innerWidth <= 700){
+    document.querySelector('.msg-sidebar')?.classList.add('msg-slide-out');
+    document.getElementById('msg-main')?.classList.add('msg-slide-in');
+  }
+
   // Set header avatar
   const av = document.getElementById('msg-chat-av');
   if(peer.photoURL){
@@ -6368,6 +6417,15 @@ window.msgCancelEdit = function(msgId, peerUid, originalHtml){
 };
 
 /* ── Clear entire conversation thread ── */
+/* ── Mobile: back button returns to user list ── */
+window.msgBackToList = function(){
+  document.querySelector('.msg-sidebar')?.classList.remove('msg-slide-out');
+  document.getElementById('msg-main')?.classList.remove('msg-slide-in');
+  // Detach listener to save bandwidth
+  if(_msgChatListener){ _msgChatListener(); _msgChatListener = null; }
+  _msgActivePeer = null;
+};
+
 window.msgClearThread = async function(){
   if(!_msgActivePeer || !db) return;
   const peerName = _msgActivePeer.name || _msgActivePeer.email || 'this person';
@@ -6552,6 +6610,14 @@ function msgWatchAllPeers(){
   }
 }
 window.msgWatchAllPeers = msgWatchAllPeers;
+
+/* Reset mobile slide state on desktop resize */
+window.addEventListener('resize', () => {
+  if(window.innerWidth > 700){
+    document.querySelector('.msg-sidebar')?.classList.remove('msg-slide-out');
+    document.getElementById('msg-main')?.classList.remove('msg-slide-in');
+  }
+});
 
 
 /* ══════════════════════════════════════════
