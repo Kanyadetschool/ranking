@@ -166,7 +166,7 @@ body::before{
 /* ══════════════════════════════════════════
    CONTENT AREA
 ══════════════════════════════════════════ */
-.content-area{padding:24px clamp(12px,2.5vw,28px);flex:1;min-width:0;box-sizing:border-box;}
+.content-area{padding:24px clamp(12px,2.5vw,28px);flex:1;min-width:0;box-sizing:border-box;overflow:hidden;}
 
 /* ══════════════════════════════════════════
    VIEWS
@@ -600,8 +600,8 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 /* ═══════════════════════════════════════════════════════
    MESSAGING
 ═══════════════════════════════════════════════════════ */
-#view-messages{padding:0!important;overflow:hidden;margin:0!important;}
-#view-messages.active{display:flex!important;flex-direction:row;gap:0;height:calc(100vh - 56px);max-height:calc(100vh - 56px);}
+#view-messages{padding:0!important;overflow:hidden;margin:0!important;position:relative;}
+#view-messages.active{display:flex!important;flex-direction:row;gap:0;height:calc(100vh - 56px);max-height:calc(100vh - 56px);contain:layout size;}
 .msg-sidebar{width:260px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow:hidden;flex-shrink:0;height:100%;}
 .msg-sidebar-hdr{padding:16px 14px 10px;border-bottom:1px solid var(--border);font-size:13px;font-weight:900;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
 .msg-search{padding:8px 10px;border-bottom:1px solid var(--border);}
@@ -730,6 +730,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
     overflow:hidden;
     height:calc(100dvh - 56px);
     max-height:calc(100dvh - 56px);
+    contain:layout size;
   }
 
   /* Sidebar fills full screen, slides left when chat opens */
