@@ -600,7 +600,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 /* ═══════════════════════════════════════════════════════
    MESSAGING
 ═══════════════════════════════════════════════════════ */
-#view-messages{padding:0!important;overflow:hidden;}
+#view-messages{padding:0!important;overflow:hidden;display:none;}
 #view-messages.active{display:flex!important;flex-direction:row;gap:0;}
 .msg-sidebar{width:260px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow:hidden;flex-shrink:0;height:calc(100vh - 70px);}
 .msg-sidebar-hdr{padding:16px 14px 10px;border-bottom:1px solid var(--border);font-size:13px;font-weight:900;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
@@ -686,9 +686,23 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .msg-no-chat-text{font-size:14px;font-weight:700;}
 .msg-no-chat-sub{font-size:12px;opacity:.7;}
 .msg-back-btn{display:none;}
-@media(max-width:700px){
-  #view-messages.active{flex-direction:column;position:relative;overflow:hidden;}
-  .msg-sidebar{width:100%;min-width:unset;height:calc(100vh - 70px);position:absolute;top:0;left:0;z-index:2;transition:transform .3s;}
+/* ── Messages view: always flex so sidebar+main sit side-by-side ── */
+@media(max-width:768px){
+  #view-messages.active{
+    flex-direction:column;
+    position:relative;
+    overflow:hidden;
+    height:calc(100vh - 70px);
+    min-height:calc(100vh - 70px);
+  }
+  /* Sidebar: fills full width, stacks on top */
+  .msg-sidebar{
+    width:100%!important;min-width:unset!important;
+    height:100%;
+    position:absolute;top:0;left:0;z-index:2;
+    transition:transform .3s ease;
+    transform:translateX(0);
+  }
   .msg-sidebar.msg-slide-out{transform:translateX(-100%);}
   .msg-sidebar-hdr{padding:14px 16px;font-size:15px;}
   .msg-search input{font-size:14px;padding:9px 12px;}
@@ -696,7 +710,14 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   .msg-user-av{width:42px;height:42px;font-size:16px;}
   .msg-user-name{font-size:14px;}
   .msg-user-preview{font-size:12px;}
-  .msg-main{width:100%;height:calc(100vh - 70px);position:absolute;top:0;left:0;transform:translateX(100%);transition:transform .3s;z-index:3;}
+  /* Chat panel: slides in from right */
+  .msg-main{
+    width:100%!important;
+    height:100%;
+    position:absolute;top:0;left:0;z-index:3;
+    transform:translateX(100%);
+    transition:transform .3s ease;
+  }
   .msg-main.msg-slide-in{transform:translateX(0);}
   .msg-back-btn{display:flex!important;}
   .msg-input{font-size:15px;padding:12px 14px;}
@@ -1217,7 +1238,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div id="loader">
   <div class="ld-logo">🏫</div>
   <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-txt">Initializing Admin Portal…</div>
+  <div class="ld-txt">Initializing Results Portal…</div>
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -6186,9 +6207,11 @@ window.msgOpenChat = function(peerUid){
   panel.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow:hidden;';
 
   // Mobile: slide sidebar out, slide chat in
-  if(window.innerWidth <= 700){
-    document.querySelector('.msg-sidebar')?.classList.add('msg-slide-out');
-    document.getElementById('msg-main')?.classList.add('msg-slide-in');
+  if(window.innerWidth <= 768){
+    const sidebar = document.querySelector('.msg-sidebar');
+    const main    = document.getElementById('msg-main');
+    if(sidebar) sidebar.classList.add('msg-slide-out');
+    if(main)    main.classList.add('msg-slide-in');
   }
 
   // Set header avatar
@@ -6381,8 +6404,10 @@ window.msgCancelEdit = function(msgId, peerUid, originalHtml){
 
 /* ── Mobile: back button returns to user list ── */
 window.msgBackToList = function(){
-  document.querySelector('.msg-sidebar')?.classList.remove('msg-slide-out');
-  document.getElementById('msg-main')?.classList.remove('msg-slide-in');
+  const sidebar = document.querySelector('.msg-sidebar');
+  const main    = document.getElementById('msg-main');
+  if(sidebar) sidebar.classList.remove('msg-slide-out');
+  if(main)    main.classList.remove('msg-slide-in');
   if(_msgChatListener){ _msgChatListener(); _msgChatListener = null; }
   _msgActivePeer = null;
 };
@@ -6558,7 +6583,7 @@ window.msgWatchAllPeers = msgWatchAllPeers;
 
 /* Reset mobile slide state on desktop resize */
 window.addEventListener('resize', () => {
-  if(window.innerWidth > 700){
+  if(window.innerWidth > 768){
     document.querySelector('.msg-sidebar')?.classList.remove('msg-slide-out');
     document.getElementById('msg-main')?.classList.remove('msg-slide-in');
   }
