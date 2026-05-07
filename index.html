@@ -663,7 +663,21 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .msg-edit-save{background:var(--blue);color:#fff;border:none;border-radius:7px;padding:4px 12px;font-size:11px;font-weight:700;cursor:pointer;}
 .msg-edit-cancel{background:var(--surface2);color:var(--text3);border:1px solid var(--border);border-radius:7px;padding:4px 10px;font-size:11px;cursor:pointer;}
 /* notification banner */
-.msg-notif-banner{position:fixed;top:72px;right:18px;z-index:9999;background:var(--blue);color:#fff;border-radius:14px;padding:10px 16px;font-size:13px;font-weight:700;box-shadow:0 4px 20px rgba(0,0,0,.25);display:flex;align-items:center;gap:10px;cursor:pointer;transform:translateY(-80px);opacity:0;transition:transform .35s cubic-bezier(.175,.885,.32,1.275),opacity .25s;max-width:320px;}
+.msg-notif-banner{
+  position:fixed;
+  top:72px;right:18px;
+  z-index:9999;
+  background:var(--blue);color:#fff;
+  border-radius:0 0 14px 14px;
+  padding:10px 16px;
+  font-size:13px;font-weight:700;
+  box-shadow:0 6px 24px rgba(0,0,0,.3);
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;
+  transform:translateY(-110%);opacity:0;
+  transition:transform .35s cubic-bezier(.175,.885,.32,1.275),opacity .25s;
+  max-width:380px;
+}
 .msg-notif-banner.show{transform:translateY(0);opacity:1;}
 .msg-notif-av{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.25);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;overflow:hidden;}
 .msg-notif-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
@@ -724,8 +738,13 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
   .msg-send-btn{width:48px;height:48px;font-size:20px;}
   .msg-bubble-wrap{max-width:82%;}
   .msg-actions{opacity:1!important;}
-  .msg-notif-banner{left:10px;right:10px;max-width:none;top:auto;bottom:16px;transform:translateY(120px);}
-  .msg-notif-banner.show{transform:translateY(0);}
+  /* Banner stays just below topbar on mobile too */
+  .msg-notif-banner{
+    left:0;right:0;
+    max-width:none;
+    top:62px;
+    border-radius:0 0 14px 14px;
+  }
 }
 
 /* ══════════════════════════════════════════
@@ -1239,7 +1258,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div id="loader">
   <div class="ld-logo">🏫</div>
   <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-txt">Initializing Result Portal…</div>
+  <div class="ld-txt">Initializing Admin Portal…</div>
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -6532,6 +6551,27 @@ function msgShowNotifBanner(senderName, senderPhoto, text, senderUid){
   banner.classList.add('show');
   if(_msgNotifTimer) clearTimeout(_msgNotifTimer);
   _msgNotifTimer = setTimeout(msgNotifDismiss, 5000);
+
+  // ── Play notification sound via Web Audio API ──
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const gain = ctx.createGain();
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+
+    // Two-tone "ding" (like WhatsApp)
+    [880, 1100].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+      osc.connect(gain);
+      osc.start(ctx.currentTime + i * 0.12);
+      osc.stop(ctx.currentTime + i * 0.12 + 0.3);
+    });
+    setTimeout(() => ctx.close(), 800);
+  } catch(e) { /* audio not available */ }
 
   if(Notification && Notification.permission === 'granted'){
     new Notification(senderName + ' sent you a message', { body: text, icon: senderPhoto || '' });
