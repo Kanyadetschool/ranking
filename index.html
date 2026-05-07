@@ -600,9 +600,9 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 /* ═══════════════════════════════════════════════════════
    MESSAGING
 ═══════════════════════════════════════════════════════ */
-#view-messages{padding:0!important;overflow:hidden;}
-#view-messages.active{display:flex!important;flex-direction:row;gap:0;}
-.msg-sidebar{width:260px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow:hidden;flex-shrink:0;height:calc(100vh - 70px);}
+#view-messages{padding:0!important;overflow:hidden;margin:0!important;}
+#view-messages.active{display:flex!important;flex-direction:row;gap:0;height:calc(100vh - 56px);max-height:calc(100vh - 56px);}
+.msg-sidebar{width:260px;min-width:220px;border-right:1px solid var(--border);display:flex;flex-direction:column;background:var(--surface);overflow:hidden;flex-shrink:0;height:100%;}
 .msg-sidebar-hdr{padding:16px 14px 10px;border-bottom:1px solid var(--border);font-size:13px;font-weight:900;color:var(--text);display:flex;align-items:center;justify-content:space-between;}
 .msg-search{padding:8px 10px;border-bottom:1px solid var(--border);}
 .msg-search input{width:100%;box-sizing:border-box;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;}
@@ -621,7 +621,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 .msg-unread-dot{width:8px;height:8px;border-radius:50%;background:var(--blue);display:none;}
 .msg-user-item.has-unread .msg-unread-dot{display:block;}
 .msg-user-item.has-unread .msg-user-name{color:var(--blue-lt);}
-.msg-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);height:calc(100vh - 70px);}
+.msg-main{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg);height:100%;min-height:0;}
 .msg-chat-hdr{padding:12px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface);flex-shrink:0;}
 .msg-chat-hdr-av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--blue-dk));display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;color:#fff;flex-shrink:0;overflow:hidden;}
 .msg-chat-hdr-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
@@ -719,52 +719,68 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 }
 
 /* ── Messaging: mobile full-screen panel approach ── */
-@media(max-width:700px){
-  /* Full-width container */
-  #view-messages.active{flex-direction:column;position:relative;overflow:hidden;}
+@media(max-width:768px){
+  /* Override content-area padding for messages view */
+  .content-area:has(#view-messages.active){padding:0!important;}
 
-  /* Sidebar fills full screen by default */
+  /* Full-width container — takes up all remaining height */
+  #view-messages.active{
+    flex-direction:column;
+    position:relative;
+    overflow:hidden;
+    height:calc(100dvh - 56px);
+    max-height:calc(100dvh - 56px);
+  }
+
+  /* Sidebar fills full screen, slides left when chat opens */
   .msg-sidebar{
     width:100%!important;min-width:100%!important;
-    height:100%;border-right:none;
+    height:100%!important;border-right:none;
     position:absolute;top:0;left:0;z-index:2;
     transition:transform .28s cubic-bezier(.4,0,.2,1);
+    overflow-y:auto;-webkit-overflow-scrolling:touch;
   }
-  /* When chat is open, slide sidebar off-screen to the left */
   .msg-sidebar.msg-slide-out{transform:translateX(-100%);}
 
-  /* Sidebar header: bigger touch targets */
+  /* Sidebar header */
   .msg-sidebar-hdr{padding:14px 16px;font-size:15px;}
-  .msg-search input{font-size:14px;padding:9px 12px;}
-  .msg-user-item{padding:12px 16px;gap:12px;}
-  .msg-user-av{width:42px;height:42px;font-size:16px;}
+  .msg-search{padding:10px 12px;}
+  .msg-search input{font-size:14px;padding:10px 12px;}
+  .msg-user-item{padding:13px 16px;gap:12px;}
+  .msg-user-av{width:44px;height:44px;font-size:17px;}
   .msg-user-name{font-size:14px;}
   .msg-user-preview{font-size:12px;}
 
-  /* Chat panel fills full screen */
+  /* Chat panel — hidden off-screen right until a chat is opened */
   .msg-main{
-    width:100%;position:absolute;top:0;left:0;z-index:3;
+    width:100%!important;
+    position:absolute;top:0;left:0;z-index:3;
+    height:100%!important;
     transform:translateX(100%);
     transition:transform .28s cubic-bezier(.4,0,.2,1);
   }
-  /* When chat is open, slide in from right */
   .msg-main.msg-slide-in{transform:translateX(0);}
 
-  /* Back button in chat header */
+  /* Back button */
   .msg-back-btn{display:flex!important;}
 
-  /* Bigger input + send on mobile */
+  /* Input & send */
   .msg-input{font-size:15px;padding:12px 14px;}
   .msg-send-btn{width:48px;height:48px;font-size:20px;}
+  .msg-footer{padding:10px 12px;}
 
-  /* Bubbles take more width on small screens */
+  /* Bubbles wider on small screen */
   .msg-bubble-wrap{max-width:82%;}
 
-  /* Actions always visible on mobile (no hover) */
+  /* Always show action buttons (no hover on touch) */
   .msg-actions{opacity:1!important;}
 
-  /* Notification banner: full width on mobile */
-  .msg-notif-banner{left:10px;right:10px;max-width:none;}
+  /* Chat header */
+  .msg-chat-hdr{padding:10px 14px;}
+  .msg-chat-hdr-name{font-size:14px;}
+
+  /* Notification banner full-width */
+  .msg-notif-banner{left:10px;right:10px;max-width:calc(100vw - 20px);}
 }
 
 /* ══════════════════════════════════════════
@@ -6246,7 +6262,7 @@ window.msgOpenChat = function(peerUid){
   panel.style.cssText = 'display:flex;flex-direction:column;height:100%;overflow:hidden;';
 
   // Mobile: slide sidebar out, slide chat in
-  if(window.innerWidth <= 700){
+  if(window.innerWidth <= 768){
     document.querySelector('.msg-sidebar')?.classList.add('msg-slide-out');
     document.getElementById('msg-main')?.classList.add('msg-slide-in');
   }
@@ -6639,7 +6655,7 @@ window.msgWatchAllPeers = msgWatchAllPeers;
 
 /* Reset mobile slide state on desktop resize */
 window.addEventListener('resize', () => {
-  if(window.innerWidth > 700){
+  if(window.innerWidth > 768){
     document.querySelector('.msg-sidebar')?.classList.remove('msg-slide-out');
     document.getElementById('msg-main')?.classList.remove('msg-slide-in');
   }
