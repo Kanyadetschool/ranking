@@ -1252,7 +1252,7 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <div id="loader">
   <div class="ld-logo">🏫</div>
   <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-txt">Initializing Result Portal…</div>
+  <div class="ld-txt">Initializing Admin Portal…</div>
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -6547,24 +6547,32 @@ function msgShowNotifBanner(senderName, senderPhoto, text, senderUid){
   _msgNotifTimer = setTimeout(msgNotifDismiss, 5000);
 
   // ── Play notification sound via Web Audio API ──
+  // AudioContext must be resumed after a user gesture; we use a lazy singleton.
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    const gain = ctx.createGain();
-    gain.connect(ctx.destination);
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
-
-    // Two-tone "ding" (like WhatsApp)
-    [880, 1100].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
-      osc.connect(gain);
-      osc.start(ctx.currentTime + i * 0.12);
-      osc.stop(ctx.currentTime + i * 0.12 + 0.3);
-    });
-    setTimeout(() => ctx.close(), 800);
+    if(!window._msgAudioCtx){
+      window._msgAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const ctx = window._msgAudioCtx;
+    const play = () => {
+      const gain = ctx.createGain();
+      gain.connect(ctx.destination);
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
+      [880, 1100].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.12);
+        osc.connect(gain);
+        osc.start(ctx.currentTime + i * 0.12);
+        osc.stop(ctx.currentTime + i * 0.12 + 0.3);
+      });
+    };
+    if(ctx.state === 'suspended'){
+      ctx.resume().then(play).catch(()=>{});
+    } else {
+      play();
+    }
   } catch(e) { /* audio not available */ }
 
   if(Notification && Notification.permission === 'granted'){
@@ -6615,6 +6623,22 @@ function msgWatchAllPeers(){
   }
 }
 window.msgWatchAllPeers = msgWatchAllPeers;
+
+/* ── Warm up AudioContext on first user interaction so sound is ready ── */
+(function(){
+  const warm = () => {
+    try {
+      if(!window._msgAudioCtx){
+        window._msgAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if(window._msgAudioCtx.state === 'suspended'){
+        window._msgAudioCtx.resume().catch(()=>{});
+      }
+    } catch(e){}
+    ['click','keydown','touchstart'].forEach(e => document.removeEventListener(e, warm));
+  };
+  ['click','keydown','touchstart'].forEach(e => document.addEventListener(e, warm, {once:true, passive:true}));
+})();
 
 /* Reset mobile slide state on desktop resize */
 window.addEventListener('resize', () => {
