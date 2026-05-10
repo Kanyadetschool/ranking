@@ -3337,6 +3337,11 @@ function _applyTeacherProfile(data, uid){
     isAdvancedAdmin = true;
     currentAssignedGrade = null;
     currentAssignedGrades = [];
+    // Restore every nav item and section label (teacher view hides them all)
+    document.querySelectorAll('.nav-item').forEach(item => item.style.display = '');
+    document.querySelectorAll('.s-label').forEach(el => el.style.display = '');
+    const _alc = document.getElementById('activity-log-card');
+    if(_alc) _alc.style.display = '';
     if(importNav)    importNav.style.display = 'flex';
     if(qlinksSection) qlinksSection.style.display = 'block';
     if(reportsNav)   reportsNav.style.display = '';
