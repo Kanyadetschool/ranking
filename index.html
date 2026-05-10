@@ -3892,26 +3892,27 @@ window._atLoginAsTeacher = async function(uid, name){
       isAdvancedAdmin:      isAdvancedAdmin,
       currentAssignedGrade: currentAssignedGrade,
       currentAssignedGrades: [...currentAssignedGrades],
+      profileUnsubscribe:   _teacherProfileUnsubscribe, // save listener ref
     };
 
-    // ── Apply teacher's profile to portal globals ──────────────────
-    const tName   = tData.name || tData.displayName || name;
-    const tEmail  = tData.email || '';
-    const tPhoto  = tData.photoURL || '';
-    const tGrades = Array.isArray(tData.assignedGrades) && tData.assignedGrades.length
-      ? tData.assignedGrades
-      : (tData.assignedGrade && tData.assignedGrade !== '__NONE__' ? [tData.assignedGrade] : []);
+    // ── CRITICAL: pause the real-time admin profile listener ──────
+    // Without this, onSnapshot fires within ms and re-applies
+    // Advancedadmin:true, instantly overriding the teacher view.
+    if(_teacherProfileUnsubscribe){
+      try{ _teacherProfileUnsubscribe(); }catch(e){}
+      _teacherProfileUnsubscribe = null;
+    }
 
-    // Overwrite session globals (same path as _applyTeacherProfile)
-    isAdvancedAdmin       = false;
-    currentAssignedGrades = tGrades;
-    currentAssignedGrade  = tGrades.length ? tGrades[0] : '__NONE__';
-    currentAdminName      = tName;
-    currentAdminEmail     = tEmail;
-    window._currentUser   = { uid: uid, name: tName };
+    // ── Apply teacher name/avatar to topbar ───────────────────────
+    const tName  = tData.name || tData.displayName || name;
+    const tEmail = tData.email || '';
+    const tPhoto = tData.photoURL || '';
+
+    currentAdminName     = tName;
+    currentAdminEmail    = tEmail;
+    window._currentUser  = { uid: uid, name: tName };
     window._currentUserPhoto = tPhoto;
 
-    // Update topbar avatar + name
     const nameEl = document.getElementById('admin-name');
     if(nameEl) nameEl.textContent = tName;
     const avEl = document.getElementById('admin-av');
@@ -3927,11 +3928,22 @@ window._atLoginAsTeacher = async function(uid, name){
     // ── Show impersonation exit banner ─────────────────────────────
     _showImpersonationBanner(tName, name);
 
-    // ── Re-apply teacher's nav & grade scope ──────────────────────
-    // Re-use the same profile application logic
+    // ── Hide advanced-admin-only panels so teacher view is clean ──
+    ['grade-assignment-panel','add-teacher-panel','adv-role-panel'].forEach(function(id){
+      var el = document.getElementById(id);
+      if(el) el.style.display = 'none';
+    });
+
+    // ── Force grade globals to "unset" so _applyTeacherProfile
+    //    always sees `changed = true` and calls renderAll() ──────────
+    currentAssignedGrade  = null;
+    currentAssignedGrades = [];
+    isAdvancedAdmin       = false;
+
+    // ── Apply teacher's nav & grade scope via existing logic ───────
     _applyTeacherProfile(tData, uid);
 
-    // Navigate to dashboard to show their view
+    // Navigate to dashboard
     navTo('dashboard', document.querySelector('.nav-item[data-label="Dashboard"]'));
 
     logActivity(
@@ -3991,8 +4003,8 @@ window._atExitImpersonation = function(){
 
   // ── Restore admin globals ──────────────────────────────────────
   isAdvancedAdmin       = s.isAdvancedAdmin;
-  currentAssignedGrade  = s.currentAssignedGrade;
-  currentAssignedGrades = s.currentAssignedGrades;
+  currentAssignedGrade  = null;   // force "changed" in _applyTeacherProfile
+  currentAssignedGrades = [];
   currentAdminName      = s.name;
   currentAdminEmail     = s.email;
   window._currentUser   = { uid: s.uid, name: s.name };
@@ -4021,9 +4033,14 @@ window._atExitImpersonation = function(){
   var scopeBanner = document.getElementById('grade-scope-banner');
   if(scopeBanner){ scopeBanner.remove(); }
 
-  // ── Re-apply admin profile: show all nav, all data ────────────
-  // isAdvancedAdmin is already restored; call _applyTeacherProfile with Advancedadmin:true
-  _applyTeacherProfile({ Advancedadmin: true }, s.uid);
+  // ── Restore real-time admin profile listener ───────────────────
+  // checkAdvancedAdmin re-attaches onSnapshot and re-applies admin profile.
+  // Also restore any hidden advanced-admin panels.
+  ['grade-assignment-panel','add-teacher-panel','adv-role-panel'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.style.display = '';
+  });
+  checkAdvancedAdmin(s.uid);
 
   navTo('dashboard', document.querySelector('.nav-item[data-label="Dashboard"]'));
   notify('&#10003; Returned to your admin session.','success', 4000);
