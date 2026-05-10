@@ -3723,6 +3723,9 @@ window._atLoadTeachers = async function(){
           +'<button class="at-act-btn at-act-pw" onclick="_atResetPassword(\''+u.uid+'\',\''+em+'\',\''+sn+'\')" title="Reset Password">&#128273; Reset PW</button>'
           +'<button class="at-act-btn '+(isDisabled?'at-act-enable':'at-act-disable')+'" onclick="_atToggleDisable(\''+u.uid+'\',\''+sn+'\','+isDisabled+',\''+em+'\')" title="'+(isDisabled?'Enable':'Disable')+' Account">'+(isDisabled?'&#9989; Enable':'&#128683; Disable')+'</button>'
           +'<button class="at-act-btn at-act-del" onclick="_atHardDelete(\''+u.uid+'\',\''+sn+'\',\''+em+'\')" title="Delete Account">&#128465; Delete</button>'
+        +'</div>'
+        +'<div style="padding:0 10px 10px">'
+          +'<button class="at-act-btn at-act-loginas" style="width:100%;background:linear-gradient(135deg,rgba(142,68,173,.15),rgba(142,68,173,.08));color:#9b59b6;border:1px solid rgba(142,68,173,.25)" onclick="_atLoginAsTeacher(\''+u.uid+'\',\''+sn+'\')" title="View portal as this teacher">&#128100; Login as '+dn+'</button>'
         +'</div></div>';
     }
 
@@ -3848,6 +3851,182 @@ window._atHardDelete = async function(uid, name, email){
   }catch(e){
     notify('Error: ' + e.message, 'error');
   }
+};
+
+/* ══════════════════════════════════════════════════════
+   ADVANCED ADMIN — "LOGIN AS TEACHER" IMPERSONATION
+   Simulates the teacher's portal session client-side.
+   The admin's Firebase Auth session is never touched.
+══════════════════════════════════════════════════════ */
+
+// Saved admin session snapshot for restoring after impersonation
+let _impersonationSession = null;
+
+window._atLoginAsTeacher = async function(uid, name){
+  if(_impersonationSession){
+    notify('⚠️ Already impersonating a teacher. Exit first.','warning');
+    return;
+  }
+
+  const confirmed = await showConfirm(
+    '👤 Login as Teacher',
+    'You will view the portal exactly as <strong>'+name+'</strong> sees it.<br>'
+    +'<small style="color:var(--text3)">Your admin session stays active in the background. Click "Exit" in the banner to return.</small>',
+    '&#128100;', 'Enter Teacher View', 'btn-blue'
+  );
+  if(!confirmed) return;
+
+  try{
+    // ── Fetch teacher profile from Firestore ───────────────────────
+    const { doc, getDoc } = window._fb;
+    const snap = await getDoc(doc(firestoreDb, 'users', uid));
+    if(!snap.exists()){ notify('❌ Teacher profile not found in Firestore.','error'); return; }
+    const tData = snap.data();
+
+    // ── Snapshot current admin session ────────────────────────────
+    _impersonationSession = {
+      uid:                  window._currentUser.uid,
+      name:                 currentAdminName,
+      email:                currentAdminEmail,
+      photoURL:             window._currentUserPhoto || '',
+      isAdvancedAdmin:      isAdvancedAdmin,
+      currentAssignedGrade: currentAssignedGrade,
+      currentAssignedGrades: [...currentAssignedGrades],
+    };
+
+    // ── Apply teacher's profile to portal globals ──────────────────
+    const tName   = tData.name || tData.displayName || name;
+    const tEmail  = tData.email || '';
+    const tPhoto  = tData.photoURL || '';
+    const tGrades = Array.isArray(tData.assignedGrades) && tData.assignedGrades.length
+      ? tData.assignedGrades
+      : (tData.assignedGrade && tData.assignedGrade !== '__NONE__' ? [tData.assignedGrade] : []);
+
+    // Overwrite session globals (same path as _applyTeacherProfile)
+    isAdvancedAdmin       = false;
+    currentAssignedGrades = tGrades;
+    currentAssignedGrade  = tGrades.length ? tGrades[0] : '__NONE__';
+    currentAdminName      = tName;
+    currentAdminEmail     = tEmail;
+    window._currentUser   = { uid: uid, name: tName };
+    window._currentUserPhoto = tPhoto;
+
+    // Update topbar avatar + name
+    const nameEl = document.getElementById('admin-name');
+    if(nameEl) nameEl.textContent = tName;
+    const avEl = document.getElementById('admin-av');
+    if(avEl){
+      if(tPhoto){
+        avEl.innerHTML = '<img src="'+tPhoto+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px" referrerpolicy="no-referrer">';
+      } else {
+        avEl.innerHTML = '';
+        avEl.textContent = tName[0] || 'T';
+      }
+    }
+
+    // ── Show impersonation exit banner ─────────────────────────────
+    _showImpersonationBanner(tName, name);
+
+    // ── Re-apply teacher's nav & grade scope ──────────────────────
+    // Re-use the same profile application logic
+    _applyTeacherProfile(tData, uid);
+
+    // Navigate to dashboard to show their view
+    navTo('dashboard', document.querySelector('.nav-item[data-label="Dashboard"]'));
+
+    logActivity(
+      '&#128100; Admin entered teacher view: '+name+' ('+tEmail+')',
+      'act-orange', _impersonationSession.name,
+      { category:'system', extra:'UID: '+uid }
+    );
+    notify('&#128100; Now viewing portal as <strong>'+tName+'</strong>', 'info', 5000);
+
+  }catch(e){
+    _impersonationSession = null;
+    notify('❌ Could not load teacher profile: '+e.message,'error');
+  }
+};
+
+function _showImpersonationBanner(displayName, rawName){
+  // Remove any existing banners
+  var old = document.getElementById('impersonation-banner');
+  if(old) old.remove();
+  var scopeBanner = document.getElementById('grade-scope-banner');
+  if(scopeBanner) scopeBanner.remove();
+
+  var banner = document.createElement('div');
+  banner.id = 'impersonation-banner';
+  banner.style.cssText = [
+    'position:fixed','top:0','left:0','right:0','z-index:10000',
+    'background:linear-gradient(90deg,#6c3483,#8e44ad)',
+    'color:#fff','display:flex','align-items:center','justify-content:space-between',
+    'padding:8px 20px','font-size:12px','font-weight:700',
+    'box-shadow:0 3px 14px rgba(0,0,0,.4)',
+    'letter-spacing:.02em'
+  ].join(';');
+
+  banner.innerHTML = [
+    '<span>&#128100; Viewing as <strong style="text-decoration:underline">'+displayName+'</strong></span>',
+    '<button id="impersonation-exit-btn" style="',
+      'background:rgba(255,255,255,.2);border:1.5px solid rgba(255,255,255,.5);',
+      'color:#fff;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:800;',
+      'cursor:pointer;letter-spacing:.03em;transition:.15s',
+    '" onmouseenter="this.style.background=\'rgba(255,255,255,.35)\'" onmouseleave="this.style.background=\'rgba(255,255,255,.2)\'" onclick="_atExitImpersonation()">',
+      '&#10006; Exit Teacher View',
+    '</button>'
+  ].join('');
+
+  document.body.appendChild(banner);
+
+  // Push app shell down so content isn't hidden
+  var shell = document.getElementById('app-shell');
+  if(shell) shell.style.marginTop = banner.offsetHeight + 'px';
+}
+
+window._atExitImpersonation = function(){
+  if(!_impersonationSession){ notify('No active impersonation session.','info'); return; }
+
+  var s = _impersonationSession;
+  _impersonationSession = null;
+
+  // ── Restore admin globals ──────────────────────────────────────
+  isAdvancedAdmin       = s.isAdvancedAdmin;
+  currentAssignedGrade  = s.currentAssignedGrade;
+  currentAssignedGrades = s.currentAssignedGrades;
+  currentAdminName      = s.name;
+  currentAdminEmail     = s.email;
+  window._currentUser   = { uid: s.uid, name: s.name };
+  window._currentUserPhoto = s.photoURL;
+
+  // Update topbar avatar + name
+  var nameEl = document.getElementById('admin-name');
+  if(nameEl) nameEl.textContent = s.name;
+  var avEl = document.getElementById('admin-av');
+  if(avEl){
+    if(s.photoURL){
+      avEl.innerHTML = '<img src="'+s.photoURL+'" style="width:100%;height:100%;object-fit:cover;border-radius:10px" referrerpolicy="no-referrer">';
+    } else {
+      avEl.innerHTML = '';
+      avEl.textContent = s.name[0] || 'A';
+    }
+  }
+
+  // Remove impersonation banner, restore margin
+  var banner = document.getElementById('impersonation-banner');
+  if(banner){ banner.remove(); }
+  var shell = document.getElementById('app-shell');
+  if(shell) shell.style.marginTop = '';
+
+  // Remove grade scope banner if any
+  var scopeBanner = document.getElementById('grade-scope-banner');
+  if(scopeBanner){ scopeBanner.remove(); }
+
+  // ── Re-apply admin profile: show all nav, all data ────────────
+  // isAdvancedAdmin is already restored; call _applyTeacherProfile with Advancedadmin:true
+  _applyTeacherProfile({ Advancedadmin: true }, s.uid);
+
+  navTo('dashboard', document.querySelector('.nav-item[data-label="Dashboard"]'));
+  notify('&#10003; Returned to your admin session.','success', 4000);
 };
 
 /* ── Create teacher: Firebase Auth + Firestore doc ── */
@@ -4680,6 +4859,12 @@ function renderAll(){
     ? allData.filter(r=>_teacherCanSeeGrade(r['Grade'])).length
     : allData.length;
   document.getElementById('nav-count').textContent = visibleCount;
+  // ── Security: hide Smart Search button for unassigned teachers ──────────
+  const _isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+  document.querySelectorAll('[onclick*="openSmartSearch"]').forEach(function(el){
+    el.style.display = _isUnassigned ? 'none' : '';
+  });
   // ── Bridge: sync allData into the Report Card JS system ──
   _bridgeReportCardSystem();
 }
@@ -7275,6 +7460,14 @@ window.copyRecordData = copyRecordData;
 ══════════════════════════════════════════ */
 let _searchIdx=0;
 function openSmartSearch(){
+  // ── Security: unassigned teachers may not use Smart Search ─────────────
+  const _isUnassigned = !isAdvancedAdmin &&
+    currentAssignedGrade === '__NONE__' && !currentAssignedGrades.length;
+  if(_isUnassigned){
+    if(typeof NotificationManager!=='undefined')
+      NotificationManager.warning('Smart Search is unavailable until a class is assigned to your account.');
+    return;
+  }
   document.getElementById('search-modal').classList.add('on');
   setTimeout(()=>document.getElementById('smart-search-input').focus(),80);
   runSmartSearch('');
@@ -7286,7 +7479,10 @@ window.closeSmartSearch=closeSmartSearch;
 function runSmartSearch(q){
   q=(q||'').trim();
   const box=document.getElementById('search-results');
-  if(!allData.length){box.innerHTML='<p style="padding:20px;color:var(--text3);font-size:12px">No data loaded yet.</p>';return;}
+
+  // ── Security: use scoped data only — never raw allData ─────────────────
+  const _scopedData = (typeof _getScopedData === 'function') ? _getScopedData() : allData;
+  if(!_scopedData.length){box.innerHTML='<p style="padding:20px;color:var(--text3);font-size:12px">No data loaded yet.</p>';return;}
 
   // Parse score range: avg>70, avg<40, score>=80
   let scoreFilter=null;
@@ -7294,7 +7490,7 @@ function runSmartSearch(q){
   if(scoreM){scoreFilter={op:scoreM[1],val:parseFloat(scoreM[2])};q=q.replace(scoreM[0],'').trim();}
 
   const byAsm={};
-  allData.forEach(r=>{
+  _scopedData.forEach(r=>{
     const key=String(r['Assessment No']||r['Official Student Name']||'').trim();
     if(!byAsm[key]) byAsm[key]={best:r,all:[r]};
     else{byAsm[key].all.push(r);if(parseFloat(calcStats(r).avg)>parseFloat(calcStats(byAsm[key].best).avg))byAsm[key].best=r;}
