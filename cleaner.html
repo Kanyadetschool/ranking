@@ -628,6 +628,66 @@ body::after{
   border-color:transparent!important;
 }
 
+/* ── UNDO BANNER ── */
+#undo-banner{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(120px);
+  z-index:8500;display:flex;align-items:center;gap:12px;
+  background:rgba(8,15,28,.97);border:1.5px solid rgba(139,92,246,.45);
+  border-radius:14px;padding:13px 20px;
+  box-shadow:0 12px 40px rgba(0,0,0,.6),0 0 0 1px rgba(139,92,246,.12);
+  backdrop-filter:blur(20px);font-size:13px;color:var(--text);
+  transition:transform .4s var(--spring),opacity .3s;opacity:0;min-width:320px;max-width:520px;
+}
+#undo-banner.show{transform:translateX(-50%) translateY(0);opacity:1;}
+[data-theme="light"] #undo-banner{background:#fff;border-color:rgba(139,92,246,.35);box-shadow:0 8px 28px rgba(139,92,246,.15);}
+.undo-msg{flex:1;font-weight:600;font-size:12.5px;color:var(--text2);}
+.undo-msg strong{color:var(--text);}
+.undo-btn{
+  padding:6px 14px;border-radius:8px;border:none;cursor:pointer;
+  background:linear-gradient(135deg,#8b5cf6,#6d28d9);color:#fff;
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:800;
+  transition:all .2s;white-space:nowrap;flex-shrink:0;
+}
+.undo-btn:hover{transform:scale(1.05);box-shadow:0 4px 16px rgba(139,92,246,.4);}
+.undo-close{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 4px;flex-shrink:0;transition:color .2s;}
+.undo-close:hover{color:var(--text);}
+.undo-timer{width:100%;height:2px;background:rgba(139,92,246,.15);border-radius:2px;overflow:hidden;margin-top:10px;}
+.undo-timer-bar{height:100%;background:linear-gradient(90deg,#8b5cf6,#00d4ff);border-radius:2px;transition:width linear;}
+
+/* ── EXPORT CARD ── */
+.export-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:12px;}
+@media(max-width:700px){.export-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:420px){.export-grid{grid-template-columns:1fr;}}
+.export-select{
+  width:100%;padding:9px 13px;background:var(--input);
+  border:1.5px solid var(--border);border-radius:var(--rs);
+  color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;
+  outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.export-select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+[data-theme="light"] .export-select{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+.export-hint{font-size:11.5px;color:var(--text2);line-height:1.65;padding:10px 14px;background:rgba(16,185,129,.04);border:1px solid rgba(16,185,129,.15);border-radius:var(--rs);}
+.export-fmt-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;}
+.export-fmt-btn{
+  padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);
+  background:transparent;color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;
+}
+.export-fmt-btn.active{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.4);color:#34d399;}
+[data-theme="light"] .export-fmt-btn.active{color:#059669;}
+.export-fmt-btn:hover:not(.active){border-color:var(--border2);}
+
+/* ── DUPLICATE DETECTOR ── */
+.dup-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.dup-table th{padding:9px 12px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--cyan);background:rgba(0,212,255,.05);border-bottom:2px solid rgba(0,212,255,.12);white-space:nowrap;}
+[data-theme="light"] .dup-table th{color:#1a5276;background:rgba(41,128,185,.05);border-bottom-color:rgba(41,128,185,.15);}
+.dup-table td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+.dup-table tr:last-child td{border-bottom:none;}
+.dup-table tr:hover td{background:rgba(239,68,68,.03);}
+.dup-count-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:10px;background:rgba(239,68,68,.1);color:#f87171;border:1px solid rgba(239,68,68,.2);font-size:11px;font-weight:800;}
+[data-theme="light"] .dup-count-badge{color:#dc2626;}
+.dup-keys{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text3);margin-top:3px;}
+
 /* ── STUDENT RECORD EDITOR ── */
 .sre-search-wrap{position:relative;margin-bottom:14px;}
 .sre-search-wrap input{width:100%;padding:11px 16px 11px 40px;background:var(--input);border:1.5px solid var(--border);border-radius:var(--rs);color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;}
@@ -1003,6 +1063,61 @@ body::after{
 
     <!-- ── TDI CONFIRM DIALOG ── -->
 
+    <!-- ── DUPLICATE RECORDS DETECTOR ── -->
+    <div class="card" style="margin-bottom:20px;animation-delay:.097s;" id="dup-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">🗂️ Duplicate Records Detector</div>
+          <div class="card-sub">Flags students who appear more than once with the same name and grade</div>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="dupScan()" id="dup-scan-btn" style="font-size:12px;padding:8px 14px;">🔍 Scan Now</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="dup-content">
+          <div class="empty" style="padding:30px 20px;">
+            <div class="empty-icon" style="font-size:36px;">🗂️</div>
+            <div style="color:var(--text2);font-size:13px;">Click "Scan Now" to detect duplicate student records</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CSV / EXCEL EXPORT ── -->
+    <div class="card" style="margin-bottom:20px;animation-delay:.098s;" id="export-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📤 Export Records</div>
+          <div class="card-sub">Download all records or filter by Grade and/or Term as CSV or Excel</div>
+        </div>
+      </div>
+      <div class="card-body">
+        <div class="export-fmt-row">
+          <button class="export-fmt-btn active" id="exp-fmt-csv" onclick="expSetFmt('csv')">📄 CSV</button>
+          <button class="export-fmt-btn" id="exp-fmt-xlsx" onclick="expSetFmt('xlsx')">📊 Excel (.xlsx)</button>
+        </div>
+        <div class="export-grid">
+          <div>
+            <div class="field-label">Filter by Grade</div>
+            <select class="export-select" id="exp-grade-select" onchange="onExpChange()">
+              <option value="">— All Grades —</option>
+            </select>
+          </div>
+          <div>
+            <div class="field-label">Filter by Term</div>
+            <select class="export-select" id="exp-term-select" onchange="onExpChange()">
+              <option value="">— All Terms —</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-green" id="exp-download-btn" onclick="runExport()" style="height:40px;width:100%;">📥 Download</button>
+          </div>
+        </div>
+        <div class="export-hint" id="exp-hint">Select filters then download — leaving both blank exports everything.</div>
+      </div>
+    </div>
+
     <!-- Fields card -->
     <div class="card" style="animation-delay:.1s;">
       <div class="card-header">
@@ -1375,6 +1490,7 @@ async function loadData(){
   populateBtrGradeSelect();
   populateUfeFieldSelect();
   populateTdiTermSelect();
+  populateExportSelects();
   document.getElementById('stat-path').textContent=_activePath;
 }
 window.refreshData=loadData;
@@ -1680,6 +1796,10 @@ async function executeGradeUpdate(){
     .filter(([,rec])=>String(rec.Grade||'').trim()===current)
     .map(([k])=>k);
 
+  // Snapshot for undo
+  const undoUpdates = {};
+  matchKeys.forEach(k=>{ undoUpdates[`${_activePath}/${k}/Grade`] = current; });
+
   const total = matchKeys.length;
   let done = 0, errors = 0;
   const BATCH = 50;
@@ -1711,6 +1831,7 @@ async function executeGradeUpdate(){
   if(errors===0){
     notify(`✅ Grade updated to "${newVal}" on ${done} records!`, 'success');
     log(`✅ Grade "${current}" → "${newVal}" set on ${done} records.`, 'success');
+    pushUndo(`Grade "${current}" → "${newVal}" on ${done} records`, undoUpdates);
   } else {
     notify(`⚠️ Completed with ${errors} errors. Check the log.`, 'warning');
     log(`⚠️ Grade update done: ${done} ok, ${errors} errors.`, 'warning');
@@ -2533,6 +2654,17 @@ async function executeUfeUpdate(){
     matchKeys=Object.entries(allRecords).filter(([,rec])=>field in rec).map(([k])=>k);
   }
 
+  // Snapshot for undo
+  const undoUpdates={};
+  matchKeys.forEach(k=>{
+    if(_ufeMode==='rename'){
+      undoUpdates[`${_activePath}/${k}/${newVal}`]=null;
+      undoUpdates[`${_activePath}/${k}/${field}`]=allRecords[k][field]??null;
+    } else {
+      undoUpdates[`${_activePath}/${k}/${field}`]=allRecords[k][field]??null;
+    }
+  });
+
   const total=matchKeys.length;
   let done=0, errors=0;
   const BATCH=50;
@@ -2578,6 +2710,8 @@ async function executeUfeUpdate(){
   if(errors===0){
     notify(`✅ Done! Updated ${done} record${done!==1?'s':''}!`,'success');
     log(`✅ ${_ufeMode==='rename'?`Renamed "${field}" → "${newVal}"`:`Set ${field} = "${newVal}"`} on ${done} records.`,'success');
+    const undoLabel = _ufeMode==='rename' ? `Rename "${field}" → "${newVal}" (${done} records)` : `Set ${field} = "${newVal}" on ${done} records`;
+    pushUndo(undoLabel, undoUpdates);
   } else {
     notify(`⚠️ Completed with ${errors} errors. Check the log.`,'warning');
     log(`⚠️ Done: ${done} ok, ${errors} errors.`,'warning');
@@ -2739,6 +2873,13 @@ async function executeTdiUpdate(){
     .filter(([,r])=>String(r.Grade||'')===grade)
     .map(([k])=>k);
 
+  // Snapshot existing values for undo
+  const undoUpdates = {};
+  matchKeys.forEach(k=>{
+    undoUpdates[`${_activePath}/${k}/Opening Date`] = allRecords[k]['Opening Date'] ?? null;
+    undoUpdates[`${_activePath}/${k}/Closing Date`] = allRecords[k]['Closing Date'] ?? null;
+  });
+
   const total=matchKeys.length;
   let done=0, errors=0;
   const BATCH=50;
@@ -2774,6 +2915,7 @@ async function executeTdiUpdate(){
   if(errors===0){
     notify(`✅ Done! Dates written to ${done} record${done!==1?'s':''}!`,'success');
     log(`✅ Opening Date & Closing Date set on ${done} records in Grade "${grade}".`,'success');
+    pushUndo(`Dates set on Grade "${grade}" (${done} records)`, undoUpdates);
   } else {
     notify(`⚠️ Completed with ${errors} errors. Check the log.`,'warning');
     log(`⚠️ Done: ${done} ok, ${errors} errors.`,'warning');
@@ -2782,6 +2924,277 @@ async function executeTdiUpdate(){
   await loadData();
 }
 window.executeTdiUpdate=executeTdiUpdate;
+
+// ── UNDO SYSTEM ──────────────────────────────────────────────
+let _undoStack = null;   // { label, path, updates:{path:oldVal} }
+let _undoTimer = null;
+const UNDO_DURATION = 12000; // 12 seconds
+
+function pushUndo(label, reversalUpdates){
+  _undoStack = { label, updates: reversalUpdates };
+  const banner = document.getElementById('undo-banner');
+  document.getElementById('undo-msg').innerHTML = `<strong>Done:</strong> ${esc(label)}`;
+  const bar = document.getElementById('undo-timer-bar');
+  bar.style.transition = 'none'; bar.style.width = '100%';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    bar.style.transition = `width ${UNDO_DURATION}ms linear`; bar.style.width = '0%';
+  }));
+  banner.classList.add('show');
+  clearTimeout(_undoTimer);
+  _undoTimer = setTimeout(dismissUndo, UNDO_DURATION);
+}
+
+function dismissUndo(){
+  clearTimeout(_undoTimer);
+  document.getElementById('undo-banner').classList.remove('show');
+  _undoStack = null;
+}
+window.dismissUndo = dismissUndo;
+
+async function executeUndo(){
+  if(!_undoStack) return;
+  const { label, updates } = _undoStack;
+  dismissUndo();
+  try {
+    const BATCH = 200;
+    const entries = Object.entries(updates);
+    for(let i=0; i<entries.length; i+=BATCH){
+      const chunk = Object.fromEntries(entries.slice(i,i+BATCH));
+      await fb.update(fb.ref(db), chunk);
+    }
+    notify(`↩ Undone: ${label}`, 'success');
+    log(`↩ Undo applied: ${label}`, 'success');
+    await loadData();
+  } catch(e){
+    notify('❌ Undo failed: '+e.message, 'error');
+    log('❌ Undo failed: '+e.message, 'error');
+  }
+}
+window.executeUndo = executeUndo;
+
+// Patch existing execute functions to push undo snapshots
+const _origExecuteDelete = executeDelete;
+const _origExecuteGradeUpdate = executeGradeUpdate;
+const _origExecuteTdiUpdate = executeTdiUpdate;
+
+// ── DUPLICATE DETECTOR ───────────────────────────────────────
+function dupScan(){
+  const btn = document.getElementById('dup-scan-btn');
+  btn.textContent='⏳ Scanning…'; btn.disabled=true;
+
+  const NAME_KEYS=['Official Student Name','Name','Student Name','name','FullName'];
+  // Build map: normalisedName|grade → [{key, record}]
+  const groups = new Map();
+  Object.entries(allRecords).forEach(([key,rec])=>{
+    const nameKey = NAME_KEYS.find(k=>rec[k]);
+    if(!nameKey) return;
+    const name  = String(rec[nameKey]).trim().toLowerCase().replace(/\s+/g,' ');
+    const grade = String(rec.Grade||'').trim().toLowerCase();
+    const gKey  = `${name}||${grade}`;
+    if(!groups.has(gKey)) groups.set(gKey,{name:String(rec[nameKey]).trim(), grade:String(rec.Grade||'—'), records:[]});
+    groups.get(gKey).records.push({key, term:String(rec.Term||'—'), rec});
+  });
+
+  const dupes = [...groups.values()].filter(g=>g.records.length>1).sort((a,b)=>b.records.length-a.records.length);
+
+  const el = document.getElementById('dup-content');
+  btn.textContent='🔄 Re-scan'; btn.disabled=false;
+
+  if(dupes.length===0){
+    el.innerHTML=`<div class="empty" style="padding:28px 20px;">
+      <div class="empty-icon" style="font-size:36px;">✅</div>
+      <div style="color:var(--text2);font-size:13px;font-weight:600;">No duplicate records found — database looks clean!</div>
+    </div>`;
+    log('🗂️ Duplicate scan: no duplicates found.','success');
+    return;
+  }
+
+  let html=`<div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+    <span class="ms-badge danger">⚠️ ${dupes.length} duplicate group${dupes.length!==1?'s':''} found</span>
+    <span style="font-size:12px;color:var(--text2);">${dupes.reduce((s,g)=>s+g.records.length,0)} total records affected</span>
+  </div>
+  <div style="overflow-x:auto;"><table class="dup-table">
+    <thead><tr><th>Student Name</th><th>Grade</th><th>Copies</th><th>Terms / Keys</th></tr></thead>
+    <tbody>`;
+
+  dupes.forEach(g=>{
+    const termsHtml = g.records.map(r=>`<span style="display:inline-block;padding:1px 7px;border-radius:5px;background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.15);font-size:10px;margin:1px;font-family:'JetBrains Mono',monospace;">${esc(r.term)}</span>`).join(' ');
+    html+=`<tr>
+      <td style="font-weight:700;">${esc(g.name)}</td>
+      <td style="color:var(--text2);">${esc(g.grade)}</td>
+      <td><span class="dup-count-badge">${g.records.length}×</span></td>
+      <td>${termsHtml}</td>
+    </tr>`;
+  });
+
+  html+=`</tbody></table></div>`;
+  el.innerHTML=html;
+  log(`🗂️ Duplicate scan: ${dupes.length} group${dupes.length!==1?'s':''} (${dupes.reduce((s,g)=>s+g.records.length,0)} records).`,'warning');
+}
+window.dupScan = dupScan;
+
+// ── CSV / EXCEL EXPORT ────────────────────────────────────────
+let _expFmt = 'csv';
+
+function expSetFmt(fmt){
+  _expFmt = fmt;
+  document.getElementById('exp-fmt-csv').classList.toggle('active', fmt==='csv');
+  document.getElementById('exp-fmt-xlsx').classList.toggle('active', fmt==='xlsx');
+}
+window.expSetFmt = expSetFmt;
+
+function populateExportSelects(){
+  const grades = new Set(), terms = new Set();
+  Object.values(allRecords).forEach(r=>{
+    if(r.Grade) grades.add(String(r.Grade));
+    if(r.Term)  terms.add(String(r.Term));
+  });
+  const gSel = document.getElementById('exp-grade-select');
+  const tSel = document.getElementById('exp-term-select');
+  gSel.innerHTML = '<option value="">— All Grades —</option>'+[...grades].sort().map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+  tSel.innerHTML = '<option value="">— All Terms —</option>'+[...terms].sort().map(t=>`<option value="${esc(t)}">${esc(t)}</option>`).join('');
+  onExpChange();
+}
+
+function onExpChange(){
+  const grade = document.getElementById('exp-grade-select').value;
+  const term  = document.getElementById('exp-term-select').value;
+  const filtered = Object.values(allRecords).filter(r=>
+    (!grade || String(r.Grade||'')===grade) &&
+    (!term  || String(r.Term||'')===term)
+  );
+  const hint = document.getElementById('exp-hint');
+  hint.innerHTML = `<strong style="color:var(--cyan);">${filtered.length} record${filtered!==1?'s':''}</strong> will be exported${grade?` · Grade: <em>${esc(grade)}</em>`:''}${term?` · Term: <em>${esc(term)}</em>`:''}.`;
+}
+window.onExpChange = onExpChange;
+
+function runExport(){
+  const grade = document.getElementById('exp-grade-select').value;
+  const term  = document.getElementById('exp-term-select').value;
+  const rows  = Object.entries(allRecords)
+    .filter(([,r])=>(!grade||String(r.Grade||'')===grade)&&(!term||String(r.Term||'')===term))
+    .map(([k,r])=>({_key:k,...r}));
+
+  if(!rows.length){ notify('No records match the selected filters.','warning'); return; }
+
+  // Collect all field headers (union of all keys)
+  const headers = ['_key',...new Set(rows.flatMap(r=>Object.keys(r)).filter(k=>k!=='_key'))];
+
+  if(_expFmt==='csv'){
+    const escape = v => { const s=String(v??''); return s.includes(',')||s.includes('"')||s.includes('\n') ? `"${s.replace(/"/g,'""')}"` : s; };
+    const csv = [headers.map(escape).join(','), ...rows.map(r=>headers.map(h=>escape(r[h]??'')).join(','))].join('\n');
+    const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const fname = `export${grade?'_'+grade.replace(/\s/g,'_'):''}${term?'_'+term.replace(/\s/g,'_'):''}.csv`;
+    triggerDownload(blob, fname);
+    log(`📤 Exported ${rows.length} records as CSV (${fname}).`,'success');
+  } else {
+    // Build minimal XLSX manually (XML-based)
+    const xlsxBlob = buildXlsx(headers, rows);
+    const fname = `export${grade?'_'+grade.replace(/\s/g,'_'):''}${term?'_'+term.replace(/\s/g,'_'):''}.xlsx`;
+    triggerDownload(xlsxBlob, fname);
+    log(`📤 Exported ${rows.length} records as Excel (${fname}).`,'success');
+  }
+  notify(`✅ Export downloaded — ${rows.length} records.`,'success');
+}
+window.runExport = runExport;
+
+function triggerDownload(blob, filename){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+function buildXlsx(headers, rows){
+  // Minimal Office Open XML SpreadsheetML — no dependencies needed
+  const xmlEsc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const colLetter = n => { let s=''; n++; while(n>0){s=String.fromCharCode(64+(n%26||26))+s;n=Math.floor((n-1)/26);} return s; };
+
+  const sheetRows = [headers, ...rows.map(r=>headers.map(h=>r[h]??''))];
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<sheetData>${sheetRows.map((row,ri)=>`<row r="${ri+1}">${row.map((cell,ci)=>{
+  const ref=colLetter(ci)+(ri+1);
+  const isNum = ri>0 && cell!=='' && !isNaN(Number(cell));
+  return isNum ? `<c r="${ref}"><v>${xmlEsc(cell)}</v></c>`
+               : `<c r="${ref}" t="inlineStr"><is><t>${xmlEsc(cell)}</t></is></c>`;
+}).join('')}</row>`).join('')}
+</sheetData></worksheet>`;
+
+  const wbXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"
+  xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<sheets><sheet name="Export" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+
+  const relsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`;
+
+  const pkgRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`;
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+<Default Extension="xml" ContentType="application/xml"/>
+<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`;
+
+  // Build ZIP manually using a simple implementation
+  function strToBytes(str){ return new TextEncoder().encode(str); }
+  function buildZip(files){
+    const fileRecords=[]; let offset=0;
+    const crc32=(data)=>{
+      let c=0xFFFFFFFF;
+      const t=new Uint32Array(256);
+      for(let n=0;n<256;n++){let v=n;for(let k=0;k<8;k++)v=v&1?0xEDB88320^(v>>>1):v>>>1;t[n]=v;}
+      for(let i=0;i<data.length;i++)c=t[(c^data[i])&0xFF]^(c>>>8);
+      return (c^0xFFFFFFFF)>>>0;
+    };
+    const u32=(n)=>{const b=new Uint8Array(4);new DataView(b.buffer).setUint32(0,n,true);return b;}
+    const u16=(n)=>{const b=new Uint8Array(2);new DataView(b.buffer).setUint16(0,n,true);return b;}
+    const cat=(...arrs)=>{const t=new Uint8Array(arrs.reduce((s,a)=>s+a.length,0));let o=0;arrs.forEach(a=>{t.set(a,o);o+=a.length;});return t;}
+
+    const localHeaders=[];
+    for(const [name,content] of files){
+      const nameBytes=new TextEncoder().encode(name);
+      const data=strToBytes(content);
+      const crc=crc32(data);
+      const local=cat(
+        new Uint8Array([0x50,0x4B,0x03,0x04]),u16(20),u16(0),u16(0),
+        u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),
+        u16(nameBytes.length),u16(0),nameBytes,data
+      );
+      fileRecords.push({name,nameBytes,data,crc,offset,size:local.length});
+      localHeaders.push(local); offset+=local.length;
+    }
+    const centralDir=fileRecords.map(({name,nameBytes,data,crc,offset})=>cat(
+      new Uint8Array([0x50,0x4B,0x01,0x02]),u16(20),u16(20),u16(0),u16(0),
+      u16(0),u16(0),u32(crc),u32(data.length),u32(data.length),
+      u16(nameBytes.length),u16(0),u16(0),u16(0),u16(0),u32(0),u32(offset),nameBytes
+    ));
+    const cdSize=centralDir.reduce((s,a)=>s+a.length,0);
+    const eocd=cat(
+      new Uint8Array([0x50,0x4B,0x05,0x06]),u16(0),u16(0),
+      u16(fileRecords.length),u16(fileRecords.length),
+      u32(cdSize),u32(offset),u16(0)
+    );
+    return cat(...localHeaders,...centralDir,eocd);
+  }
+
+  const zipBytes = buildZip([
+    ['[Content_Types].xml', contentTypes],
+    ['_rels/.rels', pkgRels],
+    ['xl/workbook.xml', wbXml],
+    ['xl/_rels/workbook.xml.rels', relsXml],
+    ['xl/worksheets/sheet1.xml', sheetXml],
+  ]);
+  return new Blob([zipBytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
 
 // ── ACTIVITY LOG ─────────────────────────────────────────────
 const _logColors={success:'#10b981',error:'#f87171',warning:'#fbbf24',info:'#00d4ff'};
@@ -2811,5 +3224,15 @@ function notify(msg,type='info'){
 
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 </script>
+<!-- ── UNDO BANNER ── -->
+<div id="undo-banner">
+  <div style="flex:1;">
+    <div class="undo-msg" id="undo-msg">Last action can be undone.</div>
+    <div class="undo-timer"><div class="undo-timer-bar" id="undo-timer-bar" style="width:100%;"></div></div>
+  </div>
+  <button class="undo-btn" onclick="executeUndo()">↩ Undo</button>
+  <button class="undo-close" onclick="dismissUndo()">✕</button>
+</div>
+
 </body>
 </html>
