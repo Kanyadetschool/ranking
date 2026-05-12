@@ -554,7 +554,9 @@ body::after{
 .ms-score-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;background:rgba(0,212,255,.07);color:var(--text2);border:1px solid rgba(0,212,255,.1);margin:1px;}
 
 /* ── TERM DATE INJECTOR ── */
-.tdi-selects-row{display:grid;grid-template-columns:1fr;gap:12px;margin-bottom:16px;}
+.tdi-grid{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;margin-bottom:12px;}
+@media(max-width:700px){.tdi-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:420px){.tdi-grid{grid-template-columns:1fr;}}
 .tdi-select{
   width:100%;padding:9px 14px;background:var(--input);
   border:1.5px solid var(--border);border-radius:var(--rs);
@@ -563,54 +565,72 @@ body::after{
 }
 .tdi-select:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
 [data-theme="light"] .tdi-select{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
-.tdi-date-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;}
-@media(max-width:600px){.tdi-date-row{grid-template-columns:1fr;}}
-.tdi-picker-wrap{position:relative;}
-.tdi-picker-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
-.tdi-picker-trigger{
-  display:flex;align-items:center;gap:10px;
-  padding:9px 14px;background:var(--input);
-  border:1.5px solid var(--border);border-radius:var(--rs);
-  color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:13px;cursor:pointer;transition:border-color .2s,box-shadow .2s;
-  user-select:none;
-}
-.tdi-picker-trigger:hover{border-color:var(--cyan);}
-.tdi-picker-trigger.active{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.12);}
-.tdi-picker-trigger.set{border-color:rgba(16,185,129,.5);}
-.tdi-picker-trigger .tdi-pt-icon{font-size:16px;flex-shrink:0;}
-.tdi-picker-trigger .tdi-pt-text{flex:1;font-weight:500;}
-.tdi-picker-trigger .tdi-pt-clear{font-size:16px;color:var(--text3);margin-left:auto;cursor:pointer;transition:color .15s;}
-.tdi-picker-trigger .tdi-pt-clear:hover{color:#f87171;}
-.tdi-cal{
-  position:absolute;top:calc(100% + 6px);left:0;z-index:900;
-  background:var(--card);border:1.5px solid var(--border);
-  border-radius:14px;padding:14px 16px 16px;
-  box-shadow:0 16px 48px rgba(0,0,0,.38);
-  min-width:280px;display:none;animation:tdiCalIn .15s ease;
-}
-.tdi-cal.open{display:block;}
-@keyframes tdiCalIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-[data-theme="light"] .tdi-cal{background:#fff;box-shadow:0 12px 36px rgba(0,0,0,.14);}
-.tdi-cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.tdi-cal-nav-btn{background:none;border:none;color:var(--text2);cursor:pointer;padding:4px 10px;border-radius:8px;font-size:18px;line-height:1;transition:background .15s,color .15s;}
-.tdi-cal-nav-btn:hover{background:var(--input);color:var(--cyan);}
-.tdi-cal-title{font-weight:700;font-size:14px;cursor:pointer;padding:4px 8px;border-radius:8px;transition:background .15s;}
-.tdi-cal-title:hover{background:var(--input);}
-.tdi-cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-.tdi-cal-dow{text-align:center;font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--text3);padding:4px 0 6px;}
-.tdi-cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:12.5px;font-weight:500;cursor:pointer;transition:background .12s,color .12s;color:var(--text);border:none;background:none;}
-.tdi-cal-day:hover:not(.tdi-d-empty){background:var(--input);color:var(--cyan);}
-.tdi-cal-day.tdi-d-empty{cursor:default;}
-.tdi-cal-day.tdi-d-today{color:var(--cyan);font-weight:800;}
-.tdi-cal-day.tdi-d-selected{background:var(--cyan);color:#0d1117;font-weight:800;}
-.tdi-cal-day.tdi-d-selected:hover{background:var(--cyan);}
-.tdi-cal-ym{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:4px;}
-.tdi-cal-ym-cell{text-align:center;padding:7px 4px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:background .12s,color .12s;}
-.tdi-cal-ym-cell:hover{background:var(--input);color:var(--cyan);}
-.tdi-cal-ym-cell.active{background:var(--cyan);color:#0d1117;}
 .tdi-hint{font-size:11.5px;color:var(--text2);line-height:1.65;padding:10px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.12);border-radius:var(--rs);}
 .tdi-preview{font-size:12px;margin-top:10px;padding:10px 14px;border-radius:var(--rs);background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);color:var(--text2);line-height:1.8;}
+
+/* Advanced Date Picker */
+.adp-wrap{position:relative;width:100%;}
+.adp-input{
+  width:100%;padding:9px 14px 9px 38px;background:var(--input);
+  border:1.5px solid var(--border);border-radius:var(--rs);
+  color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;
+  cursor:pointer;caret-color:transparent;user-select:none;
+}
+.adp-input:focus,.adp-input.open{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+[data-theme="light"] .adp-input{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+.adp-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;}
+.adp-cal{
+  position:absolute;top:calc(100% + 6px);left:0;z-index:9999;
+  background:var(--card);border:1.5px solid var(--border2);
+  border-radius:14px;padding:14px;min-width:260px;
+  box-shadow:0 12px 48px rgba(0,0,0,.5),0 0 0 1px rgba(0,212,255,.08);
+  display:none;animation:calPop .22s var(--spring) both;
+}
+[data-theme="light"] .adp-cal{background:#fff;border-color:rgba(41,128,185,.25);box-shadow:0 8px 32px rgba(41,128,185,.14);}
+.adp-cal.open{display:block;}
+@keyframes calPop{from{opacity:0;transform:translateY(-8px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
+.adp-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.adp-nav-btn{
+  width:28px;height:28px;border-radius:7px;border:1px solid var(--border);
+  background:transparent;color:var(--text2);cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;
+}
+.adp-nav-btn:hover{background:rgba(0,212,255,.1);border-color:var(--cyan);color:var(--cyan);}
+.adp-month-label{font-size:13px;font-weight:800;color:var(--text);cursor:pointer;letter-spacing:-.01em;}
+.adp-month-label:hover{color:var(--cyan);}
+.adp-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
+.adp-dow span{text-align:center;font-size:9.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:4px 0;}
+.adp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
+.adp-day{
+  text-align:center;padding:6px 2px;border-radius:7px;cursor:pointer;
+  font-size:12px;font-weight:600;color:var(--text2);
+  transition:all .15s;border:1px solid transparent;
+}
+.adp-day:hover:not(.empty):not(.selected){background:rgba(0,212,255,.1);color:var(--cyan);border-color:rgba(0,212,255,.2);}
+.adp-day.today{color:var(--cyan);font-weight:800;}
+.adp-day.selected{background:linear-gradient(135deg,#00d4ff,#2980b9);color:#fff;border-color:transparent;font-weight:800;box-shadow:0 2px 10px rgba(0,212,255,.35);}
+.adp-day.empty{cursor:default;}
+.adp-day.other-month{opacity:.3;}
+[data-theme="light"] .adp-day{color:#3a6080;}
+[data-theme="light"] .adp-day.selected{color:#fff;}
+.adp-quick{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.adp-quick-btn{
+  font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;
+  border:1px solid var(--border);background:transparent;color:var(--text2);
+  cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;
+}
+.adp-quick-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.07);}
+.adp-year-sel{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;max-height:150px;overflow-y:auto;}
+.adp-year-btn{
+  flex:1;min-width:50px;text-align:center;padding:5px 8px;border-radius:7px;
+  border:1px solid var(--border);background:transparent;color:var(--text2);
+  cursor:pointer;font-size:12px;font-weight:700;transition:all .15s;
+  font-family:'Plus Jakarta Sans',sans-serif;
+}
+.adp-year-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.07);}
+.adp-year-btn.active{background:linear-gradient(135deg,#00d4ff,#2980b9);color:#fff;border-color:transparent;}
 
 /* ── STUDENT RECORD EDITOR ── */
 .sre-search-wrap{position:relative;margin-bottom:14px;}
@@ -950,50 +970,46 @@ body::after{
     <div class="card" style="margin-bottom:20px;animation-delay:.095s;" id="tdi-card">
       <div class="card-header">
         <div>
-          <div class="card-title">📅 Set Term Opening &amp; Closing Dates</div>
-          <div class="card-sub">Select a Grade — Opening Date &amp; Closing Date headers are written to every student in that grade</div>
+          <div class="card-title">📅 Set Opening &amp; Closing Dates by Grade</div>
+          <div class="card-sub">Select a Grade — dates are written to every student across all terms in that grade</div>
         </div>
       </div>
       <div class="card-body">
-        <!-- Step 1: Grade select only -->
-        <div class="tdi-selects-row">
+        <div class="tdi-grid">
           <div>
             <div class="field-label">① Select Grade</div>
             <select class="tdi-select" id="tdi-grade-select" onchange="onTdiGradeChange()">
               <option value="">— load data first —</option>
             </select>
           </div>
-        </div>
-        <!-- Step 2 & 3: Date pickers -->
-        <div class="tdi-date-row" id="tdi-date-row" style="opacity:.35;pointer-events:none;">
-          <div class="tdi-picker-wrap" id="tdi-open-wrap">
-            <div class="tdi-picker-label">② Opening Date</div>
-            <div class="tdi-picker-trigger" id="tdi-open-trigger" onclick="tdiToggleCal('open')">
-              <span class="tdi-pt-icon">🟢</span>
-              <span class="tdi-pt-text" id="tdi-open-display">Select opening date…</span>
-              <span class="tdi-pt-clear" id="tdi-open-clear" onclick="event.stopPropagation();tdiClearDate('open')" style="display:none">✕</span>
+          <div>
+            <div class="field-label">② Closing Date</div>
+            <div class="adp-wrap" id="adp-closing-wrap">
+              <span class="adp-icon">📁</span>
+              <div class="adp-input" id="tdi-closing-display" tabindex="0" onclick="adpToggle('closing')">— pick date —</div>
+              <input type="hidden" id="tdi-closing">
+              <div class="adp-cal" id="adp-closing-cal"></div>
             </div>
-            <div class="tdi-cal" id="tdi-open-cal"></div>
           </div>
-          <div class="tdi-picker-wrap" id="tdi-close-wrap">
-            <div class="tdi-picker-label">③ Closing Date</div>
-            <div class="tdi-picker-trigger" id="tdi-close-trigger" onclick="tdiToggleCal('close')">
-              <span class="tdi-pt-icon">🔴</span>
-              <span class="tdi-pt-text" id="tdi-close-display">Select closing date…</span>
-              <span class="tdi-pt-clear" id="tdi-close-clear" onclick="event.stopPropagation();tdiClearDate('close')" style="display:none">✕</span>
+          <div>
+            <div class="field-label">③ Opening Date</div>
+            <div class="adp-wrap" id="adp-opening-wrap">
+              <span class="adp-icon">📂</span>
+              <div class="adp-input" id="tdi-opening-display" tabindex="0" onclick="adpToggle('opening')">— pick date —</div>
+              <input type="hidden" id="tdi-opening">
+              <div class="adp-cal" id="adp-opening-cal"></div>
             </div>
-            <div class="tdi-cal" id="tdi-close-cal"></div>
+          </div>
+          <div style="display:flex;align-items:flex-end;">
+            <button class="btn btn-cyan" id="tdi-apply-btn" onclick="openTdiConfirm()" disabled style="height:40px;width:100%;">📅 Apply Dates</button>
           </div>
         </div>
-        <div class="tdi-hint" id="tdi-hint">Select a Grade to get started.</div>
+        <div class="tdi-hint" id="tdi-hint">Select a Grade and enter both dates to continue.</div>
         <div class="tdi-preview" id="tdi-preview" style="display:none;"></div>
-        <div style="margin-top:14px;">
-          <button class="btn btn-cyan" id="tdi-apply-btn" onclick="openTdiConfirm()" disabled style="width:100%;justify-content:center;">📅 Apply Dates to All Students in This Grade</button>
-        </div>
       </div>
     </div>
 
-<!-- ── TDI CONFIRM DIALOG ── -->
+    <!-- ── TDI CONFIRM DIALOG ── -->
 
     <!-- Fields card -->
     <div class="card" style="animation-delay:.1s;">
@@ -2580,221 +2596,195 @@ async function executeUfeUpdate(){
 }
 window.executeUfeUpdate=executeUfeUpdate;
 
-// ── TERM DATE INJECTOR (TDI) ─────────────────────────────────
+// ── ADVANCED DATE PICKER (ADP) ────────────────────────────────
+const _adp = {
+  opening: { year: new Date().getFullYear(), month: new Date().getMonth(), view: 'days' },
+  closing: { year: new Date().getFullYear(), month: new Date().getMonth(), view: 'days' }
+};
+
+function adpToggle(which){
+  const cal = document.getElementById(`adp-${which}-cal`);
+  const isOpen = cal.classList.contains('open');
+  // close both first
+  document.querySelectorAll('.adp-cal').forEach(c=>c.classList.remove('open'));
+  document.querySelectorAll('.adp-input').forEach(d=>d.classList.remove('open'));
+  if(!isOpen){
+    cal.classList.add('open');
+    document.getElementById(`tdi-${which}-display`).classList.add('open');
+    adpRender(which);
+  }
+}
+window.adpToggle=adpToggle;
+
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.adp-wrap')){
+    document.querySelectorAll('.adp-cal').forEach(c=>c.classList.remove('open'));
+    document.querySelectorAll('.adp-input').forEach(d=>d.classList.remove('open'));
+  }
+});
+
+function adpRender(which){
+  const state = _adp[which];
+  const cal = document.getElementById(`adp-${which}-cal`);
+  const hiddenVal = document.getElementById(`tdi-${which}`).value;
+  const selDate = hiddenVal ? new Date(hiddenVal+'T00:00:00') : null;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  if(state.view === 'years'){
+    const curYear = new Date().getFullYear();
+    let html = `<div class="adp-nav">
+      <button class="adp-nav-btn" onclick="adpBackToCalendar('${which}')">← Back</button>
+      <span class="adp-month-label">Select Year</span>
+      <span></span>
+    </div><div class="adp-year-sel">`;
+    for(let y=curYear-4; y<=curYear+4; y++){
+      html += `<button class="adp-year-btn${state.year===y?' active':''}" onclick="adpPickYear('${which}',${y})">${y}</button>`;
+    }
+    html += '</div>';
+    cal.innerHTML = html;
+    return;
+  }
+
+  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const firstDay = new Date(state.year, state.month, 1).getDay();
+  const daysInMonth = new Date(state.year, state.month+1, 0).getDate();
+  const daysInPrev = new Date(state.year, state.month, 0).getDate();
+
+  let html = `<div class="adp-nav">
+    <button class="adp-nav-btn" onclick="adpPrev('${which}')">‹</button>
+    <span class="adp-month-label" onclick="adpShowYears('${which}')">${months[state.month]} ${state.year}</span>
+    <button class="adp-nav-btn" onclick="adpNext('${which}')">›</button>
+  </div>
+  <div class="adp-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
+  <div class="adp-days">`;
+
+  for(let i=0; i<firstDay; i++){
+    const d = daysInPrev - firstDay + 1 + i;
+    html += `<div class="adp-day other-month empty">${d}</div>`;
+  }
+  for(let d=1; d<=daysInMonth; d++){
+    const thisDate = new Date(state.year, state.month, d);
+    const isToday = thisDate.getTime()===today.getTime();
+    const isSel = selDate && thisDate.getTime()===selDate.getTime();
+    const dateStr = `${state.year}-${String(state.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html += `<div class="adp-day${isToday?' today':''}${isSel?' selected':''}" onclick="adpSelect('${which}','${dateStr}')">${d}</div>`;
+  }
+  const totalCells = Math.ceil((firstDay+daysInMonth)/7)*7;
+  let nextD=1;
+  for(let i=firstDay+daysInMonth; i<totalCells; i++, nextD++){
+    html += `<div class="adp-day other-month empty">${nextD}</div>`;
+  }
+  html += `</div>
+  <div class="adp-quick">
+    <button class="adp-quick-btn" onclick="adpQuick('${which}',0)">Today</button>
+    <button class="adp-quick-btn" onclick="adpQuick('${which}',1)">Tomorrow</button>
+    <button class="adp-quick-btn" onclick="adpQuick('${which}',7)">+1 week</button>
+    <button class="adp-quick-btn" onclick="adpQuick('${which}',30)">+30 days</button>
+  </div>`;
+  cal.innerHTML = html;
+}
+
+function adpPrev(which){ _adp[which].month--; if(_adp[which].month<0){_adp[which].month=11;_adp[which].year--;} adpRender(which); }
+function adpNext(which){ _adp[which].month++; if(_adp[which].month>11){_adp[which].month=0;_adp[which].year++;} adpRender(which); }
+function adpShowYears(which){ _adp[which].view='years'; adpRender(which); }
+function adpBackToCalendar(which){ _adp[which].view='days'; adpRender(which); }
+function adpPickYear(which,y){ _adp[which].year=y; _adp[which].view='days'; adpRender(which); }
+window.adpPrev=adpPrev; window.adpNext=adpNext; window.adpShowYears=adpShowYears;
+window.adpBackToCalendar=adpBackToCalendar; window.adpPickYear=adpPickYear;
+
+function adpQuick(which, offsetDays){
+  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+offsetDays);
+  const str = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  adpSelect(which, str);
+}
+window.adpQuick=adpQuick;
+
+function adpSelect(which, dateStr){
+  document.getElementById(`tdi-${which}`).value = dateStr;
+  const [y,m,d] = dateStr.split('-');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById(`tdi-${which}-display`).textContent = `${parseInt(d,10)} ${months[parseInt(m,10)-1]} ${y}`;
+  _adp[which].year = parseInt(y); _adp[which].month = parseInt(m)-1;
+  // close calendar
+  document.getElementById(`adp-${which}-cal`).classList.remove('open');
+  document.getElementById(`tdi-${which}-display`).classList.remove('open');
+  onTdiInputChange();
+}
+window.adpSelect=adpSelect;
+
+// ── TERM DATE INJECTOR (TDI) — GRADE-BASED ───────────────────
 let _tdiSaving = false;
-let _tdiGrade  = '';
-let _tdiDates  = { open: null, close: null };
-let _tdiCal    = { open:{mode:'day',viewY:0,viewM:0}, close:{mode:'day',viewY:0,viewM:0} };
 
-const TDI_MONTHS_SHORT=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const TDI_MONTHS_LONG =['January','February','March','April','May','June','July','August','September','October','November','December'];
-const TDI_DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
-
-// called from loadData()
-function populateTdiTermSelect(){
+function populateTdiGradeSelect(){
   const sel = document.getElementById('tdi-grade-select');
-  const grades = new Map();
-  Object.values(allRecords).forEach(r=>{
-    const g=String(r.Grade||'').trim();
-    if(g) grades.set(g,(grades.get(g)||0)+1);
-  });
-  if(!grades.size){ sel.innerHTML='<option value="">— no Grade values found —</option>'; return; }
-  const sorted=[...grades.entries()].sort((a,b)=>a[0].localeCompare(b[0]));
-  sel.innerHTML='<option value="">— select a grade —</option>'+
-    sorted.map(([g,n])=>`<option value="${esc(g)}">${esc(g)} (${n} students)</option>`).join('');
-  _tdiGrade='';
-  tdiLockDateRow(true);
-  tdiRefreshUI();
+  const grades = new Set();
+  Object.values(allRecords).forEach(r=>{ if(r.Grade) grades.add(String(r.Grade)); });
+  const sorted = [...grades].sort();
+  if(sorted.length===0){
+    sel.innerHTML='<option value="">— no Grade values found —</option>';
+    return;
+  }
+  sel.innerHTML='<option value="">— select a grade —</option>'+sorted.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+  onTdiInputChange();
 }
+// Keep old name as alias so existing loadData() calls still work
+function populateTdiTermSelect(){ populateTdiGradeSelect(); }
 
-function onTdiGradeChange(){
-  _tdiGrade = document.getElementById('tdi-grade-select').value;
-  tdiLockDateRow(!_tdiGrade);
-  tdiRefreshUI();
-}
+function onTdiGradeChange(){ onTdiInputChange(); }
 window.onTdiGradeChange=onTdiGradeChange;
 
-function tdiLockDateRow(locked){
-  const row=document.getElementById('tdi-date-row');
-  row.style.opacity=locked?'.35':'1';
-  row.style.pointerEvents=locked?'none':'auto';
-  if(locked){
-    ['open','close'].forEach(w=>{
-      const c=document.getElementById(`tdi-${w}-cal`);
-      const t=document.getElementById(`tdi-${w}-trigger`);
-      if(c) c.classList.remove('open');
-      if(t) t.classList.remove('active');
-    });
-  }
-}
+function onTdiInputChange(){
+  const grade   = document.getElementById('tdi-grade-select').value;
+  const opening = document.getElementById('tdi-opening').value;
+  const closing = document.getElementById('tdi-closing').value;
+  const btn     = document.getElementById('tdi-apply-btn');
+  const hint    = document.getElementById('tdi-hint');
+  const preview = document.getElementById('tdi-preview');
 
-// ── calendar ─────────────────────────────────────────────────
-function tdiToggleCal(which){
-  const other=which==='open'?'close':'open';
-  const cal =document.getElementById(`tdi-${which}-cal`);
-  const trig=document.getElementById(`tdi-${which}-trigger`);
-  const oCal=document.getElementById(`tdi-${other}-cal`);
-  const oTrig=document.getElementById(`tdi-${other}-trigger`);
-  // close other
-  oCal.classList.remove('open'); oTrig.classList.remove('active');
-  if(cal.classList.contains('open')){
-    cal.classList.remove('open'); trig.classList.remove('active');
-  } else {
-    const sel=_tdiDates[which]; const now=new Date();
-    _tdiCal[which].viewY=sel?sel.y:now.getFullYear();
-    _tdiCal[which].viewM=sel?sel.m:now.getMonth();
-    _tdiCal[which].mode='day';
-    tdiRenderCal(which);
-    cal.classList.add('open'); trig.classList.add('active');
-  }
-}
-window.tdiToggleCal=tdiToggleCal;
+  if(!grade){ hint.textContent='Select a Grade and enter both dates to continue.'; btn.disabled=true; preview.style.display='none'; return; }
 
-function tdiRenderCal(which){
-  const s=_tdiCal[which];
-  const cal=document.getElementById(`tdi-${which}-cal`);
-  const sel=_tdiDates[which];
-  const today=new Date();
+  const matchCount = Object.values(allRecords).filter(r=>String(r.Grade||'')===grade).length;
+  // How many unique terms within this grade
+  const termsInGrade = new Set(Object.values(allRecords).filter(r=>String(r.Grade||'')===grade).map(r=>r.Term||''));
 
-  if(s.mode==='month'){
-    cal.innerHTML=`
-      <div class="tdi-cal-nav">
-        <button class="tdi-cal-nav-btn" onclick="tdiNavYear('${which}',-1)">‹</button>
-        <span class="tdi-cal-title" onclick="tdiSetMode('${which}','year')">${s.viewY}</span>
-        <button class="tdi-cal-nav-btn" onclick="tdiNavYear('${which}',1)">›</button>
-      </div>
-      <div class="tdi-cal-ym">${TDI_MONTHS_SHORT.map((mn,i)=>`
-        <div class="tdi-cal-ym-cell${s.viewM===i?' active':''}" onclick="tdiPickMonth('${which}',${i})">${mn}</div>`).join('')}
-      </div>`;
-    return;
-  }
-  if(s.mode==='year'){
-    const base=Math.floor(s.viewY/12)*12;
-    const yrs=Array.from({length:12},(_,i)=>base+i);
-    cal.innerHTML=`
-      <div class="tdi-cal-nav">
-        <button class="tdi-cal-nav-btn" onclick="tdiNavYearPage('${which}',-12)">‹</button>
-        <span class="tdi-cal-title">${base}–${base+11}</span>
-        <button class="tdi-cal-nav-btn" onclick="tdiNavYearPage('${which}',12)">›</button>
-      </div>
-      <div class="tdi-cal-ym">${yrs.map(y=>`
-        <div class="tdi-cal-ym-cell${s.viewY===y?' active':''}" onclick="tdiPickYear('${which}',${y})">${y}</div>`).join('')}
-      </div>`;
-    return;
-  }
-  // day view
-  const firstDay=new Date(s.viewY,s.viewM,1).getDay();
-  const dim=new Date(s.viewY,s.viewM+1,0).getDate();
-  let cells='';
-  for(let i=0;i<firstDay;i++) cells+=`<button class="tdi-cal-day tdi-d-empty" disabled></button>`;
-  for(let d=1;d<=dim;d++){
-    const isToday=d===today.getDate()&&s.viewM===today.getMonth()&&s.viewY===today.getFullYear();
-    const isSel=sel&&d===sel.d&&s.viewM===sel.m&&s.viewY===sel.y;
-    cells+=`<button class="tdi-cal-day${isToday?' tdi-d-today':''}${isSel?' tdi-d-selected':''}"
-      onclick="tdiPickDay('${which}',${d})">${d}</button>`;
-  }
-  cal.innerHTML=`
-    <div class="tdi-cal-nav">
-      <button class="tdi-cal-nav-btn" onclick="tdiNavMonth('${which}',-1)">‹</button>
-      <span class="tdi-cal-title" onclick="tdiSetMode('${which}','month')">${TDI_MONTHS_LONG[s.viewM]} ${s.viewY}</span>
-      <button class="tdi-cal-nav-btn" onclick="tdiNavMonth('${which}',1)">›</button>
-    </div>
-    <div class="tdi-cal-grid">
-      ${TDI_DAYS.map(d=>`<div class="tdi-cal-dow">${d}</div>`).join('')}${cells}
-    </div>`;
-}
-
-function tdiNavMonth(w,dir){ const s=_tdiCal[w]; s.viewM+=dir; if(s.viewM<0){s.viewM=11;s.viewY--;}if(s.viewM>11){s.viewM=0;s.viewY++;} tdiRenderCal(w); }
-function tdiNavYear(w,dir){ _tdiCal[w].viewY+=dir; tdiRenderCal(w); }
-function tdiNavYearPage(w,dir){ _tdiCal[w].viewY+=dir; tdiRenderCal(w); }
-function tdiSetMode(w,mode){ _tdiCal[w].mode=mode; tdiRenderCal(w); }
-function tdiPickMonth(w,m){ _tdiCal[w].viewM=m; _tdiCal[w].mode='day'; tdiRenderCal(w); }
-function tdiPickYear(w,y){ _tdiCal[w].viewY=y; _tdiCal[w].mode='month'; tdiRenderCal(w); }
-window.tdiNavMonth=tdiNavMonth; window.tdiNavYear=tdiNavYear; window.tdiNavYearPage=tdiNavYearPage;
-window.tdiSetMode=tdiSetMode; window.tdiPickMonth=tdiPickMonth; window.tdiPickYear=tdiPickYear;
-
-function tdiPickDay(which,d){
-  _tdiDates[which]={y:_tdiCal[which].viewY, m:_tdiCal[which].viewM, d};
-  document.getElementById(`tdi-${which}-cal`).classList.remove('open');
-  document.getElementById(`tdi-${which}-trigger`).classList.remove('active');
-  tdiUpdateDisplays(); tdiRefreshUI();
-}
-window.tdiPickDay=tdiPickDay;
-
-function tdiClearDate(which){ _tdiDates[which]=null; tdiUpdateDisplays(); tdiRefreshUI(); }
-window.tdiClearDate=tdiClearDate;
-
-function tdiDateStr(d){ return `${d.d} ${TDI_MONTHS_SHORT[d.m]} ${d.y}`; }
-function tdiDateVal(d){ return d.y*10000+d.m*100+d.d; }
-
-function tdiUpdateDisplays(){
-  ['open','close'].forEach(which=>{
-    const sel=_tdiDates[which];
-    const disp=document.getElementById(`tdi-${which}-display`);
-    const clr =document.getElementById(`tdi-${which}-clear`);
-    const trig=document.getElementById(`tdi-${which}-trigger`);
-    if(sel){
-      disp.textContent=tdiDateStr(sel);
-      disp.style.color=which==='open'?'#34d399':'#f87171';
-      clr.style.display='block'; trig.classList.add('set');
-    } else {
-      disp.textContent=which==='open'?'Select opening date…':'Select closing date…';
-      disp.style.color=''; clr.style.display='none'; trig.classList.remove('set');
-    }
-  });
-}
-
-function tdiRefreshUI(){
-  const hint=document.getElementById('tdi-hint');
-  const preview=document.getElementById('tdi-preview');
-  const btn=document.getElementById('tdi-apply-btn');
-
-  if(!_tdiGrade){
-    hint.textContent='Select a Grade to get started.';
+  if(!opening||!closing){
+    hint.innerHTML=`<strong style="color:var(--cyan);">${matchCount} record${matchCount!==1?'s':''}</strong> across <strong style="color:var(--purple);">${termsInGrade.size} term${termsInGrade.size!==1?'s':''}</strong> found in Grade "<em>${esc(grade)}</em>". Enter both dates.`;
     btn.disabled=true; preview.style.display='none'; return;
   }
 
-  const matchCount=Object.values(allRecords).filter(r=>String(r.Grade||'').trim()===_tdiGrade).length;
-
-  if(!_tdiDates.open||!_tdiDates.close){
-    hint.innerHTML=`<strong style="color:var(--cyan);">${matchCount} student${matchCount!==1?'s':''}</strong> in <em>${esc(_tdiGrade)}</em>. Now pick both dates.`;
-    btn.disabled=true; preview.style.display='none'; return;
-  }
-  if(tdiDateVal(_tdiDates.open)<=tdiDateVal(_tdiDates.close)){
-    hint.innerHTML='⚠️ Opening Date must be after Closing Date.';
+  if(opening>=closing){
+    hint.innerHTML='⚠️ Opening Date must be before Closing Date.';
     btn.disabled=true; preview.style.display='none'; return;
   }
 
-  hint.innerHTML=`Ready — <strong style="color:var(--cyan);">${matchCount} student${matchCount!==1?'s':''}</strong> in <em>${esc(_tdiGrade)}</em> will receive both date headers.`;
+  hint.innerHTML=`Ready to write dates to <strong style="color:var(--cyan);">${matchCount} record${matchCount!==1?'s':''}</strong> across all terms in Grade "<em>${esc(grade)}</em>".`;
   btn.disabled=false;
   preview.style.display='block';
   preview.innerHTML=`
-    🟢 <strong>Opening Date</strong> → <code style="font-family:'JetBrains Mono',monospace;color:#34d399;">${tdiDateStr(_tdiDates.open)}</code><br>
-    🔴 <strong>Closing Date</strong> &nbsp;→ <code style="font-family:'JetBrains Mono',monospace;color:#f87171;">${tdiDateStr(_tdiDates.close)}</code><br>
-    <span style="color:var(--text3);">Both fields written to every student with Grade = <strong>${esc(_tdiGrade)}</strong>.</span>
+    🎓 <strong>Grade</strong>: <code style="font-family:'JetBrains Mono',monospace;color:var(--cyan);">${esc(grade)}</code> &nbsp;·&nbsp; <span style="color:var(--text3);">${termsInGrade.size} term${termsInGrade.size!==1?'s':''}, ${matchCount} records</span><br>
+    📂 <strong>Opening Date</strong> → <code style="font-family:'JetBrains Mono',monospace;color:#34d399;">${esc(formatDateNice(opening))}</code><br>
+    📁 <strong>Closing Date</strong> &nbsp;→ <code style="font-family:'JetBrains Mono',monospace;color:#f87171;">${esc(formatDateNice(closing))}</code><br>
+    <span style="color:var(--text3);">Both fields will be created or overwritten on every student in this grade.</span>
   `;
 }
+window.onTdiInputChange=onTdiInputChange;
 
-// close cals on outside click
-document.addEventListener('click',e=>{
-  ['open','close'].forEach(which=>{
-    const wrap=document.getElementById(`tdi-${which}-wrap`);
-    const cal =document.getElementById(`tdi-${which}-cal`);
-    const trig=document.getElementById(`tdi-${which}-trigger`);
-    if(wrap&&!wrap.contains(e.target)){
-      if(cal) cal.classList.remove('open');
-      if(trig) trig.classList.remove('active');
-    }
-  });
-});
+function formatDateNice(dateStr){
+  const [y,m,d] = dateStr.split('-');
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${parseInt(d,10)} ${months[parseInt(m,10)-1]} ${y}`;
+}
 
 function openTdiConfirm(){
-  if(!_tdiGrade||!_tdiDates.open||!_tdiDates.close) return;
-  const matchCount=Object.values(allRecords).filter(r=>String(r.Grade||'').trim()===_tdiGrade).length;
+  const grade   = document.getElementById('tdi-grade-select').value;
+  const opening = document.getElementById('tdi-opening').value;
+  const closing = document.getElementById('tdi-closing').value;
+  if(!grade||!opening||!closing) return;
+  const matchCount = Object.values(allRecords).filter(r=>String(r.Grade||'')===grade).length;
   document.getElementById('tdi-dlg-body').innerHTML=
-    `Set <strong>Opening Date</strong> and <strong>Closing Date</strong> on <strong style="color:var(--cyan);">${matchCount} student${matchCount!==1?'s':''}</strong> in Grade <em>${esc(_tdiGrade)}</em>.`;
-  document.getElementById('tdi-dlg-opening').textContent=tdiDateStr(_tdiDates.open);
-  document.getElementById('tdi-dlg-closing').textContent=tdiDateStr(_tdiDates.close);
+    `Set <strong>Opening Date</strong> and <strong>Closing Date</strong> on <strong style="color:var(--cyan);">${matchCount} record${matchCount!==1?'s':''}</strong> in Grade "<em>${esc(grade)}</em>" (all terms).`;
+  document.getElementById('tdi-dlg-opening').textContent=formatDateNice(opening);
+  document.getElementById('tdi-dlg-closing').textContent=formatDateNice(closing);
   document.getElementById('tdi-progress-wrap').style.display='none';
   document.getElementById('tdi-progress-bar').style.width='0%';
   document.getElementById('tdi-progress-text').textContent='';
@@ -2809,9 +2799,14 @@ function closeTdiConfirm(){
 window.closeTdiConfirm=closeTdiConfirm;
 
 async function executeTdiUpdate(){
-  if(_tdiSaving||!_tdiGrade||!_tdiDates.open||!_tdiDates.close) return;
-  const openingStr=tdiDateStr(_tdiDates.open);
-  const closingStr=tdiDateStr(_tdiDates.close);
+  if(_tdiSaving) return;
+  const grade   = document.getElementById('tdi-grade-select').value;
+  const opening = document.getElementById('tdi-opening').value;
+  const closing = document.getElementById('tdi-closing').value;
+  if(!grade||!opening||!closing) return;
+
+  const openingStr = formatDateNice(opening);
+  const closingStr = formatDateNice(closing);
 
   _tdiSaving=true;
   document.getElementById('tdi-cancel-btn').disabled=true;
@@ -2819,25 +2814,34 @@ async function executeTdiUpdate(){
   document.getElementById('tdi-confirm-btn').textContent='⏳ Writing…';
   document.getElementById('tdi-progress-wrap').style.display='block';
 
-  const matchKeys=Object.entries(allRecords)
-    .filter(([,r])=>String(r.Grade||'').trim()===_tdiGrade)
+  // Match by Grade (all terms within the grade)
+  const matchKeys = Object.entries(allRecords)
+    .filter(([,r])=>String(r.Grade||'')===grade)
     .map(([k])=>k);
 
-  const total=matchKeys.length; let done=0,errors=0;
-  log(`📅 Writing Opening="${openingStr}" & Closing="${closingStr}" to ${total} students in Grade "${_tdiGrade}"…`,'info');
+  const total=matchKeys.length;
+  let done=0, errors=0;
+  const BATCH=50;
 
-  for(let i=0;i<matchKeys.length;i+=50){
-    const batch=matchKeys.slice(i,i+50);
+  log(`📅 Writing Opening Date="${openingStr}" & Closing Date="${closingStr}" to ${total} records in Grade "${grade}"…`,'info');
+
+  for(let i=0;i<matchKeys.length;i+=BATCH){
+    const batch=matchKeys.slice(i,i+BATCH);
     const updates={};
-    batch.forEach(k=>{
-      updates[`${_activePath}/${k}/Opening Date`]=openingStr;
-      updates[`${_activePath}/${k}/Closing Date`]=closingStr;
+    batch.forEach(key=>{
+      updates[`${_activePath}/${key}/Opening Date`]=openingStr;
+      updates[`${_activePath}/${key}/Closing Date`]=closingStr;
     });
-    try{ await fb.update(fb.ref(db),updates); done+=batch.length; }
-    catch(e){ errors+=batch.length; log(`❌ Batch error: ${e.message}`,'error'); }
+    try{
+      await fb.update(fb.ref(db),updates);
+      done+=batch.length;
+    } catch(e){
+      errors+=batch.length;
+      log(`❌ Batch error at record ${i}: ${e.message}`,'error');
+    }
     const pct=Math.round(done/total*100);
     document.getElementById('tdi-progress-bar').style.width=pct+'%';
-    document.getElementById('tdi-progress-text').textContent=`${done} / ${total} students updated (${pct}%)`;
+    document.getElementById('tdi-progress-text').textContent=`${done} / ${total} records updated (${pct}%)`;
     await new Promise(r=>setTimeout(r,20));
   }
 
@@ -2848,16 +2852,16 @@ async function executeTdiUpdate(){
   document.getElementById('tdi-overlay').classList.remove('open');
 
   if(errors===0){
-    notify(`✅ Dates written to ${done} student${done!==1?'s':''}!`,'success');
-    log(`✅ Opening & Closing Date set on ${done} students in Grade "${_tdiGrade}".`,'success');
+    notify(`✅ Done! Dates written to ${done} record${done!==1?'s':''}!`,'success');
+    log(`✅ Opening Date & Closing Date set on ${done} records in Grade "${grade}".`,'success');
   } else {
-    notify(`⚠️ Done with ${errors} errors. Check log.`,'warning');
+    notify(`⚠️ Completed with ${errors} errors. Check the log.`,'warning');
     log(`⚠️ Done: ${done} ok, ${errors} errors.`,'warning');
   }
+
   await loadData();
 }
 window.executeTdiUpdate=executeTdiUpdate;
-
 
 // ── ACTIVITY LOG ─────────────────────────────────────────────
 const _logColors={success:'#10b981',error:'#f87171',warning:'#fbbf24',info:'#00d4ff'};
