@@ -5,7 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanyadet — Database Field Manager</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css">
 <script src="https://cdn.jsdelivr.net/npm/tsparticles-slim@2.12.0/tsparticles.slim.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
 <style>
 :root {
   --cyan:#00d4ff; --blue:#2980b9; --purple:#8b5cf6;
@@ -568,69 +570,63 @@ body::after{
 .tdi-hint{font-size:11.5px;color:var(--text2);line-height:1.65;padding:10px 14px;background:rgba(0,212,255,.04);border:1px solid rgba(0,212,255,.12);border-radius:var(--rs);}
 .tdi-preview{font-size:12px;margin-top:10px;padding:10px 14px;border-radius:var(--rs);background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.2);color:var(--text2);line-height:1.8;}
 
-/* Advanced Date Picker */
-.adp-wrap{position:relative;width:100%;}
-.adp-input{
-  width:100%;padding:9px 14px 9px 38px;background:var(--input);
-  border:1.5px solid var(--border);border-radius:var(--rs);
-  color:var(--text);font-family:'Plus Jakarta Sans',sans-serif;
-  font-size:13px;outline:none;transition:border-color .2s,box-shadow .2s;
-  cursor:pointer;caret-color:transparent;user-select:none;
+/* Flatpickr input wrapper */
+.tdi-fp-wrap{position:relative;}
+.tdi-fp-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;pointer-events:none;z-index:1;}
+.tdi-fp-input{
+  width:100%;padding:9px 14px 9px 36px;
+  background:var(--input);border:1.5px solid var(--border);
+  border-radius:var(--rs);color:var(--text);
+  font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;
+  outline:none;transition:border-color .2s,box-shadow .2s;cursor:pointer;
 }
-.adp-input:focus,.adp-input.open{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
-[data-theme="light"] .adp-input{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
-.adp-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;pointer-events:none;}
-.adp-cal{
-  position:absolute;top:calc(100% + 6px);left:0;z-index:9999;
-  background:var(--card);border:1.5px solid var(--border2);
-  border-radius:14px;padding:14px;min-width:260px;
-  box-shadow:0 12px 48px rgba(0,0,0,.5),0 0 0 1px rgba(0,212,255,.08);
-  display:none;animation:calPop .22s var(--spring) both;
+.tdi-fp-input:focus{border-color:var(--cyan);box-shadow:0 0 0 3px rgba(0,212,255,.1);}
+[data-theme="light"] .tdi-fp-input{background:#f4f8fc;border-color:rgba(41,128,185,.22);color:#0d2035;}
+
+/* ── Flatpickr dark theme overrides ── */
+[data-theme="dark"] .flatpickr-calendar{
+  background:rgba(8,15,28,.98)!important;
+  border:1.5px solid rgba(0,212,255,.25)!important;
+  border-radius:14px!important;
+  box-shadow:0 16px 48px rgba(0,0,0,.7),0 0 0 1px rgba(0,212,255,.08)!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important;
 }
-[data-theme="light"] .adp-cal{background:#fff;border-color:rgba(41,128,185,.25);box-shadow:0 8px 32px rgba(41,128,185,.14);}
-.adp-cal.open{display:block;}
-@keyframes calPop{from{opacity:0;transform:translateY(-8px) scale(.97);}to{opacity:1;transform:translateY(0) scale(1);}}
-.adp-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-.adp-nav-btn{
-  width:28px;height:28px;border-radius:7px;border:1px solid var(--border);
-  background:transparent;color:var(--text2);cursor:pointer;font-size:14px;
-  display:flex;align-items:center;justify-content:center;
-  transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;
+[data-theme="dark"] .flatpickr-month{background:transparent!important;color:#e2f0ff!important;}
+[data-theme="dark"] .flatpickr-current-month{color:#e2f0ff!important;}
+[data-theme="dark"] .flatpickr-current-month .flatpickr-monthDropdown-months{
+  background:rgba(8,15,28,.98)!important;color:#e2f0ff!important;border-color:rgba(0,212,255,.2)!important;
 }
-.adp-nav-btn:hover{background:rgba(0,212,255,.1);border-color:var(--cyan);color:var(--cyan);}
-.adp-month-label{font-size:13px;font-weight:800;color:var(--text);cursor:pointer;letter-spacing:-.01em;}
-.adp-month-label:hover{color:var(--cyan);}
-.adp-dow{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-bottom:4px;}
-.adp-dow span{text-align:center;font-size:9.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;padding:4px 0;}
-.adp-days{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;}
-.adp-day{
-  text-align:center;padding:6px 2px;border-radius:7px;cursor:pointer;
-  font-size:12px;font-weight:600;color:var(--text2);
-  transition:all .15s;border:1px solid transparent;
+[data-theme="dark"] .flatpickr-current-month input.cur-year{color:#e2f0ff!important;}
+[data-theme="dark"] .flatpickr-weekday{color:rgba(0,212,255,.6)!important;font-weight:700!important;}
+[data-theme="dark"] .flatpickr-day{color:#b0cfe0!important;border-radius:8px!important;}
+[data-theme="dark"] .flatpickr-day:hover{background:rgba(0,212,255,.15)!important;border-color:rgba(0,212,255,.3)!important;color:#00d4ff!important;}
+[data-theme="dark"] .flatpickr-day.today{border-color:rgba(0,212,255,.5)!important;color:#00d4ff!important;font-weight:800!important;}
+[data-theme="dark"] .flatpickr-day.selected,
+[data-theme="dark"] .flatpickr-day.selected:hover{
+  background:linear-gradient(135deg,#00d4ff,#2980b9)!important;
+  border-color:transparent!important;color:#fff!important;
+  box-shadow:0 2px 12px rgba(0,212,255,.4)!important;font-weight:800!important;
 }
-.adp-day:hover:not(.empty):not(.selected){background:rgba(0,212,255,.1);color:var(--cyan);border-color:rgba(0,212,255,.2);}
-.adp-day.today{color:var(--cyan);font-weight:800;}
-.adp-day.selected{background:linear-gradient(135deg,#00d4ff,#2980b9);color:#fff;border-color:transparent;font-weight:800;box-shadow:0 2px 10px rgba(0,212,255,.35);}
-.adp-day.empty{cursor:default;}
-.adp-day.other-month{opacity:.3;}
-[data-theme="light"] .adp-day{color:#3a6080;}
-[data-theme="light"] .adp-day.selected{color:#fff;}
-.adp-quick{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
-.adp-quick-btn{
-  font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;
-  border:1px solid var(--border);background:transparent;color:var(--text2);
-  cursor:pointer;transition:all .15s;font-family:'Plus Jakarta Sans',sans-serif;
+[data-theme="dark"] .flatpickr-day.prevMonthDay,
+[data-theme="dark"] .flatpickr-day.nextMonthDay{color:rgba(126,184,212,.25)!important;}
+[data-theme="dark"] .flatpickr-prev-month svg,
+[data-theme="dark"] .flatpickr-next-month svg{fill:#7eb8d4!important;}
+[data-theme="dark"] .flatpickr-prev-month:hover svg,
+[data-theme="dark"] .flatpickr-next-month:hover svg{fill:#00d4ff!important;}
+[data-theme="dark"] .numInputWrapper span.arrowUp:after{border-bottom-color:#7eb8d4!important;}
+[data-theme="dark"] .numInputWrapper span.arrowDown:after{border-top-color:#7eb8d4!important;}
+
+/* light theme overrides */
+[data-theme="light"] .flatpickr-calendar{
+  border-radius:14px!important;
+  box-shadow:0 8px 32px rgba(41,128,185,.18)!important;
+  font-family:'Plus Jakarta Sans',sans-serif!important;
 }
-.adp-quick-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.07);}
-.adp-year-sel{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;max-height:150px;overflow-y:auto;}
-.adp-year-btn{
-  flex:1;min-width:50px;text-align:center;padding:5px 8px;border-radius:7px;
-  border:1px solid var(--border);background:transparent;color:var(--text2);
-  cursor:pointer;font-size:12px;font-weight:700;transition:all .15s;
-  font-family:'Plus Jakarta Sans',sans-serif;
+[data-theme="light"] .flatpickr-day.selected,
+[data-theme="light"] .flatpickr-day.selected:hover{
+  background:linear-gradient(135deg,#2980b9,#1a5276)!important;
+  border-color:transparent!important;
 }
-.adp-year-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,212,255,.07);}
-.adp-year-btn.active{background:linear-gradient(135deg,#00d4ff,#2980b9);color:#fff;border-color:transparent;}
 
 /* ── STUDENT RECORD EDITOR ── */
 .sre-search-wrap{position:relative;margin-bottom:14px;}
@@ -984,20 +980,16 @@ body::after{
           </div>
           <div>
             <div class="field-label">② Closing Date</div>
-            <div class="adp-wrap" id="adp-closing-wrap">
-              <span class="adp-icon">📁</span>
-              <div class="adp-input" id="tdi-closing-display" tabindex="0" onclick="adpToggle('closing')">— pick date —</div>
-              <input type="hidden" id="tdi-closing">
-              <div class="adp-cal" id="adp-closing-cal"></div>
+            <div class="tdi-fp-wrap">
+              <span class="tdi-fp-icon">📁</span>
+              <input type="text" class="tdi-fp-input" id="tdi-closing" placeholder="Pick closing date…" readonly>
             </div>
           </div>
           <div>
             <div class="field-label">③ Opening Date</div>
-            <div class="adp-wrap" id="adp-opening-wrap">
-              <span class="adp-icon">📂</span>
-              <div class="adp-input" id="tdi-opening-display" tabindex="0" onclick="adpToggle('opening')">— pick date —</div>
-              <input type="hidden" id="tdi-opening">
-              <div class="adp-cal" id="adp-opening-cal"></div>
+            <div class="tdi-fp-wrap">
+              <span class="tdi-fp-icon">📂</span>
+              <input type="text" class="tdi-fp-input" id="tdi-opening" placeholder="Pick opening date…" readonly>
             </div>
           </div>
           <div style="display:flex;align-items:flex-end;">
@@ -2596,121 +2588,30 @@ async function executeUfeUpdate(){
 }
 window.executeUfeUpdate=executeUfeUpdate;
 
-// ── ADVANCED DATE PICKER (ADP) ────────────────────────────────
-const _adp = {
-  opening: { year: new Date().getFullYear(), month: new Date().getMonth(), view: 'days' },
-  closing: { year: new Date().getFullYear(), month: new Date().getMonth(), view: 'days' }
-};
+// ── FLATPICKR DATE PICKERS (TDI) ─────────────────────────────
+let _fpClosing = null, _fpOpening = null;
 
-function adpToggle(which){
-  const cal = document.getElementById(`adp-${which}-cal`);
-  const isOpen = cal.classList.contains('open');
-  // close both first
-  document.querySelectorAll('.adp-cal').forEach(c=>c.classList.remove('open'));
-  document.querySelectorAll('.adp-input').forEach(d=>d.classList.remove('open'));
-  if(!isOpen){
-    cal.classList.add('open');
-    document.getElementById(`tdi-${which}-display`).classList.add('open');
-    adpRender(which);
-  }
+function initTdiDatePickers(){
+  if(_fpClosing) { _fpClosing.destroy(); _fpOpening.destroy(); }
+
+  const sharedCfg = {
+    dateFormat: 'Y-m-d',
+    altInput: true,
+    altFormat: 'j M Y',
+    disableMobile: false,
+    onChange: () => onTdiInputChange(),
+  };
+
+  _fpClosing = flatpickr('#tdi-closing', {
+    ...sharedCfg,
+    onReady(_, __, fp){ fp.altInput.classList.add('tdi-fp-input'); fp.altInput.placeholder='Pick closing date…'; },
+  });
+
+  _fpOpening = flatpickr('#tdi-opening', {
+    ...sharedCfg,
+    onReady(_, __, fp){ fp.altInput.classList.add('tdi-fp-input'); fp.altInput.placeholder='Pick opening date…'; },
+  });
 }
-window.adpToggle=adpToggle;
-
-document.addEventListener('click', e=>{
-  if(!e.target.closest('.adp-wrap')){
-    document.querySelectorAll('.adp-cal').forEach(c=>c.classList.remove('open'));
-    document.querySelectorAll('.adp-input').forEach(d=>d.classList.remove('open'));
-  }
-});
-
-function adpRender(which){
-  const state = _adp[which];
-  const cal = document.getElementById(`adp-${which}-cal`);
-  const hiddenVal = document.getElementById(`tdi-${which}`).value;
-  const selDate = hiddenVal ? new Date(hiddenVal+'T00:00:00') : null;
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  if(state.view === 'years'){
-    const curYear = new Date().getFullYear();
-    let html = `<div class="adp-nav">
-      <button class="adp-nav-btn" onclick="adpBackToCalendar('${which}')">← Back</button>
-      <span class="adp-month-label">Select Year</span>
-      <span></span>
-    </div><div class="adp-year-sel">`;
-    for(let y=curYear-4; y<=curYear+4; y++){
-      html += `<button class="adp-year-btn${state.year===y?' active':''}" onclick="adpPickYear('${which}',${y})">${y}</button>`;
-    }
-    html += '</div>';
-    cal.innerHTML = html;
-    return;
-  }
-
-  const months=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const firstDay = new Date(state.year, state.month, 1).getDay();
-  const daysInMonth = new Date(state.year, state.month+1, 0).getDate();
-  const daysInPrev = new Date(state.year, state.month, 0).getDate();
-
-  let html = `<div class="adp-nav">
-    <button class="adp-nav-btn" onclick="adpPrev('${which}')">‹</button>
-    <span class="adp-month-label" onclick="adpShowYears('${which}')">${months[state.month]} ${state.year}</span>
-    <button class="adp-nav-btn" onclick="adpNext('${which}')">›</button>
-  </div>
-  <div class="adp-dow"><span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span></div>
-  <div class="adp-days">`;
-
-  for(let i=0; i<firstDay; i++){
-    const d = daysInPrev - firstDay + 1 + i;
-    html += `<div class="adp-day other-month empty">${d}</div>`;
-  }
-  for(let d=1; d<=daysInMonth; d++){
-    const thisDate = new Date(state.year, state.month, d);
-    const isToday = thisDate.getTime()===today.getTime();
-    const isSel = selDate && thisDate.getTime()===selDate.getTime();
-    const dateStr = `${state.year}-${String(state.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    html += `<div class="adp-day${isToday?' today':''}${isSel?' selected':''}" onclick="adpSelect('${which}','${dateStr}')">${d}</div>`;
-  }
-  const totalCells = Math.ceil((firstDay+daysInMonth)/7)*7;
-  let nextD=1;
-  for(let i=firstDay+daysInMonth; i<totalCells; i++, nextD++){
-    html += `<div class="adp-day other-month empty">${nextD}</div>`;
-  }
-  html += `</div>
-  <div class="adp-quick">
-    <button class="adp-quick-btn" onclick="adpQuick('${which}',0)">Today</button>
-    <button class="adp-quick-btn" onclick="adpQuick('${which}',1)">Tomorrow</button>
-    <button class="adp-quick-btn" onclick="adpQuick('${which}',7)">+1 week</button>
-    <button class="adp-quick-btn" onclick="adpQuick('${which}',30)">+30 days</button>
-  </div>`;
-  cal.innerHTML = html;
-}
-
-function adpPrev(which){ _adp[which].month--; if(_adp[which].month<0){_adp[which].month=11;_adp[which].year--;} adpRender(which); }
-function adpNext(which){ _adp[which].month++; if(_adp[which].month>11){_adp[which].month=0;_adp[which].year++;} adpRender(which); }
-function adpShowYears(which){ _adp[which].view='years'; adpRender(which); }
-function adpBackToCalendar(which){ _adp[which].view='days'; adpRender(which); }
-function adpPickYear(which,y){ _adp[which].year=y; _adp[which].view='days'; adpRender(which); }
-window.adpPrev=adpPrev; window.adpNext=adpNext; window.adpShowYears=adpShowYears;
-window.adpBackToCalendar=adpBackToCalendar; window.adpPickYear=adpPickYear;
-
-function adpQuick(which, offsetDays){
-  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+offsetDays);
-  const str = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  adpSelect(which, str);
-}
-window.adpQuick=adpQuick;
-
-function adpSelect(which, dateStr){
-  document.getElementById(`tdi-${which}`).value = dateStr;
-  const [y,m,d] = dateStr.split('-');
-  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  document.getElementById(`tdi-${which}-display`).textContent = `${parseInt(d,10)} ${months[parseInt(m,10)-1]} ${y}`;
-  _adp[which].year = parseInt(y); _adp[which].month = parseInt(m)-1;
-  // close calendar
-  document.getElementById(`adp-${which}-cal`).classList.remove('open');
-  document.getElementById(`tdi-${which}-display`).classList.remove('open');
-  onTdiInputChange();
-}
-window.adpSelect=adpSelect;
 
 // ── TERM DATE INJECTOR (TDI) — GRADE-BASED ───────────────────
 let _tdiSaving = false;
@@ -2725,6 +2626,8 @@ function populateTdiGradeSelect(){
     return;
   }
   sel.innerHTML='<option value="">— select a grade —</option>'+sorted.map(g=>`<option value="${esc(g)}">${esc(g)}</option>`).join('');
+  // Init Flatpickr once the inputs are in the DOM
+  if(typeof flatpickr !== 'undefined') initTdiDatePickers();
   onTdiInputChange();
 }
 // Keep old name as alias so existing loadData() calls still work
@@ -2735,8 +2638,16 @@ window.onTdiGradeChange=onTdiGradeChange;
 
 function onTdiInputChange(){
   const grade   = document.getElementById('tdi-grade-select').value;
-  const opening = document.getElementById('tdi-opening').value;
-  const closing = document.getElementById('tdi-closing').value;
+  // Read ISO dates from Flatpickr instances (selectedDates[0]), fall back to raw input value
+  const getISO = fp => {
+    if(fp && fp.selectedDates && fp.selectedDates.length){
+      const d = fp.selectedDates[0];
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    return '';
+  };
+  const opening = getISO(_fpOpening);
+  const closing = getISO(_fpClosing);
   const btn     = document.getElementById('tdi-apply-btn');
   const hint    = document.getElementById('tdi-hint');
   const preview = document.getElementById('tdi-preview');
@@ -2752,8 +2663,8 @@ function onTdiInputChange(){
     btn.disabled=true; preview.style.display='none'; return;
   }
 
-  if(opening>=closing){
-    hint.innerHTML='⚠️ Opening Date must be before Closing Date.';
+  if(opening<=closing){
+    hint.innerHTML='⚠️ Opening Date must be after Closing Date.';
     btn.disabled=true; preview.style.display='none'; return;
   }
 
@@ -2775,10 +2686,20 @@ function formatDateNice(dateStr){
   return `${parseInt(d,10)} ${months[parseInt(m,10)-1]} ${y}`;
 }
 
+function _getTdiDates(){
+  const getISO = fp => {
+    if(fp && fp.selectedDates && fp.selectedDates.length){
+      const d = fp.selectedDates[0];
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    return '';
+  };
+  return { opening: getISO(_fpOpening), closing: getISO(_fpClosing) };
+}
+
 function openTdiConfirm(){
-  const grade   = document.getElementById('tdi-grade-select').value;
-  const opening = document.getElementById('tdi-opening').value;
-  const closing = document.getElementById('tdi-closing').value;
+  const grade = document.getElementById('tdi-grade-select').value;
+  const { opening, closing } = _getTdiDates();
   if(!grade||!opening||!closing) return;
   const matchCount = Object.values(allRecords).filter(r=>String(r.Grade||'')===grade).length;
   document.getElementById('tdi-dlg-body').innerHTML=
@@ -2800,9 +2721,8 @@ window.closeTdiConfirm=closeTdiConfirm;
 
 async function executeTdiUpdate(){
   if(_tdiSaving) return;
-  const grade   = document.getElementById('tdi-grade-select').value;
-  const opening = document.getElementById('tdi-opening').value;
-  const closing = document.getElementById('tdi-closing').value;
+  const grade = document.getElementById('tdi-grade-select').value;
+  const { opening, closing } = _getTdiDates();
   if(!grade||!opening||!closing) return;
 
   const openingStr = formatDateNice(opening);
