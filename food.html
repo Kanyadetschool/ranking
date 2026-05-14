@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Food Cost Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Syne:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #1A1612;
+  --ink-mid: #5C5346;
+  --ink-light: #9C8F82;
+  --bg: #F7F3EC;
+  --bg2: #EDE8DF;
+  --surface: #FDFAF5;
+  --rule: #E2DBD0;
+  --accent: #C4501A;
+  --accent-bg: #FDF0EB;
+  --ok: #2E6B3E;
+  --ok-bg: #E6F4EC;
+  --shadow-sm: 0 1px 4px rgba(26,22,18,.06);
+  --shadow: 0 3px 20px rgba(26,22,18,.09);
+  --shadow-lg: 0 8px 40px rgba(26,22,18,.13);
+}
+
+body {
+  font-family: 'Syne', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ── HEADER ── */
+.header {
+  background: var(--ink);
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.brand-icon {
+  width: 34px;
+  height: 34px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.brand-name {
+  font-family: 'Playfair Display', serif;
+  font-size: 19px;
+  color: #F7F3EC;
+  font-weight: 400;
+  letter-spacing: .01em;
+}
+.header-meta {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: #6B6255;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+/* ── LAYOUT ── */
+.page { max-width: 940px; margin: 0 auto; padding: 36px 24px 80px; display: grid; grid-template-columns: 1fr 320px; gap: 24px; align-items: start; }
+@media(max-width:760px){ .page { grid-template-columns: 1fr; } }
+
+/* ── ENTRY PANEL ── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.panel-head {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.panel-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  font-weight: 400;
+}
+.panel-sub { font-size: 11px; color: var(--ink-light); margin-top: 2px; letter-spacing:.04em; }
+
+/* ── INPUT FORM ── */
+.entry-form { padding: 20px 24px; border-bottom: 1px solid var(--rule); background: var(--bg2); }
+.form-label {
+  font-size: 10px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+  margin-bottom: 6px;
+  display: block;
+  font-family: 'DM Mono', monospace;
+}
+.form-row { display: grid; grid-template-columns: 1fr 110px 100px; gap: 10px; align-items: end; }
+@media(max-width:520px){ .form-row { grid-template-columns: 1fr; } }
+.field { display: flex; flex-direction: column; }
+input[type=text], input[type=number], select {
+  padding: 10px 14px;
+  border: 1.5px solid var(--rule);
+  border-radius: 8px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--surface);
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+}
+input:focus, select:focus { border-color: var(--ink); }
+input::placeholder { color: var(--ink-light); }
+
+.btn-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 10px 18px;
+  background: var(--ink);
+  color: var(--surface);
+  border: none;
+  border-radius: 8px;
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+  letter-spacing: .03em;
+  margin-top: 20px;
+  width: 100%;
+}
+.btn-add:hover { background: #333; }
+.btn-add:active { transform: scale(.98); }
+.btn-add svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+/* quick presets */
+.preset-label { font-size: 10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-light); margin-bottom:8px; font-family:'DM Mono',monospace; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.preset-chip {
+  padding: 5px 12px;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 20px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .12s;
+  color: var(--ink-mid);
+  font-family: 'Syne', sans-serif;
+}
+.preset-chip:hover { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+
+/* ── ITEM LIST ── */
+.item-list { padding: 0; }
+.item-empty {
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--ink-light);
+  font-size: 14px;
+}
+.item-empty .icon { font-size: 36px; margin-bottom: 8px; opacity: .4; }
+
+.item-row {
+  display: grid;
+  grid-template-columns: auto 1fr 70px 80px 36px;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 20px;
+  border-bottom: 1px solid var(--bg);
+  transition: background .1s;
+}
+.item-row:last-child { border-bottom: none; }
+.item-row:hover { background: #FAFAF6; }
+.item-no {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-light);
+  min-width: 20px;
+  text-align: center;
+}
+.item-name { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item-cat { font-size: 11px; color: var(--ink-light); margin-top: 1px; }
+.item-qty {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  color: var(--ink-mid);
+  text-align: center;
+}
+.item-total {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: right;
+  color: var(--ink);
+}
+.item-del {
+  background: none; border: none; cursor: pointer;
+  color: var(--ink-light); font-size: 15px;
+  border-radius: 5px; padding: 3px 5px;
+  transition: all .12s; line-height: 1;
+}
+.item-del:hover { background: #FADFDF; color: #8C1F1F; }
+
+/* column headers */
+.list-header {
+  display: grid;
+  grid-template-columns: auto 1fr 70px 80px 36px;
+  gap: 12px;
+  padding: 9px 20px 9px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--rule);
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-light);
+}
+.list-header span:nth-child(4) { text-align: right; }
+
+/* ── SUMMARY PANEL ── */
+.summary {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  position: sticky;
+  top: 88px;
+  overflow: hidden;
+}
+.summary-head {
+  background: var(--ink);
+  color: var(--surface);
+  padding: 18px 22px 14px;
+}
+.summary-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 17px;
+  font-weight: 400;
+}
+.summary-date {
+  font-family: 'DM Mono', monospace;
+  font-size: 10px;
+  color: #888;
+  margin-top: 2px;
+  letter-spacing: .06em;
+}
+
+.summary-stats { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat {
+  background: var(--bg2);
+  border-radius: 9px;
+  padding: 12px 14px;
+}
+.stat-label { font-size: 10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-light); margin-bottom:5px; font-family:'DM Mono',monospace; }
+.stat-val { font-size: 18px; font-weight: 600; line-height: 1; font-family: 'DM Mono', monospace; }
+.stat-val.accent { color: var(--accent); }
+.stat-val.ok { color: var(--ok); }
+
+/* breakdown */
+.breakdown { padding: 0 16px 16px; }
+.breakdown-title { font-size: 10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink-light); font-family:'DM Mono',monospace; margin-bottom: 10px; }
+.cat-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 13px; }
+.cat-name { color: var(--ink-mid); display: flex; align-items: center; gap: 7px; }
+.cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.cat-amount { font-family: 'DM Mono', monospace; font-weight: 500; font-size: 12px; }
+.cat-bar-wrap { background: var(--bg2); border-radius: 4px; height: 3px; margin-top: 2px; margin-bottom: 6px; }
+.cat-bar { height: 3px; border-radius: 4px; transition: width .4s ease; }
+
+/* divider */
+.sum-divider { border: none; border-top: 1.5px dashed var(--rule); margin: 0 16px 14px; }
+
+/* totals */
+.totals { padding: 0 16px 16px; }
+.total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.total-label { font-size: 13px; color: var(--ink-mid); }
+.total-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; }
+.total-row.grand .total-label { font-size: 15px; font-weight: 600; color: var(--ink); }
+.total-row.grand .total-val { font-size: 18px; font-weight: 600; color: var(--ink); }
+.total-divider { border:none; border-top:1px solid var(--rule); margin: 10px 0; }
+
+/* action buttons */
+.summary-actions { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 8px; }
+.btn-secondary {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 16px; border-radius: 8px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .15s; border: 1.5px solid var(--rule);
+  background: var(--surface); color: var(--ink);
+}
+.btn-secondary:hover { border-color: var(--ink); }
+.btn-secondary svg { width:14px; height:14px; }
+.btn-danger-sm {
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  padding: 10px 16px; border-radius: 8px;
+  font-family: 'Syne', sans-serif; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all .15s;
+  background: #3a1010; color: #f5a0a0; border: 1px solid #5c1f1f;
+}
+.btn-danger-sm:hover { background: #5c1f1f; }
+.btn-danger-sm svg { width:14px; height:14px; }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 28px; left: 50%;
+  transform: translateX(-50%) translateY(90px);
+  background: var(--ink); color: var(--surface);
+  padding: 11px 22px; border-radius: 30px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-lg);
+  transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+  z-index: 9999; white-space: nowrap;
+}
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+/* ── PRINT ── */
+@media print {
+  .header, .entry-form, .item-del, .list-header .last, .summary-actions, .btn-add { display: none !important; }
+  body { background: white; }
+  .page { grid-template-columns: 1fr; }
+  .summary { position: static; }
+  .panel, .summary { box-shadow: none; border: 1px solid #ddd; }
+}
+
+/* ── MOBILE PDF ── */
+.btn-pdf-mobile { display: none; }
+.pdf-overlay { display: none; position: fixed; inset: 0; background: rgba(20,20,20,.5); z-index: 1000; align-items: center; justify-content: center; }
+.pdf-overlay.show { display: flex; }
+.pdf-box { background: var(--surface); border-radius: 14px; padding: 28px 36px; text-align: center; box-shadow: var(--shadow-lg); }
+.pdf-box p { font-size: 15px; font-weight: 500; margin-top: 12px; }
+.pdf-box small { font-size: 12px; color: var(--ink-light); }
+.spinner { width:34px; height:34px; border:3px solid var(--rule); border-top-color:var(--ink); border-radius:50%; animation: spin .7s linear infinite; margin: 0 auto; }
+@keyframes spin { to { transform:rotate(360deg); } }
+@media(max-width:968px){
+  .btn-pdf-mobile { display:flex; }
+  .btn-print-desk { display:none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">
+    <div class="brand-icon">🍽</div>
+    <span class="brand-name">FoodCost</span>
+  </div>
+  <span class="header-meta" id="headerDate"></span>
+</header>
+
+<div class="page">
+
+  <!-- ENTRY PANEL -->
+  <div class="panel">
+    <div class="panel-head">
+      <div>
+        <div class="panel-title">Add Food Items</div>
+        <div class="panel-sub">Enter name, unit price &amp; quantity</div>
+      </div>
+      <span id="itemCountBadge" style="background:var(--bg2);border-radius:20px;padding:4px 12px;font-family:'DM Mono',monospace;font-size:12px;color:var(--ink-mid);">0 items</span>
+    </div>
+
+    <!-- FORM -->
+    <div class="entry-form">
+      <div class="preset-label">Quick add</div>
+      <div class="presets" id="presets"></div>
+
+      <div class="form-row">
+        <div class="field">
+          <label class="form-label">Food name</label>
+          <input type="text" id="fName" placeholder="e.g. Ugali, Chicken, Rice…" autocomplete="off">
+        </div>
+        <div class="field">
+          <label class="form-label">Unit price (Ksh)</label>
+          <input type="number" id="fPrice" min="0" step="5" placeholder="120">
+        </div>
+        <div class="field">
+          <label class="form-label">Qty</label>
+          <input type="number" id="fQty" min="1" step="1" value="1" placeholder="1">
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 140px;gap:10px;margin-top:10px;align-items:end;">
+        <div class="field">
+          <label class="form-label">Category</label>
+          <select id="fCat">
+            <option value="Main">🍛 Main</option>
+            <option value="Protein">🥩 Protein</option>
+            <option value="Side">🥦 Side</option>
+            <option value="Drink">🥤 Drink</option>
+            <option value="Snack">🍪 Snack</option>
+            <option value="Dessert">🍮 Dessert</option>
+            <option value="Other">📦 Other</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="form-label">Unit</label>
+          <select id="fUnit">
+            <option>portion</option>
+            <option>piece</option>
+            <option>kg</option>
+            <option>g</option>
+            <option>litre</option>
+            <option>plate</option>
+            <option>cup</option>
+            <option>pack</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-add" onclick="addItem()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add to Order
+      </button>
+    </div>
+
+    <!-- LIST HEADER -->
+    <div class="list-header" id="listHeader" style="display:none;">
+      <span>#</span><span>Item</span><span style="text-align:center">Qty</span><span style="text-align:right">Total</span><span></span>
+    </div>
+
+    <!-- ITEMS -->
+    <div class="item-list" id="itemList">
+      <div class="item-empty" id="emptyState">
+        <div class="icon">🧾</div>
+        <div>No items yet.<br>Add your first food item above.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUMMARY PANEL -->
+  <div class="summary">
+    <div class="summary-head">
+      <div class="summary-title">Order Summary</div>
+      <div class="summary-date" id="summaryDate"></div>
+    </div>
+
+    <div class="summary-stats">
+      <div class="stat">
+        <div class="stat-label">Items</div>
+        <div class="stat-val" id="statItems">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Qty</div>
+        <div class="stat-val" id="statQty">0</div>
+      </div>
+      <div class="stat" style="grid-column:span 2">
+        <div class="stat-label">Grand Total</div>
+        <div class="stat-val accent" id="statTotal">Ksh 0.00</div>
+      </div>
+    </div>
+
+    <!-- BREAKDOWN -->
+    <div class="breakdown" id="breakdownSection" style="display:none">
+      <div class="breakdown-title">By Category</div>
+      <div id="catBreakdown"></div>
+    </div>
+
+    <hr class="sum-divider" id="sumDivider" style="display:none">
+
+    <!-- TOTALS -->
+    <div class="totals" id="totalsSection" style="display:none">
+      <div class="total-row">
+        <span class="total-label">Subtotal</span>
+        <span class="total-val" id="tSubtotal">Ksh 0.00</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Avg per item</span>
+        <span class="total-val" id="tAvg">—</span>
+      </div>
+      <div class="total-row">
+        <span class="total-label">Most expensive</span>
+        <span class="total-val" id="tMax">—</span>
+      </div>
+      <hr class="total-divider">
+      <div class="total-row grand">
+        <span class="total-label">Total</span>
+        <span class="total-val" id="tTotal">Ksh 0.00</span>
+      </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="summary-actions">
+      <button class="btn-secondary btn-print-desk" onclick="printOrder()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+        Print / Save PDF
+      </button>
+      <button class="btn-secondary btn-pdf-mobile" id="pdfMobileBtn" onclick="downloadPDF()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download PDF
+      </button>
+      <button class="btn-secondary" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Export CSV
+      </button>
+      <button class="btn-danger-sm" onclick="clearAll()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        Clear All
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF OVERLAY -->
+<div class="pdf-overlay" id="pdfOverlay">
+  <div class="pdf-box">
+    <div class="spinner"></div>
+    <p>Generating PDF…</p>
+    <small>This may take a few seconds</small>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+// ── DATA ──────────────────────────────────────────────────────
+let items = [];
+let nextId = 1;
+
+const CAT_COLORS = {
+  Main:    '#C4501A',
+  Protein: '#B55A2A',
+  Side:    '#2E6B3E',
+  Drink:   '#185FA5',
+  Snack:   '#BA7517',
+  Dessert: '#993556',
+  Other:   '#5F5E5A',
+};
+
+const PRESETS = [
+  { name: 'Ugali', price: 50,  cat: 'Main',   unit: 'plate' },
+  { name: 'Chicken', price: 200, cat: 'Protein', unit: 'portion' },
+  { name: 'Sukuma Wiki', price: 30, cat: 'Side', unit: 'portion' },
+  { name: 'Rice', price: 70,  cat: 'Main',   unit: 'plate' },
+  { name: 'Soda',  price: 60,  cat: 'Drink',  unit: 'piece' },
+  { name: 'Chapati', price: 20, cat: 'Side',  unit: 'piece' },
+];
+
+// ── INIT ──────────────────────────────────────────────────────
+function init() {
+  const now = new Date();
+  const opts = { weekday:'short', year:'numeric', month:'long', day:'numeric' };
+  const ds = now.toLocaleDateString('en-KE', opts);
+  document.getElementById('headerDate').textContent = ds;
+  document.getElementById('summaryDate').textContent = ds;
+
+  const presetWrap = document.getElementById('presets');
+  PRESETS.forEach(p => {
+    const chip = document.createElement('button');
+    chip.className = 'preset-chip';
+    chip.textContent = p.name;
+    chip.title = `Ksh ${p.price} / ${p.unit}`;
+    chip.onclick = () => {
+      document.getElementById('fName').value  = p.name;
+      document.getElementById('fPrice').value = p.price;
+      document.getElementById('fCat').value   = p.cat;
+      document.getElementById('fUnit').value  = p.unit;
+      document.getElementById('fQty').value   = 1;
+      document.getElementById('fName').focus();
+    };
+    presetWrap.appendChild(chip);
+  });
+}
+
+// ── ADD ───────────────────────────────────────────────────────
+function addItem() {
+  const name  = document.getElementById('fName').value.trim();
+  const price = parseFloat(document.getElementById('fPrice').value);
+  const qty   = parseInt(document.getElementById('fQty').value) || 1;
+  const cat   = document.getElementById('fCat').value;
+  const unit  = document.getElementById('fUnit').value;
+
+  if (!name) { showToast('Enter a food name'); document.getElementById('fName').focus(); return; }
+  if (!price || price <= 0) { showToast('Enter a valid unit price'); document.getElementById('fPrice').focus(); return; }
+
+  items.push({ id: nextId++, name, price, qty, cat, unit, total: price * qty });
+  document.getElementById('fName').value  = '';
+  document.getElementById('fPrice').value = '';
+  document.getElementById('fQty').value   = 1;
+  document.getElementById('fName').focus();
+  render();
+  showToast(`${name} added`);
+}
+
+// ── REMOVE ────────────────────────────────────────────────────
+function removeItem(id) {
+  const item = items.find(i => i.id === id);
+  items = items.filter(i => i.id !== id);
+  render();
+  showToast(`${item.name} removed`);
+}
+
+// ── RENDER ────────────────────────────────────────────────────
+function render() {
+  const list = document.getElementById('itemList');
+  const empty = document.getElementById('emptyState');
+  const header = document.getElementById('listHeader');
+
+  if (items.length === 0) {
+    empty.style.display = 'block';
+    header.style.display = 'none';
+    list.innerHTML = '';
+    list.appendChild(empty);
+  } else {
+    empty.style.display = 'none';
+    header.style.display = 'grid';
+    list.innerHTML = '';
+    items.forEach((item, i) => {
+      const row = document.createElement('div');
+      row.className = 'item-row';
+      row.innerHTML = `
+        <span class="item-no">${i + 1}</span>
+        <div>
+          <div class="item-name">${item.name}</div>
+          <div class="item-cat">${item.cat} · ${item.unit}</div>
+        </div>
+        <div class="item-qty">${item.qty}×<br><span style="font-size:10px;color:var(--ink-light)">Ksh ${fmt(item.price)}</span></div>
+        <div class="item-total">Ksh ${fmt(item.total)}</div>
+        <button class="item-del" onclick="removeItem(${item.id})" title="Remove">✕</button>
+      `;
+      list.appendChild(row);
+    });
+  }
+
+  document.getElementById('itemCountBadge').textContent = `${items.length} item${items.length !== 1 ? 's' : ''}`;
+  updateSummary();
+}
+
+// ── SUMMARY ───────────────────────────────────────────────────
+function updateSummary() {
+  const totalItems = items.length;
+  const totalQty   = items.reduce((s, i) => s + i.qty, 0);
+  const grandTotal = items.reduce((s, i) => s + i.total, 0);
+  const avg        = totalItems ? grandTotal / totalQty : 0;
+  const maxItem    = items.length ? items.reduce((a, b) => a.total > b.total ? a : b) : null;
+
+  document.getElementById('statItems').textContent = totalItems;
+  document.getElementById('statQty').textContent   = totalQty;
+  document.getElementById('statTotal').textContent = 'Ksh ' + fmt(grandTotal);
+  document.getElementById('tSubtotal').textContent = 'Ksh ' + fmt(grandTotal);
+  document.getElementById('tAvg').textContent      = totalItems ? 'Ksh ' + fmt(avg) : '—';
+  document.getElementById('tMax').textContent      = maxItem ? maxItem.name : '—';
+  document.getElementById('tTotal').textContent    = 'Ksh ' + fmt(grandTotal);
+
+  const showExtra = totalItems > 0;
+  document.getElementById('breakdownSection').style.display = showExtra ? 'block' : 'none';
+  document.getElementById('sumDivider').style.display       = showExtra ? 'block' : 'none';
+  document.getElementById('totalsSection').style.display    = showExtra ? 'block' : 'none';
+
+  // Category breakdown
+  if (showExtra) {
+    const cats = {};
+    items.forEach(i => { cats[i.cat] = (cats[i.cat] || 0) + i.total; });
+    const sorted = Object.entries(cats).sort((a,b) => b[1]-a[1]);
+    const catEl = document.getElementById('catBreakdown');
+    catEl.innerHTML = '';
+    sorted.forEach(([cat, amt]) => {
+      const pct = grandTotal ? (amt / grandTotal * 100) : 0;
+      const color = CAT_COLORS[cat] || '#888';
+      catEl.innerHTML += `
+        <div class="cat-row">
+          <span class="cat-name">
+            <span class="cat-dot" style="background:${color}"></span>${cat}
+          </span>
+          <span class="cat-amount">Ksh ${fmt(amt)}</span>
+        </div>
+        <div class="cat-bar-wrap">
+          <div class="cat-bar" style="width:${pct.toFixed(1)}%;background:${color}"></div>
+        </div>`;
+    });
+  }
+}
+
+// ── UTILS ─────────────────────────────────────────────────────
+function fmt(v) { return v.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── PRINT ─────────────────────────────────────────────────────
+function printOrder() {
+  window.print();
+}
+
+// ── MOBILE PDF ────────────────────────────────────────────────
+function downloadPDF() {
+  const btn = document.getElementById('pdfMobileBtn');
+  const overlay = document.getElementById('pdfOverlay');
+  overlay.classList.add('show');
+  btn.disabled = true;
+
+  const noPrint = document.querySelectorAll('.header, .entry-form, .item-del, .preset-chip, .summary-actions, .pdf-overlay');
+  noPrint.forEach(el => { el.dataset.h = el.style.display; el.style.display = 'none'; });
+
+  const element = document.querySelector('.page');
+  const period = new Date().toLocaleDateString('en-KE',{year:'numeric',month:'long',day:'numeric'}).replace(/\s+/g,'_');
+
+  html2pdf().set({
+    margin: [10,10,10,10],
+    filename: `FoodOrder_${period}.pdf`,
+    image: { type:'jpeg', quality:.96 },
+    html2canvas: { scale:2, useCORS:true, backgroundColor:'#F7F3EC' },
+    jsPDF: { unit:'mm', format:'a4', orientation:'portrait' }
+  }).from(element).save()
+    .then(() => {
+      noPrint.forEach(el => { el.style.display = el.dataset.h !== undefined ? el.dataset.h : ''; delete el.dataset.h; });
+      overlay.classList.remove('show');
+      btn.disabled = false;
+      showToast('PDF saved to Downloads');
+    }).catch(() => {
+      noPrint.forEach(el => { el.style.display = el.dataset.h !== undefined ? el.dataset.h : ''; delete el.dataset.h; });
+      overlay.classList.remove('show');
+      btn.disabled = false;
+      showToast('PDF failed — try again');
+    });
+}
+
+// ── EXPORT CSV ────────────────────────────────────────────────
+function exportCSV() {
+  if (!items.length) { showToast('No items to export'); return; }
+  const rows = [['#','Name','Category','Unit','Unit Price (Ksh)','Qty','Total (Ksh)']];
+  items.forEach((item, i) => rows.push([i+1, item.name, item.cat, item.unit, item.price, item.qty, item.total]));
+  const grand = items.reduce((s,i) => s + i.total, 0);
+  rows.push([]);
+  rows.push(['','','','','','Grand Total', grand.toFixed(2)]);
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url;
+  a.download = `FoodOrder_${Date.now()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV exported');
+}
+
+// ── CLEAR ─────────────────────────────────────────────────────
+function clearAll() {
+  if (!items.length) { showToast('Nothing to clear'); return; }
+  if (!confirm('Clear all items?')) return;
+  items = [];
+  render();
+  showToast('Order cleared');
+}
+
+// ── KEYBOARD SHORTCUT ─────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') addItem();
+});
+
+// ── START ─────────────────────────────────────────────────────
+init();
+render();
+</script>
+</body>
+</html>
