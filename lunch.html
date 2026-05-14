@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lunch Contribution Manager — May 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -242,6 +243,50 @@
     border: 1.5px solid var(--ink); border-radius: 5px; padding: 4px 8px;
     font-family: 'DM Mono', monospace; font-size: 13px; width: 90px; background: var(--white);
   }
+
+  /* ── MOBILE PDF BUTTON ── */
+  .btn-pdf-mobile {
+    display: none;
+  }
+  @media(max-width: 768px) {
+    .btn-pdf-mobile {
+      display: inline-flex;
+    }
+    /* Replace print button with PDF button on mobile */
+    .btn-print-desktop {
+      display: none;
+    }
+  }
+  .btn-pdf-mobile { background: var(--white); color: var(--ink); }
+  .btn-pdf-mobile:hover { background: #e8e4da; }
+  .btn-pdf-mobile.loading { opacity: 0.65; cursor: not-allowed; }
+
+  /* PDF generation progress overlay */
+  .pdf-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(20,20,20,.55);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px;
+  }
+  .pdf-overlay.show { display: flex; }
+  .pdf-overlay-box {
+    background: var(--white); border-radius: 14px;
+    padding: 28px 36px; text-align: center;
+    box-shadow: 0 12px 40px rgba(0,0,0,.3);
+  }
+  .pdf-overlay-box p { font-size: 15px; font-weight: 500; margin-top: 12px; color: var(--ink); }
+  .pdf-overlay-box small { font-size: 12px; color: var(--ink-light); }
+  .pdf-spinner {
+    width: 36px; height: 36px;
+    border: 3px solid var(--rule);
+    border-top-color: var(--ink);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -257,9 +302,13 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Member
     </button>
-    <button class="btn btn-primary" onclick="printDoc()">
+    <button class="btn btn-primary btn-print-desktop" onclick="printDoc()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       Print / Save PDF
+    </button>
+    <button class="btn btn-primary btn-pdf-mobile" id="pdfMobileBtn" onclick="downloadPDF()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      Download PDF
     </button>
   </div>
 </header>
@@ -394,6 +443,15 @@
     <span>Period: <span id="pfPeriod"></span></span>
   </div>
 
+</div>
+
+<!-- PDF OVERLAY -->
+<div class="pdf-overlay" id="pdfOverlay">
+  <div class="pdf-overlay-box">
+    <div class="pdf-spinner"></div>
+    <p>Generating PDF…</p>
+    <small>This may take a few seconds</small>
+  </div>
 </div>
 
 <!-- TOAST -->
@@ -538,6 +596,69 @@ function printDoc() {
   setTimeout(() => {
     document.getElementById('printFooter').style.display = 'none';
   }, 500);
+}
+
+// ── MOBILE PDF DOWNLOAD ───────────────────────────────────────
+function downloadPDF() {
+  const btn = document.getElementById('pdfMobileBtn');
+  const overlay = document.getElementById('pdfOverlay');
+
+  // Show overlay + disable button
+  overlay.classList.add('show');
+  btn.classList.add('loading');
+  btn.disabled = true;
+
+  // Show print-only elements
+  const printFooter = document.getElementById('printFooter');
+  const printHeader = document.getElementById('printHeader');
+  printFooter.style.display = 'flex';
+  printHeader.style.display = 'block';
+
+  // Hide no-print elements temporarily
+  const noPrint = document.querySelectorAll('.no-print, .app-header, .settings-bar, .add-form, .pdf-overlay');
+  noPrint.forEach(el => el.dataset.pdfHide = el.style.display);
+  noPrint.forEach(el => el.style.display = 'none');
+
+  const period = getPeriod().replace(/\s+/g, '_');
+  const filename = `Lunch_Contributions_${period}.pdf`;
+
+  const element = document.querySelector('.main');
+
+  const opt = {
+    margin:       [12, 12, 12, 12],
+    filename:     filename,
+    image:        { type: 'jpeg', quality: 0.97 },
+    html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#F4F1EB' },
+    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+
+  html2pdf().set(opt).from(element).save()
+    .then(() => {
+      // Restore hidden elements
+      noPrint.forEach(el => {
+        el.style.display = el.dataset.pdfHide !== undefined ? el.dataset.pdfHide : '';
+        delete el.dataset.pdfHide;
+      });
+      printFooter.style.display = 'none';
+      printHeader.style.display = 'none';
+      overlay.classList.remove('show');
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      showToast('PDF saved to Downloads');
+    })
+    .catch(() => {
+      noPrint.forEach(el => {
+        el.style.display = el.dataset.pdfHide !== undefined ? el.dataset.pdfHide : '';
+        delete el.dataset.pdfHide;
+      });
+      printFooter.style.display = 'none';
+      printHeader.style.display = 'none';
+      overlay.classList.remove('show');
+      btn.classList.remove('loading');
+      btn.disabled = false;
+      showToast('PDF generation failed — try again');
+    });
 }
 
 // ── TOAST ─────────────────────────────────────────────────────
