@@ -49,8 +49,12 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 .no-weeks p { font-size: 14px; line-height: 1.6; }
 
 /* WEEK TABS */
-.week-tabs { display: flex; gap: 0; margin-bottom: 18px; border-radius: 11px; overflow: hidden; border: 1px solid var(--rule); background: var(--bg2); }
-.week-tab { flex: 1; padding: 11px 6px; text-align: center; cursor: pointer; transition: all .15s; border-right: 1px solid var(--rule); background: transparent; }
+.week-tabs-wrap { margin-bottom: 18px; }
+.week-range-label { font-family: "DM Mono", monospace; font-size: 10px; color: var(--ink-light); margin-bottom: 7px; letter-spacing: .04em; }
+.week-range-label strong { color: var(--ink-mid); font-weight: 600; }
+.week-tabs { display: flex; gap: 0; border-radius: 11px; overflow-x: auto; overflow-y: hidden; border: 1px solid var(--rule); background: var(--bg2); scrollbar-width: none; -ms-overflow-style: none; }
+.week-tabs::-webkit-scrollbar { display: none; }
+.week-tab { flex: 0 0 auto; min-width: 72px; padding: 11px 10px; text-align: center; cursor: pointer; transition: all .15s; border-right: 1px solid var(--rule); background: transparent; }
 .week-tab:last-child { border-right: none; }
 .week-tab:hover:not(.active) { background: var(--surface); }
 .week-tab.active { background: var(--ink); color: var(--surface); }
@@ -197,7 +201,10 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
   </div>
 
   <div id="weekContent" style="display:none">
-    <div class="week-tabs" id="weekTabs"></div>
+    <div class="week-tabs-wrap">
+      <div class="week-range-label" id="weekRangeLabel"></div>
+      <div class="week-tabs" id="weekTabs"></div>
+    </div>
 
     <div class="day-panel">
       <!-- LEFT: food entry -->
@@ -349,13 +356,15 @@ function showToast(msg){
   });
 })();
 
-// ── DEFAULT DATES (current Mon-Fri) ──────────────────────────
+// ── DEFAULT DATES (current month 1st → last day) ─────────────
 (function(){
-  const t=new Date(), dow=t.getDay();
-  const mon=new Date(t); mon.setDate(t.getDate()-(dow===0?6:dow-1));
-  const fri=new Date(mon); fri.setDate(mon.getDate()+4);
-  document.getElementById('dateFrom').value=toKey(mon);
-  document.getElementById('dateTo').value=toKey(fri);
+  const t=new Date();
+  const first=new Date(t.getFullYear(),t.getMonth(),1);
+  const last=new Date(t.getFullYear(),t.getMonth()+1,0);
+  document.getElementById('dateFrom').value=toKey(first);
+  document.getElementById('dateTo').value=toKey(last);
+  // Auto-generate the current month on load
+  setTimeout(applyRange, 0);
 })();
 
 // ── APPLY RANGE ───────────────────────────────────────────────
@@ -374,6 +383,9 @@ function applyRange(){
   const fl=fromKey(fv).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
   const tl=fromKey(tv).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
   document.getElementById('rangeSummary').textContent=`${allDates.length} working day${allDates.length!==1?'s':''} · ${fl} – ${tl}`;
+  const flFull=fromKey(allDates[0]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const tlFull=fromKey(allDates[allDates.length-1]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('weekRangeLabel').innerHTML=`<strong>${allDates.length} Working Day${allDates.length!==1?'s':''}</strong> &nbsp;·&nbsp; ${flFull} – ${tlFull}`;
   renderTabs(); selectDate(allDates[0]); updateGrandBar();
 }
 
