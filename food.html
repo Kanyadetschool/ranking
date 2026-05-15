@@ -197,7 +197,7 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
   <div id="noWeeks" class="no-weeks">
     <div class="nw-icon">📅</div>
     <h3>Select a date range to begin</h3>
-    <p>Choose a start and end date above, then click <strong>Generate Weeks</strong><br>to build your Mon–Fri daily food schedule.</p>
+    <p>Choose a start and end date above, then click <strong>Generate Weeks</strong><br>to build your daily food schedule.</p>
   </div>
 
   <div id="weekContent" style="display:none">
@@ -305,7 +305,7 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
     <!-- GRAND TOTAL BAR -->
     <div class="grand-bar" id="grandBar" style="display:none">
       <div class="gb-item"><div class="gb-label">Period</div><div class="gb-val" id="gbPeriod">—</div></div>
-      <div class="gb-item"><div class="gb-label">Working Days</div><div class="gb-val" id="gbDays">0</div></div>
+      <div class="gb-item"><div class="gb-label">Working / Total Days</div><div class="gb-val" id="gbDays">0</div></div>
       <div class="gb-item"><div class="gb-label">Days with Food</div><div class="gb-val" id="gbFilled">0</div></div>
       <div class="gb-item"><div class="gb-label">Total Items</div><div class="gb-val" id="gbItems">0</div></div>
       <div class="gb-item"><div class="gb-label">Grand Total</div><div class="gb-val accent" id="gbTotal">Ksh 0.00</div></div>
@@ -375,17 +375,18 @@ function applyRange(){
   if(from>to){showToast('Start must be before end');return;}
   allDates=[];
   const cur=new Date(from);
-  while(cur<=to){ if(cur.getDay()>=1&&cur.getDay()<=5) allDates.push(toKey(cur)); cur.setDate(cur.getDate()+1); }
-  if(!allDates.length){showToast('No weekdays in range');return;}
+  while(cur<=to){ allDates.push(toKey(cur)); cur.setDate(cur.getDate()+1); }
+  const workingDays=allDates.filter(k=>{ const d=fromKey(k); return d.getDay()>=1&&d.getDay()<=5; }).length;
+  if(!allDates.length){showToast('No dates in range');return;}
   allDates.forEach(k=>{ if(!days[k]) days[k]=[]; });
   document.getElementById('noWeeks').style.display='none';
   document.getElementById('weekContent').style.display='block';
   const fl=fromKey(fv).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
   const tl=fromKey(tv).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
-  document.getElementById('rangeSummary').textContent=`${allDates.length} working day${allDates.length!==1?'s':''} · ${fl} – ${tl}`;
+  document.getElementById('rangeSummary').textContent=`${allDates.length} day${allDates.length!==1?'s':''} (${workingDays} working) · ${fl} – ${tl}`;
   const flFull=fromKey(allDates[0]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
   const tlFull=fromKey(allDates[allDates.length-1]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('weekRangeLabel').innerHTML=`<strong>${allDates.length} Working Day${allDates.length!==1?'s':''}</strong> &nbsp;·&nbsp; ${flFull} – ${tlFull}`;
+  document.getElementById('weekRangeLabel').innerHTML=`<strong>${allDates.length} Day${allDates.length!==1?'s':''}</strong> &nbsp;·&nbsp; <strong>${workingDays}</strong> working · ${flFull} – ${tlFull}`;
   renderTabs(); selectDate(allDates[0]); updateGrandBar();
 }
 
@@ -484,7 +485,8 @@ function updateGrandBar(){
   document.getElementById('grandBar').style.display='flex';
   const f=fromKey(allDates[0]), t=fromKey(allDates[allDates.length-1]);
   document.getElementById('gbPeriod').textContent=f.toLocaleDateString('en-KE',{day:'numeric',month:'short'})+' – '+t.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
-  document.getElementById('gbDays').textContent=allDates.length;
+  const wDays=allDates.filter(k=>{const d=fromKey(k);return d.getDay()>=1&&d.getDay()<=5;}).length;
+  document.getElementById('gbDays').textContent=wDays+' / '+allDates.length;
   document.getElementById('gbFilled').textContent=filled;
   document.getElementById('gbItems').textContent=allItems.length;
   document.getElementById('gbTotal').textContent='Ksh '+fmt(grand);
