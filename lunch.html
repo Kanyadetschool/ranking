@@ -6,6 +6,35 @@
 <title>Lunch Contribution Manager — May 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<!-- Firebase v10 (modular, loaded as ESM) -->
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getDatabase, ref, set, update, remove, onValue, push }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const FB_CONFIG = {
+  apiKey:            "AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE",
+  authDomain:        "kanyadet-school-admin.firebaseapp.com",
+  projectId:         "kanyadet-school-admin",
+  databaseURL:       "https://kanyadet-school-admin-default-rtdb.firebaseio.com",
+  storageBucket:     "kanyadet-school-admin.firebasestorage.app",
+  messagingSenderId: "409708360032",
+  appId:             "kanyadet-school-admin"
+};
+
+const app  = initializeApp(FB_CONFIG);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+// Expose to classic scripts via window
+window._fb = { auth, db, ref, set, update, remove, onValue, push,
+               GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
+window.dispatchEvent(new Event('fb-ready'));
+</script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -298,6 +327,10 @@
     <h1>Lunch Contributions.</h1>
   </div>
   <div class="header-actions">
+    <div id="authArea" style="display:flex;align-items:center;gap:10px;">
+      <span id="authUser" style="font-size:12px;color:#888;font-family:'DM Mono',monospace;"></span>
+      <button id="authBtn" class="btn btn-ghost" onclick="handleAuth()" style="font-size:12px;padding:7px 14px;">Sign in</button>
+    </div>
     <button class="btn btn-ghost" onclick="toggleForm()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Member
@@ -458,8 +491,8 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ── DATA ──────────────────────────────────────────────────────
-let members = [
+// ── SEED DATA (only written to Firebase once if DB is empty) ──
+const SEED = [
   { name: "Mr. Aggrey",   amount: 0 },
   { name: "Md. Jackline", amount: 420 },
   { name: "Mr. Ochichi",  amount: 420 },
@@ -474,20 +507,62 @@ let members = [
   { name: "Mr. Francis",  amount: 420 },
 ];
 
+// ── STATE ─────────────────────────────────────────────────────
+// members is now an array of { id, name, amount } where id = Firebase push key
+let members = [];
+let fbReady  = false;
+let currentUser = null;
+
 function getStd() { return parseFloat(document.getElementById('stdInput').value) || 420; }
 function getPeriod() { return document.getElementById('periodInput').value || 'May 2026'; }
 function fmt(v) { return v.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function status(amt) {
   const std = getStd();
-  if (amt === 0)      return { cls: 'nil',  label: 'Nil',     badgeCls: 'badge-nil' };
-  if (amt >= std)     return { cls: 'ok',   label: 'Paid',    badgeCls: 'badge-ok' };
+  if (amt === 0)  return { cls: 'nil',  label: 'Nil',     badgeCls: 'badge-nil' };
+  if (amt >= std) return { cls: 'ok',   label: 'Paid',    badgeCls: 'badge-ok' };
   return               { cls: 'warn', label: 'Partial', badgeCls: 'badge-warn' };
+}
+
+// ── FIREBASE PATH ─────────────────────────────────────────────
+function membersPath() {
+  const period = getPeriod().replace(/\s+/g, '_');
+  return `lunch/${period}/members`;
+}
+
+// ── AUTH ──────────────────────────────────────────────────────
+function handleAuth() {
+  if (!fbReady) { showToast('Firebase loading…'); return; }
+  const { auth, GoogleAuthProvider, signInWithPopup, signOut } = window._fb;
+  if (currentUser) {
+    signOut(auth).then(() => showToast('Signed out'));
+  } else {
+    signInWithPopup(auth, new GoogleAuthProvider())
+      .then(r => showToast(`Welcome, ${r.user.displayName}`))
+      .catch(e => showToast('Sign-in failed: ' + e.message));
+  }
+}
+
+function updateAuthUI(user) {
+  currentUser = user;
+  const btn  = document.getElementById('authBtn');
+  const span = document.getElementById('authUser');
+  if (user) {
+    span.textContent = user.email;
+    btn.textContent  = 'Sign out';
+  } else {
+    span.textContent = '';
+    btn.textContent  = 'Sign in with Google';
+  }
+  // Toggle write-capable UI visibility
+  document.querySelectorAll('.no-print button, .icon-btn, #addForm, .toolbar .btn')
+    .forEach(el => el.style.opacity = user ? '1' : '0.4');
+  document.querySelectorAll('.no-print button, .icon-btn, .toolbar .btn')
+    .forEach(el => el.disabled = !user);
 }
 
 // ── RENDER ───────────────────────────────────────────────────
 function render() {
-  const std = getStd();
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
 
@@ -537,35 +612,44 @@ function recalc() {
 
 // ── ADD ───────────────────────────────────────────────────────
 function toggleForm() {
+  if (!currentUser) { showToast('Sign in to make changes'); return; }
   const f = document.getElementById('addForm');
   f.classList.toggle('open');
   if (f.classList.contains('open')) document.getElementById('newName').focus();
 }
 
 function addMember() {
+  if (!currentUser) { showToast('Sign in to make changes'); return; }
+  const { db, ref, push } = window._fb;
   const title  = document.getElementById('newTitle').value;
   const name   = document.getElementById('newName').value.trim();
   const amount = parseFloat(document.getElementById('newAmount').value) || 0;
   if (!name) { showToast('Please enter a name'); return; }
-  members.push({ name: `${title} ${name}`, amount });
-  document.getElementById('newName').value   = '';
-  document.getElementById('newAmount').value = '';
-  document.getElementById('addForm').classList.remove('open');
-  render();
-  showToast(`${title} ${name} added`);
+  const newMember = { name: `${title} ${name}`, amount };
+  push(ref(db, membersPath()), newMember)
+    .then(() => {
+      document.getElementById('newName').value   = '';
+      document.getElementById('newAmount').value = '';
+      document.getElementById('addForm').classList.remove('open');
+      showToast(`${newMember.name} added`);
+    })
+    .catch(e => showToast('Error: ' + e.message));
 }
 
 // ── REMOVE ────────────────────────────────────────────────────
 function removeMember(i) {
-  const removed = members[i].name;
-  members.splice(i, 1);
-  render();
-  showToast(`${removed} removed`);
+  if (!currentUser) { showToast('Sign in to make changes'); return; }
+  const { db, ref, remove } = window._fb;
+  const m = members[i];
+  if (!confirm(`Remove ${m.name}?`)) return;
+  remove(ref(db, `${membersPath()}/${m.id}`))
+    .then(() => showToast(`${m.name} removed`))
+    .catch(e => showToast('Error: ' + e.message));
 }
 
 // ── INLINE EDIT ───────────────────────────────────────────────
 function startEdit(i) {
-  const std = getStd();
+  if (!currentUser) { showToast('Sign in to make changes'); return; }
   const tbody = document.getElementById('tbody');
   const row   = tbody.rows[i];
   const m     = members[i];
@@ -581,12 +665,15 @@ function startEdit(i) {
 }
 
 function saveEdit(i) {
+  if (!currentUser) { showToast('Sign in to make changes'); return; }
+  const { db, ref, update } = window._fb;
   const name   = document.getElementById('eName').value.trim();
   const amount = parseFloat(document.getElementById('eAmt').value) || 0;
   if (!name) { showToast('Name cannot be empty'); return; }
-  members[i] = { name, amount };
-  render();
-  showToast('Updated');
+  const m = members[i];
+  update(ref(db, `${membersPath()}/${m.id}`), { name, amount })
+    .then(() => showToast('Updated'))
+    .catch(e => showToast('Error: ' + e.message));
 }
 
 // ── PRINT ─────────────────────────────────────────────────────
@@ -678,8 +765,41 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ── INIT ──────────────────────────────────────────────────────
-render();
+// ── FIREBASE INIT ─────────────────────────────────────────────
+function subscribeToMembers() {
+  const { db, ref, onValue, set, push } = window._fb;
+  const path = membersPath();
+  onValue(ref(db, path), snapshot => {
+    const data = snapshot.val();
+    if (!data) {
+      // Seed on first run
+      const writes = {};
+      SEED.forEach(m => {
+        const key = Math.random().toString(36).slice(2);
+        writes[key] = m;
+      });
+      set(ref(db, path), writes);
+      return;
+    }
+    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount }));
+    render();
+  });
+}
+
+// Re-subscribe when period changes
+document.getElementById('periodInput').addEventListener('change', () => {
+  subscribeToMembers();
+});
+
+window.addEventListener('fb-ready', () => {
+  fbReady = true;
+  const { auth, onAuthStateChanged } = window._fb;
+  onAuthStateChanged(auth, user => {
+    updateAuthUI(user);
+    if (!members.length) subscribeToMembers(); // load on first auth event
+  });
+  subscribeToMembers(); // also load before auth state resolves
+});
 </script>
 </body>
 </html>
