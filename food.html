@@ -6,7 +6,6 @@
 <title>Food Cost Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Syne:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 :root {
@@ -42,31 +41,39 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 /* MAIN */
 .main { max-width: 1080px; margin: 0 auto; padding: 24px 20px 80px; }
 
-/* EMPTY STATE */
-.no-weeks { text-align: center; padding: 70px 24px; color: var(--ink-light); }
-.no-weeks .nw-icon { font-size: 44px; margin-bottom: 14px; opacity: .3; }
-.no-weeks h3 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 400; color: var(--ink-mid); margin-bottom: 8px; }
-.no-weeks p { font-size: 14px; line-height: 1.6; }
+/* WEEK INFO BANNER */
+.week-info { background: var(--surface); border: 1px solid var(--rule); border-radius: 11px; padding: 12px 18px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+.wi-left { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--ink-mid); }
+.wi-left strong { color: var(--ink); font-size: 13px; }
+.wi-weeks { display: flex; align-items: center; gap: 8px; }
+.wi-weeks-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-light); }
+.wi-weeks-val { background: var(--accent); color: #fff; font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 700; border-radius: 7px; padding: 4px 12px; }
+.wi-weeks-sub { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--ink-light); }
 
 /* WEEK TABS */
 .week-tabs-wrap { margin-bottom: 18px; }
-.week-range-label { font-family: "DM Mono", monospace; font-size: 10px; color: var(--ink-light); margin-bottom: 7px; letter-spacing: .04em; }
-.week-range-label strong { color: var(--ink-mid); font-weight: 600; }
-.week-tabs { display: flex; gap: 0; border-radius: 11px; overflow-x: auto; overflow-y: hidden; border: 1px solid var(--rule); background: var(--bg2); scrollbar-width: none; -ms-overflow-style: none; }
-.week-tabs::-webkit-scrollbar { display: none; }
-.week-tab { flex: 0 0 auto; min-width: 72px; padding: 11px 10px; text-align: center; cursor: pointer; transition: all .15s; border-right: 1px solid var(--rule); background: transparent; }
+.week-tabs { display: flex; gap: 0; border-radius: 11px; border: 1px solid var(--rule); background: var(--bg2); overflow: hidden; }
+.week-tab { flex: 1; padding: 11px 6px; text-align: center; cursor: pointer; transition: all .15s; border-right: 1px solid var(--rule); background: transparent; }
 .week-tab:last-child { border-right: none; }
 .week-tab:hover:not(.active) { background: var(--surface); }
 .week-tab.active { background: var(--ink); color: var(--surface); }
+.week-tab.today { border-top: 2.5px solid var(--accent); }
 .tab-day { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 2px; }
 .week-tab.active .tab-day { color: #888; }
+.week-tab.today .tab-day { color: var(--accent); }
 .tab-date { font-size: 13px; font-weight: 600; }
 .tab-total { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--accent); margin-top: 2px; }
 .week-tab.active .tab-total { color: #e07040; }
 .tab-count { font-size: 9px; color: var(--ink-light); margin-top: 1px; }
 .week-tab.active .tab-count { color: #888; }
-.week-tab.today { border-top: 2.5px solid var(--accent); }
-.week-tab.today .tab-day { color: var(--accent); }
+.week-tab.weekend-tab { opacity: 0.45; background: repeating-linear-gradient(45deg,transparent,transparent 4px,rgba(0,0,0,.03) 4px,rgba(0,0,0,.03) 8px); }
+.week-tab.weekend-tab.active { opacity: 0.7; }
+.week-tab.teacher-diet-tab { background: repeating-linear-gradient(135deg,transparent,transparent 4px,rgba(46,107,62,.04) 4px,rgba(46,107,62,.04) 8px); border-top: 2.5px solid #2E6B3E; }
+.week-tab.teacher-diet-tab .tab-day { color: #2E6B3E; }
+.week-tab.teacher-diet-tab.active { background: #2E6B3E; }
+.teacher-diet-badge { display:inline-block; background:#2E6B3E; color:#fff; font-size:9px; font-family:'DM Mono',monospace; border-radius:4px; padding:2px 6px; margin-top:2px; letter-spacing:.04em; }
+.ds-teacher-notice { background:#EBF5EE; border:1px solid #B3D9BF; border-radius:8px; padding:10px 12px; margin:10px 14px 0; font-size:11px; color:#1F5C32; line-height:1.5; }
+.ds-teacher-notice strong { display:block; margin-bottom:2px; font-size:12px; }
 
 /* DAY PANEL */
 .day-panel { display: grid; grid-template-columns: 1fr 290px; gap: 18px; align-items: start; }
@@ -136,6 +143,10 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 .ds-divider { border: none; border-top: 1px solid var(--rule); margin: 7px 0; }
 .ds-grand-label { font-size: 14px !important; font-weight: 600 !important; color: var(--ink) !important; }
 .ds-grand-val { font-size: 16px !important; font-weight: 700 !important; color: var(--ink) !important; }
+.ds-multiplied { background: var(--bg2); border-radius: 8px; margin: 0 14px 12px; padding: 9px 11px; }
+.ds-mult-label { font-family: 'DM Mono', monospace; font-size: 9px; letter-spacing:.1em; text-transform:uppercase; color: var(--ink-light); margin-bottom: 4px; }
+.ds-mult-val { font-family: 'DM Mono', monospace; font-size: 14px; font-weight: 700; color: var(--accent); }
+.ds-mult-sub { font-size: 10px; color: var(--ink-light); margin-top: 2px; }
 .ds-actions { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 6px; }
 .btn-outline { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px; border-radius: 7px; border: 1.5px solid var(--rule); background: var(--surface); color: var(--ink); font-family: 'Syne', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; transition: all .15s; }
 .btn-outline:hover { border-color: var(--ink); }
@@ -191,20 +202,41 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
     <span class="range-sep">→</span>
     <input type="date" id="dateTo">
   </div>
-  <button class="range-apply" onclick="applyRange()">Generate Weeks</button>
+  <button class="range-apply" onclick="applyRange()">Generate</button>
   <span class="range-summary" id="rangeSummary"></span>
 </div>
 
 <div class="main">
-  <div id="noWeeks" class="no-weeks">
-    <div class="nw-icon">📅</div>
-    <h3>Select a date range to begin</h3>
-    <p>Choose a start and end date above, then click <strong>Generate Weeks</strong><br>to build your daily food schedule.</p>
+  <div id="noWeeks" class="no-weeks" style="text-align:center;padding:70px 24px;color:var(--ink-light)">
+    <div style="font-size:44px;margin-bottom:14px;opacity:.3">📅</div>
+    <h3 style="font-family:'Playfair Display',serif;font-size:24px;font-weight:400;color:var(--ink-mid);margin-bottom:8px">Select a date range to begin</h3>
+    <p style="font-size:14px;line-height:1.6">Choose a start and end date above, then click <strong>Generate</strong><br>to set up your weekly food template.</p>
   </div>
 
   <div id="weekContent" style="display:none">
+
+    <!-- Week info banner -->
+    <div class="week-info">
+      <div class="wi-left">
+        Period: <strong id="wiPeriod">—</strong><br>
+        <span id="wiDays" style="font-size:10px"></span>
+      </div>
+      <div class="wi-weeks">
+        <div>
+          <div class="wi-weeks-label">Weeks in period</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:3px">
+            <div class="wi-weeks-val" id="wiWeeksVal">0</div>
+            <div class="wi-weeks-sub" id="wiWeeksSub"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7-day template tabs -->
     <div class="week-tabs-wrap">
-      <div class="week-range-label" id="weekRangeLabel"></div>
+      <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--ink-light);margin-bottom:7px;letter-spacing:.04em">
+        TEMPLATE WEEK — enter food for each day; costs will be multiplied by number of weeks
+      </div>
       <div class="week-tabs" id="weekTabs"></div>
     </div>
 
@@ -269,7 +301,7 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
         <div class="ds-stats">
           <div class="ds-stat"><div class="ds-stat-label">Items</div><div class="ds-stat-val" id="dsItems">0</div></div>
           <div class="ds-stat"><div class="ds-stat-label">Qty</div><div class="ds-stat-val" id="dsQty">0</div></div>
-          <div class="ds-stat" style="grid-column:span 2"><div class="ds-stat-label">Day Total</div><div class="ds-stat-val accent" id="dsTotal">Ksh 0.00</div></div>
+          <div class="ds-stat" style="grid-column:span 2"><div class="ds-stat-label">Day Total (1 week)</div><div class="ds-stat-val accent" id="dsTotal">Ksh 0.00</div></div>
         </div>
         <div id="dsCatSection" style="display:none">
           <div class="ds-cat">
@@ -277,15 +309,15 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
             <div id="dsCatBreakdown"></div>
           </div>
         </div>
+        <div class="ds-multiplied">
+          <div class="ds-mult-label">× <span id="dsMulWks">0</span> weeks = projected cost</div>
+          <div class="ds-mult-val" id="dsMulTotal">Ksh 0.00</div>
+          <div class="ds-mult-sub" id="dsMulSub"></div>
+        </div>
         <div class="ds-totals">
           <div class="ds-row"><span class="ds-row-label">Subtotal</span><span class="ds-row-val" id="dsSubtotal">Ksh 0.00</span></div>
           <div class="ds-row"><span class="ds-row-label">Avg per item</span><span class="ds-row-val" id="dsAvg">—</span></div>
           <div class="ds-row"><span class="ds-row-label">Most expensive</span><span class="ds-row-val" id="dsMax">—</span></div>
-          <hr class="ds-divider">
-          <div class="ds-row">
-            <span class="ds-row-label ds-grand-label">Total</span>
-            <span class="ds-row-val ds-grand-val" id="dsGrand">Ksh 0.00</span>
-          </div>
         </div>
         <div class="ds-actions">
           <button class="btn-outline" onclick="savePDF(this)">
@@ -307,10 +339,13 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
     <!-- GRAND TOTAL BAR -->
     <div class="grand-bar" id="grandBar" style="display:none">
       <div class="gb-item"><div class="gb-label">Period</div><div class="gb-val" id="gbPeriod">—</div></div>
-      <div class="gb-item"><div class="gb-label">Working / Total Days</div><div class="gb-val" id="gbDays">0</div></div>
-      <div class="gb-item"><div class="gb-label">Days with Food</div><div class="gb-val" id="gbFilled">0</div></div>
-      <div class="gb-item"><div class="gb-label">Total Items</div><div class="gb-val" id="gbItems">0</div></div>
-      <div class="gb-item"><div class="gb-label">Grand Total</div><div class="gb-val accent" id="gbTotal">Ksh 0.00</div></div>
+      <div class="gb-item"><div class="gb-label">Weeks</div><div class="gb-val" id="gbWeeks">0</div></div>
+      <div class="gb-item"><div class="gb-label">Teacher Food Days</div><div class="gb-val" id="gbWorkDays">0</div></div>
+      <div class="gb-item"><div class="gb-label">Week Total</div><div class="gb-val" id="gbWeekTotal">Ksh 0.00</div></div>
+      <div class="gb-item"><div class="gb-label">Grand Total (all weeks)</div><div class="gb-val accent" id="gbTotal">Ksh 0.00</div></div>
+    </div>
+    <div style="margin-top:12px;background:#EBF5EE;border:1px solid #B3D9BF;border-radius:10px;padding:11px 18px;font-size:12px;color:#1F5C32;line-height:1.6;">
+      🍛 <strong>Teacher Diet Days — Wednesday &amp; Thursday:</strong> On these two days, teachers eat rice &amp; beans from the student diet and are <strong>not counted</strong> in teacher food cost. Only <strong>Monday, Tuesday &amp; Friday</strong> (3 days/week) contribute to the total above.
     </div>
   </div>
 </div>
@@ -322,12 +357,16 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 
 <script>
 // ── STATE ─────────────────────────────────────────────────────
-let days = {};           // { 'YYYY-MM-DD': [{id,name,price,qty,cat,unit,total},...] }
-let allDates = [];       // Mon-Fri dates in range
-let activeDateKey = '';
+// days keyed by day-of-week index 0-6 (Sun=0 … Sat=6)
+let days = {0:[],1:[],2:[],3:[],4:[],5:[],6:[]};
+let activeDow = 1; // currently selected day-of-week
+let numWeeks = 0;
+let periodFrom = null, periodTo = null;
 let nextId = 1;
 
 const CAT_COLORS = { Main:'#C4501A', Protein:'#B55A2A', Side:'#2E6B3E', Drink:'#185FA5', Snack:'#BA7517', Dessert:'#993556', Other:'#5F5E5A' };
+// Wednesday (3) and Thursday (4) — teachers eat student diet, not counted for teacher food cost
+const TEACHER_DIET_DAYS = new Set([3, 4]);
 const PRESETS = [
   {name:'Ugali',price:50,cat:'Main',unit:'plate'},{name:'Chicken',price:200,cat:'Protein',unit:'portion'},
   {name:'Sukuma Wiki',price:30,cat:'Side',unit:'portion'},{name:'Rice',price:70,cat:'Main',unit:'plate'},
@@ -337,11 +376,9 @@ const DOW      = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const DAYNAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
 // ── UTILS ─────────────────────────────────────────────────────
-function fmt(v)   { return v.toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function toKey(d) { return d.toISOString().slice(0,10); }
+function fmt(v){ return v.toLocaleString('en-KE',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function toKey(d){ return d.toISOString().slice(0,10); }
 function fromKey(k){ const [y,m,d]=k.split('-').map(Number); return new Date(y,m-1,d); }
-function fmtDay(k){ return fromKey(k).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'short',year:'numeric'}); }
-function fmtShort(k){ return fromKey(k).toLocaleDateString('en-KE',{day:'numeric',month:'short'}); }
 
 function showToast(msg){
   const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
@@ -358,22 +395,20 @@ function showToast(msg){
   });
 })();
 
-// ── DEFAULT DATES (current month 1st → last day) ─────────────
+// ── DEFAULT DATES: today → end of current month ───────────────
 (function(){
   const t=new Date();
   const first=new Date(t.getFullYear(),t.getMonth(),t.getDate());
   const last=new Date(t.getFullYear(),t.getMonth()+1,0);
   document.getElementById('dateFrom').value=toKey(first);
   document.getElementById('dateTo').value=toKey(last);
-  // Auto-generate the current month on load
   setTimeout(applyRange, 0);
 
-  // Auto-refresh at midnight so "today" stays current
+  // Auto-refresh at midnight
   function scheduleAutoRefresh(){
     const now=new Date();
     const msUntilMidnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)-now;
     setTimeout(()=>{
-      // Update date inputs to current month and re-render
       const t2=new Date();
       const f2=new Date(t2.getFullYear(),t2.getMonth(),t2.getDate());
       const l2=new Date(t2.getFullYear(),t2.getMonth()+1,0);
@@ -392,55 +427,75 @@ function applyRange(){
   if(!fv||!tv){showToast('Select both dates');return;}
   const from=fromKey(fv), to=fromKey(tv);
   if(from>to){showToast('Start must be before end');return;}
-  allDates=[];
+  periodFrom=from; periodTo=to;
+
+  // Count total days and working days
+  const totalDays=Math.round((to-from)/(1000*60*60*24))+1;
+  let workingDays=0;
   const cur=new Date(from);
-  while(cur<=to){ allDates.push(toKey(cur)); cur.setDate(cur.getDate()+1); }
-  const workingDays=allDates.filter(k=>{ const d=fromKey(k); return d.getDay()>=1&&d.getDay()<=5; }).length;
-  if(!allDates.length){showToast('No dates in range');return;}
-  allDates.forEach(k=>{ if(!days[k]) days[k]=[]; });
+  while(cur<=to){ if(cur.getDay()>=1&&cur.getDay()<=5) workingDays++; cur.setDate(cur.getDate()+1); }
+
+  // Number of weeks = total days / 7 (rounded to 1 decimal)
+  numWeeks = Math.round((totalDays/7)*10)/10;
+
+  const fl=from.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
+  const tl=to.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
+  const flFull=from.toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const tlFull=to.toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  document.getElementById('rangeSummary').textContent=`${totalDays} days (${workingDays} working) · ${fl} – ${tl}`;
+  document.getElementById('wiPeriod').textContent=`${flFull} – ${tlFull}`;
+  document.getElementById('wiDays').textContent=`${totalDays} total days · ${workingDays} working days`;
+  document.getElementById('wiWeeksVal').textContent=numWeeks % 1 === 0 ? numWeeks : numWeeks.toFixed(1);
+  document.getElementById('wiWeeksSub').textContent=`(${totalDays} days ÷ 7)`;
+
   document.getElementById('noWeeks').style.display='none';
   document.getElementById('weekContent').style.display='block';
-  const fl=fromKey(fv).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
-  const tl=fromKey(tv).toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
-  document.getElementById('rangeSummary').textContent=`${allDates.length} day${allDates.length!==1?'s':''} (${workingDays} working) · ${fl} – ${tl}`;
-  const flFull=fromKey(allDates[0]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const tlFull=fromKey(allDates[allDates.length-1]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  document.getElementById('weekRangeLabel').innerHTML=`<strong>${allDates.length} Day${allDates.length!==1?'s':''}</strong> &nbsp;·&nbsp; <strong>${workingDays}</strong> working · ${flFull} – ${tlFull}`;
-  renderTabs(); selectDate(allDates[0]); updateGrandBar();
+
+  renderTabs();
+  selectDow(activeDow);
+  updateGrandBar();
 }
 
-// ── TABS ──────────────────────────────────────────────────────
+// ── TABS (one per day of week) ────────────────────────────────
 function renderTabs(){
   const w=document.getElementById('weekTabs'); w.innerHTML='';
-  allDates.forEach(k=>{
-    const d=fromKey(k), its=days[k]||[], tot=its.reduce((s,i)=>s+i.total,0);
+  const todayDow=new Date().getDay();
+  for(let d=0;d<7;d++){
+    const its=days[d]||[], tot=its.reduce((s,i)=>s+i.total,0);
+    const isWknd=d===0||d===6;
+    const isTeacherDiet=TEACHER_DIET_DAYS.has(d);
     const t=document.createElement('div');
-    const todayKey=toKey(new Date()); t.className='week-tab'+(k===activeDateKey?' active':'')+(k===todayKey?' today':''); t.dataset.key=k;
-    t.innerHTML=`<div class="tab-day">${DOW[d.getDay()]}</div><div class="tab-date">${d.getDate()}</div><div class="tab-total">${its.length?'Ksh '+fmt(tot):'—'}</div><div class="tab-count">${its.length?its.length+' item'+(its.length!==1?'s':''):'empty'}</div>`;
-    t.onclick=()=>selectDate(k); w.appendChild(t);
-  });
+    t.className='week-tab'+(d===activeDow?' active':'')+(d===todayDow?' today':'')+(isWknd?' weekend-tab':'')+(isTeacherDiet?' teacher-diet-tab':'');
+    let subLabel;
+    if(isWknd) subLabel='<span style="font-size:8px;color:var(--ink-light)">not counted</span>';
+    else if(isTeacherDiet) subLabel='<span class="teacher-diet-badge">student diet</span>';
+    else subLabel=(its.length?its.length+' item'+(its.length!==1?'s':''):'empty');
+    t.innerHTML=`<div class="tab-day">${DOW[d]}</div><div class="tab-total" style="${(isWknd||isTeacherDiet)?'color:var(--ink-light)':''}">${its.length?'Ksh '+fmt(tot):'—'}</div><div class="tab-count">${subLabel}</div>`;
+    t.onclick=(()=>{const dd=d; return ()=>selectDow(dd);})();
+    w.appendChild(t);
+  }
 }
 
-// ── SELECT DATE ───────────────────────────────────────────────
-function selectDate(k){
-  activeDateKey=k; const d=fromKey(k);
-  document.getElementById('dayTitle').textContent=DAYNAMES[d.getDay()];
-  document.getElementById('daySubtitle').textContent=fmtDay(k);
-  document.getElementById('dsTitleHead').textContent=DAYNAMES[d.getDay()];
-  document.getElementById('dsDate').textContent=fmtShort(k);
+// ── SELECT DAY OF WEEK ────────────────────────────────────────
+function selectDow(d){
+  activeDow=d;
+  document.getElementById('dayTitle').textContent=DAYNAMES[d];
+  document.getElementById('daySubtitle').textContent='Template — repeated each week';
+  document.getElementById('dsTitleHead').textContent=DAYNAMES[d];
+  document.getElementById('dsDate').textContent=DOW[d];
   renderTabs(); renderItems(); updateSummary();
 }
 
 // ── ADD ───────────────────────────────────────────────────────
 function addItem(){
-  if(!activeDateKey){showToast('Select a day first');return;}
   const name=document.getElementById('fName').value.trim();
   const price=parseFloat(document.getElementById('fPrice').value);
   const qty=parseInt(document.getElementById('fQty').value)||1;
   const cat=document.getElementById('fCat').value, unit=document.getElementById('fUnit').value;
   if(!name){showToast('Enter a food name');document.getElementById('fName').focus();return;}
   if(!price||price<=0){showToast('Enter a valid price');document.getElementById('fPrice').focus();return;}
-  days[activeDateKey].push({id:nextId++,name,price,qty,cat,unit,total:price*qty});
+  days[activeDow].push({id:nextId++,name,price,qty,cat,unit,total:price*qty});
   document.getElementById('fName').value=''; document.getElementById('fPrice').value=''; document.getElementById('fQty').value=1;
   document.getElementById('fName').focus();
   renderItems(); updateSummary(); renderTabs(); updateGrandBar();
@@ -449,15 +504,15 @@ function addItem(){
 
 // ── REMOVE ────────────────────────────────────────────────────
 function removeItem(id){
-  const item=days[activeDateKey].find(i=>i.id===id);
-  days[activeDateKey]=days[activeDateKey].filter(i=>i.id!==id);
+  const item=days[activeDow].find(i=>i.id===id);
+  days[activeDow]=days[activeDow].filter(i=>i.id!==id);
   renderItems(); updateSummary(); renderTabs(); updateGrandBar();
   showToast(`${item.name} removed`);
 }
 
 // ── RENDER ITEMS ──────────────────────────────────────────────
 function renderItems(){
-  const its=days[activeDateKey]||[];
+  const its=days[activeDow]||[];
   const empty=document.getElementById('emptyState'), hdr=document.getElementById('listHdr'), rows=document.getElementById('itemRows');
   document.getElementById('dayBadge').textContent=`${its.length} item${its.length!==1?'s':''}`;
   if(!its.length){ empty.style.display='block'; hdr.style.display='none'; rows.innerHTML=''; return; }
@@ -474,16 +529,35 @@ function renderItems(){
 
 // ── UPDATE DAY SUMMARY ────────────────────────────────────────
 function updateSummary(){
-  const its=days[activeDateKey]||[];
+  const its=days[activeDow]||[];
   const total=its.reduce((s,i)=>s+i.total,0), qty=its.reduce((s,i)=>s+i.qty,0);
   const avg=its.length?total/qty:0, maxItem=its.length?its.reduce((a,b)=>a.total>b.total?a:b):null;
+  const projected=total*numWeeks;
   document.getElementById('dsItems').textContent=its.length;
   document.getElementById('dsQty').textContent=qty;
   document.getElementById('dsTotal').textContent='Ksh '+fmt(total);
   document.getElementById('dsSubtotal').textContent='Ksh '+fmt(total);
   document.getElementById('dsAvg').textContent=its.length?'Ksh '+fmt(avg):'—';
   document.getElementById('dsMax').textContent=maxItem?maxItem.name:'—';
-  document.getElementById('dsGrand').textContent='Ksh '+fmt(total);
+  const isWeekend=activeDow===0||activeDow===6;
+  const isTeacherDiet=TEACHER_DIET_DAYS.has(activeDow);
+  document.getElementById('dsMulWks').textContent=numWeeks % 1===0?numWeeks:numWeeks.toFixed(1);
+  document.getElementById('dsMulTotal').textContent=(isWeekend||isTeacherDiet)?'Not counted':('Ksh '+fmt(projected));
+  document.getElementById('dsMulSub').textContent=isWeekend?'Weekends are excluded from cost calculations':isTeacherDiet?'Teachers eat student diet — not counted for teacher food cost':(its.length?`Ksh ${fmt(total)} × ${numWeeks%1===0?numWeeks:numWeeks.toFixed(1)} weeks`:'');
+  // Teacher diet notice
+  let teacherNotice=document.getElementById('dsTeacherNotice');
+  if(isTeacherDiet){
+    if(!teacherNotice){
+      teacherNotice=document.createElement('div');
+      teacherNotice.id='dsTeacherNotice';
+      teacherNotice.className='ds-teacher-notice';
+      document.getElementById('dsMulTotal').closest('.ds-multiplied').after(teacherNotice);
+    }
+    teacherNotice.innerHTML='<strong>🍛 Teachers eat student diet</strong>On '+DAYNAMES[activeDow]+', teachers join students for rice & beans. This day is <em>not counted</em> towards the teacher food cost.';
+    teacherNotice.style.display='block';
+  } else {
+    if(teacherNotice) teacherNotice.style.display='none';
+  }
   const catSec=document.getElementById('dsCatSection');
   if(its.length){
     catSec.style.display='block';
@@ -497,41 +571,45 @@ function updateSummary(){
 
 // ── GRAND BAR ─────────────────────────────────────────────────
 function updateGrandBar(){
-  if(!allDates.length) return;
-  const allItems=allDates.flatMap(k=>days[k]||[]);
-  const grand=allItems.reduce((s,i)=>s+i.total,0);
-  const filled=allDates.filter(k=>(days[k]||[]).length>0).length;
+  // Only Mon(1), Tue(2), Fri(5) — Wed(3) & Thu(4) are teacher diet days
+  const teacherDays=[1,2,5];
+  const workdayItems=teacherDays.flatMap(d=>days[d]||[]);
+  const weekTotal=workdayItems.reduce((s,i)=>s+i.total,0);
+  const grand=weekTotal*numWeeks;
+  const workDays=teacherDays.filter(d=>days[d]&&days[d].length>0).length;
   document.getElementById('grandBar').style.display='flex';
-  const f=fromKey(allDates[0]), t=fromKey(allDates[allDates.length-1]);
-  document.getElementById('gbPeriod').textContent=f.toLocaleDateString('en-KE',{day:'numeric',month:'short'})+' – '+t.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'});
-  const wDays=allDates.filter(k=>{const d=fromKey(k);return d.getDay()>=1&&d.getDay()<=5;}).length;
-  document.getElementById('gbDays').textContent=wDays+' / '+allDates.length;
-  document.getElementById('gbFilled').textContent=filled;
-  document.getElementById('gbItems').textContent=allItems.length;
+  const fp=periodFrom?periodFrom.toLocaleDateString('en-KE',{day:'numeric',month:'short'}):'—';
+  const tp=periodTo?periodTo.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'}):'—';
+  document.getElementById('gbPeriod').textContent=`${fp} – ${tp}`;
+  document.getElementById('gbWeeks').textContent=numWeeks%1===0?numWeeks:numWeeks.toFixed(1);
+  document.getElementById('gbWorkDays').textContent=workDays+' of 3';
+  document.getElementById('gbWeekTotal').textContent='Ksh '+fmt(weekTotal);
   document.getElementById('gbTotal').textContent='Ksh '+fmt(grand);
 }
 
 // ── CLEAR DAY ─────────────────────────────────────────────────
 function clearDay(){
-  if(!(days[activeDateKey]||[]).length){showToast('Nothing to clear');return;}
-  if(!confirm('Clear all items for this day?')) return;
-  days[activeDateKey]=[];
+  if(!(days[activeDow]||[]).length){showToast('Nothing to clear');return;}
+  if(!confirm('Clear all items for '+DAYNAMES[activeDow]+'?')) return;
+  days[activeDow]=[];
   renderItems(); updateSummary(); renderTabs(); updateGrandBar();
   showToast('Day cleared');
 }
 
 // ── CSV ───────────────────────────────────────────────────────
 function exportCSV(){
-  const allItems=allDates.flatMap(k=>days[k]||[]);
-  if(!allItems.length){showToast('No items to export');return;}
-  const rows=[['Date','Day','#','Name','Category','Unit','Unit Price (Ksh)','Qty','Total (Ksh)']];
-  allDates.forEach(k=>{
-    (days[k]||[]).forEach((item,i)=>{
-      const d=fromKey(k); rows.push([k,DAYNAMES[d.getDay()],i+1,item.name,item.cat,item.unit,item.price,item.qty,item.total]);
+  const teacherDays=[1,2,5];
+  const allItems=teacherDays.flatMap(d=>days[d]||[]);
+  if(!allItems.length){showToast('No items to export — add food to Mon, Tue, Fri days first');return;}
+  const rows=[['Day','#','Name','Category','Unit','Unit Price (Ksh)','Qty','Day Total (Ksh)','Weeks','Projected Total (Ksh)','Note']];
+  for(let d=0;d<7;d++){
+    const isTeacherDiet=TEACHER_DIET_DAYS.has(d);
+    (days[d]||[]).forEach((item,i)=>{
+      rows.push([DAYNAMES[d],i+1,item.name,item.cat,item.unit,item.price,item.qty,item.total,numWeeks,isTeacherDiet?'N/A (teacher eats student diet)':(item.total*numWeeks).toFixed(2),isTeacherDiet?'Teachers eat student diet — not counted':'']);
     });
-  });
-  const grand=allItems.reduce((s,i)=>s+i.total,0);
-  rows.push([]); rows.push(['','','','','','','','Grand Total',grand.toFixed(2)]);
+  }
+  const weekTotal=allItems.reduce((s,i)=>s+i.total,0);
+  rows.push([]); rows.push(['','','','','','','Week Total (Mon+Tue+Fri)',weekTotal.toFixed(2),'×'+numWeeks,'Grand Total',(weekTotal*numWeeks).toFixed(2),'Wed & Thu excluded (teacher eats student diet)']);
   const csv=rows.map(r=>r.join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'}), url=URL.createObjectURL(blob), a=document.createElement('a');
   a.href=url; a.download=`FoodOrder_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
@@ -540,28 +618,25 @@ function exportCSV(){
 
 // ── PDF ───────────────────────────────────────────────────────
 function savePDF(btnEl){
-  const allItems=allDates.flatMap(k=>days[k]||[]);
-  if(!allItems.length){showToast('No items to export');return;}
+  const teacherDays=[1,2,5];
+  const allItems=teacherDays.flatMap(d=>days[d]||[]);
+  if(!allItems.length){showToast('No items to export — add food to Mon, Tue, Fri days first');return;}
 
   const overlay=document.getElementById('pdfOverlay');
   overlay.classList.add('show');
   if(btnEl) btnEl.disabled=true;
 
+  function restore(){ overlay.classList.remove('show'); if(btnEl) btnEl.disabled=false; }
+
   const now=new Date();
   const dateStr=now.toLocaleDateString('en-KE',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
   const filePer=now.toLocaleDateString('en-KE',{year:'numeric',month:'long',day:'numeric'}).replace(/\s+/g,'_');
-  const grand=allItems.reduce((s,i)=>s+i.total,0);
-  const filledDates=allDates.filter(k=>(days[k]||[]).length>0);
+  const weekTotal=allItems.reduce((s,i)=>s+i.total,0);
+  const grand=weekTotal*numWeeks;
+  const tp=periodTo?periodTo.toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—';
+  const periodLabel=`${fp} – ${tp}`;
+  const weeksLabel=numWeeks%1===0?numWeeks:numWeeks.toFixed(1);
 
-  const periodLabel=(()=>{
-    if(!allDates.length) return '';
-    const f=fromKey(allDates[0]), t=fromKey(allDates[allDates.length-1]);
-    return f.toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'})+' \u2013 '+t.toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'});
-  })();
-
-  function restore(){ overlay.classList.remove('show'); if(btnEl) btnEl.disabled=false; }
-
-  // Use jsPDF directly — bypasses html2canvas which fails to render flex/grid off-screen
   setTimeout(()=>{
     try {
       const jsPDFLib = window.jspdf || window.jsPDF || {};
@@ -570,10 +645,9 @@ function savePDF(btnEl){
 
       const PW=210, PH=297;
       const ML=14, MR=14, MT=30, MB=20;
-      const CW=PW-ML-MR; // content width
+      const CW=PW-ML-MR;
       const BOTTOM=PH-MB;
 
-      // colour helpers
       const C_INK=[26,22,18], C_MID=[92,83,70], C_LIGHT=[156,143,130], C_ACCENT=[196,80,26], C_RULE=[226,219,208], C_BG=[247,243,236];
 
       function setColor(rgb){ pdf.setTextColor(...rgb); }
@@ -583,25 +657,18 @@ function savePDF(btnEl){
       let pageNum=1;
 
       function drawPageChrome(){
-        // Header line
         setDraw(C_ACCENT); pdf.setLineWidth(0.7);
         pdf.line(ML,13,PW-MR,13);
-        // Brand
         pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor(C_LIGHT);
         pdf.text('FOOD COST TRACKER',ML,9.5);
-        // Title
         pdf.setFont('helvetica','bold'); pdf.setFontSize(12); setColor(C_INK);
         pdf.text('Food Order Statement',ML,19);
-        // Period subtitle
         pdf.setFont('helvetica','normal'); pdf.setFontSize(7); setColor(C_MID);
-        pdf.text(periodLabel+'  \u00b7  '+filledDates.length+' day'+(filledDates.length!==1?'s':'')+' with food',ML,24);
-        // Grand total top-right
+        pdf.text(periodLabel,ML,24);
         pdf.setFont('helvetica','bold'); pdf.setFontSize(10); setColor(C_ACCENT);
         pdf.text('Ksh '+fmt(grand),PW-MR,19,{align:'right'});
-        // Page number
         pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor([190,190,190]);
         pdf.text(pageNum+' / __TOTAL__',PW-MR,9.5,{align:'right'});
-        // Footer
         const fy=PH-9;
         setDraw(C_RULE); pdf.setLineWidth(0.3);
         pdf.line(ML,fy-4,PW-MR,fy-4);
@@ -610,38 +677,28 @@ function savePDF(btnEl){
         pdf.text(dateStr,PW-MR,fy,{align:'right'});
       }
 
-      function newPage(){
-        pdf.addPage();
-        pageNum++;
-        drawPageChrome();
-        return MT+2; // y after header
-      }
+      function newPage(){ pdf.addPage(); pageNum++; drawPageChrome(); return MT+2; }
+      function checkY(y,n){ if(y+n>BOTTOM){ y=newPage(); } return y; }
 
-      function checkY(y, needed){
-        if(y+needed > BOTTOM){ y=newPage(); }
-        return y;
-      }
-
-      // ── Draw first page chrome ──
       drawPageChrome();
       let y=MT+2;
 
-      // ── Summary stat boxes ──
-      const boxH=16, boxW=(CW-6)/4, boxes=[
-        ['Working Days',allDates.length,false],
-        ['Days with Food',filledDates.length,false],
-        ['Total Items',allItems.length,false],
+      // ── Summary boxes ──
+      const boxH=16, boxW=(CW-6)/4;
+      const boxes=[
+        ['Period',`${periodFrom?periodFrom.toLocaleDateString('en-KE',{day:'numeric',month:'short'}):''} – ${periodTo?periodTo.toLocaleDateString('en-KE',{day:'numeric',month:'short',year:'numeric'}):''}`,false],
+        ['Weeks',weeksLabel,false],
+        ['Week Total','Ksh '+fmt(weekTotal),false],
         ['Grand Total','Ksh '+fmt(grand),true]
       ];
       y=checkY(y,boxH+4);
-      boxes.forEach(([ label, val, accent ],i)=>{
+      boxes.forEach(([label,val,accent],i)=>{
         const bx=ML+i*(boxW+2), by=y;
-        setDraw(C_RULE); pdf.setLineWidth(0.3);
-        setFill([255,255,255]);
+        setDraw(C_RULE); pdf.setLineWidth(0.3); setFill([255,255,255]);
         pdf.roundedRect(bx,by,boxW,boxH,1.5,1.5,'FD');
         pdf.setFont('helvetica','normal'); pdf.setFontSize(6); setColor(C_LIGHT);
         pdf.text(String(label).toUpperCase(),bx+3,by+5);
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(accent?9:11);
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(accent?9:8.5);
         setColor(accent?C_ACCENT:C_INK);
         pdf.text(String(val),bx+3,by+12.5);
       });
@@ -652,105 +709,137 @@ function savePDF(btnEl){
       setFill([237,232,223]); setDraw(C_RULE); pdf.setLineWidth(0.2);
       pdf.roundedRect(ML,y,CW,8,1,1,'FD');
       pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor(C_LIGHT);
-      pdf.text('WORKING DAYS RANGE',ML+3,y+3.2);
+      pdf.text('PERIOD RANGE',ML+3,y+3.2);
       pdf.setFont('helvetica','bold'); pdf.setFontSize(8); setColor(C_INK);
-      const rangeFrom=fromKey(allDates[0]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-      const rangeTo=fromKey(allDates[allDates.length-1]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-      pdf.text(rangeFrom+' – '+rangeTo,ML+3,y+6.8);
+      pdf.text(fp+' \u2013 '+tp,ML+3,y+6.8);
       pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); setColor(C_MID);
-      pdf.text(allDates.length+' working day'+(allDates.length!==1?'s':''),PW-MR-3,y+5.5,{align:'right'});
+      pdf.text(weeksLabel+' weeks',PW-MR-3,y+5.5,{align:'right'});
       y+=13;
 
-      // ── Each day ──
-      allDates.forEach(k=>{
-        const its=days[k]||[], d=fromKey(k), dayTotal=its.reduce((s,i)=>s+i.total,0);
-        const dayName=DAYNAMES[d.getDay()], dayShort=fmtShort(k);
+      // ── Teacher diet notice banner ──
+      y=checkY(y,10);
+      const C_GREEN=[46,107,62];
+      setFill([235,245,238]); setDraw(C_GREEN); pdf.setLineWidth(0.5);
+      pdf.roundedRect(ML,y,CW,9,1,1,'FD');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(7); setColor(C_GREEN);
+      pdf.text('TEACHER DIET DAYS',ML+3,y+3.5);
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(7); setColor(C_GREEN);
+      pdf.text('Wednesday & Thursday: teachers eat student diet (rice & beans) — excluded from teacher food cost. Only Mon, Tue & Fri (3 days) are counted.',ML+3,y+7);
+      y+=13;
+      for(let d=0;d<7;d++){
+        const its=days[d]||[], dayTotal=its.reduce((s,i)=>s+i.total,0);
+        const projected=dayTotal*numWeeks;
+        const dayName=DAYNAMES[d];
+        const isWeekend=d===0||d===6;
+        const isTeacherDiet=TEACHER_DIET_DAYS.has(d);
 
-        // Day header — needs at least header + 1 row of content
-        const neededForHeader=10;
-        y=checkY(y, neededForHeader);
-
-        // Day label bar
-        setFill(C_BG); setDraw(C_RULE); pdf.setLineWidth(0.2);
+        y=checkY(y,10);
+        // Day header bar — dimmed for weekends & teacher diet days
+        const C_GREEN=[46,107,62];
+        setFill(isWeekend?[230,225,218]:isTeacherDiet?[235,245,238]:C_BG); setDraw(isTeacherDiet?C_GREEN:C_RULE); pdf.setLineWidth(isTeacherDiet?0.6:0.2);
         pdf.roundedRect(ML,y,CW,7,1,1,'FD');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(9); setColor(C_INK);
-        pdf.text(dayName,ML+3,y+4.8);
-        pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); setColor(C_LIGHT);
-        pdf.text(dayShort,ML+3+pdf.getTextWidth(dayName)+3,y+4.8);
-        // Day total right
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
+        setColor(isWeekend?C_LIGHT:isTeacherDiet?C_GREEN:C_INK);
+        const dayLabel=isWeekend?' (weekend — not counted)':isTeacherDiet?' (teachers eat student diet — not counted)':'';
+        pdf.text(dayName+dayLabel,ML+3,y+4.8);
         pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5);
-        setColor(its.length?C_ACCENT:C_LIGHT);
-        pdf.text(its.length?'Ksh '+fmt(dayTotal):'No food recorded',PW-MR-2,y+4.8,{align:'right'});
+        setColor(isWeekend?C_LIGHT:isTeacherDiet?C_GREEN:(its.length?C_ACCENT:C_LIGHT));
+        pdf.text(isWeekend?'excluded':isTeacherDiet?'student diet day':(its.length?'Ksh '+fmt(dayTotal)+' / week':'No food recorded'),PW-MR-2,y+4.8,{align:'right'});
         y+=9;
 
-        if(!its.length){
-          // Already shown "No food recorded" in the bar — just add spacing
-          y+=2;
-          return;
+        if(!its.length||isWeekend){ y+=2; continue; }
+
+        // For teacher diet days — show note but no cost
+        if(isTeacherDiet){
+          y=checkY(y,10);
+          setFill([235,245,238]); pdf.setLineWidth(0);
+          pdf.rect(ML,y,CW,9,'F');
+          pdf.setFont('helvetica','italic'); pdf.setFontSize(7.5); setColor(C_GREEN);
+          pdf.text('Teachers eat rice & beans from the student diet on this day. No teacher food cost is incurred.',ML+4,y+5.5);
+          y+=12;
+          // Still list items if entered (for reference), but mark as not counted
+          if(its.length){
+            pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor(C_LIGHT);
+            pdf.text('Items below are for reference only — excluded from cost totals.',ML+4,y);
+            y+=5;
+            its.forEach((item,i)=>{
+              y=checkY(y,8);
+              pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); setColor(C_MID);
+              pdf.text((i+1)+'. '+item.name+' ('+item.qty+' × Ksh '+fmt(item.price)+')',ML+4,y+4);
+              setDraw(C_RULE); pdf.setLineWidth(0.1); pdf.line(ML,y+7,PW-MR,y+7);
+              y+=7;
+            });
+          }
+          y+=5; continue;
         }
 
-        // Column header row
+        // Column headers
         y=checkY(y,6);
         pdf.setFont('helvetica','normal'); pdf.setFontSize(6); setColor(C_LIGHT);
         setDraw(C_INK); pdf.setLineWidth(0.4);
-        pdf.line(ML,y,PW-MR,y);
-        y+=1;
+        pdf.line(ML,y,PW-MR,y); y+=1;
         pdf.text('#',ML+1,y+3.5);
         pdf.text('ITEM',ML+8,y+3.5);
-        pdf.text('CATEGORY / UNIT',ML+90,y+3.5);
-        pdf.text('QTY x PRICE',ML+135,y+3.5);
-        pdf.text('TOTAL',PW-MR-2,y+3.5,{align:'right'});
-        y+=5;
-        pdf.setLineWidth(0.3); setDraw(C_INK);
-        pdf.line(ML,y,PW-MR,y);
-        y+=1;
+        pdf.text('CATEGORY / UNIT',ML+85,y+3.5);
+        pdf.text('QTY x PRICE',ML+128,y+3.5);
+        pdf.text('DAY TOTAL',PW-MR-2,y+3.5,{align:'right'});
+        y+=5; pdf.setLineWidth(0.3); setDraw(C_INK); pdf.line(ML,y,PW-MR,y); y+=1;
 
-        // Item rows
         its.forEach((item,i)=>{
           y=checkY(y,8);
-          // Zebra stripe
-          if(i%2===1){
-            setFill([245,242,237]); pdf.setLineWidth(0);
-            pdf.rect(ML,y,CW,7,'F');
-          }
+          if(i%2===1){ setFill([245,242,237]); pdf.setLineWidth(0); pdf.rect(ML,y,CW,7,'F'); }
           pdf.setFont('helvetica','bold'); pdf.setFontSize(8); setColor(C_INK);
           pdf.text(String(i+1),ML+2,y+5,{align:'right'});
           pdf.text(item.name,ML+8,y+5);
           pdf.setFont('helvetica','normal'); pdf.setFontSize(7); setColor(C_MID);
-          pdf.text(item.cat+' \u00b7 '+item.unit,ML+90,y+5);
-          pdf.text(item.qty+' x Ksh '+fmt(item.price),ML+135,y+5);
+          pdf.text(item.cat+' \u00b7 '+item.unit,ML+85,y+5);
+          pdf.text(item.qty+' x Ksh '+fmt(item.price),ML+128,y+5);
           pdf.setFont('helvetica','bold'); pdf.setFontSize(8); setColor(C_INK);
           pdf.text('Ksh '+fmt(item.total),PW-MR-2,y+5,{align:'right'});
-          // Divider
-          setDraw(C_RULE); pdf.setLineWidth(0.15);
-          pdf.line(ML,y+7,PW-MR,y+7);
+          setDraw(C_RULE); pdf.setLineWidth(0.15); pdf.line(ML,y+7,PW-MR,y+7);
           y+=7;
         });
 
-        // Day total row
-        y=checkY(y,8);
-        setFill([26,22,18]); pdf.setLineWidth(0);
+        // Day subtotal row
+        y=checkY(y,7);
+        setFill([40,35,30]); pdf.setLineWidth(0);
         pdf.rect(ML,y,CW,7,'F');
-        pdf.setFont('helvetica','bold'); pdf.setFontSize(8); setColor([255,255,255]);
-        pdf.text('Day Total — '+dayName,ML+3,y+5);
-        pdf.text('Ksh '+fmt(dayTotal),PW-MR-2,y+5,{align:'right'});
-        y+=10; // gap between days
-      });
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); setColor([255,255,255]);
+        pdf.text(dayName+' — 1 week total',ML+3,y+4.8);
+        pdf.text('Ksh '+fmt(dayTotal),PW-MR-2,y+4.8,{align:'right'});
+        y+=7;
+
+        // Projected row (×weeks)
+        y=checkY(y,7);
+        setFill(C_ACCENT); pdf.setLineWidth(0);
+        pdf.rect(ML,y,CW,7,'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(7.5); setColor([255,255,255]);
+        pdf.text(dayName+' \u00d7 '+weeksLabel+' weeks',ML+3,y+4.8);
+        pdf.text('Ksh '+fmt(projected),PW-MR-2,y+4.8,{align:'right'});
+        y+=10;
+      }
 
       // ── Grand total bar ──
-      y=checkY(y,14);
+      y=checkY(y,22);
+      // Week subtotal
+      setFill([40,35,30]); pdf.setLineWidth(0);
+      pdf.rect(ML,y,CW,8,'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(9); setColor([255,255,255]);
+      pdf.text('TOTAL PER WEEK',ML+4,y+5.5);
+      pdf.text('Ksh '+fmt(weekTotal),PW-MR-3,y+5.5,{align:'right'});
+      y+=9;
+      // Grand total
       setFill(C_ACCENT); pdf.setLineWidth(0);
       pdf.rect(ML,y,CW,11,'F');
       pdf.setFont('helvetica','bold'); pdf.setFontSize(11); setColor([255,255,255]);
-      pdf.text('GRAND TOTAL',ML+4,y+7.5);
+      pdf.text('GRAND TOTAL  (Mon + Tue + Fri \u00d7 '+weeksLabel+' weeks)',ML+4,y+7.5);
       pdf.setFontSize(13);
       pdf.text('Ksh '+fmt(grand),PW-MR-3,y+7.5,{align:'right'});
 
-      // ── Fix page numbers (replace placeholder) ──
+      // Fix page numbers
       const total=pdf.internal.getNumberOfPages();
       for(let p=1;p<=total;p++){
         pdf.setPage(p);
-        // White-out the placeholder
         setFill([255,255,255]); pdf.setLineWidth(0);
         pdf.rect(PW-MR-30,5,32,6,'F');
         pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor([190,190,190]);
