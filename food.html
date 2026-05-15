@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Food Cost Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=Syne:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -522,114 +523,216 @@ function savePDF(btnEl){
   const periodLabel=(()=>{
     if(!allDates.length) return '';
     const f=fromKey(allDates[0]), t=fromKey(allDates[allDates.length-1]);
-    return f.toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'})+' – '+t.toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'});
+    return f.toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'})+' \u2013 '+t.toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'});
   })();
 
-  // Build clean PDF-only element (attached off-screen so html2canvas renders it)
-  const pdfEl=document.createElement('div');
-  pdfEl.style.cssText='font-family:Arial,sans-serif;color:#1A1612;background:#fff;width:680px;position:absolute;left:-9999px;top:0;';
+  function restore(){ overlay.classList.remove('show'); if(btnEl) btnEl.disabled=false; }
 
-  let html=`
-    <div style="margin-bottom:18px;padding-bottom:12px;border-bottom:2px solid #1A1612;">
-      <div style="font-size:19px;font-weight:700;margin-bottom:3px;">Food Order Statement</div>
-      <div style="font-size:11px;color:#5C5346;">${periodLabel} &nbsp;·&nbsp; ${filledDates.length} day${filledDates.length!==1?'s':''} with food &nbsp;·&nbsp; ${allItems.length} total items</div>
-    </div>
-    <div style="display:flex;gap:10px;margin-bottom:18px;">
-      ${[['Working Days',allDates.length],['Days with Food',filledDates.length],['Total Items',allItems.length]].map(([l,v])=>`
-      <div style="flex:1;border:1px solid #E2DBD0;border-radius:7px;padding:10px 12px;">
-        <div style="font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#9C8F82;margin-bottom:3px;">${l}</div>
-        <div style="font-size:18px;font-weight:700;">${v}</div>
-      </div>`).join('')}
-      <div style="flex:1;border:1px solid #E2DBD0;border-radius:7px;padding:10px 12px;">
-        <div style="font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:#9C8F82;margin-bottom:3px;">Grand Total</div>
-        <div style="font-size:16px;font-weight:700;color:#C4501A;">Ksh ${fmt(grand)}</div>
-      </div>
-    </div>`;
+  // Use jsPDF directly — bypasses html2canvas which fails to render flex/grid off-screen
+  setTimeout(()=>{
+    try {
+      const jsPDFLib = window.jspdf || window.jsPDF || {};
+      const { jsPDF } = jsPDFLib;
+      const pdf = new jsPDF({ unit:'mm', format:'a4', orientation:'portrait' });
 
-  allDates.forEach(k=>{
-    const its=days[k]||[], d=fromKey(k), dayTotal=its.reduce((s,i)=>s+i.total,0);
-    html+=`<div style="margin-bottom:16px;page-break-inside:avoid;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;">
-        <div>
-          <span style="font-size:13px;font-weight:700;">${DAYNAMES[d.getDay()]}</span>
-          <span style="font-size:10px;color:#9C8F82;margin-left:7px;">${fmtShort(k)}</span>
-        </div>
-        <span style="font-size:11px;font-weight:600;color:#C4501A;">${its.length?'Ksh '+fmt(dayTotal):'—'}</span>
-      </div>`;
-    if(!its.length){
-      html+=`<div style="font-size:11px;color:#9C8F82;padding:8px 0;border-top:1px solid #E2DBD0;border-bottom:1px solid #E2DBD0;">No food recorded</div>`;
-    } else {
-      html+=`<div style="border-top:1.5px solid #1A1612;">
-        <div style="display:flex;gap:8px;padding:4px 0;border-bottom:1px solid #1A1612;">
-          <span style="font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:#9C8F82;width:16px;">#</span>
-          <span style="font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:#9C8F82;flex:1;">Item</span>
-          <span style="font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:#9C8F82;width:90px;text-align:center;">Qty × Price</span>
-          <span style="font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:#9C8F82;width:80px;text-align:right;">Total</span>
-        </div>`;
-      its.forEach((item,i)=>{
-        html+=`<div style="display:flex;gap:8px;padding:6px 0;border-bottom:1px solid #EDE8DF;align-items:center;">
-          <span style="font-size:10px;color:#9C8F82;width:16px;">${i+1}</span>
-          <div style="flex:1;"><div style="font-size:11px;font-weight:600;">${item.name}</div><div style="font-size:9px;color:#9C8F82;">${item.cat} · ${item.unit}</div></div>
-          <span style="font-size:10px;color:#5C5346;width:90px;text-align:center;">${item.qty} × Ksh ${fmt(item.price)}</span>
-          <span style="font-size:11px;font-weight:700;width:80px;text-align:right;">Ksh ${fmt(item.total)}</span>
-        </div>`;
+      const PW=210, PH=297;
+      const ML=14, MR=14, MT=30, MB=20;
+      const CW=PW-ML-MR; // content width
+      const BOTTOM=PH-MB;
+
+      // colour helpers
+      const C_INK=[26,22,18], C_MID=[92,83,70], C_LIGHT=[156,143,130], C_ACCENT=[196,80,26], C_RULE=[226,219,208], C_BG=[247,243,236];
+
+      function setColor(rgb){ pdf.setTextColor(...rgb); }
+      function setDraw(rgb){ pdf.setDrawColor(...rgb); }
+      function setFill(rgb){ pdf.setFillColor(...rgb); }
+
+      let pageNum=1;
+
+      function drawPageChrome(){
+        // Header line
+        setDraw(C_ACCENT); pdf.setLineWidth(0.7);
+        pdf.line(ML,13,PW-MR,13);
+        // Brand
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor(C_LIGHT);
+        pdf.text('FOOD COST TRACKER',ML,9.5);
+        // Title
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(12); setColor(C_INK);
+        pdf.text('Food Order Statement',ML,19);
+        // Period subtitle
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(7); setColor(C_MID);
+        pdf.text(periodLabel+'  \u00b7  '+filledDates.length+' day'+(filledDates.length!==1?'s':'')+' with food',ML,24);
+        // Grand total top-right
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(10); setColor(C_ACCENT);
+        pdf.text('Ksh '+fmt(grand),PW-MR,19,{align:'right'});
+        // Page number
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor([190,190,190]);
+        pdf.text(pageNum+' / __TOTAL__',PW-MR,9.5,{align:'right'});
+        // Footer
+        const fy=PH-9;
+        setDraw(C_RULE); pdf.setLineWidth(0.3);
+        pdf.line(ML,fy-4,PW-MR,fy-4);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor([190,190,190]);
+        pdf.text('Prepared by Finance Office',ML,fy);
+        pdf.text(dateStr,PW-MR,fy,{align:'right'});
+      }
+
+      function newPage(){
+        pdf.addPage();
+        pageNum++;
+        drawPageChrome();
+        return MT+2; // y after header
+      }
+
+      function checkY(y, needed){
+        if(y+needed > BOTTOM){ y=newPage(); }
+        return y;
+      }
+
+      // ── Draw first page chrome ──
+      drawPageChrome();
+      let y=MT+2;
+
+      // ── Summary stat boxes ──
+      const boxH=16, boxW=(CW-6)/4, boxes=[
+        ['Working Days',allDates.length,false],
+        ['Days with Food',filledDates.length,false],
+        ['Total Items',allItems.length,false],
+        ['Grand Total','Ksh '+fmt(grand),true]
+      ];
+      y=checkY(y,boxH+4);
+      boxes.forEach(([ label, val, accent ],i)=>{
+        const bx=ML+i*(boxW+2), by=y;
+        setDraw(C_RULE); pdf.setLineWidth(0.3);
+        setFill([255,255,255]);
+        pdf.roundedRect(bx,by,boxW,boxH,1.5,1.5,'FD');
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(6); setColor(C_LIGHT);
+        pdf.text(String(label).toUpperCase(),bx+3,by+5);
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(accent?9:11);
+        setColor(accent?C_ACCENT:C_INK);
+        pdf.text(String(val),bx+3,by+12.5);
       });
-      html+=`<div style="display:flex;justify-content:flex-end;padding:5px 0;"><span style="font-size:11px;font-weight:700;color:#C4501A;">Day Total: Ksh ${fmt(dayTotal)}</span></div></div>`;
+      y+=boxH+4;
+
+      // ── Working days range banner ──
+      y=checkY(y,9);
+      setFill([237,232,223]); setDraw(C_RULE); pdf.setLineWidth(0.2);
+      pdf.roundedRect(ML,y,CW,8,1,1,'FD');
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor(C_LIGHT);
+      pdf.text('WORKING DAYS RANGE',ML+3,y+3.2);
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(8); setColor(C_INK);
+      const rangeFrom=fromKey(allDates[0]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      const rangeTo=fromKey(allDates[allDates.length-1]).toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      pdf.text(rangeFrom+' – '+rangeTo,ML+3,y+6.8);
+      pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); setColor(C_MID);
+      pdf.text(allDates.length+' working day'+(allDates.length!==1?'s':''),PW-MR-3,y+5.5,{align:'right'});
+      y+=13;
+
+      // ── Each day ──
+      allDates.forEach(k=>{
+        const its=days[k]||[], d=fromKey(k), dayTotal=its.reduce((s,i)=>s+i.total,0);
+        const dayName=DAYNAMES[d.getDay()], dayShort=fmtShort(k);
+
+        // Day header — needs at least header + 1 row of content
+        const neededForHeader=10;
+        y=checkY(y, neededForHeader);
+
+        // Day label bar
+        setFill(C_BG); setDraw(C_RULE); pdf.setLineWidth(0.2);
+        pdf.roundedRect(ML,y,CW,7,1,1,'FD');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(9); setColor(C_INK);
+        pdf.text(dayName,ML+3,y+4.8);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); setColor(C_LIGHT);
+        pdf.text(dayShort,ML+3+pdf.getTextWidth(dayName)+3,y+4.8);
+        // Day total right
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(8.5);
+        setColor(its.length?C_ACCENT:C_LIGHT);
+        pdf.text(its.length?'Ksh '+fmt(dayTotal):'No food recorded',PW-MR-2,y+4.8,{align:'right'});
+        y+=9;
+
+        if(!its.length){
+          // Already shown "No food recorded" in the bar — just add spacing
+          y+=2;
+          return;
+        }
+
+        // Column header row
+        y=checkY(y,6);
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(6); setColor(C_LIGHT);
+        setDraw(C_INK); pdf.setLineWidth(0.4);
+        pdf.line(ML,y,PW-MR,y);
+        y+=1;
+        pdf.text('#',ML+1,y+3.5);
+        pdf.text('ITEM',ML+8,y+3.5);
+        pdf.text('CATEGORY / UNIT',ML+90,y+3.5);
+        pdf.text('QTY x PRICE',ML+135,y+3.5);
+        pdf.text('TOTAL',PW-MR-2,y+3.5,{align:'right'});
+        y+=5;
+        pdf.setLineWidth(0.3); setDraw(C_INK);
+        pdf.line(ML,y,PW-MR,y);
+        y+=1;
+
+        // Item rows
+        its.forEach((item,i)=>{
+          y=checkY(y,8);
+          // Zebra stripe
+          if(i%2===1){
+            setFill([245,242,237]); pdf.setLineWidth(0);
+            pdf.rect(ML,y,CW,7,'F');
+          }
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(8); setColor(C_INK);
+          pdf.text(String(i+1),ML+2,y+5,{align:'right'});
+          pdf.text(item.name,ML+8,y+5);
+          pdf.setFont('helvetica','normal'); pdf.setFontSize(7); setColor(C_MID);
+          pdf.text(item.cat+' \u00b7 '+item.unit,ML+90,y+5);
+          pdf.text(item.qty+' x Ksh '+fmt(item.price),ML+135,y+5);
+          pdf.setFont('helvetica','bold'); pdf.setFontSize(8); setColor(C_INK);
+          pdf.text('Ksh '+fmt(item.total),PW-MR-2,y+5,{align:'right'});
+          // Divider
+          setDraw(C_RULE); pdf.setLineWidth(0.15);
+          pdf.line(ML,y+7,PW-MR,y+7);
+          y+=7;
+        });
+
+        // Day total row
+        y=checkY(y,8);
+        setFill([26,22,18]); pdf.setLineWidth(0);
+        pdf.rect(ML,y,CW,7,'F');
+        pdf.setFont('helvetica','bold'); pdf.setFontSize(8); setColor([255,255,255]);
+        pdf.text('Day Total — '+dayName,ML+3,y+5);
+        pdf.text('Ksh '+fmt(dayTotal),PW-MR-2,y+5,{align:'right'});
+        y+=10; // gap between days
+      });
+
+      // ── Grand total bar ──
+      y=checkY(y,14);
+      setFill(C_ACCENT); pdf.setLineWidth(0);
+      pdf.rect(ML,y,CW,11,'F');
+      pdf.setFont('helvetica','bold'); pdf.setFontSize(11); setColor([255,255,255]);
+      pdf.text('GRAND TOTAL',ML+4,y+7.5);
+      pdf.setFontSize(13);
+      pdf.text('Ksh '+fmt(grand),PW-MR-3,y+7.5,{align:'right'});
+
+      // ── Fix page numbers (replace placeholder) ──
+      const total=pdf.internal.getNumberOfPages();
+      for(let p=1;p<=total;p++){
+        pdf.setPage(p);
+        // White-out the placeholder
+        setFill([255,255,255]); pdf.setLineWidth(0);
+        pdf.rect(PW-MR-30,5,32,6,'F');
+        pdf.setFont('helvetica','normal'); pdf.setFontSize(6.5); setColor([190,190,190]);
+        pdf.text(p+' / '+total,PW-MR,9.5,{align:'right'});
+      }
+
+      pdf.save('FoodOrder_'+filePer+'.pdf');
+      restore();
+      showToast('PDF saved');
+    } catch(err){
+      console.error(err);
+      restore();
+      showToast('PDF failed — try again');
     }
-    html+=`</div>`;
-  });
-
-  // Grand total — always fully visible, never cut off
-  html+=`<div style="border-top:2px solid #1A1612;margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;align-items:baseline;">
-    <span style="font-size:14px;font-weight:700;">Grand Total</span>
-    <span style="font-size:18px;font-weight:700;color:#C4501A;">Ksh ${fmt(grand)}</span>
-  </div>`;
-
-  pdfEl.innerHTML=html;
-  document.body.appendChild(pdfEl);
-
-  const PAGE_W=210, PAGE_H=297;
-  const MARGIN={top:28,right:14,bottom:22,left:14};
-
-  const opt={
-    margin:[MARGIN.top,MARGIN.right,MARGIN.bottom,MARGIN.left],
-    filename:`FoodOrder_${filePer}.pdf`,
-    image:{type:'jpeg',quality:0.97},
-    html2canvas:{scale:2,useCORS:true,backgroundColor:'#ffffff'},
-    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'},
-    pagebreak:{mode:['avoid-all','css','legacy']}
-  };
-
-  function restore(){ document.body.removeChild(pdfEl); overlay.classList.remove('show'); if(btnEl) btnEl.disabled=false; }
-
-  html2pdf().set(opt).from(pdfEl).toPdf().get('pdf').then(pdf=>{
-    const totalPages=pdf.internal.getNumberOfPages();
-    for(let i=1;i<=totalPages;i++){
-      pdf.setPage(i);
-      // Header
-      pdf.setDrawColor(196,80,26); pdf.setLineWidth(0.8);
-      pdf.line(MARGIN.left,13,PAGE_W-MARGIN.right,13);
-      pdf.setFont('helvetica','normal'); pdf.setFontSize(7); pdf.setTextColor(156,143,130);
-      pdf.text('FOOD COST TRACKER',MARGIN.left,9.5);
-      pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.setTextColor(26,22,18);
-      pdf.text('Food Order Statement',MARGIN.left,18.5);
-      pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(92,83,70);
-      pdf.text(`${periodLabel}  ·  ${filledDates.length} day${filledDates.length!==1?'s':''} with food`,MARGIN.left,23);
-      pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(196,80,26);
-      pdf.text(`Ksh ${fmt(grand)}`,PAGE_W-MARGIN.right,18.5,{align:'right'});
-      pdf.setFont('helvetica','normal'); pdf.setFontSize(7); pdf.setTextColor(170,170,170);
-      pdf.text(`${i} / ${totalPages}`,PAGE_W-MARGIN.right,9.5,{align:'right'});
-      // Footer
-      const fy=PAGE_H-10;
-      pdf.setDrawColor(226,219,208); pdf.setLineWidth(0.3);
-      pdf.line(MARGIN.left,fy-4,PAGE_W-MARGIN.right,fy-4);
-      pdf.setFont('helvetica','normal'); pdf.setFontSize(7); pdf.setTextColor(170,170,170);
-      pdf.text('Generated by FoodCost Tracker',MARGIN.left,fy);
-      pdf.text(dateStr,PAGE_W-MARGIN.right,fy,{align:'right'});
-    }
-  }).save()
-    .then(()=>{restore();showToast('PDF saved');})
-    .catch(()=>{restore();showToast('PDF failed — try again');});
+  }, 80);
 }
 
 document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='Enter') addItem();});
