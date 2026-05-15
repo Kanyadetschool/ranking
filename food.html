@@ -633,6 +633,7 @@ function savePDF(btnEl){
   const filePer=now.toLocaleDateString('en-KE',{year:'numeric',month:'long',day:'numeric'}).replace(/\s+/g,'_');
   const weekTotal=allItems.reduce((s,i)=>s+i.total,0);
   const grand=weekTotal*numWeeks;
+  const fp=periodFrom?periodFrom.toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—';
   const tp=periodTo?periodTo.toLocaleDateString('en-KE',{weekday:'long',day:'numeric',month:'long',year:'numeric'}):'—';
   const periodLabel=`${fp} – ${tp}`;
   const weeksLabel=numWeeks%1===0?numWeeks:numWeeks.toFixed(1);
