@@ -345,7 +345,7 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
       <div class="gb-item"><div class="gb-label">Grand Total (all weeks)</div><div class="gb-val accent" id="gbTotal">Ksh 0.00</div></div>
     </div>
     <div style="margin-top:12px;background:#EBF5EE;border:1px solid #B3D9BF;border-radius:10px;padding:11px 18px;font-size:12px;color:#1F5C32;line-height:1.6;">
-      🍛 <strong>Teacher Diet Days — Wednesday &amp; Thursday:</strong> On these two days, teachers eat rice &amp; beans from the student diet and are <strong>not counted</strong> in teacher food cost. Only <strong>Monday, Tuesday &amp; Friday</strong> (3 days/week) contribute to the total above.
+      🍛 <strong>Teacher Diet Days — Tuesday &amp; Thursday:</strong> On these two days, teachers eat rice &amp; beans from the student diet and are <strong>not counted</strong> in teacher food cost. Only <strong>Monday, Wednesday &amp; Friday</strong> (3 days/week) contribute to the total above.
     </div>
   </div>
 </div>
@@ -365,8 +365,8 @@ let periodFrom = null, periodTo = null;
 let nextId = 1;
 
 const CAT_COLORS = { Main:'#C4501A', Protein:'#B55A2A', Side:'#2E6B3E', Drink:'#185FA5', Snack:'#BA7517', Dessert:'#993556', Other:'#5F5E5A' };
-// Wednesday (3) and Thursday (4) — teachers eat student diet, not counted for teacher food cost
-const TEACHER_DIET_DAYS = new Set([3, 4]);
+// Tuesday (2) and Thursday (4) — teachers eat student diet, not counted for teacher food cost
+const TEACHER_DIET_DAYS = new Set([2, 4]);
 const PRESETS = [
   {name:'Ugali',price:50,cat:'Main',unit:'plate'},{name:'Chicken',price:200,cat:'Protein',unit:'portion'},
   {name:'Sukuma Wiki',price:30,cat:'Side',unit:'portion'},{name:'Rice',price:70,cat:'Main',unit:'plate'},
@@ -571,8 +571,8 @@ function updateSummary(){
 
 // ── GRAND BAR ─────────────────────────────────────────────────
 function updateGrandBar(){
-  // Only Mon(1), Tue(2), Fri(5) — Wed(3) & Thu(4) are teacher diet days
-  const teacherDays=[1,2,5];
+  // Only Mon(1), Wed(3), Fri(5) — Tue(2) & Thu(4) are teacher diet days
+  const teacherDays=[1,3,5];
   const workdayItems=teacherDays.flatMap(d=>days[d]||[]);
   const weekTotal=workdayItems.reduce((s,i)=>s+i.total,0);
   const grand=weekTotal*numWeeks;
@@ -598,9 +598,9 @@ function clearDay(){
 
 // ── CSV ───────────────────────────────────────────────────────
 function exportCSV(){
-  const teacherDays=[1,2,5];
+  const teacherDays=[1,3,5];
   const allItems=teacherDays.flatMap(d=>days[d]||[]);
-  if(!allItems.length){showToast('No items to export — add food to Mon, Tue, Fri days first');return;}
+  if(!allItems.length){showToast('No items to export — add food to Mon, Wed, Fri days first');return;}
   const rows=[['Day','#','Name','Category','Unit','Unit Price (Ksh)','Qty','Day Total (Ksh)','Weeks','Projected Total (Ksh)','Note']];
   for(let d=0;d<7;d++){
     const isTeacherDiet=TEACHER_DIET_DAYS.has(d);
@@ -609,7 +609,7 @@ function exportCSV(){
     });
   }
   const weekTotal=allItems.reduce((s,i)=>s+i.total,0);
-  rows.push([]); rows.push(['','','','','','','Week Total (Mon+Tue+Fri)',weekTotal.toFixed(2),'×'+numWeeks,'Grand Total',(weekTotal*numWeeks).toFixed(2),'Wed & Thu excluded (teacher eats student diet)']);
+  rows.push([]); rows.push(['','','','','','','Week Total (Mon+Wed+Fri)',weekTotal.toFixed(2),'×'+numWeeks,'Grand Total',(weekTotal*numWeeks).toFixed(2),'Tue & Thu excluded (teacher eats student diet)']);
   const csv=rows.map(r=>r.join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'}), url=URL.createObjectURL(blob), a=document.createElement('a');
   a.href=url; a.download=`FoodOrder_${Date.now()}.csv`; a.click(); URL.revokeObjectURL(url);
@@ -618,9 +618,9 @@ function exportCSV(){
 
 // ── PDF ───────────────────────────────────────────────────────
 function savePDF(btnEl){
-  const teacherDays=[1,2,5];
+  const teacherDays=[1,3,5];
   const allItems=teacherDays.flatMap(d=>days[d]||[]);
-  if(!allItems.length){showToast('No items to export — add food to Mon, Tue, Fri days first');return;}
+  if(!allItems.length){showToast('No items to export — add food to Mon, Wed, Fri days first');return;}
 
   const overlay=document.getElementById('pdfOverlay');
   overlay.classList.add('show');
@@ -724,7 +724,7 @@ function savePDF(btnEl){
       pdf.setFont('helvetica','bold'); pdf.setFontSize(7); setColor(C_GREEN);
       pdf.text('TEACHER DIET DAYS',ML+3,y+3.5);
       pdf.setFont('helvetica','normal'); pdf.setFontSize(7); setColor(C_GREEN);
-      pdf.text('Wednesday & Thursday: teachers eat student diet (rice & beans) — excluded from teacher food cost. Only Mon, Tue & Fri (3 days) are counted.',ML+3,y+7);
+      pdf.text('Tuesday & Thursday: teachers eat student diet (rice & beans) — excluded from teacher food cost. Only Mon, Wed & Fri (3 days) are counted.',ML+3,y+7);
       y+=13;
       for(let d=0;d<7;d++){
         const its=days[d]||[], dayTotal=its.reduce((s,i)=>s+i.total,0);
@@ -832,7 +832,7 @@ function savePDF(btnEl){
       setFill(C_ACCENT); pdf.setLineWidth(0);
       pdf.rect(ML,y,CW,11,'F');
       pdf.setFont('helvetica','bold'); pdf.setFontSize(11); setColor([255,255,255]);
-      pdf.text('GRAND TOTAL  (Mon + Tue + Fri \u00d7 '+weeksLabel+' weeks)',ML+4,y+7.5);
+      pdf.text('GRAND TOTAL  (Mon + Wed + Fri \u00d7 '+weeksLabel+' weeks)',ML+4,y+7.5);
       pdf.setFontSize(13);
       pdf.text('Ksh '+fmt(grand),PW-MR-3,y+7.5,{align:'right'});
 
