@@ -65,6 +65,8 @@ body { font-family: 'Syne', sans-serif; background: var(--bg); color: var(--ink)
 .week-tab.active .tab-total { color: #e07040; }
 .tab-count { font-size: 9px; color: var(--ink-light); margin-top: 1px; }
 .week-tab.active .tab-count { color: #888; }
+.week-tab.today { border-top: 2.5px solid var(--accent); }
+.week-tab.today .tab-day { color: var(--accent); }
 
 /* DAY PANEL */
 .day-panel { display: grid; grid-template-columns: 1fr 290px; gap: 18px; align-items: start; }
@@ -359,12 +361,29 @@ function showToast(msg){
 // ── DEFAULT DATES (current month 1st → last day) ─────────────
 (function(){
   const t=new Date();
-  const first=new Date(t.getFullYear(),t.getMonth(),1);
+  const first=new Date(t.getFullYear(),t.getMonth(),t.getDate());
   const last=new Date(t.getFullYear(),t.getMonth()+1,0);
   document.getElementById('dateFrom').value=toKey(first);
   document.getElementById('dateTo').value=toKey(last);
   // Auto-generate the current month on load
   setTimeout(applyRange, 0);
+
+  // Auto-refresh at midnight so "today" stays current
+  function scheduleAutoRefresh(){
+    const now=new Date();
+    const msUntilMidnight=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1)-now;
+    setTimeout(()=>{
+      // Update date inputs to current month and re-render
+      const t2=new Date();
+      const f2=new Date(t2.getFullYear(),t2.getMonth(),t2.getDate());
+      const l2=new Date(t2.getFullYear(),t2.getMonth()+1,0);
+      document.getElementById('dateFrom').value=toKey(f2);
+      document.getElementById('dateTo').value=toKey(l2);
+      applyRange();
+      scheduleAutoRefresh();
+    }, msUntilMidnight);
+  }
+  scheduleAutoRefresh();
 })();
 
 // ── APPLY RANGE ───────────────────────────────────────────────
@@ -396,7 +415,7 @@ function renderTabs(){
   allDates.forEach(k=>{
     const d=fromKey(k), its=days[k]||[], tot=its.reduce((s,i)=>s+i.total,0);
     const t=document.createElement('div');
-    t.className='week-tab'+(k===activeDateKey?' active':''); t.dataset.key=k;
+    const todayKey=toKey(new Date()); t.className='week-tab'+(k===activeDateKey?' active':'')+(k===todayKey?' today':''); t.dataset.key=k;
     t.innerHTML=`<div class="tab-day">${DOW[d.getDay()]}</div><div class="tab-date">${d.getDate()}</div><div class="tab-total">${its.length?'Ksh '+fmt(tot):'—'}</div><div class="tab-count">${its.length?its.length+' item'+(its.length!==1?'s':''):'empty'}</div>`;
     t.onclick=()=>selectDate(k); w.appendChild(t);
   });
