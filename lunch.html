@@ -257,17 +257,24 @@ window.dispatchEvent(new Event('fb-ready'));
     .app-header, .toolbar .btn, .add-form, .settings-bar,
     .icon-btn, .header-actions, .legend { display: none !important; }
     .main { max-width: 100%; padding: 0; }
-    .stats { box-shadow: none; }
-    .stat-card, .table-wrap { box-shadow: none; border: 1px solid #ddd; }
+    /* Compact stats so table fits on page 1 */
+    .stats { margin-bottom: 14px; gap: 8px; }
+    .stat-card { padding: 10px 14px; box-shadow: none; border: 1px solid #ddd; }
+    .stat-val { font-size: 16px; }
+    .table-wrap { box-shadow: none; border: 1px solid #ddd; margin-top: 8px !important; }
     tbody tr:hover { background: white; }
-    .print-header { display: block !important; }
-    .print-footer { display: block !important; }
+    .print-header { display: block !important; margin-bottom: 12px; }
+    .print-footer { display: flex !important; }
     tfoot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .stat-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    @page { margin: 18mm; size: A4; }
-    .toolbar { margin-bottom: 10px; }
+    .avatar, .avatar-placeholder { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    @page { margin: 12mm; size: A4; }
+    .toolbar { margin-bottom: 6px; }
     .member-count { display: none; }
+    /* Never break between header and table */
+    .stats, .toolbar, .table-wrap { page-break-inside: avoid; }
+    .print-header + * { page-break-before: avoid; }
   }
 
   .print-header { display: none; margin-bottom: 20px; }
@@ -582,21 +589,46 @@ function updateAuthUI(user) {
     .forEach(el => el.disabled = !user);
 }
 
+// ── IMAGE → BASE64 (needed for both photo cache and PDF export) ──
+async function imgToBase64(url) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      try {
+        const c = document.createElement('canvas');
+        c.width = img.naturalWidth || 64;
+        c.height = img.naturalHeight || 64;
+        c.getContext('2d').drawImage(img, 0, 0);
+        resolve(c.toDataURL('image/jpeg', 0.9));
+      } catch { resolve(''); }
+    };
+    img.onerror = () => resolve('');
+    img.src = url + (url.includes('?') ? '&' : '?') + '_t=' + Date.now();
+  });
+}
+
 // ── FIRESTORE PHOTO LOADER ────────────────────────────────────
 // Fetches users/{uid}/photoURL from Firestore and caches by displayName / name
 async function loadPhotos() {
   try {
     const { fst, collection, getDocs } = window._fb;
     const snap = await getDocs(collection(fst, 'users'));
+    const conversions = [];
     snap.forEach(doc => {
       const d = doc.data();
-      const photo = d.photoURL || '';
-      if (!photo) return;
-      // Index by uid (doc.id) and by displayName / name for fuzzy matching
-      photoCache[doc.id] = photo;
-      if (d.displayName) photoCache[normKey(d.displayName)] = photo;
-      if (d.name)        photoCache[normKey(d.name)]        = photo;
+      const rawUrl = d.photoURL || '';
+      if (!rawUrl) return;
+      // Queue base64 conversion for each photo URL
+      conversions.push((async () => {
+        const b64 = await imgToBase64(rawUrl);
+        const final = b64 || rawUrl; // fallback to raw if conversion fails
+        photoCache[doc.id] = final;
+        if (d.displayName) photoCache[normKey(d.displayName)] = final;
+        if (d.name)        photoCache[normKey(d.name)]        = final;
+      })());
     });
+    await Promise.all(conversions);
     render(); // re-render once photos are ready
   } catch(e) {
     console.warn('Could not load Firestore photos:', e.message);
@@ -760,18 +792,20 @@ function saveEdit(i) {
 // ── PRINT ─────────────────────────────────────────────────────
 function printDoc() {
   document.getElementById('printFooter').style.display = 'flex';
+  document.getElementById('printHeader').style.display = 'block';
   window.print();
   setTimeout(() => {
     document.getElementById('printFooter').style.display = 'none';
+    document.getElementById('printHeader').style.display = 'none';
   }, 500);
 }
 
 // ── MOBILE PDF DOWNLOAD ───────────────────────────────────────
-function downloadPDF() {
+
+async function downloadPDF() {
   const btn = document.getElementById('pdfMobileBtn');
   const overlay = document.getElementById('pdfOverlay');
 
-  // Show overlay + disable button
   overlay.classList.add('show');
   btn.classList.add('loading');
   btn.disabled = true;
@@ -784,49 +818,39 @@ function downloadPDF() {
 
   // Hide no-print elements temporarily
   const noPrint = document.querySelectorAll('.no-print, .app-header, .settings-bar, .add-form, .pdf-overlay');
-  noPrint.forEach(el => el.dataset.pdfHide = el.style.display);
-  noPrint.forEach(el => el.style.display = 'none');
+  noPrint.forEach(el => { el.dataset.pdfHide = el.style.display; el.style.display = 'none'; });
 
-  const period = getPeriod().replace(/\s+/g, '_');
+  // Avatar imgs already have base64 src (set during loadPhotos), no conversion needed
+
+  const period   = getPeriod().replace(/\s+/g, '_');
   const filename = `Lunch_Contributions_${period}.pdf`;
-
-  const element = document.querySelector('.main');
+  const element  = document.querySelector('.main');
 
   const opt = {
-    margin:       [12, 12, 12, 12],
-    filename:     filename,
-    image:        { type: 'jpeg', quality: 0.97 },
-    html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#F4F1EB' },
-    jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+    margin:      [10, 10, 10, 10],
+    filename:    filename,
+    image:       { type: 'jpeg', quality: 0.97 },
+    html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
+    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak:   { mode: 'css', before: '.page-break' }   // only break on explicit markers
+  };
+
+  const restore = () => {
+    // Restore hidden elements
+    noPrint.forEach(el => {
+      el.style.display = el.dataset.pdfHide !== undefined ? el.dataset.pdfHide : '';
+      delete el.dataset.pdfHide;
+    });
+    printFooter.style.display = 'none';
+    printHeader.style.display = 'none';
+    overlay.classList.remove('show');
+    btn.classList.remove('loading');
+    btn.disabled = false;
   };
 
   html2pdf().set(opt).from(element).save()
-    .then(() => {
-      // Restore hidden elements
-      noPrint.forEach(el => {
-        el.style.display = el.dataset.pdfHide !== undefined ? el.dataset.pdfHide : '';
-        delete el.dataset.pdfHide;
-      });
-      printFooter.style.display = 'none';
-      printHeader.style.display = 'none';
-      overlay.classList.remove('show');
-      btn.classList.remove('loading');
-      btn.disabled = false;
-      showToast('PDF saved to Downloads');
-    })
-    .catch(() => {
-      noPrint.forEach(el => {
-        el.style.display = el.dataset.pdfHide !== undefined ? el.dataset.pdfHide : '';
-        delete el.dataset.pdfHide;
-      });
-      printFooter.style.display = 'none';
-      printHeader.style.display = 'none';
-      overlay.classList.remove('show');
-      btn.classList.remove('loading');
-      btn.disabled = false;
-      showToast('PDF generation failed — try again');
-    });
+    .then(() => { restore(); showToast('PDF saved to Downloads'); })
+    .catch(() => { restore(); showToast('PDF generation failed — try again'); });
 }
 
 // ── TOAST ─────────────────────────────────────────────────────
