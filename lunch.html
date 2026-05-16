@@ -257,24 +257,50 @@ window.dispatchEvent(new Event('fb-ready'));
     .app-header, .toolbar .btn, .add-form, .settings-bar,
     .icon-btn, .header-actions, .legend { display: none !important; }
     .main { max-width: 100%; padding: 0; }
-    /* Compact stats so table fits on page 1 */
-    .stats { margin-bottom: 14px; gap: 8px; }
-    .stat-card { padding: 10px 14px; box-shadow: none; border: 1px solid #ddd; }
-    .stat-val { font-size: 16px; }
-    .table-wrap { box-shadow: none; border: 1px solid #ddd; margin-top: 8px !important; }
-    tbody tr:hover { background: white; }
-    .print-header { display: block !important; margin-bottom: 12px; }
-    .print-footer { display: flex !important; }
-    tfoot td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .badge { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .stat-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .avatar, .avatar-placeholder { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    @page { margin: 12mm; size: A4; }
-    .toolbar { margin-bottom: 6px; }
+
+    /* ── Compact print header ── */
+    .print-header { display: block !important; margin-bottom: 8px; }
+    .print-header h2 { font-size: 20px; margin: 2px 0 1px; }
+    .print-header .ph-meta { font-size: 11px; }
+
+    /* ── Tight stat cards ── */
+    .stats { margin-bottom: 8px; gap: 6px; }
+    .stat-card { padding: 7px 10px; box-shadow: none; border: 1px solid #ddd;
+                 -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .stat-label { margin-bottom: 2px; }
+    .stat-val { font-size: 14px; }
+    .stat-sub { font-size: 10px; margin-top: 1px; }
+
+    /* ── Tight toolbar ── */
+    .toolbar { margin-bottom: 4px; }
     .member-count { display: none; }
-    /* Never break between header and table */
-    .stats, .toolbar, .table-wrap { page-break-inside: avoid; }
-    .print-header + * { page-break-before: avoid; }
+    .section-title { font-size: 14px; }
+
+    /* ── Tight table ── */
+    .table-wrap { box-shadow: none; border: 1px solid #ddd; margin-top: 4px !important; }
+    thead th { padding: 6px 10px; font-size: 9px; }
+    td { padding: 5px 10px; font-size: 12px; }
+    tfoot td { padding: 6px 10px; font-size: 12px;
+               -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .badge { font-size: 9px; padding: 2px 6px;
+             -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+    /* ── Compact avatars ── */
+    .avatar, .avatar-placeholder {
+      width: 24px; height: 24px; font-size: 10px;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    }
+    .td-name { gap: 6px; }
+
+    /* ── Footer ── */
+    .print-footer { display: flex !important; margin-top: 8px; padding-top: 6px; font-size: 10px; }
+
+    /* ── Page setup — tightest margins to maximise usable height ── */
+    @page { margin: 8mm; size: A4 portrait; }
+
+    /* Allow table to flow naturally — do NOT set page-break-inside:avoid on table-wrap */
+    .stats { page-break-inside: avoid; }
+    tbody tr { page-break-inside: avoid; }
   }
 
   .print-header { display: none; margin-bottom: 20px; }
@@ -827,12 +853,12 @@ async function downloadPDF() {
   const element  = document.querySelector('.main');
 
   const opt = {
-    margin:      [10, 10, 10, 10],
+    margin:      [8, 8, 8, 8],
     filename:    filename,
     image:       { type: 'jpeg', quality: 0.97 },
     html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
     jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:   { mode: 'css', before: '.page-break' }   // only break on explicit markers
+    pagebreak:   { mode: 'css' }
   };
 
   const restore = () => {
