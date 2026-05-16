@@ -15,6 +15,8 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChang
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase, ref, set, update, remove, onValue, push }
   from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getFirestore, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 const FB_CONFIG = {
   apiKey:            "AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE",
@@ -29,9 +31,11 @@ const FB_CONFIG = {
 const app  = initializeApp(FB_CONFIG);
 const auth = getAuth(app);
 const db   = getDatabase(app);
+const fst  = getFirestore(app);
 
 // Expose to classic scripts via window
-window._fb = { auth, db, ref, set, update, remove, onValue, push,
+window._fb = { auth, db, fst, ref, set, update, remove, onValue, push,
+               collection, getDocs,
                GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged };
 window.dispatchEvent(new Event('fb-ready'));
 </script>
@@ -228,7 +232,22 @@ window.dispatchEvent(new Event('fb-ready'));
   .settings-bar .field-inline { display: flex; align-items: center; gap: 10px; }
   .settings-bar .hint { font-size: 12px; color: var(--ink-light); }
 
-  /* ── LEGEND ── */
+  /* ── AVATARS ── */
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    object-fit: cover; flex-shrink: 0;
+    border: 1.5px solid var(--rule);
+    background: var(--bg2);
+  }
+  .avatar-placeholder {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--bg2); border: 1.5px solid var(--rule);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; color: var(--ink-mid);
+    flex-shrink: 0; font-family: 'DM Sans', sans-serif;
+  }
+  .td-name { display: flex; align-items: center; gap: 10px; }
+  .td-name-text { font-weight: 500; }
   .legend { display: flex; gap: 16px; margin-top: 14px; flex-wrap: wrap; align-items: center; }
   .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink-mid); }
 
@@ -512,6 +531,8 @@ const SEED = [
 let members = [];
 let fbReady  = false;
 let currentUser = null;
+// photoCache: normalized-name → photoURL string
+const photoCache = {};
 
 function getStd() { return parseFloat(document.getElementById('stdInput').value) || 420; }
 function getPeriod() { return document.getElementById('periodInput').value || 'May 2026'; }
@@ -561,17 +582,70 @@ function updateAuthUI(user) {
     .forEach(el => el.disabled = !user);
 }
 
+// ── FIRESTORE PHOTO LOADER ────────────────────────────────────
+// Fetches users/{uid}/photoURL from Firestore and caches by displayName / name
+async function loadPhotos() {
+  try {
+    const { fst, collection, getDocs } = window._fb;
+    const snap = await getDocs(collection(fst, 'users'));
+    snap.forEach(doc => {
+      const d = doc.data();
+      const photo = d.photoURL || '';
+      if (!photo) return;
+      // Index by uid (doc.id) and by displayName / name for fuzzy matching
+      photoCache[doc.id] = photo;
+      if (d.displayName) photoCache[normKey(d.displayName)] = photo;
+      if (d.name)        photoCache[normKey(d.name)]        = photo;
+    });
+    render(); // re-render once photos are ready
+  } catch(e) {
+    console.warn('Could not load Firestore photos:', e.message);
+  }
+}
+
+// Normalize a name for fuzzy cache lookup:
+// strips title (Mr./Md./Dr. etc.), lowercases, trims
+function normKey(str) {
+  return str.replace(/^(Mr\.|Md\.|Mrs\.|Ms\.|Dr\.|Prof\.)\s*/i, '').trim().toLowerCase();
+}
+
+// Return best-match photo URL for a member name, or ''
+function photoFor(memberName) {
+  // Try exact normalized match first
+  const key = normKey(memberName);
+  if (photoCache[key]) return photoCache[key];
+  // Try partial: first word of member surname vs any cache key
+  const parts = key.split(/\s+/);
+  for (const p of parts) {
+    for (const k of Object.keys(photoCache)) {
+      if (k.includes(p) && p.length > 2) return photoCache[k];
+    }
+  }
+  return '';
+}
+
+// Generate initials from member name
+function initials(name) {
+  const parts = name.replace(/^(Mr\.|Md\.|Mrs\.|Ms\.|Dr\.|Prof\.)\s*/i, '').trim().split(/\s+/);
+  return parts.map(p => p[0] || '').join('').toUpperCase().slice(0, 2);
+}
+
 // ── RENDER ───────────────────────────────────────────────────
 function render() {
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
 
   members.forEach((m, i) => {
-    const s = status(m.amount);
+    const s   = status(m.amount);
+    const url = photoFor(m.name);
+    const avatarHtml = url
+      ? `<img class="avatar" src="${url}" alt="${m.name}" onerror="this.replaceWith(mkPlaceholder('${initials(m.name)}'))">`
+      : `<span class="avatar-placeholder">${initials(m.name)}</span>`;
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td class="td-no">${i + 1}</td>
-      <td class="td-name">${m.name}</td>
+      <td class="td-name">${avatarHtml}<span class="td-name-text">${m.name}</span></td>
       <td><span class="badge ${s.badgeCls}">${s.label}</span></td>
       <td class="td-amount ${s.cls}">Ksh ${fmt(m.amount)}</td>
       <td class="td-actions no-print">
@@ -582,6 +656,13 @@ function render() {
   });
 
   recalc();
+}
+
+function mkPlaceholder(ini) {
+  const el = document.createElement('span');
+  el.className = 'avatar-placeholder';
+  el.textContent = ini;
+  return el;
 }
 
 function recalc() {
@@ -796,9 +877,10 @@ window.addEventListener('fb-ready', () => {
   const { auth, onAuthStateChanged } = window._fb;
   onAuthStateChanged(auth, user => {
     updateAuthUI(user);
-    if (!members.length) subscribeToMembers(); // load on first auth event
+    if (!members.length) subscribeToMembers();
   });
-  subscribeToMembers(); // also load before auth state resolves
+  subscribeToMembers();
+  loadPhotos(); // fetch Firestore user photos
 });
 </script>
 </body>
