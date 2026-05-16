@@ -404,6 +404,44 @@ window.dispatchEvent(new Event('fb-ready'));
     margin-top: 10px; text-align: center;
   }
 
+  /* ── Per-period summary cards ── */
+  .hist-period-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px; margin-bottom: 28px;
+  }
+  .hist-period-card {
+    background: var(--white); border-radius: 12px; border: 1px solid var(--rule);
+    box-shadow: var(--shadow); padding: 16px 18px; position: relative; overflow: hidden;
+  }
+  .hist-period-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .hist-period-card.rate-high::before  { background: var(--ok-fg); }
+  .hist-period-card.rate-mid::before   { background: var(--warn-fg); }
+  .hist-period-card.rate-low::before   { background: var(--nil-fg); }
+  .hpc-period {
+    font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: .1em;
+    text-transform: uppercase; color: var(--ink-light); margin-bottom: 8px;
+  }
+  .hpc-collected {
+    font-size: 18px; font-weight: 700; line-height: 1; margin-bottom: 10px;
+  }
+  .hpc-std-line {
+    font-size: 11px; color: var(--ink-light); font-family: 'DM Mono', monospace;
+    margin-bottom: 10px;
+  }
+  .hpc-bar-wrap {
+    background: var(--bg2); border-radius: 20px; height: 6px; margin-bottom: 10px; overflow: hidden;
+  }
+  .hpc-bar { height: 100%; border-radius: 20px; transition: width .4s; }
+  .hpc-bar.high { background: var(--ok-fg); }
+  .hpc-bar.mid  { background: var(--warn-fg); }
+  .hpc-bar.low  { background: var(--nil-fg); }
+  .hpc-breakdown {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .hpc-breakdown .badge { font-size: 9px; padding: 2px 7px; }
+
   /* Member history table */
   .hist-member-wrap {
     background: var(--white); border-radius: 12px; border: 1px solid var(--rule);
@@ -416,25 +454,29 @@ window.dispatchEvent(new Event('fb-ready'));
     font-weight: 600; font-family: 'DM Mono', monospace; text-align: left;
     border-bottom: 1px solid var(--rule); white-space: nowrap;
   }
-  .hist-thead th:first-child { width: 160px; }
+  .hist-thead th:first-child { min-width: 160px; }
+  .hist-thead th.period-header { text-align: center; }
   .hist-tbody tr { border-bottom: 1px solid var(--bg); }
   .hist-tbody tr:last-child { border-bottom: none; }
   .hist-tbody tr:hover { background: #FAFAF7; }
   .hist-tbody td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
-  .hist-tbody td.member-cell { font-weight: 500; display: flex; align-items: center; gap: 8px; }
-  .hist-cell-amt { font-family: 'DM Mono', monospace; font-size: 12px; }
+  .hist-tbody td.member-cell { font-weight: 500; }
+  .hist-tbody td.period-cell { text-align: center; }
+
+  /* Cell badge+amount stacked */
+  .hist-cell-inner {
+    display: inline-flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .hist-cell-amt { font-family: 'DM Mono', monospace; font-size: 11px; }
   .hist-cell-amt.ok   { color: var(--ok-fg); }
   .hist-cell-amt.warn { color: var(--warn-fg); }
   .hist-cell-amt.nil  { color: var(--ink-light); }
-  .hist-cell-total { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; }
+  .hist-cell-total { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; text-align: right; }
 
-  /* Period pills row */
-  .hist-period-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
-  .hist-period-pill {
-    font-size: 11px; font-family: 'DM Mono', monospace;
-    padding: 4px 10px; border-radius: 20px;
-    background: var(--bg2); color: var(--ink-mid);
-    border: 1px solid var(--rule);
+  /* Period column header sub-line */
+  .hist-col-sub {
+    display: block; font-size: 9px; font-weight: 400; color: var(--ink-light);
+    letter-spacing: 0; text-transform: none; margin-top: 2px; font-family: 'DM Sans', sans-serif;
   }
 
   /* Empty state */
@@ -450,6 +492,194 @@ window.dispatchEvent(new Event('fb-ready'));
     color: var(--ink-light); font-size: 13px; font-family: 'DM Mono', monospace;
   }
 
+  /* Scrollable table wrapper */
+  .hist-table-scroll { overflow-x: auto; }
+
+  /* ── DARK MODE ── */
+  body.dark {
+    --ink: #F0EDE6;
+    --ink-mid: #AAA49A;
+    --ink-light: #666;
+    --bg: #181614;
+    --bg2: #221F1B;
+    --white: #1E1B17;
+    --rule: #2E2A24;
+    --accent: #E0DDD6;
+    --ok-bg: #1A2E10; --ok-fg: #7DC653;
+    --warn-bg: #2E1F08; --warn-fg: #E0952A;
+    --nil-bg: #2E0E0E; --nil-fg: #E06060;
+    --shadow: 0 2px 16px rgba(0,0,0,.35);
+  }
+  body.dark .app-header { background: #100E0B; }
+  body.dark .nav-tabs { background: #100E0B; border-bottom-color: #2E2A24; }
+  body.dark .btn-ghost { border-color: #444; color: #888; }
+  body.dark .btn-ghost:hover { border-color: #888; color: var(--ink); }
+  body.dark .btn-primary { background: #2E2A24; color: var(--ink); }
+  body.dark .btn-primary:hover { background: #3a3530; }
+  body.dark .inline-input { background: var(--bg2); color: var(--ink); border-color: var(--rule); }
+  body.dark .field input, body.dark .field select { background: var(--bg2); color: var(--ink); }
+
+  /* ── DARK MODE TOGGLE ── */
+  .dark-toggle {
+    background: none; border: 1px solid #333; border-radius: 20px;
+    color: #888; font-size: 16px; padding: 5px 10px; cursor: pointer;
+    transition: all .2s; line-height: 1;
+  }
+  .dark-toggle:hover { border-color: #888; }
+
+  /* ── SEARCH / FILTER BAR ── */
+  .search-filter-bar {
+    display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .search-input-wrap {
+    position: relative; flex: 1; min-width: 180px;
+  }
+  .search-input-wrap svg {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    color: var(--ink-light); pointer-events: none;
+  }
+  .search-input {
+    width: 100%; padding: 9px 14px 9px 34px;
+    border: 1.5px solid var(--rule); border-radius: 7px;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    background: var(--white); color: var(--ink); outline: none;
+    transition: border-color .15s;
+  }
+  .search-input:focus { border-color: var(--ink); }
+  .filter-tabs {
+    display: flex; gap: 4px; background: var(--bg2);
+    border-radius: 8px; padding: 3px;
+  }
+  .filter-tab {
+    font-size: 11px; font-weight: 600; padding: 5px 12px; border-radius: 5px;
+    border: none; cursor: pointer; background: transparent; color: var(--ink-light);
+    font-family: 'DM Mono', monospace; letter-spacing: .05em; text-transform: uppercase;
+    transition: all .15s;
+  }
+  .filter-tab.active { background: var(--white); color: var(--ink); box-shadow: 0 1px 4px rgba(0,0,0,.1); }
+
+  /* ── COLLECTION RATE BAR ── */
+  .collection-bar-wrap {
+    background: var(--white); border-radius: 10px; border: 1px solid var(--rule);
+    box-shadow: var(--shadow); padding: 14px 20px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .collection-bar-label {
+    font-size: 11px; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--ink-light); font-family: 'DM Mono', monospace; white-space: nowrap;
+  }
+  .collection-bar-track {
+    flex: 1; min-width: 120px; background: var(--bg2);
+    border-radius: 20px; height: 10px; overflow: hidden;
+  }
+  .collection-bar-fill {
+    height: 100%; border-radius: 20px;
+    transition: width .6s cubic-bezier(.4,0,.2,1), background .3s;
+  }
+  .collection-bar-pct {
+    font-family: 'DM Mono', monospace; font-size: 18px; font-weight: 700;
+    white-space: nowrap; min-width: 52px; text-align: right;
+  }
+
+  /* ── BULK SELECT ── */
+  .bulk-bar {
+    display: none; align-items: center; gap: 12px; flex-wrap: wrap;
+    background: var(--ink); color: var(--white);
+    border-radius: 10px; padding: 12px 18px; margin-bottom: 12px;
+  }
+  .bulk-bar.visible { display: flex; }
+  .bulk-bar label { font-size: 13px; font-weight: 500; }
+  .bulk-amount-input {
+    padding: 7px 12px; border: 1.5px solid #444; border-radius: 7px;
+    background: #2a2724; color: var(--white); font-family: 'DM Mono', monospace;
+    font-size: 13px; width: 110px; outline: none;
+  }
+  .bulk-amount-input:focus { border-color: #888; }
+  .select-col { width: 36px; text-align: center !important; }
+  .row-check { width: 15px; height: 15px; cursor: pointer; accent-color: var(--ink); }
+
+  /* ── SORT HEADERS ── */
+  .sortable { cursor: pointer; user-select: none; }
+  .sortable:hover { color: var(--ink); }
+  .sortable::after { content: ' ⇅'; opacity: .4; font-size: 9px; }
+  .sortable.asc::after  { content: ' ↑'; opacity: 1; }
+  .sortable.desc::after { content: ' ↓'; opacity: 1; }
+
+  /* ── UNDO BAR ── */
+  .undo-bar {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: #1e1b17; color: #e0ddd6; border: 1px solid #3a3530;
+    border-radius: 10px; padding: 12px 20px;
+    display: flex; align-items: center; gap: 16px; z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4); transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    font-size: 13px; white-space: nowrap;
+  }
+  .undo-bar.show { transform: translateX(-50%) translateY(0); }
+  .undo-btn {
+    background: #e0ddd6; color: #141414; border: none; border-radius: 6px;
+    padding: 5px 13px; font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── MEMBER NOTES TOOLTIP ── */
+  .note-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--warn-fg); margin-left: 5px; vertical-align: middle;
+    cursor: help;
+  }
+  .note-popover {
+    position: absolute; z-index: 200; background: var(--ink); color: var(--white);
+    border-radius: 8px; padding: 8px 12px; font-size: 12px; max-width: 220px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.3); pointer-events: none; opacity: 0;
+    transition: opacity .15s; line-height: 1.5;
+  }
+  .note-popover.show { opacity: 1; }
+  td { position: relative; }
+
+  /* ── ANALYTICS PANEL ── */
+  .analytics-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px; margin-bottom: 28px;
+  }
+  .analytics-card {
+    background: var(--white); border-radius: 12px; border: 1px solid var(--rule);
+    box-shadow: var(--shadow); padding: 16px 18px;
+  }
+  .analytics-card .ac-label {
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-light); font-family: 'DM Mono', monospace; margin-bottom: 8px;
+  }
+  .analytics-card .ac-name {
+    font-weight: 600; font-size: 14px; margin-bottom: 2px;
+  }
+  .analytics-card .ac-val {
+    font-family: 'DM Mono', monospace; font-size: 12px; color: var(--ink-light);
+  }
+  .streak-bar {
+    display: flex; gap: 3px; margin-top: 8px; flex-wrap: wrap;
+  }
+  .streak-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+  }
+  .streak-dot.ok   { background: var(--ok-fg); }
+  .streak-dot.warn { background: var(--warn-fg); }
+  .streak-dot.nil  { background: var(--nil-fg); opacity: .5; }
+  .streak-dot.miss { background: var(--rule); }
+
+  /* carry-forward modal */
+  .modal-backdrop {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5);
+    z-index: 500; align-items: center; justify-content: center;
+  }
+  .modal-backdrop.show { display: flex; }
+  .modal-box {
+    background: var(--white); border-radius: 14px; padding: 28px 32px;
+    max-width: 420px; width: 90%; box-shadow: 0 16px 48px rgba(0,0,0,.3);
+  }
+  .modal-title { font-family: 'DM Serif Display', serif; font-size: 20px; margin-bottom: 12px; }
+  .modal-body  { font-size: 13px; color: var(--ink-mid); line-height: 1.6; margin-bottom: 18px; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
 </style>
 </head>
 <body>
@@ -461,6 +691,7 @@ window.dispatchEvent(new Event('fb-ready'));
     <h1>Lunch Contributions.</h1>
   </div>
   <div class="header-actions">
+    <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
     <div id="authArea" style="display:flex;align-items:center;gap:10px;">
       <span id="authUser" style="font-size:12px;color:#888;font-family:'DM Mono',monospace;"></span>
       <button id="authBtn" class="btn btn-ghost" onclick="handleAuth()" style="font-size:12px;padding:7px 14px;">Sign in</button>
@@ -484,6 +715,7 @@ window.dispatchEvent(new Event('fb-ready'));
 <nav class="nav-tabs">
   <button class="nav-tab active" id="tabHome" onclick="switchTab('home')">Contributions</button>
   <button class="nav-tab" id="tabHistory" onclick="switchTab('history')">Monthly History</button>
+  <button class="nav-tab" id="tabAnalytics" onclick="switchTab('analytics')">📈 Analytics</button>
   <button class="nav-tab" id="tabWhatsapp" onclick="switchTab('whatsapp')">📲 WhatsApp Reminders</button>
 </nav>
 
@@ -512,6 +744,12 @@ window.dispatchEvent(new Event('fb-ready'));
                font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);
                color:var(--ink);outline:none;width:120px;" onchange="recalc()">
     </div>
+    <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openCarryForward()" title="Copy member roster from a previous period">
+      ↩ Carry Forward
+    </button>
+    <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="exportCSV()" title="Export current period as CSV">
+      ⬇ Export CSV
+    </button>
   </div>
 
   <!-- STAT CARDS -->
@@ -536,16 +774,53 @@ window.dispatchEvent(new Event('fb-ready'));
     </div>
   </div>
 
+  <!-- COLLECTION RATE BAR (Feature 6) -->
+  <div class="collection-bar-wrap">
+    <span class="collection-bar-label">Collection rate</span>
+    <div class="collection-bar-track">
+      <div class="collection-bar-fill" id="collectionBarFill" style="width:0%"></div>
+    </div>
+    <span class="collection-bar-pct" id="collectionBarPct">—</span>
+  </div>
+
   <!-- TOOLBAR -->
   <div class="toolbar">
     <div class="toolbar-left">
       <span class="section-title">Members</span>
       <span class="member-count" id="memberCount">0</span>
     </div>
-    <button class="btn btn-ghost" style="font-size:12px; padding:7px 14px;" onclick="toggleForm()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      New Member
-    </button>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" id="bulkSelectBtn" onclick="toggleBulkMode()" title="Select multiple members to update amounts at once">
+        ☑ Bulk Update
+      </button>
+      <button class="btn btn-ghost" style="font-size:12px; padding:7px 14px;" onclick="toggleForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Member
+      </button>
+    </div>
+  </div>
+
+  <!-- SEARCH + FILTER BAR (Feature 1) -->
+  <div class="search-filter-bar">
+    <div class="search-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="search-input" id="searchInput" placeholder="Search members…" oninput="applyFilter()">
+    </div>
+    <div class="filter-tabs">
+      <button class="filter-tab active" data-filter="all"     onclick="setFilter(this)">All</button>
+      <button class="filter-tab"        data-filter="paid"    onclick="setFilter(this)">Paid</button>
+      <button class="filter-tab"        data-filter="partial" onclick="setFilter(this)">Partial</button>
+      <button class="filter-tab"        data-filter="nil"     onclick="setFilter(this)">Nil</button>
+    </div>
+  </div>
+
+  <!-- BULK UPDATE BAR (Feature 2) -->
+  <div class="bulk-bar" id="bulkBar">
+    <label id="bulkSelLabel">0 selected</label>
+    <input class="bulk-amount-input" type="number" id="bulkAmtInput" min="0" placeholder="Amount (Ksh)">
+    <button class="btn" style="background:#4ade80;color:#052e16;font-size:12px;padding:7px 14px;" onclick="applyBulkUpdate()">Apply to selected</button>
+    <button class="btn" style="background:#3a1010;color:#f5a0a0;border:1px solid #5c1f1f;font-size:12px;padding:7px 14px;" onclick="toggleBulkMode()">Cancel</button>
+    <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;margin-left:auto;" onclick="selectAllVisible()">Select all visible</button>
   </div>
 
   <!-- ADD FORM -->
@@ -587,22 +862,25 @@ window.dispatchEvent(new Event('fb-ready'));
     <table>
       <thead>
         <tr>
-          <th style="width:36px">#</th>
-          <th>Member</th>
+          <th class="select-col no-print" id="selectAllTh" style="display:none"><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)" class="row-check"></th>
+          <th style="width:36px" class="sortable" onclick="sortBy('index')" id="thIndex">#</th>
+          <th class="sortable" onclick="sortBy('name')" id="thName">Member</th>
           <th>Phone</th>
-          <th>Status</th>
-          <th style="text-align:right">Amount (Ksh)</th>
-          <th class="no-print" style="text-align:right;width:90px">Actions</th>
+          <th class="sortable" onclick="sortBy('status')" id="thStatus">Status</th>
+          <th style="text-align:right" class="sortable" onclick="sortBy('amount')" id="thAmount">Amount (Ksh)</th>
+          <th class="no-print" style="text-align:right;width:120px">Actions</th>
         </tr>
       </thead>
       <tbody id="tbody"></tbody>
       <tfoot id="tfoot">
         <tr>
+          <td id="tfootSelectCell" class="no-print" style="display:none"></td>
           <td colspan="4" class="lbl">Total Collected</td>
           <td class="amt" id="fCollected">—</td>
           <td class="no-print"></td>
         </tr>
         <tr>
+          <td id="tfootSelectCell2" class="no-print" style="display:none"></td>
           <td colspan="4" class="lbl danger">Total Outstanding</td>
           <td class="amt danger" id="fOutstanding">—</td>
           <td class="no-print"></td>
@@ -638,13 +916,26 @@ window.dispatchEvent(new Event('fb-ready'));
       <div class="hist-chart-meta" id="histChartMeta"></div>
     </div>
 
+    <!-- Per-period summary cards -->
+    <div class="hist-section-title">Period breakdown</div>
+    <div id="histPeriodCards" class="hist-period-cards"></div>
+
     <!-- Per-member history table -->
     <div class="hist-section-title">Member payment history</div>
-    <div id="histPeriodPills" class="hist-period-pills"></div>
     <div class="hist-member-wrap">
-      <div id="histTableArea"><div class="hist-loading">Loading member history…</div></div>
+      <div class="hist-table-scroll">
+        <div id="histTableArea"><div class="hist-loading">Loading member history…</div></div>
+      </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ANALYTICS PAGE (Feature 9) -->
+<div class="history-page" id="analyticsPage">
+  <div class="main">
+    <div class="hist-section-title">Member Analytics</div>
+    <div id="analyticsArea"><div class="hist-loading">Loading analytics…</div></div>
   </div>
 </div>
 
@@ -896,6 +1187,33 @@ firebase deploy --only functions</pre>
   </div>
 </div>
 
+<!-- CARRY FORWARD MODAL (Feature 7) -->
+<div class="modal-backdrop" id="carryFwdModal">
+  <div class="modal-box">
+    <div class="modal-title">Carry Forward Roster</div>
+    <div class="modal-body">
+      Copy the member list from a previous period into <strong id="carryFwdTarget"></strong>, with all amounts reset to 0. Existing members in the target period will be overwritten.
+    </div>
+    <div class="field" style="margin-bottom:16px;">
+      <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Source period</label>
+      <select id="carryFwdSource" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeCarryForward()">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--ink);color:var(--white);" onclick="execCarryForward()">Copy roster →</button>
+    </div>
+  </div>
+</div>
+
+<!-- UNDO BAR (Feature 5) -->
+<div class="undo-bar" id="undoBar">
+  <span id="undoMsg">Member removed</span>
+  <button class="undo-btn" onclick="undoDelete()">Undo</button>
+</div>
+
+<!-- NOTE POPOVER (Feature 8) -->
+<div class="note-popover" id="notePopover"></div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -923,6 +1241,16 @@ let fbReady  = false;
 let currentUser = null;
 // photoCache: normalized-name → photoURL string
 const photoCache = {};
+
+// Feature state
+let currentFilter  = 'all';   // all | paid | partial | nil
+let searchQuery    = '';
+let sortKey        = 'index';  // index | name | amount | status
+let sortDir        = 'asc';
+let bulkMode       = false;
+let selectedIds    = new Set();
+let undoBuffer     = null;     // { member, path } for undo
+let undoTimer      = null;
 
 function getStd() { return parseFloat(document.getElementById('stdInput').value) || 420; }
 function getPeriod() { return document.getElementById('periodInput').value || 'May 2026'; }
@@ -1050,26 +1378,72 @@ function render() {
   const tbody = document.getElementById('tbody');
   tbody.innerHTML = '';
 
-  members.forEach((m, i) => {
+  // Sort
+  const std = getStd();
+  let sorted = members.map((m, i) => ({ ...m, _origIdx: i }));
+  if (sortKey === 'name')   sorted.sort((a, b) => sortDir === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+  if (sortKey === 'amount') sorted.sort((a, b) => sortDir === 'asc' ? a.amount - b.amount : b.amount - a.amount);
+  if (sortKey === 'status') {
+    const rank = m => m.amount === 0 ? 2 : m.amount >= std ? 0 : 1;
+    sorted.sort((a, b) => sortDir === 'asc' ? rank(a) - rank(b) : rank(b) - rank(a));
+  }
+
+  // Filter
+  const q = searchQuery.toLowerCase();
+  const visible = sorted.filter(m => {
+    const nameOk = m.name.toLowerCase().includes(q);
+    if (!nameOk) return false;
+    if (currentFilter === 'paid')    return m.amount >= std;
+    if (currentFilter === 'partial') return m.amount > 0 && m.amount < std;
+    if (currentFilter === 'nil')     return m.amount === 0;
+    return true;
+  });
+
+  // Update sort header indicators
+  ['thIndex','thName','thStatus','thAmount'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('asc','desc');
+    const map = { thIndex:'index', thName:'name', thStatus:'status', thAmount:'amount' };
+    if (map[id] === sortKey) el.classList.add(sortDir);
+  });
+
+  visible.forEach((m, visIdx) => {
     const s   = status(m.amount);
     const url = photoFor(m.name);
     const avatarHtml = url
       ? `<img class="avatar" src="${url}" alt="${m.name}" onerror="this.replaceWith(mkPlaceholder('${initials(m.name)}'))">`
       : `<span class="avatar-placeholder">${initials(m.name)}</span>`;
+    const checked  = selectedIds.has(m.id) ? 'checked' : '';
+    const noteTip  = m.note ? `<span class="note-dot" onmouseenter="showNote(event,'${m.note.replace(/'/g,"&#39;")}')" onmouseleave="hideNote()" title="${m.note}"></span>` : '';
 
     const tr = document.createElement('tr');
+    tr.dataset.id = m.id;
     tr.innerHTML = `
-      <td class="td-no">${i + 1}</td>
-      <td class="td-name">${avatarHtml}<span class="td-name-text">${m.name}</span></td>
+      <td class="select-col no-print" style="display:${bulkMode?'table-cell':'none'}"><input type="checkbox" class="row-check" ${checked} onchange="toggleSelect('${m.id}',this.checked)"></td>
+      <td class="td-no">${m._origIdx + 1}</td>
+      <td class="td-name">${avatarHtml}<span class="td-name-text">${m.name}${noteTip}</span></td>
       <td class="td-phone" style="font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-mid)">${m.phone ? `<a href="https://wa.me/${waNum(m.phone)}" target="_blank" title="Open WhatsApp" style="color:var(--ink-mid);text-decoration:none;">📱 ${m.phone}</a>` : '<span style="color:var(--rule)">—</span>'}</td>
       <td><span class="badge ${s.badgeCls}">${s.label}</span></td>
       <td class="td-amount ${s.cls}">Ksh ${fmt(m.amount)}</td>
       <td class="td-actions no-print">
-        <button class="icon-btn" title="Edit" onclick="startEdit(${i})">✎</button>
-        <button class="icon-btn del" title="Remove" onclick="removeMember(${i})">✕</button>
+        <button class="icon-btn" title="Edit" onclick="startEdit(${m._origIdx})">✎</button>
+        <button class="icon-btn" title="Note" onclick="editNote(${m._origIdx})" style="font-size:11px;">📝</button>
+        <button class="icon-btn del" title="Remove" onclick="removeMember(${m._origIdx})">✕</button>
       </td>`;
     tbody.appendChild(tr);
   });
+
+  // Bulk select col header visibility
+  const selTh = document.getElementById('selectAllTh');
+  if (selTh) selTh.style.display = bulkMode ? 'table-cell' : 'none';
+  ['tfootSelectCell','tfootSelectCell2'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = bulkMode ? 'table-cell' : 'none';
+  });
+
+  // Update bulk label
+  document.getElementById('bulkSelLabel').textContent = `${selectedIds.size} selected`;
 
   recalc();
 }
@@ -1089,6 +1463,8 @@ function recalc() {
   const paid      = members.filter(m => m.amount >= std).length;
   const partial   = members.filter(m => m.amount > 0 && m.amount < std).length;
   const nil       = members.filter(m => m.amount === 0).length;
+  const rate      = expected > 0 ? (total / expected) : 0;
+  const ratePct   = Math.min(100, Math.round(rate * 100));
 
   document.getElementById('sCollected').textContent   = 'Ksh ' + fmt(total);
   document.getElementById('sPaid').textContent         = paid + ' members';
@@ -1099,6 +1475,18 @@ function recalc() {
   document.getElementById('fCollected').textContent    = 'Ksh ' + fmt(total);
   document.getElementById('fOutstanding').textContent  = 'Ksh ' + fmt(shortfall);
   document.getElementById('memberCount').textContent   = members.length + ' members';
+
+  // Collection rate bar
+  const fill = document.getElementById('collectionBarFill');
+  const pctEl = document.getElementById('collectionBarPct');
+  if (fill) {
+    fill.style.width = ratePct + '%';
+    fill.style.background = ratePct >= 90 ? 'var(--ok-fg)' : ratePct >= 60 ? 'var(--warn-fg)' : 'var(--nil-fg)';
+  }
+  if (pctEl) {
+    pctEl.textContent = ratePct + '%';
+    pctEl.style.color = ratePct >= 90 ? 'var(--ok-fg)' : ratePct >= 60 ? 'var(--warn-fg)' : 'var(--nil-fg)';
+  }
 
   // print spans
   document.getElementById('printPeriod').textContent  = getPeriod();
@@ -1135,15 +1523,45 @@ function addMember() {
     .catch(e => showToast('Error: ' + e.message));
 }
 
-// ── REMOVE ────────────────────────────────────────────────────
+// ── REMOVE with UNDO (Feature 5) ─────────────────────────────
 function removeMember(i) {
   if (!currentUser) { showToast('Sign in to make changes'); return; }
-  const { db, ref, remove } = window._fb;
+  const { db, ref, remove, set } = window._fb;
   const m = members[i];
-  if (!confirm(`Remove ${m.name}?`)) return;
-  remove(ref(db, `${membersPath()}/${m.id}`))
-    .then(() => showToast(`${m.name} removed`))
+  const path = `${membersPath()}/${m.id}`;
+
+  // Save undo buffer before removing
+  undoBuffer = { data: { name: m.name, amount: m.amount, phone: m.phone || '', note: m.note || '' }, path };
+
+  remove(ref(db, path))
+    .then(() => {
+      showUndoBar(`${m.name} removed`);
+    })
     .catch(e => showToast('Error: ' + e.message));
+}
+
+function showUndoBar(msg) {
+  const bar = document.getElementById('undoBar');
+  document.getElementById('undoMsg').textContent = msg;
+  bar.classList.add('show');
+  if (undoTimer) clearTimeout(undoTimer);
+  undoTimer = setTimeout(() => {
+    bar.classList.remove('show');
+    undoBuffer = null;
+  }, 6000);
+}
+
+function undoDelete() {
+  if (!undoBuffer || !fbReady) return;
+  const { db, ref, set } = window._fb;
+  set(ref(db, undoBuffer.path), undoBuffer.data)
+    .then(() => {
+      document.getElementById('undoBar').classList.remove('show');
+      clearTimeout(undoTimer);
+      undoBuffer = null;
+      showToast('Member restored');
+    })
+    .catch(e => showToast('Undo failed: ' + e.message));
 }
 
 // ── INLINE EDIT ───────────────────────────────────────────────
@@ -1257,12 +1675,15 @@ function switchTab(tab) {
   currentTab = tab;
   document.getElementById('homePage').classList.toggle('hidden', tab !== 'home');
   document.getElementById('historyPage').classList.toggle('active', tab === 'history');
+  document.getElementById('analyticsPage').classList.toggle('active', tab === 'analytics');
   document.getElementById('whatsappPage').classList.toggle('active', tab === 'whatsapp');
   document.getElementById('tabHome').classList.toggle('active', tab === 'home');
   document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+  document.getElementById('tabAnalytics').classList.toggle('active', tab === 'analytics');
   document.getElementById('tabWhatsapp').classList.toggle('active', tab === 'whatsapp');
-  if (tab === 'history') loadHistory();
-  if (tab === 'whatsapp') initWaPage();
+  if (tab === 'history')   loadHistory();
+  if (tab === 'analytics') loadAnalytics();
+  if (tab === 'whatsapp')  initWaPage();
 }
 
 // ── HISTORY: LOAD ALL PERIODS ─────────────────────────────────
@@ -1272,13 +1693,14 @@ async function loadHistory() {
 
   document.getElementById('histChartArea').innerHTML  = '<div class="hist-loading">Loading periods…</div>';
   document.getElementById('histTableArea').innerHTML  = '<div class="hist-loading">Loading member history…</div>';
-  document.getElementById('histPeriodPills').innerHTML = '';
+  document.getElementById('histPeriodCards').innerHTML = '';
 
   // Read the entire lunch node to get all periods
   onValue(ref(db, 'lunch'), snapshot => {
     const data = snapshot.val();
     if (!data) {
       document.getElementById('histChartArea').innerHTML = '<div class="hist-empty"><div class="hist-empty-icon">📊</div>No history yet — data will appear here once you have more than one period.</div>';
+      document.getElementById('histPeriodCards').innerHTML = '';
       document.getElementById('histTableArea').innerHTML = '';
       return;
     }
@@ -1308,8 +1730,8 @@ async function loadHistory() {
     });
 
     renderHistChart(periodTotals);
-    renderHistTable(periodKeys, Array.from(allMemberNames).sort(), memberHistory);
-    renderPeriodPills(periodTotals);
+    renderPeriodCards(periodTotals, memberHistory, Array.from(allMemberNames));
+    renderHistTable(periodKeys, Array.from(allMemberNames).sort(), memberHistory, periodTotals);
   }, { onlyOnce: true });
 }
 
@@ -1379,28 +1801,76 @@ function renderHistChart(periods) {
     `${periods.length} period${periods.length !== 1 ? 's' : ''} · Grand total: Ksh ${grandTotal.toLocaleString('en-KE', { minimumFractionDigits: 2 })} · Average: Ksh ${avg.toLocaleString('en-KE')}`;
 }
 
-// ── RENDER PERIOD PILLS ───────────────────────────────────────
-function renderPeriodPills(periods) {
-  const el = document.getElementById('histPeriodPills');
-  el.innerHTML = periods.map(p =>
-    `<span class="hist-period-pill">${p.label}: Ksh ${p.total.toLocaleString('en-KE')}</span>`
-  ).join('');
+// ── RENDER PER-PERIOD SUMMARY CARDS ──────────────────────────
+function renderPeriodCards(periods, memberHistory, names) {
+  const el  = document.getElementById('histPeriodCards');
+  const std = getStd();
+
+  if (!periods.length) { el.innerHTML = ''; return; }
+
+  el.innerHTML = periods.map(p => {
+    // Count paid / partial / nil for this period
+    let paid = 0, partial = 0, nil = 0;
+    names.forEach(name => {
+      const amt = memberHistory[name]?.[p.key];
+      if (amt === undefined) return; // member not in this period
+      if (amt >= std)       paid++;
+      else if (amt > 0)     partial++;
+      else                  nil++;
+    });
+    const total       = paid + partial + nil;
+    const expected    = total * std;
+    const rate        = expected > 0 ? Math.round((p.total / expected) * 100) : 0;
+    const shortfall   = Math.max(0, expected - p.total);
+    const rateClass   = rate >= 90 ? 'high' : rate >= 60 ? 'mid' : 'low';
+    const barClass    = rateClass;
+
+    return `<div class="hist-period-card rate-${rateClass}">
+      <div class="hpc-period">${p.label}</div>
+      <div class="hpc-collected">Ksh ${p.total.toLocaleString('en-KE')}</div>
+      <div class="hpc-std-line">
+        Std: Ksh ${fmt(std)} × ${total} = Ksh ${expected.toLocaleString('en-KE')}
+        &nbsp;·&nbsp; <strong>${rate}%</strong> collected
+        ${shortfall > 0 ? `&nbsp;·&nbsp; <span style="color:var(--nil-fg)">−Ksh ${shortfall.toLocaleString('en-KE')}</span>` : ''}
+      </div>
+      <div class="hpc-bar-wrap">
+        <div class="hpc-bar ${barClass}" style="width:${Math.min(rate, 100)}%"></div>
+      </div>
+      <div class="hpc-breakdown">
+        <span class="badge badge-ok">${paid} Paid</span>
+        <span class="badge badge-warn">${partial} Partial</span>
+        <span class="badge badge-nil">${nil} Nil</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ── RENDER MEMBER HISTORY TABLE ───────────────────────────────
-function renderHistTable(periodKeys, names, memberHistory) {
+function renderHistTable(periodKeys, names, memberHistory, periodTotals) {
   if (!names.length) {
     document.getElementById('histTableArea').innerHTML = '<div class="hist-empty"><div class="hist-empty-icon">👥</div>No member data found.</div>';
     return;
   }
 
-  const labels = periodKeys.map(k => k.replace(/_/g, ' '));
+  const std = getStd();
 
-  // Header
+  // Build a lookup: periodKey → total collected (for column sub-headers)
+  const totalByPk = {};
+  periodTotals.forEach(p => { totalByPk[p.key] = p.total; });
+
+  // Header — period column shows name + collected amount
   let html = `<table><thead class="hist-thead"><tr>
     <th>Member</th>
-    ${labels.map(l => `<th style="text-align:right">${l}</th>`).join('')}
-    <th style="text-align:right">Total</th>
+    ${periodKeys.map(pk => {
+      const label = pk.replace(/_/g, ' ');
+      const colTotal = (totalByPk[pk] || 0).toLocaleString('en-KE');
+      return `<th class="period-header">
+        ${label}
+        <span class="hist-col-sub">Ksh ${colTotal}</span>
+      </th>`;
+    }).join('')}
+    <th style="text-align:right">Total paid</th>
+    <th style="text-align:right">Periods</th>
   </tr></thead><tbody class="hist-tbody">`;
 
   names.forEach(name => {
@@ -1409,33 +1879,88 @@ function renderHistTable(periodKeys, names, memberHistory) {
       ? `<img class="avatar" src="${photo}" style="width:24px;height:24px" alt="">`
       : `<span class="avatar-placeholder" style="width:24px;height:24px;font-size:10px">${initials(name)}</span>`;
 
-    const memberTotal = periodKeys.reduce((s, pk) => s + (memberHistory[name]?.[pk] ?? 0), 0);
+    const memberTotal     = periodKeys.reduce((s, pk) => s + (memberHistory[name]?.[pk] ?? 0), 0);
+    const periodsPresent  = periodKeys.filter(pk => memberHistory[name]?.[pk] !== undefined).length;
+    const paidPeriods     = periodKeys.filter(pk => (memberHistory[name]?.[pk] ?? 0) >= std).length;
 
     const cells = periodKeys.map(pk => {
       const amt = memberHistory[name]?.[pk];
-      if (amt === undefined) return `<td class="hist-cell-amt nil" style="text-align:right">—</td>`;
-      const cls = amt === 0 ? 'nil' : amt >= 420 ? 'ok' : 'warn';
-      return `<td class="hist-cell-amt ${cls}" style="text-align:right">Ksh ${amt.toLocaleString('en-KE')}</td>`;
+      if (amt === undefined) {
+        return `<td class="period-cell"><span style="color:var(--rule);font-family:'DM Mono',monospace;font-size:11px;">—</span></td>`;
+      }
+      const cls = amt === 0 ? 'nil' : amt >= std ? 'ok' : 'warn';
+      const label = amt === 0 ? 'Nil' : amt >= std ? 'Paid' : 'Partial';
+      const badgeCls = cls === 'ok' ? 'badge-ok' : cls === 'warn' ? 'badge-warn' : 'badge-nil';
+      return `<td class="period-cell">
+        <div class="hist-cell-inner">
+          <span class="badge ${badgeCls}" style="font-size:9px;padding:2px 7px;">${label}</span>
+          <span class="hist-cell-amt ${cls}">Ksh ${amt.toLocaleString('en-KE')}</span>
+        </div>
+      </td>`;
     }).join('');
 
     html += `<tr>
-      <td><div class="member-cell">${avatarHtml}<span>${name}</span></div></td>
+      <td class="member-cell">
+        <div style="display:flex;align-items:center;gap:8px;">
+          ${avatarHtml}<span>${name}</span>
+        </div>
+      </td>
       ${cells}
       <td class="hist-cell-total" style="text-align:right">Ksh ${memberTotal.toLocaleString('en-KE')}</td>
+      <td style="text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:var(--ink-light);">
+        ${paidPeriods}/${periodsPresent} <span style="font-size:10px;">paid</span>
+      </td>
     </tr>`;
   });
 
-  // Totals row
+  // Totals footer row
   const periodSums = periodKeys.map(pk =>
     names.reduce((s, n) => s + (memberHistory[n]?.[pk] ?? 0), 0)
   );
-  const grandTotal = periodSums.reduce((s, v) => s + v, 0);
+  const grandTotal    = periodSums.reduce((s, v) => s + v, 0);
+  const paidCount     = periodKeys.map(pk =>
+    names.filter(n => (memberHistory[n]?.[pk] ?? 0) >= std).length
+  );
+  const partialCount  = periodKeys.map(pk =>
+    names.filter(n => { const a = memberHistory[n]?.[pk]; return a !== undefined && a > 0 && a < std; }).length
+  );
+  const nilCount      = periodKeys.map(pk =>
+    names.filter(n => memberHistory[n]?.[pk] === 0).length
+  );
 
-  html += `</tbody><tfoot><tr style="background:var(--bg);border-top:2px solid var(--rule)">
-    <td style="padding:9px 14px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace">Total</td>
-    ${periodSums.map(s => `<td style="padding:9px 14px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;text-align:right">Ksh ${s.toLocaleString('en-KE')}</td>`).join('')}
-    <td style="padding:9px 14px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;text-align:right;color:var(--ok-fg)">Ksh ${grandTotal.toLocaleString('en-KE')}</td>
-  </tr></tfoot></table>`;
+  html += `</tbody><tfoot>
+    <!-- Collection rate row -->
+    <tr style="background:var(--bg);border-top:1px solid var(--rule);">
+      <td style="padding:7px 14px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);font-family:'DM Mono',monospace;">Collection rate</td>
+      ${periodKeys.map((pk, i) => {
+        const exp  = names.filter(n => memberHistory[n]?.[pk] !== undefined).length * std;
+        const rate = exp > 0 ? Math.round((periodSums[i] / exp) * 100) : 0;
+        const col  = rate >= 90 ? 'var(--ok-fg)' : rate >= 60 ? 'var(--warn-fg)' : 'var(--nil-fg)';
+        return `<td style="padding:7px 14px;text-align:center;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${col};">${rate}%</td>`;
+      }).join('')}
+      <td colspan="2"></td>
+    </tr>
+    <!-- Breakdown row: paid / partial / nil badges -->
+    <tr style="background:var(--bg);border-top:1px solid var(--bg2);">
+      <td style="padding:7px 14px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);font-family:'DM Mono',monospace;">Breakdown</td>
+      ${periodKeys.map((pk, i) => `
+        <td style="padding:7px 14px;text-align:center;">
+          <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap;">
+            <span class="badge badge-ok" style="font-size:8px;padding:1px 5px;">${paidCount[i]}P</span>
+            <span class="badge badge-warn" style="font-size:8px;padding:1px 5px;">${partialCount[i]}~</span>
+            <span class="badge badge-nil" style="font-size:8px;padding:1px 5px;">${nilCount[i]}✕</span>
+          </div>
+        </td>`).join('')}
+      <td colspan="2"></td>
+    </tr>
+    <!-- Total collected row -->
+    <tr style="background:var(--bg);border-top:2px solid var(--ink);">
+      <td style="padding:10px 14px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;">Total collected</td>
+      ${periodSums.map(s => `<td style="padding:10px 14px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;text-align:center;">Ksh ${s.toLocaleString('en-KE')}</td>`).join('')}
+      <td style="padding:10px 14px;font-size:13px;font-weight:700;font-family:'DM Mono',monospace;text-align:right;color:var(--ok-fg);">Ksh ${grandTotal.toLocaleString('en-KE')}</td>
+      <td></td>
+    </tr>
+  </tfoot></table>`;
 
   document.getElementById('histTableArea').innerHTML = html;
 }
@@ -1712,7 +2237,327 @@ document.addEventListener('keydown', e => {
   }
 });
 
-// ── FIREBASE INIT ─────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════
+// FEATURE 1: SEARCH + FILTER
+// ══════════════════════════════════════════════════════════════
+function applyFilter() {
+  searchQuery = document.getElementById('searchInput').value;
+  render();
+}
+
+function setFilter(btn) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.dataset.filter;
+  render();
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 2: BULK PAYMENT UPDATE
+// ══════════════════════════════════════════════════════════════
+function toggleBulkMode() {
+  bulkMode = !bulkMode;
+  selectedIds.clear();
+  const bar = document.getElementById('bulkBar');
+  bar.classList.toggle('visible', bulkMode);
+  document.getElementById('bulkSelectBtn').textContent = bulkMode ? '✕ Exit Bulk' : '☑ Bulk Update';
+  render();
+}
+
+function toggleSelect(id, checked) {
+  if (checked) selectedIds.add(id); else selectedIds.delete(id);
+  document.getElementById('bulkSelLabel').textContent = `${selectedIds.size} selected`;
+}
+
+function toggleSelectAll(checked) {
+  if (checked) members.forEach(m => selectedIds.add(m.id));
+  else selectedIds.clear();
+  render();
+}
+
+function selectAllVisible() {
+  const std = getStd();
+  const q = searchQuery.toLowerCase();
+  members.filter(m => {
+    if (!m.name.toLowerCase().includes(q)) return false;
+    if (currentFilter === 'paid')    return m.amount >= std;
+    if (currentFilter === 'partial') return m.amount > 0 && m.amount < std;
+    if (currentFilter === 'nil')     return m.amount === 0;
+    return true;
+  }).forEach(m => selectedIds.add(m.id));
+  render();
+}
+
+function applyBulkUpdate() {
+  if (!currentUser) { showToast('Sign in to make changes'); return; }
+  if (!selectedIds.size) { showToast('No members selected'); return; }
+  const amt = parseFloat(document.getElementById('bulkAmtInput').value);
+  if (isNaN(amt) || amt < 0) { showToast('Enter a valid amount'); return; }
+  const { db, ref, update } = window._fb;
+  const writes = {};
+  selectedIds.forEach(id => { writes[`${membersPath()}/${id}/amount`] = amt; });
+  update(ref(db), writes)
+    .then(() => {
+      showToast(`Updated ${selectedIds.size} members to Ksh ${fmt(amt)}`);
+      selectedIds.clear();
+      toggleBulkMode();
+    })
+    .catch(e => showToast('Error: ' + e.message));
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 3: SORTABLE COLUMNS
+// ══════════════════════════════════════════════════════════════
+function sortBy(key) {
+  if (sortKey === key) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+  else { sortKey = key; sortDir = 'asc'; }
+  render();
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 4: CSV EXPORT
+// ══════════════════════════════════════════════════════════════
+function exportCSV() {
+  const std    = getStd();
+  const period = getPeriod();
+  const rows   = [['#','Name','Phone','Status','Amount (Ksh)','Shortfall (Ksh)']];
+  members.forEach((m, i) => {
+    const s = m.amount >= std ? 'Paid' : m.amount > 0 ? 'Partial' : 'Nil';
+    const gap = Math.max(0, std - m.amount);
+    rows.push([i+1, m.name, m.phone || '', s, m.amount, gap]);
+  });
+  const total = members.reduce((s, m) => s + m.amount, 0);
+  const shortfall = members.length * std - total;
+  rows.push([]);
+  rows.push(['','Total Collected','','',total,'']);
+  rows.push(['','Total Outstanding','','',shortfall,'']);
+  rows.push(['','Period','',period,'','']);
+  rows.push(['','Standard','',std,'','']);
+
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = `Lunch_${period.replace(/\s+/g,'_')}.csv`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('CSV downloaded');
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 7: CARRY FORWARD PREVIOUS PERIOD
+// ══════════════════════════════════════════════════════════════
+async function openCarryForward() {
+  if (!currentUser) { showToast('Sign in to use this feature'); return; }
+  if (!fbReady) { showToast('Firebase loading…'); return; }
+
+  document.getElementById('carryFwdTarget').textContent = getPeriod();
+  const { db, ref, onValue } = window._fb;
+
+  const snap = await new Promise(res => {
+    window._fb.onValue(window._fb.ref(window._fb.db, 'lunch'), res, { onlyOnce: true });
+  });
+  const data = snap.val() || {};
+  const currentKey = getPeriod().replace(/\s+/g,'_');
+  const periods = Object.keys(data).filter(k => k !== currentKey).sort((a,b) => parsePeriod(b)-parsePeriod(a));
+
+  const sel = document.getElementById('carryFwdSource');
+  sel.innerHTML = periods.length
+    ? periods.map(p => `<option value="${p}">${p.replace(/_/g,' ')}</option>`).join('')
+    : '<option disabled>No other periods found</option>';
+
+  document.getElementById('carryFwdModal').classList.add('show');
+}
+
+function closeCarryForward() {
+  document.getElementById('carryFwdModal').classList.remove('show');
+}
+
+async function execCarryForward() {
+  if (!currentUser) return;
+  const sourceKey = document.getElementById('carryFwdSource').value;
+  if (!sourceKey) return;
+
+  const snap = await new Promise(res => {
+    window._fb.onValue(window._fb.ref(window._fb.db, `lunch/${sourceKey}/members`), res, { onlyOnce: true });
+  });
+  const sourceMembers = snap.val();
+  if (!sourceMembers) { showToast('Source period has no members'); return; }
+
+  const { db, ref, set } = window._fb;
+  const writes = {};
+  Object.values(sourceMembers).forEach(m => {
+    const newKey = Math.random().toString(36).slice(2);
+    writes[newKey] = { name: m.name, amount: 0, phone: m.phone || '' };
+  });
+
+  set(ref(db, membersPath()), writes)
+    .then(() => {
+      closeCarryForward();
+      showToast(`${Object.keys(writes).length} members carried forward from ${sourceKey.replace(/_/g,' ')}`);
+    })
+    .catch(e => showToast('Error: ' + e.message));
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 8: MEMBER NOTES / MEMOS
+// ══════════════════════════════════════════════════════════════
+function editNote(i) {
+  if (!currentUser) { showToast('Sign in to make changes'); return; }
+  const m = members[i];
+  const note = prompt(`Note for ${m.name}:`, m.note || '');
+  if (note === null) return; // cancelled
+  const { db, ref, update } = window._fb;
+  update(ref(db, `${membersPath()}/${m.id}`), { note })
+    .then(() => showToast(note ? 'Note saved' : 'Note cleared'))
+    .catch(e => showToast('Error: ' + e.message));
+}
+
+function showNote(event, text) {
+  const pop = document.getElementById('notePopover');
+  pop.textContent = text;
+  pop.style.left = (event.clientX + 8) + 'px';
+  pop.style.top  = (event.clientY - 8) + 'px';
+  pop.style.position = 'fixed';
+  pop.classList.add('show');
+}
+
+function hideNote() {
+  document.getElementById('notePopover').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 9: ANALYTICS TAB
+// ══════════════════════════════════════════════════════════════
+async function loadAnalytics() {
+  const area = document.getElementById('analyticsArea');
+  area.innerHTML = '<div class="hist-loading">Computing analytics…</div>';
+
+  if (!fbReady) { area.innerHTML = '<div class="hist-loading">Firebase loading…</div>'; return; }
+
+  const snap = await new Promise(res => {
+    window._fb.onValue(window._fb.ref(window._fb.db, 'lunch'), res, { onlyOnce: true });
+  });
+  const data = snap.val();
+  if (!data) {
+    area.innerHTML = '<div class="hist-empty"><div class="hist-empty-icon">📈</div>No history yet. Analytics will appear once you have data across multiple periods.</div>';
+    return;
+  }
+
+  const std = getStd();
+  const periodKeys = Object.keys(data).sort((a,b) => parsePeriod(a)-parsePeriod(b));
+  const allNames   = new Set();
+  const memberHist = {}; // name → { pk → amount }
+
+  periodKeys.forEach(pk => {
+    const mems = data[pk].members || {};
+    Object.values(mems).forEach(m => {
+      if (!m.name) return;
+      allNames.add(m.name);
+      if (!memberHist[m.name]) memberHist[m.name] = {};
+      memberHist[m.name][pk] = m.amount || 0;
+    });
+  });
+
+  const names = Array.from(allNames).sort();
+
+  // Compute scores
+  const scored = names.map(name => {
+    const periods = periodKeys.filter(pk => memberHist[name]?.[pk] !== undefined);
+    const total   = periods.reduce((s, pk) => s + memberHist[name][pk], 0);
+    const paidN   = periods.filter(pk => memberHist[name][pk] >= std).length;
+    const streak  = (() => {
+      let s = 0;
+      for (let i = periodKeys.length - 1; i >= 0; i--) {
+        const a = memberHist[name]?.[periodKeys[i]];
+        if (a === undefined) break;
+        if (a >= std) s++; else break;
+      }
+      return s;
+    })();
+    const consistency = periods.length ? Math.round((paidN / periods.length) * 100) : 0;
+    return { name, total, paidN, periods: periods.length, streak, consistency };
+  });
+
+  const topPayers   = [...scored].sort((a,b) => b.total - a.total).slice(0,3);
+  const topConsist  = [...scored].sort((a,b) => b.consistency - a.consistency).slice(0,3);
+  const longestStrk = [...scored].sort((a,b) => b.streak - a.streak).slice(0,3);
+  const bottomPay   = [...scored].sort((a,b) => a.total - b.total).slice(0,3);
+
+  function miniCard(label, list, valFn, color) {
+    return `<div class="analytics-card">
+      <div class="ac-label">${label}</div>
+      ${list.map((s,i) => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;${i>0?'border-top:1px solid var(--rule)':''}">
+          <div class="ac-name" style="font-size:13px;">${s.name}</div>
+          <div class="ac-val" style="color:${color};">${valFn(s)}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  // Per-member streak dots
+  const streakHtml = `<div class="hist-member-wrap" style="margin-top:24px;">
+    <div style="padding:16px 18px;border-bottom:1px solid var(--rule);">
+      <div class="hist-section-title" style="margin-bottom:0;font-size:16px;">Payment consistency per member</div>
+    </div>
+    <div class="hist-table-scroll"><table>
+      <thead class="hist-thead"><tr>
+        <th>Member</th>
+        <th>Consistency</th>
+        ${periodKeys.map(pk=>`<th class="period-header" style="text-align:center;font-size:9px;">${pk.replace(/_/g,' ')}</th>`).join('')}
+        <th style="text-align:right">Current streak</th>
+      </tr></thead>
+      <tbody class="hist-tbody">
+      ${names.map(name => {
+        const sc = scored.find(s => s.name === name);
+        const dots = periodKeys.map(pk => {
+          const a = memberHist[name]?.[pk];
+          if (a === undefined) return `<td style="text-align:center"><div class="streak-dot miss" style="margin:auto;" title="Not in period"></div></td>`;
+          const cls = a >= std ? 'ok' : a > 0 ? 'warn' : 'nil';
+          return `<td style="text-align:center"><div class="streak-dot ${cls}" style="margin:auto;" title="Ksh ${a}"></div></td>`;
+        }).join('');
+        const consistColor = sc.consistency >= 80 ? 'var(--ok-fg)' : sc.consistency >= 50 ? 'var(--warn-fg)' : 'var(--nil-fg)';
+        return `<tr>
+          <td class="member-cell"><div style="display:flex;align-items:center;gap:8px;font-weight:500;">${name}</div></td>
+          <td><div style="font-family:'DM Mono',monospace;font-size:12px;color:${consistColor};font-weight:700;">${sc.consistency}%</div></td>
+          ${dots}
+          <td style="text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:${sc.streak>0?'var(--ok-fg)':'var(--ink-light)'};">${sc.streak} mos</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table></div>
+  </div>`;
+
+  area.innerHTML = `
+    <div class="analytics-grid">
+      ${miniCard('🏆 Top contributors (all time)', topPayers, s=>'Ksh '+s.total.toLocaleString('en-KE'), 'var(--ok-fg)')}
+      ${miniCard('🎯 Most consistent payers', topConsist, s=>s.consistency+'%', 'var(--ok-fg)')}
+      ${miniCard('🔥 Longest current streak', longestStrk, s=>s.streak+' months', 'var(--warn-fg)')}
+      ${miniCard('⚠️ Lowest contributors', bottomPay, s=>'Ksh '+s.total.toLocaleString('en-KE'), 'var(--nil-fg)')}
+    </div>
+    ${streakHtml}`;
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 10: DARK MODE
+// ══════════════════════════════════════════════════════════════
+function toggleDark() {
+  const isDark = document.body.classList.toggle('dark');
+  document.getElementById('darkToggle').textContent = isDark ? '☀️' : '🌙';
+  try { localStorage.setItem('lunchDark', isDark ? '1' : '0'); } catch(e) {}
+}
+
+// Init dark mode from localStorage
+(function initDark() {
+  try {
+    if (localStorage.getItem('lunchDark') === '1') {
+      document.body.classList.add('dark');
+      const btn = document.getElementById('darkToggle');
+      if (btn) btn.textContent = '☀️';
+    }
+  } catch(e) {}
+})();
+
+// ── Firebase subscribe also stores note field ─────────────────
 function subscribeToMembers() {
   const { db, ref, onValue, set, push } = window._fb;
   const path = membersPath();
@@ -1728,7 +2573,7 @@ function subscribeToMembers() {
       set(ref(db, path), writes);
       return;
     }
-    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount, phone: v.phone || '' }));
+    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount, phone: v.phone || '', note: v.note || '' }));
     render();
   });
 }
