@@ -6,6 +6,7 @@
 <title>Lunch Contribution Manager — May 2026</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <!-- Firebase v10 (modular, loaded as ESM) -->
 <script type="module">
@@ -368,6 +369,87 @@ window.dispatchEvent(new Event('fb-ready'));
     margin: 0 auto;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
+  /* ── NAV TABS ── */
+  .nav-tabs {
+    display: flex; gap: 4px; align-items: center;
+    border-bottom: 1px solid #2a2a2a; padding: 0 40px;
+    background: var(--ink);
+  }
+  .nav-tab {
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    color: #666; padding: 10px 16px; cursor: pointer; border: none;
+    background: transparent; border-bottom: 2px solid transparent;
+    margin-bottom: -1px; transition: all .15s; letter-spacing: .01em;
+  }
+  .nav-tab:hover { color: #aaa; }
+  .nav-tab.active { color: var(--white); border-bottom-color: var(--white); }
+
+  /* ── HISTORY PAGE ── */
+  .history-page { display: none; }
+  .history-page.active { display: block; }
+  .home-page { display: block; }
+  .home-page.hidden { display: none; }
+
+  .hist-section-title {
+    font-family: 'DM Serif Display', serif; font-size: 20px;
+    font-weight: 400; margin-bottom: 16px; color: var(--ink);
+  }
+  .hist-chart-wrap {
+    background: var(--white); border-radius: 12px; border: 1px solid var(--rule);
+    box-shadow: var(--shadow); padding: 24px 24px 16px; margin-bottom: 28px;
+  }
+  .hist-chart-wrap canvas { max-height: 260px; }
+  .hist-chart-meta {
+    font-size: 11px; color: var(--ink-light); font-family: 'DM Mono', monospace;
+    margin-top: 10px; text-align: center;
+  }
+
+  /* Member history table */
+  .hist-member-wrap {
+    background: var(--white); border-radius: 12px; border: 1px solid var(--rule);
+    box-shadow: var(--shadow); overflow: hidden;
+  }
+  .hist-member-wrap table { width: 100%; border-collapse: collapse; }
+  .hist-thead th {
+    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+    color: var(--ink-light); padding: 10px 14px; background: var(--bg);
+    font-weight: 600; font-family: 'DM Mono', monospace; text-align: left;
+    border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  .hist-thead th:first-child { width: 160px; }
+  .hist-tbody tr { border-bottom: 1px solid var(--bg); }
+  .hist-tbody tr:last-child { border-bottom: none; }
+  .hist-tbody tr:hover { background: #FAFAF7; }
+  .hist-tbody td { padding: 9px 14px; font-size: 13px; vertical-align: middle; }
+  .hist-tbody td.member-cell { font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .hist-cell-amt { font-family: 'DM Mono', monospace; font-size: 12px; }
+  .hist-cell-amt.ok   { color: var(--ok-fg); }
+  .hist-cell-amt.warn { color: var(--warn-fg); }
+  .hist-cell-amt.nil  { color: var(--ink-light); }
+  .hist-cell-total { font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 600; }
+
+  /* Period pills row */
+  .hist-period-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; align-items: center; }
+  .hist-period-pill {
+    font-size: 11px; font-family: 'DM Mono', monospace;
+    padding: 4px 10px; border-radius: 20px;
+    background: var(--bg2); color: var(--ink-mid);
+    border: 1px solid var(--rule);
+  }
+
+  /* Empty state */
+  .hist-empty {
+    text-align: center; padding: 60px 24px;
+    color: var(--ink-light); font-size: 14px;
+  }
+  .hist-empty .hist-empty-icon { font-size: 32px; margin-bottom: 12px; opacity: .4; }
+
+  /* Loading spinner for history */
+  .hist-loading {
+    text-align: center; padding: 40px;
+    color: var(--ink-light); font-size: 13px; font-family: 'DM Mono', monospace;
+  }
+
 </style>
 </head>
 <body>
@@ -398,6 +480,14 @@ window.dispatchEvent(new Event('fb-ready'));
   </div>
 </header>
 
+<!-- NAV TABS -->
+<nav class="nav-tabs">
+  <button class="nav-tab active" id="tabHome" onclick="switchTab('home')">Contributions</button>
+  <button class="nav-tab" id="tabHistory" onclick="switchTab('history')">Monthly History</button>
+</nav>
+
+<!-- HOME PAGE -->
+<div class="home-page" id="homePage">
 <div class="main">
 
   <!-- PRINT-ONLY HEADER -->
@@ -528,6 +618,28 @@ window.dispatchEvent(new Event('fb-ready'));
     <span>Period: <span id="pfPeriod"></span></span>
   </div>
 
+</div><!-- /.main -->
+</div><!-- /.home-page -->
+
+<!-- HISTORY PAGE -->
+<div class="history-page" id="historyPage">
+  <div class="main">
+
+    <!-- Bar chart -->
+    <div class="hist-chart-wrap">
+      <div class="hist-section-title">Collections per period</div>
+      <div id="histChartArea"><div class="hist-loading">Loading periods…</div></div>
+      <div class="hist-chart-meta" id="histChartMeta"></div>
+    </div>
+
+    <!-- Per-member history table -->
+    <div class="hist-section-title">Member payment history</div>
+    <div id="histPeriodPills" class="hist-period-pills"></div>
+    <div class="hist-member-wrap">
+      <div id="histTableArea"><div class="hist-loading">Loading member history…</div></div>
+    </div>
+
+  </div>
 </div>
 
 <!-- PDF OVERLAY -->
@@ -885,6 +997,194 @@ function showToast(msg) {
   t.textContent = msg;
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+// ── TAB NAVIGATION ────────────────────────────────────────────
+let currentTab = 'home';
+let histChart  = null;
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('homePage').classList.toggle('hidden', tab !== 'home');
+  document.getElementById('historyPage').classList.toggle('active', tab === 'history');
+  document.getElementById('tabHome').classList.toggle('active', tab === 'home');
+  document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+  if (tab === 'history') loadHistory();
+}
+
+// ── HISTORY: LOAD ALL PERIODS ─────────────────────────────────
+async function loadHistory() {
+  if (!fbReady) { showToast('Firebase loading…'); return; }
+  const { db, ref, onValue } = window._fb;
+
+  document.getElementById('histChartArea').innerHTML  = '<div class="hist-loading">Loading periods…</div>';
+  document.getElementById('histTableArea').innerHTML  = '<div class="hist-loading">Loading member history…</div>';
+  document.getElementById('histPeriodPills').innerHTML = '';
+
+  // Read the entire lunch node to get all periods
+  onValue(ref(db, 'lunch'), snapshot => {
+    const data = snapshot.val();
+    if (!data) {
+      document.getElementById('histChartArea').innerHTML = '<div class="hist-empty"><div class="hist-empty-icon">📊</div>No history yet — data will appear here once you have more than one period.</div>';
+      document.getElementById('histTableArea').innerHTML = '';
+      return;
+    }
+
+    // Build periods array sorted chronologically
+    const periodKeys = Object.keys(data).sort((a, b) => {
+      return parsePeriod(a) - parsePeriod(b);
+    });
+
+    // For each period, compute totals and member map
+    const periodTotals   = [];  // { label, total, collected, shortfall, memberCount }
+    const allMemberNames = new Set();
+    const memberHistory  = {}; // name → { periodKey → amount }
+
+    periodKeys.forEach(pk => {
+      const membersData = data[pk].members || {};
+      const mList = Object.values(membersData);
+      const total  = mList.reduce((s, m) => s + (m.amount || 0), 0);
+      periodTotals.push({ key: pk, label: pk.replace(/_/g, ' '), total, count: mList.length });
+
+      mList.forEach(m => {
+        if (!m.name) return;
+        allMemberNames.add(m.name);
+        if (!memberHistory[m.name]) memberHistory[m.name] = {};
+        memberHistory[m.name][pk] = m.amount || 0;
+      });
+    });
+
+    renderHistChart(periodTotals);
+    renderHistTable(periodKeys, Array.from(allMemberNames).sort(), memberHistory);
+    renderPeriodPills(periodTotals);
+  }, { onlyOnce: true });
+}
+
+// Parse "May_2026" → Date for sorting
+function parsePeriod(key) {
+  const months = { January:0,February:1,March:2,April:3,May:4,June:5,
+                   July:6,August:7,September:8,October:9,November:10,December:11 };
+  const [mon, yr] = key.split('_');
+  return new Date(parseInt(yr) || 2000, months[mon] ?? 0, 1).getTime();
+}
+
+// ── RENDER BAR CHART ──────────────────────────────────────────
+function renderHistChart(periods) {
+  const area = document.getElementById('histChartArea');
+  area.innerHTML = '<canvas id="histCanvas"></canvas>';
+  const ctx = document.getElementById('histCanvas').getContext('2d');
+
+  if (histChart) { histChart.destroy(); histChart = null; }
+
+  const labels = periods.map(p => p.label);
+  const totals = periods.map(p => p.total);
+  const maxVal = Math.max(...totals, 1);
+
+  histChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Total Collected (Ksh)',
+        data: totals,
+        backgroundColor: totals.map(v => v >= maxVal * 0.9 ? '#2E6010' : v >= maxVal * 0.6 ? '#7A4600' : '#8C1F1F'),
+        borderRadius: 6,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ' Ksh ' + ctx.parsed.y.toLocaleString('en-KE', { minimumFractionDigits: 2 })
+          }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: "'DM Mono', monospace", size: 11 }, color: '#999' }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#EAE6DC' },
+          ticks: {
+            font: { family: "'DM Mono', monospace", size: 11 }, color: '#999',
+            callback: v => 'Ksh ' + v.toLocaleString('en-KE')
+          }
+        }
+      }
+    }
+  });
+
+  const grandTotal = totals.reduce((s, v) => s + v, 0);
+  const avg = periods.length ? Math.round(grandTotal / periods.length) : 0;
+  document.getElementById('histChartMeta').textContent =
+    `${periods.length} period${periods.length !== 1 ? 's' : ''} · Grand total: Ksh ${grandTotal.toLocaleString('en-KE', { minimumFractionDigits: 2 })} · Average: Ksh ${avg.toLocaleString('en-KE')}`;
+}
+
+// ── RENDER PERIOD PILLS ───────────────────────────────────────
+function renderPeriodPills(periods) {
+  const el = document.getElementById('histPeriodPills');
+  el.innerHTML = periods.map(p =>
+    `<span class="hist-period-pill">${p.label}: Ksh ${p.total.toLocaleString('en-KE')}</span>`
+  ).join('');
+}
+
+// ── RENDER MEMBER HISTORY TABLE ───────────────────────────────
+function renderHistTable(periodKeys, names, memberHistory) {
+  if (!names.length) {
+    document.getElementById('histTableArea').innerHTML = '<div class="hist-empty"><div class="hist-empty-icon">👥</div>No member data found.</div>';
+    return;
+  }
+
+  const labels = periodKeys.map(k => k.replace(/_/g, ' '));
+
+  // Header
+  let html = `<table><thead class="hist-thead"><tr>
+    <th>Member</th>
+    ${labels.map(l => `<th style="text-align:right">${l}</th>`).join('')}
+    <th style="text-align:right">Total</th>
+  </tr></thead><tbody class="hist-tbody">`;
+
+  names.forEach(name => {
+    const photo = photoFor(name);
+    const avatarHtml = photo
+      ? `<img class="avatar" src="${photo}" style="width:24px;height:24px" alt="">`
+      : `<span class="avatar-placeholder" style="width:24px;height:24px;font-size:10px">${initials(name)}</span>`;
+
+    const memberTotal = periodKeys.reduce((s, pk) => s + (memberHistory[name]?.[pk] ?? 0), 0);
+
+    const cells = periodKeys.map(pk => {
+      const amt = memberHistory[name]?.[pk];
+      if (amt === undefined) return `<td class="hist-cell-amt nil" style="text-align:right">—</td>`;
+      const cls = amt === 0 ? 'nil' : amt >= 420 ? 'ok' : 'warn';
+      return `<td class="hist-cell-amt ${cls}" style="text-align:right">Ksh ${amt.toLocaleString('en-KE')}</td>`;
+    }).join('');
+
+    html += `<tr>
+      <td><div class="member-cell">${avatarHtml}<span>${name}</span></div></td>
+      ${cells}
+      <td class="hist-cell-total" style="text-align:right">Ksh ${memberTotal.toLocaleString('en-KE')}</td>
+    </tr>`;
+  });
+
+  // Totals row
+  const periodSums = periodKeys.map(pk =>
+    names.reduce((s, n) => s + (memberHistory[n]?.[pk] ?? 0), 0)
+  );
+  const grandTotal = periodSums.reduce((s, v) => s + v, 0);
+
+  html += `</tbody><tfoot><tr style="background:var(--bg);border-top:2px solid var(--rule)">
+    <td style="padding:9px 14px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace">Total</td>
+    ${periodSums.map(s => `<td style="padding:9px 14px;font-size:12px;font-weight:600;font-family:'DM Mono',monospace;text-align:right">Ksh ${s.toLocaleString('en-KE')}</td>`).join('')}
+    <td style="padding:9px 14px;font-size:12px;font-weight:700;font-family:'DM Mono',monospace;text-align:right;color:var(--ok-fg)">Ksh ${grandTotal.toLocaleString('en-KE')}</td>
+  </tr></tfoot></table>`;
+
+  document.getElementById('histTableArea').innerHTML = html;
 }
 
 // ── KEYBOARD SHORTCUTS ────────────────────────────────────────
