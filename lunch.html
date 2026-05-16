@@ -326,22 +326,9 @@ window.dispatchEvent(new Event('fb-ready'));
     font-family: 'DM Mono', monospace; font-size: 13px; width: 90px; background: var(--white);
   }
 
-  /* ── MOBILE PDF BUTTON ── */
-  .btn-pdf-mobile {
-    display: none;
-  }
-  @media(max-width: 968px) {
-    .btn-pdf-mobile {
-      display: inline-flex;
-    }
-    /* Replace print button with PDF button on mobile */
-    .btn-print-desktop {
-      display: none;
-    }
-  }
-  .btn-pdf-mobile { background: var(--white); color: var(--ink); }
-  .btn-pdf-mobile:hover { background: #e8e4da; }
-  .btn-pdf-mobile.loading { opacity: 0.65; cursor: not-allowed; }
+  /* ── DYNAMIC PRINT / PDF BUTTON ── */
+  #exportBtn { transition: all .15s; }
+  #exportBtn.loading { opacity: 0.65; cursor: not-allowed; pointer-events: none; }
 
   /* PDF generation progress overlay */
   .pdf-overlay {
@@ -519,7 +506,7 @@ window.dispatchEvent(new Event('fb-ready'));
   body.dark .inline-input { background: var(--bg2); color: var(--ink); border-color: var(--rule); }
   body.dark .field input, body.dark .field select { background: var(--bg2); color: var(--ink); }
 
-  /* ── DARK MODE TOGGLE ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
   .dark-toggle {
     background: none; border: 1px solid #333; border-radius: 20px;
     color: #888; font-size: 16px; padding: 5px 10px; cursor: pointer;
@@ -700,13 +687,9 @@ window.dispatchEvent(new Event('fb-ready'));
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
       Add Member
     </button>
-    <button class="btn btn-primary btn-print-desktop" onclick="printDoc()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-      Print / Save PDF
-    </button>
-    <button class="btn btn-primary btn-pdf-mobile" id="pdfMobileBtn" onclick="downloadPDF()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download PDF
+    <button class="btn btn-primary" id="exportBtn" onclick="handleExport()">
+      <svg id="exportIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+      <span id="exportLabel">Print / Save PDF</span>
     </button>
   </div>
 </header>
@@ -1595,7 +1578,78 @@ function saveEdit(i) {
     .catch(e => showToast('Error: ' + e.message));
 }
 
-// ── PRINT ─────────────────────────────────────────────────────
+// ── SMART EXPORT (print / PDF) ────────────────────────────────
+// SVG icons
+const ICON_PRINT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>`;
+const ICON_PDF   = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>`;
+const ICON_SPIN  = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15" style="animation:spin .7s linear infinite"><path d="M12 2a10 10 0 0 1 10 10"/></svg>`;
+
+// Detect if we're on a touch / mobile device
+function isMobile() {
+  return window.matchMedia('(max-width: 968px)').matches || ('ontouchstart' in window);
+}
+
+// Config per tab: { label, filename, pageId, orientation }
+function exportConfig() {
+  const period = getPeriod().replace(/\s+/g, '_');
+  const tab = currentTab;
+  if (tab === 'history') return {
+    label:       'Download History PDF',
+    icon:        ICON_PDF,
+    filename:    `Lunch_History_${period}.pdf`,
+    pageId:      'historyPage',
+    orientation: 'landscape',
+    forcePDF:    true,
+  };
+  if (tab === 'analytics') return {
+    label:       'Download Analytics PDF',
+    icon:        ICON_PDF,
+    filename:    `Lunch_Analytics_${period}.pdf`,
+    pageId:      'analyticsPage',
+    orientation: 'portrait',
+    forcePDF:    true,
+  };
+  if (tab === 'whatsapp') return {
+    label:       'Download Reminders PDF',
+    icon:        ICON_PDF,
+    filename:    `Lunch_Reminders_${period}.pdf`,
+    pageId:      'whatsappPage',
+    orientation: 'portrait',
+    forcePDF:    true,
+  };
+  // Home tab — print on desktop, PDF on mobile
+  return {
+    label:       isMobile() ? 'Download PDF' : 'Print / Save PDF',
+    icon:        isMobile() ? ICON_PDF : ICON_PRINT,
+    filename:    `Lunch_Contributions_${period}.pdf`,
+    pageId:      'homePage',
+    orientation: 'portrait',
+    forcePDF:    isMobile(),
+  };
+}
+
+// Update button label whenever tab or resize changes
+function syncExportBtn() {
+  const cfg = exportConfig();
+  const btn = document.getElementById('exportBtn');
+  const lbl = document.getElementById('exportLabel');
+  const ico = document.getElementById('exportIcon');
+  if (!btn || !lbl || !ico) return;
+  lbl.textContent = cfg.label;
+  ico.innerHTML   = cfg.icon;
+}
+
+// Main handler
+async function handleExport() {
+  const cfg = exportConfig();
+  if (!cfg.forcePDF) {
+    printDoc();
+  } else {
+    await downloadPDF(cfg);
+  }
+}
+
+// ── PRINT (home tab, desktop) ─────────────────────────────────
 function printDoc() {
   document.getElementById('printFooter').style.display = 'flex';
   document.getElementById('printHeader').style.display = 'block';
@@ -1606,57 +1660,84 @@ function printDoc() {
   }, 500);
 }
 
-// ── MOBILE PDF DOWNLOAD ───────────────────────────────────────
-
-async function downloadPDF() {
-  const btn = document.getElementById('pdfMobileBtn');
+// ── PDF DOWNLOAD (mobile or non-home tabs) ────────────────────
+async function downloadPDF(cfg) {
+  const btn     = document.getElementById('exportBtn');
   const overlay = document.getElementById('pdfOverlay');
+  const lbl     = document.getElementById('exportLabel');
+  const ico     = document.getElementById('exportIcon');
 
-  overlay.classList.add('show');
+  // Loading state
   btn.classList.add('loading');
-  btn.disabled = true;
+  ico.innerHTML   = ICON_SPIN;
+  lbl.textContent = 'Generating…';
+  overlay.classList.add('show');
 
-  // Show print-only elements
+  const isHome = (cfg.pageId === 'homePage');
+
+  // Show print-only header/footer on home tab
   const printFooter = document.getElementById('printFooter');
   const printHeader = document.getElementById('printHeader');
-  printFooter.style.display = 'flex';
-  printHeader.style.display = 'block';
+  if (isHome) {
+    printFooter.style.display = 'flex';
+    printHeader.style.display = 'block';
+  }
 
-  // Hide no-print elements temporarily
-  const noPrint = document.querySelectorAll('.no-print, .app-header, .settings-bar, .add-form, .pdf-overlay');
-  noPrint.forEach(el => { el.dataset.pdfHide = el.style.display; el.style.display = 'none'; });
+  // Temporarily make target page visible and all others hidden
+  const pages    = ['homePage','historyPage','analyticsPage','whatsappPage'];
+  const pageViz  = {};
+  pages.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    pageViz[id] = el.style.display;
+    el.style.display = (id === cfg.pageId) ? 'block' : 'none';
+  });
 
-  // Avatar imgs already have base64 src (set during loadPhotos), no conversion needed
+  // Hide chrome
+  const hideEls = document.querySelectorAll('.app-header, .nav-tabs, .settings-bar, .add-form, .pdf-overlay, .bulk-bar, .search-filter-bar, .collection-bar-wrap, .no-print');
+  hideEls.forEach(el => { el.dataset.pdfH = el.style.display || ''; el.style.display = 'none'; });
 
-  const period   = getPeriod().replace(/\s+/g, '_');
-  const filename = `Lunch_Contributions_${period}.pdf`;
-  const element  = document.querySelector('.main');
+  const element = document.getElementById(cfg.pageId);
 
   const opt = {
-    margin:      [8, 8, 8, 8],
-    filename:    filename,
+    margin:      cfg.orientation === 'landscape' ? [6, 6, 6, 6] : [8, 8, 8, 8],
+    filename:    cfg.filename,
     image:       { type: 'jpeg', quality: 0.97 },
-    html2canvas: { scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false },
-    jsPDF:       { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak:   { mode: 'css' }
+    html2canvas: { scale: 2, useCORS: true, allowTaint: true,
+                   backgroundColor: document.body.classList.contains('dark') ? '#181614' : '#ffffff',
+                   logging: false },
+    jsPDF:       { unit: 'mm', format: 'a4', orientation: cfg.orientation },
+    pagebreak:   { mode: ['css', 'legacy'] },
   };
 
   const restore = () => {
-    // Restore hidden elements
-    noPrint.forEach(el => {
-      el.style.display = el.dataset.pdfHide !== undefined ? el.dataset.pdfHide : '';
-      delete el.dataset.pdfHide;
+    // Restore page visibility
+    pages.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = pageViz[id] ?? '';
     });
-    printFooter.style.display = 'none';
-    printHeader.style.display = 'none';
+    // Restore hidden chrome
+    hideEls.forEach(el => {
+      el.style.display = el.dataset.pdfH ?? '';
+      delete el.dataset.pdfH;
+    });
+    if (isHome) {
+      printFooter.style.display = 'none';
+      printHeader.style.display = 'none';
+    }
     overlay.classList.remove('show');
     btn.classList.remove('loading');
-    btn.disabled = false;
+    syncExportBtn(); // restore label/icon
   };
 
-  html2pdf().set(opt).from(element).save()
-    .then(() => { restore(); showToast('PDF saved to Downloads'); })
-    .catch(() => { restore(); showToast('PDF generation failed — try again'); });
+  try {
+    await html2pdf().set(opt).from(element).save();
+    restore();
+    showToast('PDF saved to Downloads');
+  } catch (e) {
+    restore();
+    showToast('PDF generation failed — try again');
+  }
 }
 
 // ── TOAST ─────────────────────────────────────────────────────
@@ -1681,6 +1762,7 @@ function switchTab(tab) {
   document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
   document.getElementById('tabAnalytics').classList.toggle('active', tab === 'analytics');
   document.getElementById('tabWhatsapp').classList.toggle('active', tab === 'whatsapp');
+  syncExportBtn();
   if (tab === 'history')   loadHistory();
   if (tab === 'analytics') loadAnalytics();
   if (tab === 'whatsapp')  initWaPage();
@@ -2591,8 +2673,12 @@ window.addEventListener('fb-ready', () => {
     if (!members.length) subscribeToMembers();
   });
   subscribeToMembers();
-  loadPhotos(); // fetch Firestore user photos
+  loadPhotos();
 });
+
+// Sync export button whenever tab or viewport changes
+document.addEventListener('DOMContentLoaded', syncExportBtn);
+window.addEventListener('resize', syncExportBtn);
 </script>
 </body>
 </html>
