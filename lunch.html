@@ -651,52 +651,239 @@ window.dispatchEvent(new Event('fb-ready'));
 <!-- WHATSAPP REMINDERS PAGE -->
 <div class="history-page" id="whatsappPage">
   <div class="main">
-    <div style="background:var(--white);border-radius:12px;border:1px solid var(--rule);box-shadow:var(--shadow);padding:28px 28px 24px;margin-bottom:24px;">
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
-        <span style="font-size:28px">📲</span>
+
+    <!-- Mode tabs -->
+    <div style="display:flex;gap:0;background:var(--white);border:1px solid var(--rule);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:20px;">
+      <button id="waTabSend" onclick="switchWaMode('send')"
+        style="flex:1;padding:14px 10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .15s;background:#141414;color:#fff;border-right:1px solid var(--rule);">
+        📲 Semi-Auto Send All
+      </button>
+      <button id="waTabAuto" onclick="switchWaMode('auto')"
+        style="flex:1;padding:14px 10px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;border:none;cursor:pointer;transition:all .15s;background:var(--white);color:var(--ink-mid);">
+        ⚡ Full Auto (Cloud Functions)
+      </button>
+    </div>
+
+    <!-- ── SEMI-AUTO PANEL ── -->
+    <div id="waPanelSend">
+      <!-- Config -->
+      <div style="background:var(--white);border-radius:12px;border:1px solid var(--rule);box-shadow:var(--shadow);padding:24px;margin-bottom:16px;">
+        <div style="font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:18px;">Reminder Settings</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
+          <div>
+            <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Deadline Date</label>
+            <input type="date" id="waDeadline" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
+          </div>
+          <div>
+            <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Filter</label>
+            <select id="waFilter" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
+              <option value="all-unpaid">All unpaid (Nil + Partial)</option>
+              <option value="nil">Nil only (Ksh 0)</option>
+              <option value="partial">Partial only (below standard)</option>
+            </select>
+          </div>
+        </div>
         <div>
-          <div class="hist-section-title" style="margin-bottom:2px;">WhatsApp Reminders</div>
-          <div style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">Auto-compose reminder messages for unpaid members</div>
+          <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Message Template</label>
+          <textarea id="waMsgTemplate" rows="4" style="width:100%;padding:12px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);color:var(--ink);outline:none;resize:vertical;line-height:1.5;">Dear {name}, this is a reminder that your lunch contribution of Ksh {standard} for {period} is due by {deadline}. Kindly pay at your earliest convenience. Thank you.</textarea>
+          <div style="font-size:11px;color:var(--ink-light);margin-top:5px;font-family:'DM Mono',monospace;">Variables: {name} · {standard} · {period} · {deadline} · {amount_paid} · {balance}</div>
         </div>
+        <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-primary" onclick="buildWaList()" style="background:var(--ink);color:var(--white);">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            Preview &amp; Queue
+          </button>
+          <button class="btn" id="waSendAllBtn" onclick="startSendAll()" style="background:#25D366;color:#fff;display:none;">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+            Send All in Queue (<span id="waSendCount">0</span>)
+          </button>
+          <button class="btn btn-ghost" onclick="copyAllWaMessages()" style="font-size:12px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            Copy All
+          </button>
+        </div>
+      </div>
+
+      <!-- Send queue progress bar (hidden until Send All starts) -->
+      <div id="waSendProgress" style="display:none;background:var(--white);border:1px solid var(--rule);border-radius:12px;padding:20px 24px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+          <span style="font-weight:600;font-size:14px;" id="waProgressLabel">Sending 1 of 4…</span>
+          <button onclick="cancelSendAll()" style="background:none;border:none;color:var(--ink-light);cursor:pointer;font-size:12px;">✕ Cancel</button>
+        </div>
+        <div style="background:var(--bg2);border-radius:20px;height:8px;overflow:hidden;">
+          <div id="waProgressBar" style="height:100%;background:#25D366;border-radius:20px;transition:width .4s;width:0%"></div>
+        </div>
+        <div style="font-size:12px;color:var(--ink-light);margin-top:8px;font-family:'DM Mono',monospace;" id="waProgressSub">WhatsApp will open for each member — confirm or skip each one.</div>
+      </div>
+
+      <!-- Results list -->
+      <div id="waResults"></div>
+    </div>
+
+    <!-- ── FULL AUTO PANEL ── -->
+    <div id="waPanelAuto" style="display:none;">
+
+      <!-- Explainer -->
+      <div style="background:var(--white);border-radius:12px;border:1px solid var(--rule);box-shadow:var(--shadow);padding:26px;margin-bottom:16px;">
+        <div style="font-family:'DM Serif Display',serif;font-size:19px;margin-bottom:10px;">How Full Auto Works</div>
+        <div style="font-size:13px;color:var(--ink-mid);line-height:1.7;margin-bottom:18px;">
+          A <strong>Firebase Cloud Function</strong> runs on a schedule you set (e.g. every 25th of the month).
+          It reads unpaid members from your Firebase DB, builds personalised messages, and sends them via the
+          <strong>WhatsApp Business API</strong> — completely hands-free.
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          <div style="background:var(--bg);border-radius:9px;padding:14px 16px;text-align:center;">
+            <div style="font-size:22px;margin-bottom:6px;">🔥</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:3px;">Firebase Functions</div>
+            <div style="font-size:11px;color:var(--ink-light);">Scheduled Node.js function on your existing project</div>
+          </div>
+          <div style="background:var(--bg);border-radius:9px;padding:14px 16px;text-align:center;">
+            <div style="font-size:22px;margin-bottom:6px;">💬</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:3px;">WhatsApp Business API</div>
+            <div style="font-size:11px;color:var(--ink-light);">Via Africa's Talking or Twilio (~Ksh 2–5 per message)</div>
+          </div>
+          <div style="background:var(--bg);border-radius:9px;padding:14px 16px;text-align:center;">
+            <div style="font-size:22px;margin-bottom:6px;">📋</div>
+            <div style="font-size:12px;font-weight:600;margin-bottom:3px;">Delivery Log</div>
+            <div style="font-size:11px;color:var(--ink-light);">Results written back to Firebase and shown here</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step-by-step setup -->
+      <div style="background:var(--white);border-radius:12px;border:1px solid var(--rule);box-shadow:var(--shadow);padding:26px;margin-bottom:16px;">
+        <div style="font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:18px;">Setup Guide</div>
+
+        <!-- Step 1 -->
+        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:6px;">Sign up for Africa's Talking WhatsApp sandbox</div>
+            <div style="font-size:12px;color:var(--ink-mid);line-height:1.6;margin-bottom:8px;">Go to <a href="https://africastalking.com" target="_blank" style="color:var(--ink);">africastalking.com</a> → create account → WhatsApp → request sandbox access. You'll get an <strong>API Key</strong> and a <strong>sender number</strong>.</div>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:6px;">Install Firebase CLI &amp; init Functions</div>
+            <pre style="background:var(--bg);border-radius:7px;padding:12px 14px;font-size:12px;font-family:'DM Mono',monospace;overflow-x:auto;color:var(--ink-mid);line-height:1.6;">npm install -g firebase-tools
+firebase login
+firebase init functions   # choose JavaScript, your existing project</pre>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">3</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:8px;">Paste this into <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:11px;">functions/index.js</code></div>
+            <div style="position:relative;">
+              <pre id="cfCode" style="background:#0d1117;color:#e6edf3;border-radius:9px;padding:16px 18px;font-size:11px;font-family:'DM Mono',monospace;overflow-x:auto;line-height:1.7;max-height:340px;overflow-y:auto;"><span style="color:#ff7b72">const</span> functions = <span style="color:#d2a8ff">require</span>(<span style="color:#a5d6ff">"firebase-functions"</span>);
+<span style="color:#ff7b72">const</span> admin = <span style="color:#d2a8ff">require</span>(<span style="color:#a5d6ff">"firebase-admin"</span>);
+<span style="color:#ff7b72">const</span> https = <span style="color:#d2a8ff">require</span>(<span style="color:#a5d6ff">"https"</span>);
+admin.<span style="color:#d2a8ff">initializeApp</span>();
+
+<span style="color:#8b949e">// ── CONFIG ── set these via: firebase functions:config:set</span>
+<span style="color:#8b949e">// firebase functions:config:set wa.apikey="YOUR_AT_KEY" wa.sender="+254XXXXXXXXX" wa.day="25"</span>
+
+<span style="color:#ff7b72">const</span> WA_APIKEY = functions.config()?.wa?.apikey || <span style="color:#a5d6ff">""</span>;
+<span style="color:#ff7b72">const</span> WA_SENDER = functions.config()?.wa?.sender || <span style="color:#a5d6ff">""</span>;
+<span style="color:#ff7b72">const</span> SEND_DAY  = <span style="color:#d2a8ff">parseInt</span>(functions.config()?.wa?.day || <span style="color:#a5d6ff">"25"</span>);
+<span style="color:#ff7b72">const</span> STD_AMT   = <span style="color:#d2a8ff">parseInt</span>(functions.config()?.wa?.std  || <span style="color:#a5d6ff">"420"</span>);
+
+<span style="color:#8b949e">// Runs at 8 AM Nairobi time on the day configured above</span>
+exports.<span style="color:#79c0ff">sendLunchReminders</span> = functions.pubsub
+  .<span style="color:#d2a8ff">schedule</span>(<span style="color:#a5d6ff">`0 8 ${SEND_DAY} * *`</span>)
+  .<span style="color:#d2a8ff">timeZone</span>(<span style="color:#a5d6ff">"Africa/Nairobi"</span>)
+  .<span style="color:#d2a8ff">onRun</span>(<span style="color:#ff7b72">async</span> () =&gt; {
+    <span style="color:#ff7b72">const</span> now    = <span style="color:#ff7b72">new</span> Date();
+    <span style="color:#ff7b72">const</span> month  = now.<span style="color:#d2a8ff">toLocaleString</span>(<span style="color:#a5d6ff">"en-KE"</span>, { month: <span style="color:#a5d6ff">"long"</span> });
+    <span style="color:#ff7b72">const</span> year   = now.<span style="color:#d2a8ff">getFullYear</span>();
+    <span style="color:#ff7b72">const</span> period = <span style="color:#a5d6ff">`${month}_${year}`</span>;
+    <span style="color:#ff7b72">const</span> db     = admin.<span style="color:#d2a8ff">database</span>();
+    <span style="color:#ff7b72">const</span> snap   = <span style="color:#ff7b72">await</span> db.<span style="color:#d2a8ff">ref</span>(<span style="color:#a5d6ff">`lunch/${period}/members`</span>).<span style="color:#d2a8ff">once</span>(<span style="color:#a5d6ff">"value"</span>);
+    <span style="color:#ff7b72">const</span> data   = snap.<span style="color:#d2a8ff">val</span>() || {};
+    <span style="color:#ff7b72">const</span> log    = {};
+
+    <span style="color:#ff7b72">for</span> (<span style="color:#ff7b72">const</span> [id, m] <span style="color:#ff7b72">of</span> Object.<span style="color:#d2a8ff">entries</span>(data)) {
+      <span style="color:#ff7b72">if</span> (!m.phone || m.amount &gt;= STD_AMT) <span style="color:#ff7b72">continue</span>;
+      <span style="color:#ff7b72">const</span> balance = STD_AMT - m.amount;
+      <span style="color:#ff7b72">const</span> msg = <span style="color:#a5d6ff">`Dear ${m.name}, your lunch contribution of Ksh ${STD_AMT} for ${month} ${year} is outstanding. Paid: Ksh ${m.amount}. Balance: Ksh ${balance}. Please pay promptly. Thank you.`</span>;
+      <span style="color:#ff7b72">const</span> result = <span style="color:#ff7b72">await</span> <span style="color:#d2a8ff">sendWA</span>(m.phone, msg);
+      log[id] = { sentAt: now.<span style="color:#d2a8ff">toISOString</span>(), status: result, phone: m.phone };
+    }
+
+    <span style="color:#ff7b72">await</span> db.<span style="color:#d2a8ff">ref</span>(<span style="color:#a5d6ff">`lunch/${period}/reminderLog`</span>).<span style="color:#d2a8ff">set</span>(log);
+    console.<span style="color:#d2a8ff">log</span>(<span style="color:#a5d6ff">"Reminders sent:"</span>, log);
+  });
+
+<span style="color:#ff7b72">function</span> <span style="color:#d2a8ff">sendWA</span>(phone, message) {
+  <span style="color:#ff7b72">return new</span> <span style="color:#d2a8ff">Promise</span>(resolve =&gt; {
+    <span style="color:#ff7b72">const</span> body = <span style="color:#d2a8ff">JSON.stringify</span>({
+      username: <span style="color:#a5d6ff">"sandbox"</span>,          <span style="color:#8b949e">// change to your AT username in production</span>
+      to: phone, from: WA_SENDER,
+      message, channel: <span style="color:#a5d6ff">"whatsapp"</span>
+    });
+    <span style="color:#ff7b72">const</span> req = https.<span style="color:#d2a8ff">request</span>({
+      hostname: <span style="color:#a5d6ff">"api.africastalking.com"</span>,
+      path: <span style="color:#a5d6ff">"/version1/messaging"</span>, method: <span style="color:#a5d6ff">"POST"</span>,
+      headers: {
+        <span style="color:#a5d6ff">"apiKey"</span>: WA_APIKEY,
+        <span style="color:#a5d6ff">"Content-Type"</span>: <span style="color:#a5d6ff">"application/json"</span>,
+        <span style="color:#a5d6ff">"Accept"</span>: <span style="color:#a5d6ff">"application/json"</span>
+      }
+    }, res =&gt; {
+      <span style="color:#ff7b72">let</span> d = <span style="color:#a5d6ff">""</span>;
+      res.<span style="color:#d2a8ff">on</span>(<span style="color:#a5d6ff">"data"</span>, c =&gt; d += c);
+      res.<span style="color:#d2a8ff">on</span>(<span style="color:#a5d6ff">"end"</span>,  () =&gt; <span style="color:#d2a8ff">resolve</span>(res.statusCode === <span style="color:#79c0ff">201</span> ? <span style="color:#a5d6ff">"sent"</span> : <span style="color:#a5d6ff">"failed"</span>));
+    });
+    req.<span style="color:#d2a8ff">on</span>(<span style="color:#a5d6ff">"error"</span>, () =&gt; <span style="color:#d2a8ff">resolve</span>(<span style="color:#a5d6ff">"error"</span>));
+    req.<span style="color:#d2a8ff">write</span>(body); req.<span style="color:#d2a8ff">end</span>();
+  });
+}</pre>
+              <button onclick="copyCfCode()" style="position:absolute;top:10px;right:10px;background:#21262d;border:1px solid #30363d;color:#8b949e;border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;font-family:'DM Mono',monospace;" id="cfCopyBtn">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);">
+          <div style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">4</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:8px;">Set your secrets &amp; deploy</div>
+            <pre style="background:var(--bg);border-radius:7px;padding:12px 14px;font-size:12px;font-family:'DM Mono',monospace;overflow-x:auto;color:var(--ink-mid);line-height:1.7;">firebase functions:config:set \
+  wa.apikey="YOUR_AFRICA_TALKING_KEY" \
+  wa.sender="+254XXXXXXXXX" \
+  wa.day="25" \
+  wa.std="420"
+
+firebase deploy --only functions</pre>
+            <div style="font-size:12px;color:var(--ink-light);margin-top:8px;">The function will auto-fire at 8 AM Nairobi time on day 25 every month. Change <code style="background:var(--bg);padding:1px 5px;border-radius:3px;">wa.day</code> to any day you prefer.</div>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div style="display:flex;gap:14px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:#25D366;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">✓</div>
+          <div style="flex:1;">
+            <div style="font-weight:600;margin-bottom:6px;">That's it — reminders run automatically every month</div>
+            <div style="font-size:12px;color:var(--ink-mid);line-height:1.6;">Results are written to <code style="background:var(--bg);padding:1px 5px;border-radius:3px;">lunch/{period}/reminderLog</code> in your Firebase DB so you can audit who was sent a message and when.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reminder log viewer -->
+      <div style="background:var(--white);border-radius:12px;border:1px solid var(--rule);box-shadow:var(--shadow);padding:24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+          <div style="font-family:'DM Serif Display',serif;font-size:17px;">Delivery Log</div>
+          <button class="btn btn-ghost" style="font-size:12px;" onclick="loadReminderLog()">↻ Refresh</button>
+        </div>
+        <div id="waLogArea" style="font-size:13px;color:var(--ink-light);font-family:'DM Mono',monospace;">Click Refresh to load the latest reminder log from Firebase.</div>
       </div>
     </div>
 
-    <!-- Config panel -->
-    <div style="background:var(--white);border-radius:12px;border:1px solid var(--rule);box-shadow:var(--shadow);padding:24px;margin-bottom:20px;">
-      <div style="font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:18px;">Reminder Settings</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
-        <div class="field">
-          <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Deadline Date</label>
-          <input type="date" id="waDeadline" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
-        </div>
-        <div class="field">
-          <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Filter</label>
-          <select id="waFilter" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
-            <option value="all-unpaid">All unpaid (Nil + Partial)</option>
-            <option value="nil">Nil only (Ksh 0)</option>
-            <option value="partial">Partial only (below standard)</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Message Template</label>
-        <textarea id="waMsgTemplate" rows="5" style="width:100%;padding:12px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);color:var(--ink);outline:none;resize:vertical;line-height:1.5;">Dear {name}, this is a reminder that your lunch contribution of Ksh {standard} for {period} is due by {deadline}. Kindly pay at your earliest convenience. Thank you.</textarea>
-        <div style="font-size:11px;color:var(--ink-light);margin-top:6px;font-family:'DM Mono',monospace;">Variables: {name} · {standard} · {period} · {deadline} · {amount_paid} · {balance}</div>
-      </div>
-      <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="buildWaList()" style="background:var(--ink);color:var(--white);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.5 12.18 19.79 19.79 0 0 1 1.15 3.55 2 2 0 0 1 3.14 1.36h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9a16 16 0 0 0 6 6l.72-.72a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 20.47 16.9z"/></svg>
-          Build Reminder List
-        </button>
-        <button class="btn btn-ghost" onclick="copyAllWaMessages()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
-          Copy All Messages
-        </button>
-      </div>
-    </div>
-
-    <!-- Results -->
-    <div id="waResults"></div>
   </div>
 </div>
 
@@ -1255,122 +1442,205 @@ function renderHistTable(periodKeys, names, memberHistory) {
 
 // ── WHATSAPP UTILITIES ────────────────────────────────────────
 function waNum(phone) {
-  // Strip non-digit chars, remove leading 0, prefix 254 if needed
   let d = phone.replace(/\D/g, '');
   if (d.startsWith('0')) d = '254' + d.slice(1);
   if (!d.startsWith('254') && d.length === 9) d = '254' + d;
   return d;
 }
 
-function initWaPage() {
-  // Set deadline to end of current month as default
-  const now = new Date();
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const iso = lastDay.toISOString().split('T')[0];
-  const dl = document.getElementById('waDeadline');
-  if (!dl.value) dl.value = iso;
+function fmtDate(d) {
+  if (!d) return '(date TBD)';
+  const [y, mo, day] = d.split('-');
+  return `${parseInt(day)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(mo)-1]} ${y}`;
 }
 
-function buildWaList() {
+function buildWaMsg(m) {
   const std      = getStd();
   const period   = getPeriod();
-  const deadline = document.getElementById('waDeadline').value;
-  const filter   = document.getElementById('waFilter').value;
-  const template = document.getElementById('waMsgTemplate').value;
+  const deadline = document.getElementById('waDeadline')?.value || '';
+  const template = document.getElementById('waMsgTemplate')?.value || '';
+  const balance  = std - m.amount;
+  return template
+    .replace(/{name}/g,         m.name)
+    .replace(/{standard}/g,     fmt(std))
+    .replace(/{period}/g,       period)
+    .replace(/{deadline}/g,     fmtDate(deadline))
+    .replace(/{amount_paid}/g,  fmt(m.amount))
+    .replace(/{balance}/g,      fmt(balance));
+}
 
-  const fmtDate = d => {
-    if (!d) return '(date TBD)';
-    const [y, m, day] = d.split('-');
-    return `${parseInt(day)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${y}`;
-  };
-
-  // Filter members
-  let targets = members.filter(m => {
-    if (filter === 'nil') return m.amount === 0;
+function getWaTargets() {
+  const std    = getStd();
+  const filter = document.getElementById('waFilter')?.value || 'all-unpaid';
+  return members.filter(m => {
+    if (filter === 'nil')     return m.amount === 0;
     if (filter === 'partial') return m.amount > 0 && m.amount < std;
-    return m.amount < std; // all-unpaid
+    return m.amount < std;
   });
+}
 
-  const withPhone    = targets.filter(m => m.phone && m.phone.trim());
-  const withoutPhone = targets.filter(m => !m.phone || !m.phone.trim());
+// ── WA MODE SWITCH ────────────────────────────────────────────
+function switchWaMode(mode) {
+  const isSend = mode === 'send';
+  document.getElementById('waPanelSend').style.display = isSend ? '' : 'none';
+  document.getElementById('waPanelAuto').style.display = isSend ? 'none' : '';
+  document.getElementById('waTabSend').style.cssText =
+    'flex:1;padding:14px 10px;font-family:"DM Sans",sans-serif;font-size:13px;border:none;cursor:pointer;transition:all .15s;border-right:1px solid var(--rule);' +
+    (isSend ? 'background:#141414;color:#fff;font-weight:600;' : 'background:var(--white);color:var(--ink-mid);font-weight:500;');
+  document.getElementById('waTabAuto').style.cssText =
+    'flex:1;padding:14px 10px;font-family:"DM Sans",sans-serif;font-size:13px;border:none;cursor:pointer;transition:all .15s;' +
+    (!isSend ? 'background:#141414;color:#fff;font-weight:600;' : 'background:var(--white);color:var(--ink-mid);font-weight:500;');
+}
+
+// ── INIT WA PAGE ─────────────────────────────────────────────
+function initWaPage() {
+  const now     = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const iso     = lastDay.toISOString().split('T')[0];
+  const dl      = document.getElementById('waDeadline');
+  if (dl && !dl.value) dl.value = iso;
+}
+
+// ── BUILD QUEUE LIST ─────────────────────────────────────────
+let waQueue = [];   // array of { member, msg, url, sent }
+let waCurrent = 0;
+let waSending = false;
+
+function buildWaList() {
+  const targets      = getWaTargets();
+  const withPhone    = targets.filter(m => m.phone?.trim());
+  const withoutPhone = targets.filter(m => !m.phone?.trim());
+
+  // Build queue
+  waQueue   = withPhone.map(m => ({ member: m, msg: buildWaMsg(m), sent: false }));
+  waCurrent = 0;
+
+  const btn = document.getElementById('waSendAllBtn');
+  btn.style.display = waQueue.length ? '' : 'none';
+  document.getElementById('waSendCount').textContent = waQueue.length;
+  document.getElementById('waSendProgress').style.display = 'none';
 
   const container = document.getElementById('waResults');
+  const std       = getStd();
 
   if (!targets.length) {
     container.innerHTML = `<div style="background:var(--ok-bg);border:1px solid #b6dca0;border-radius:12px;padding:24px;text-align:center;color:var(--ok-fg);font-weight:500;">
-      ✅ All members have paid in full for ${period}! No reminders needed.
-    </div>`;
+      ✅ All members have paid in full for ${getPeriod()}! No reminders needed.</div>`;
     return;
   }
 
-  // Build message for a member
-  function buildMsg(m) {
-    const balance = std - m.amount;
-    return template
-      .replace(/{name}/g, m.name)
-      .replace(/{standard}/g, fmt(std))
-      .replace(/{period}/g, period)
-      .replace(/{deadline}/g, fmtDate(deadline))
-      .replace(/{amount_paid}/g, fmt(m.amount))
-      .replace(/{balance}/g, fmt(balance));
-  }
-
-  let html = '';
-
-  // Summary bar
-  html += `<div style="background:var(--white);border:1px solid var(--rule);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+  let html = `<div style="background:var(--white);border:1px solid var(--rule);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
     <div><span style="font-size:22px;font-weight:700;color:var(--nil-fg)">${targets.length}</span> <span style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">unpaid members</span></div>
-    <div><span style="font-size:22px;font-weight:700;color:var(--ok-fg)">${withPhone.length}</span> <span style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">with phone numbers</span></div>
+    <div><span style="font-size:22px;font-weight:700;color:var(--ok-fg)">${withPhone.length}</span> <span style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">queued with phone</span></div>
     <div><span style="font-size:22px;font-weight:700;color:var(--warn-fg)">${withoutPhone.length}</span> <span style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">missing phone</span></div>
   </div>`;
 
-  // Members with phone
   if (withPhone.length) {
-    html += `<div style="font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:12px;">Ready to Send (${withPhone.length})</div>`;
-    html += `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">`;
-    withPhone.forEach(m => {
-      const msg = buildMsg(m);
+    html += `<div style="font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:12px;">Send Queue (${withPhone.length})</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;" id="waQueueList">`;
+    withPhone.forEach((m, qi) => {
+      const msg = buildWaMsg(m);
       const waUrl = `https://wa.me/${waNum(m.phone)}?text=${encodeURIComponent(msg)}`;
-      const balance = fmt(std - m.amount);
       const s = status(m.amount);
-      html += `<div style="background:var(--white);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
-        <div style="flex:1;min-width:200px;">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+      html += `<div id="waCard-${m.id}" style="background:var(--white);border:1.5px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;transition:border-color .2s;">
+        <div style="width:24px;height:24px;border-radius:50%;border:2px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--ink-light);flex-shrink:0;margin-top:2px;font-family:'DM Mono',monospace;" id="waIdx-${m.id}">${qi+1}</div>
+        <div style="flex:1;min-width:180px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
             <span style="font-weight:600;font-size:14px;">${m.name}</span>
             <span class="badge badge-${s.cls}">${s.label}</span>
             <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--ink-light);">${m.phone}</span>
           </div>
-          <div style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;margin-bottom:10px;">
-            Paid: Ksh ${fmt(m.amount)} &nbsp;·&nbsp; Balance: Ksh ${balance}
-          </div>
-          <div style="font-size:12px;background:var(--bg);border-radius:7px;padding:10px 12px;color:var(--ink-mid);line-height:1.5;white-space:pre-wrap;font-family:'DM Sans',sans-serif;" id="msg-${m.id}">${msg}</div>
+          <div style="font-size:12px;background:var(--bg);border-radius:7px;padding:9px 12px;color:var(--ink-mid);line-height:1.5;white-space:pre-wrap;" id="msg-${m.id}">${msg}</div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
-          <a href="${waUrl}" target="_blank" class="btn btn-primary" style="background:#25D366;color:#fff;text-decoration:none;white-space:nowrap;font-size:13px;">
-            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
-            Send WhatsApp
+        <div style="display:flex;flex-direction:column;gap:7px;align-items:flex-end;flex-shrink:0;">
+          <a href="${waUrl}" target="_blank" class="btn" style="background:#25D366;color:#fff;text-decoration:none;font-size:12px;padding:8px 14px;" onclick="markSent('${m.id}')">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="13" height="13"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+            Send
           </a>
-          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;" onclick="copyMsg('${m.id}')">Copy Message</button>
+          <button class="btn btn-ghost" style="font-size:11px;padding:5px 10px;" onclick="copyMsg('${m.id}')">Copy</button>
         </div>
       </div>`;
     });
     html += `</div>`;
   }
 
-  // Members missing phone
   if (withoutPhone.length) {
-    html += `<div style="background:var(--warn-bg);border:1px solid #e6c77a;border-radius:12px;padding:20px 22px;">
-      <div style="font-weight:600;color:var(--warn-fg);margin-bottom:12px;font-size:14px;">⚠️ Missing Phone Numbers (${withoutPhone.length})</div>
+    html += `<div style="background:var(--warn-bg);border:1px solid #e6c77a;border-radius:12px;padding:18px 22px;">
+      <div style="font-weight:600;color:var(--warn-fg);margin-bottom:10px;font-size:13px;">⚠️ Missing phone — can't send (${withoutPhone.length})</div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;">
-        ${withoutPhone.map(m => `<span style="background:var(--warn-bg);border:1px solid #d4a84a;border-radius:20px;padding:5px 14px;font-size:13px;font-weight:500;color:var(--warn-fg);">${m.name}</span>`).join('')}
+        ${withoutPhone.map(m => `<span style="background:var(--warn-bg);border:1px solid #d4a84a;border-radius:20px;padding:4px 13px;font-size:12px;font-weight:500;color:var(--warn-fg);">${m.name}</span>`).join('')}
       </div>
-      <div style="font-size:12px;color:var(--warn-fg);margin-top:12px;opacity:.8;">Edit each member (✎) on the Contributions tab to add their WhatsApp number.</div>
+      <div style="font-size:11px;color:var(--warn-fg);margin-top:10px;opacity:.8;">Edit each member (✎) on the Contributions tab to add their number.</div>
     </div>`;
   }
 
   container.innerHTML = html;
 }
 
+// ── MARK SENT (from individual card) ─────────────────────────
+function markSent(memberId) {
+  const card = document.getElementById('waCard-' + memberId);
+  if (!card) return;
+  card.style.borderColor = '#25D366';
+  card.style.opacity = '0.55';
+  const idx  = document.getElementById('waIdx-' + memberId);
+  if (idx) { idx.textContent = '✓'; idx.style.color = '#25D366'; idx.style.borderColor = '#25D366'; }
+}
+
+// ── SEND ALL QUEUE ────────────────────────────────────────────
+function startSendAll() {
+  if (!waQueue.length) { showToast('Build queue first'); return; }
+  waCurrent = 0;
+  waSending = true;
+  document.getElementById('waSendProgress').style.display = '';
+  openNext();
+}
+
+function openNext() {
+  if (!waSending) return;
+  if (waCurrent >= waQueue.length) {
+    finishSendAll(); return;
+  }
+  const item   = waQueue[waCurrent];
+  const m      = item.member;
+  const total  = waQueue.length;
+  const pct    = Math.round((waCurrent / total) * 100);
+
+  document.getElementById('waProgressLabel').textContent = `Opening ${waCurrent + 1} of ${total} — ${m.name}`;
+  document.getElementById('waProgressBar').style.width   = pct + '%';
+  document.getElementById('waProgressSub').textContent   =
+    `WhatsApp opened for ${m.name}. Close that tab/window and come back — next will open automatically.`;
+
+  const url = `https://wa.me/${waNum(m.phone)}?text=${encodeURIComponent(item.msg)}`;
+  window.open(url, '_blank');
+  markSent(m.id);
+  item.sent = true;
+  waCurrent++;
+
+  // Auto-advance after 4s
+  if (waCurrent < waQueue.length) {
+    setTimeout(() => { if (waSending) openNext(); }, 4000);
+  } else {
+    setTimeout(() => { if (waSending) finishSendAll(); }, 2000);
+  }
+}
+
+function finishSendAll() {
+  waSending = false;
+  const sent = waQueue.filter(i => i.sent).length;
+  document.getElementById('waProgressBar').style.width = '100%';
+  document.getElementById('waProgressLabel').textContent = `✅ Done — ${sent} of ${waQueue.length} sent`;
+  document.getElementById('waProgressSub').textContent = 'All queued messages have been opened in WhatsApp.';
+  showToast(`${sent} WhatsApp chats opened`);
+}
+
+function cancelSendAll() {
+  waSending = false;
+  document.getElementById('waSendProgress').style.display = 'none';
+  showToast('Send queue cancelled');
+}
+
+// ── COPY HELPERS ──────────────────────────────────────────────
 function copyMsg(memberId) {
   const el = document.getElementById('msg-' + memberId);
   if (!el) return;
@@ -1378,39 +1648,59 @@ function copyMsg(memberId) {
 }
 
 function copyAllWaMessages() {
-  const std      = getStd();
-  const period   = getPeriod();
-  const deadline = document.getElementById('waDeadline')?.value || '';
-  const template = document.getElementById('waMsgTemplate')?.value || '';
-  const filter   = document.getElementById('waFilter')?.value || 'all-unpaid';
-
-  const fmtDate = d => {
-    if (!d) return '(date TBD)';
-    const [y, m, day] = d.split('-');
-    return `${parseInt(day)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${y}`;
-  };
-
-  let targets = members.filter(m => {
-    if (filter === 'nil') return m.amount === 0;
-    if (filter === 'partial') return m.amount > 0 && m.amount < std;
-    return m.amount < std;
-  }).filter(m => m.phone && m.phone.trim());
-
+  const targets = getWaTargets().filter(m => m.phone?.trim());
   if (!targets.length) { showToast('No unpaid members with phone numbers'); return; }
-
-  const all = targets.map(m => {
-    const balance = std - m.amount;
-    const msg = template
-      .replace(/{name}/g, m.name)
-      .replace(/{standard}/g, fmt(std))
-      .replace(/{period}/g, period)
-      .replace(/{deadline}/g, fmtDate(deadline))
-      .replace(/{amount_paid}/g, fmt(m.amount))
-      .replace(/{balance}/g, fmt(balance));
-    return `--- ${m.name} (${m.phone}) ---\n${msg}`;
-  }).join('\n\n');
-
+  const all = targets.map(m => `--- ${m.name} (${m.phone}) ---\n${buildWaMsg(m)}`).join('\n\n');
   navigator.clipboard.writeText(all).then(() => showToast(`${targets.length} messages copied`));
+}
+
+// ── CLOUD FUNCTION CODE COPY ──────────────────────────────────
+function copyCfCode() {
+  const pre = document.getElementById('cfCode');
+  if (!pre) return;
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    const btn = document.getElementById('cfCopyBtn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  });
+}
+
+// ── REMINDER LOG VIEWER ───────────────────────────────────────
+async function loadReminderLog() {
+  if (!fbReady) { showToast('Firebase loading…'); return; }
+  const { db, ref, onValue } = window._fb;
+  const period = getPeriod().replace(/\s+/g, '_');
+  const area   = document.getElementById('waLogArea');
+  area.textContent = 'Loading…';
+
+  const snap = await new Promise(res => {
+    const r = window._fb.ref(window._fb.db, `lunch/${period}/reminderLog`);
+    window._fb.onValue(r, res, { onlyOnce: true });
+  });
+
+  const data = snap.val();
+  if (!data) {
+    area.innerHTML = `<span style="color:var(--ink-light)">No reminder log found for ${getPeriod()}. Logs appear here after the Cloud Function runs.</span>`;
+    return;
+  }
+
+  const rows = Object.entries(data).map(([id, v]) => {
+    const statusColor = v.status === 'sent' ? 'var(--ok-fg)' : 'var(--nil-fg)';
+    return `<tr>
+      <td style="padding:9px 14px;font-size:13px;font-weight:500;">${v.phone || id}</td>
+      <td style="padding:9px 14px;font-size:12px;font-family:'DM Mono',monospace;color:${statusColor};text-transform:uppercase;font-weight:600;">${v.status}</td>
+      <td style="padding:9px 14px;font-size:11px;font-family:'DM Mono',monospace;color:var(--ink-light);">${v.sentAt ? new Date(v.sentAt).toLocaleString('en-KE') : '—'}</td>
+    </tr>`;
+  }).join('');
+
+  area.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+    <thead><tr style="border-bottom:1px solid var(--rule);">
+      <th style="text-align:left;padding:8px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-light);font-family:'DM Mono',monospace;">Phone</th>
+      <th style="text-align:left;padding:8px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-light);font-family:'DM Mono',monospace;">Status</th>
+      <th style="text-align:left;padding:8px 14px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-light);font-family:'DM Mono',monospace;">Sent At</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
 }
 
 // ── KEYBOARD SHORTCUTS ────────────────────────────────────────
