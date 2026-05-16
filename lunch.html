@@ -484,6 +484,7 @@ window.dispatchEvent(new Event('fb-ready'));
 <nav class="nav-tabs">
   <button class="nav-tab active" id="tabHome" onclick="switchTab('home')">Contributions</button>
   <button class="nav-tab" id="tabHistory" onclick="switchTab('history')">Monthly History</button>
+  <button class="nav-tab" id="tabWhatsapp" onclick="switchTab('whatsapp')">📲 WhatsApp Reminders</button>
 </nav>
 
 <!-- HOME PAGE -->
@@ -550,7 +551,7 @@ window.dispatchEvent(new Event('fb-ready'));
   <!-- ADD FORM -->
   <div class="add-form" id="addForm">
     <div class="form-title">Add Member</div>
-    <div class="form-grid">
+    <div class="form-grid" style="grid-template-columns: auto 1fr 1fr auto; gap:12px">
       <div class="field">
         <label for="newTitle">Title</label>
         <select id="newTitle">
@@ -565,6 +566,10 @@ window.dispatchEvent(new Event('fb-ready'));
       <div class="field">
         <label for="newName">Full Name</label>
         <input type="text" id="newName" placeholder="e.g. Jane Otieno">
+      </div>
+      <div class="field">
+        <label for="newPhone">WhatsApp Number</label>
+        <input type="tel" id="newPhone" placeholder="+254712345678">
       </div>
       <div class="field">
         <label for="newAmount">Amount (Ksh)</label>
@@ -584,6 +589,7 @@ window.dispatchEvent(new Event('fb-ready'));
         <tr>
           <th style="width:36px">#</th>
           <th>Member</th>
+          <th>Phone</th>
           <th>Status</th>
           <th style="text-align:right">Amount (Ksh)</th>
           <th class="no-print" style="text-align:right;width:90px">Actions</th>
@@ -592,12 +598,12 @@ window.dispatchEvent(new Event('fb-ready'));
       <tbody id="tbody"></tbody>
       <tfoot id="tfoot">
         <tr>
-          <td colspan="3" class="lbl">Total Collected</td>
+          <td colspan="4" class="lbl">Total Collected</td>
           <td class="amt" id="fCollected">—</td>
           <td class="no-print"></td>
         </tr>
         <tr>
-          <td colspan="3" class="lbl danger">Total Outstanding</td>
+          <td colspan="4" class="lbl danger">Total Outstanding</td>
           <td class="amt danger" id="fOutstanding">—</td>
           <td class="no-print"></td>
         </tr>
@@ -642,7 +648,59 @@ window.dispatchEvent(new Event('fb-ready'));
   </div>
 </div>
 
-<!-- PDF OVERLAY -->
+<!-- WHATSAPP REMINDERS PAGE -->
+<div class="history-page" id="whatsappPage">
+  <div class="main">
+    <div style="background:var(--white);border-radius:12px;border:1px solid var(--rule);box-shadow:var(--shadow);padding:28px 28px 24px;margin-bottom:24px;">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px;">
+        <span style="font-size:28px">📲</span>
+        <div>
+          <div class="hist-section-title" style="margin-bottom:2px;">WhatsApp Reminders</div>
+          <div style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">Auto-compose reminder messages for unpaid members</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config panel -->
+    <div style="background:var(--white);border-radius:12px;border:1px solid var(--rule);box-shadow:var(--shadow);padding:24px;margin-bottom:20px;">
+      <div style="font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:18px;">Reminder Settings</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
+        <div class="field">
+          <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Deadline Date</label>
+          <input type="date" id="waDeadline" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
+        </div>
+        <div class="field">
+          <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Filter</label>
+          <select id="waFilter" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
+            <option value="all-unpaid">All unpaid (Nil + Partial)</option>
+            <option value="nil">Nil only (Ksh 0)</option>
+            <option value="partial">Partial only (below standard)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Message Template</label>
+        <textarea id="waMsgTemplate" rows="5" style="width:100%;padding:12px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);color:var(--ink);outline:none;resize:vertical;line-height:1.5;">Dear {name}, this is a reminder that your lunch contribution of Ksh {standard} for {period} is due by {deadline}. Kindly pay at your earliest convenience. Thank you.</textarea>
+        <div style="font-size:11px;color:var(--ink-light);margin-top:6px;font-family:'DM Mono',monospace;">Variables: {name} · {standard} · {period} · {deadline} · {amount_paid} · {balance}</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="buildWaList()" style="background:var(--ink);color:var(--white);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.5 12.18 19.79 19.79 0 0 1 1.15 3.55 2 2 0 0 1 3.14 1.36h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.09 9a16 16 0 0 0 6 6l.72-.72a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 20.47 16.9z"/></svg>
+          Build Reminder List
+        </button>
+        <button class="btn btn-ghost" onclick="copyAllWaMessages()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy All Messages
+        </button>
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="waResults"></div>
+  </div>
+</div>
+
+
 <div class="pdf-overlay" id="pdfOverlay">
   <div class="pdf-overlay-box">
     <div class="pdf-spinner"></div>
@@ -657,18 +715,18 @@ window.dispatchEvent(new Event('fb-ready'));
 <script>
 // ── SEED DATA (only written to Firebase once if DB is empty) ──
 const SEED = [
-  { name: "Mr. Aggrey",   amount: 0 },
-  { name: "Md. Jackline", amount: 420 },
-  { name: "Mr. Ochichi",  amount: 420 },
-  { name: "Md. Emily",    amount: 400 },
-  { name: "Md. Eunice",   amount: 400 },
-  { name: "Md. Janet",    amount: 400 },
-  { name: "Mr. Stephen",  amount: 420 },
-  { name: "Mr. Oduor",    amount: 420 },
-  { name: "Mr. Owuor",    amount: 0 },
-  { name: "Mr. Owino",    amount: 0 },
-  { name: "Mr. Vincent",  amount: 220 },
-  { name: "Mr. Francis",  amount: 420 },
+  { name: "Mr. Aggrey",   amount: 0,   phone: "" },
+  { name: "Md. Jackline", amount: 420, phone: "" },
+  { name: "Mr. Ochichi",  amount: 420, phone: "" },
+  { name: "Md. Emily",    amount: 400, phone: "" },
+  { name: "Md. Eunice",   amount: 400, phone: "" },
+  { name: "Md. Janet",    amount: 400, phone: "" },
+  { name: "Mr. Stephen",  amount: 420, phone: "" },
+  { name: "Mr. Oduor",    amount: 420, phone: "" },
+  { name: "Mr. Owuor",    amount: 0,   phone: "" },
+  { name: "Mr. Owino",    amount: 0,   phone: "" },
+  { name: "Mr. Vincent",  amount: 220, phone: "" },
+  { name: "Mr. Francis",  amount: 420, phone: "" },
 ];
 
 // ── STATE ─────────────────────────────────────────────────────
@@ -816,6 +874,7 @@ function render() {
     tr.innerHTML = `
       <td class="td-no">${i + 1}</td>
       <td class="td-name">${avatarHtml}<span class="td-name-text">${m.name}</span></td>
+      <td class="td-phone" style="font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-mid)">${m.phone ? `<a href="https://wa.me/${waNum(m.phone)}" target="_blank" title="Open WhatsApp" style="color:var(--ink-mid);text-decoration:none;">📱 ${m.phone}</a>` : '<span style="color:var(--rule)">—</span>'}</td>
       <td><span class="badge ${s.badgeCls}">${s.label}</span></td>
       <td class="td-amount ${s.cls}">Ksh ${fmt(m.amount)}</td>
       <td class="td-actions no-print">
@@ -875,12 +934,14 @@ function addMember() {
   const title  = document.getElementById('newTitle').value;
   const name   = document.getElementById('newName').value.trim();
   const amount = parseFloat(document.getElementById('newAmount').value) || 0;
+  const phone  = document.getElementById('newPhone').value.trim().replace(/\s+/g, '');
   if (!name) { showToast('Please enter a name'); return; }
-  const newMember = { name: `${title} ${name}`, amount };
+  const newMember = { name: `${title} ${name}`, amount, phone };
   push(ref(db, membersPath()), newMember)
     .then(() => {
       document.getElementById('newName').value   = '';
       document.getElementById('newAmount').value = '';
+      document.getElementById('newPhone').value  = '';
       document.getElementById('addForm').classList.remove('open');
       showToast(`${newMember.name} added`);
     })
@@ -907,8 +968,9 @@ function startEdit(i) {
   row.classList.add('editing-row');
 
   row.cells[1].innerHTML = `<input class="inline-input" id="eName" value="${m.name}" style="width:160px;font-family:'DM Sans',sans-serif;font-size:13px;">`;
-  row.cells[3].innerHTML = `<input class="inline-input" id="eAmt" type="number" value="${m.amount}" min="0">`;
-  row.cells[4].innerHTML = `
+  row.cells[2].innerHTML = `<input class="inline-input" id="ePhone" type="tel" value="${m.phone || ''}" placeholder="+254..." style="width:120px;font-family:'DM Mono',monospace;font-size:12px;">`;
+  row.cells[4].innerHTML = `<input class="inline-input" id="eAmt" type="number" value="${m.amount}" min="0">`;
+  row.cells[5].innerHTML = `
     <button class="icon-btn" onclick="saveEdit(${i})" title="Save">✓</button>
     <button class="icon-btn del" onclick="render()" title="Cancel">✕</button>`;
 
@@ -920,9 +982,10 @@ function saveEdit(i) {
   const { db, ref, update } = window._fb;
   const name   = document.getElementById('eName').value.trim();
   const amount = parseFloat(document.getElementById('eAmt').value) || 0;
+  const phone  = (document.getElementById('ePhone')?.value || '').trim().replace(/\s+/g, '');
   if (!name) { showToast('Name cannot be empty'); return; }
   const m = members[i];
-  update(ref(db, `${membersPath()}/${m.id}`), { name, amount })
+  update(ref(db, `${membersPath()}/${m.id}`), { name, amount, phone })
     .then(() => showToast('Updated'))
     .catch(e => showToast('Error: ' + e.message));
 }
@@ -1007,9 +1070,12 @@ function switchTab(tab) {
   currentTab = tab;
   document.getElementById('homePage').classList.toggle('hidden', tab !== 'home');
   document.getElementById('historyPage').classList.toggle('active', tab === 'history');
+  document.getElementById('whatsappPage').classList.toggle('active', tab === 'whatsapp');
   document.getElementById('tabHome').classList.toggle('active', tab === 'home');
   document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
+  document.getElementById('tabWhatsapp').classList.toggle('active', tab === 'whatsapp');
   if (tab === 'history') loadHistory();
+  if (tab === 'whatsapp') initWaPage();
 }
 
 // ── HISTORY: LOAD ALL PERIODS ─────────────────────────────────
@@ -1187,6 +1253,166 @@ function renderHistTable(periodKeys, names, memberHistory) {
   document.getElementById('histTableArea').innerHTML = html;
 }
 
+// ── WHATSAPP UTILITIES ────────────────────────────────────────
+function waNum(phone) {
+  // Strip non-digit chars, remove leading 0, prefix 254 if needed
+  let d = phone.replace(/\D/g, '');
+  if (d.startsWith('0')) d = '254' + d.slice(1);
+  if (!d.startsWith('254') && d.length === 9) d = '254' + d;
+  return d;
+}
+
+function initWaPage() {
+  // Set deadline to end of current month as default
+  const now = new Date();
+  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+  const iso = lastDay.toISOString().split('T')[0];
+  const dl = document.getElementById('waDeadline');
+  if (!dl.value) dl.value = iso;
+}
+
+function buildWaList() {
+  const std      = getStd();
+  const period   = getPeriod();
+  const deadline = document.getElementById('waDeadline').value;
+  const filter   = document.getElementById('waFilter').value;
+  const template = document.getElementById('waMsgTemplate').value;
+
+  const fmtDate = d => {
+    if (!d) return '(date TBD)';
+    const [y, m, day] = d.split('-');
+    return `${parseInt(day)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${y}`;
+  };
+
+  // Filter members
+  let targets = members.filter(m => {
+    if (filter === 'nil') return m.amount === 0;
+    if (filter === 'partial') return m.amount > 0 && m.amount < std;
+    return m.amount < std; // all-unpaid
+  });
+
+  const withPhone    = targets.filter(m => m.phone && m.phone.trim());
+  const withoutPhone = targets.filter(m => !m.phone || !m.phone.trim());
+
+  const container = document.getElementById('waResults');
+
+  if (!targets.length) {
+    container.innerHTML = `<div style="background:var(--ok-bg);border:1px solid #b6dca0;border-radius:12px;padding:24px;text-align:center;color:var(--ok-fg);font-weight:500;">
+      ✅ All members have paid in full for ${period}! No reminders needed.
+    </div>`;
+    return;
+  }
+
+  // Build message for a member
+  function buildMsg(m) {
+    const balance = std - m.amount;
+    return template
+      .replace(/{name}/g, m.name)
+      .replace(/{standard}/g, fmt(std))
+      .replace(/{period}/g, period)
+      .replace(/{deadline}/g, fmtDate(deadline))
+      .replace(/{amount_paid}/g, fmt(m.amount))
+      .replace(/{balance}/g, fmt(balance));
+  }
+
+  let html = '';
+
+  // Summary bar
+  html += `<div style="background:var(--white);border:1px solid var(--rule);border-radius:12px;padding:16px 20px;margin-bottom:16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+    <div><span style="font-size:22px;font-weight:700;color:var(--nil-fg)">${targets.length}</span> <span style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">unpaid members</span></div>
+    <div><span style="font-size:22px;font-weight:700;color:var(--ok-fg)">${withPhone.length}</span> <span style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">with phone numbers</span></div>
+    <div><span style="font-size:22px;font-weight:700;color:var(--warn-fg)">${withoutPhone.length}</span> <span style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;">missing phone</span></div>
+  </div>`;
+
+  // Members with phone
+  if (withPhone.length) {
+    html += `<div style="font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:12px;">Ready to Send (${withPhone.length})</div>`;
+    html += `<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">`;
+    withPhone.forEach(m => {
+      const msg = buildMsg(m);
+      const waUrl = `https://wa.me/${waNum(m.phone)}?text=${encodeURIComponent(msg)}`;
+      const balance = fmt(std - m.amount);
+      const s = status(m.amount);
+      html += `<div style="background:var(--white);border:1px solid var(--rule);border-radius:10px;padding:16px 18px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;">
+        <div style="flex:1;min-width:200px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <span style="font-weight:600;font-size:14px;">${m.name}</span>
+            <span class="badge badge-${s.cls}">${s.label}</span>
+            <span style="font-size:11px;font-family:'DM Mono',monospace;color:var(--ink-light);">${m.phone}</span>
+          </div>
+          <div style="font-size:12px;color:var(--ink-light);font-family:'DM Mono',monospace;margin-bottom:10px;">
+            Paid: Ksh ${fmt(m.amount)} &nbsp;·&nbsp; Balance: Ksh ${balance}
+          </div>
+          <div style="font-size:12px;background:var(--bg);border-radius:7px;padding:10px 12px;color:var(--ink-mid);line-height:1.5;white-space:pre-wrap;font-family:'DM Sans',sans-serif;" id="msg-${m.id}">${msg}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
+          <a href="${waUrl}" target="_blank" class="btn btn-primary" style="background:#25D366;color:#fff;text-decoration:none;white-space:nowrap;font-size:13px;">
+            <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+            Send WhatsApp
+          </a>
+          <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px;" onclick="copyMsg('${m.id}')">Copy Message</button>
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // Members missing phone
+  if (withoutPhone.length) {
+    html += `<div style="background:var(--warn-bg);border:1px solid #e6c77a;border-radius:12px;padding:20px 22px;">
+      <div style="font-weight:600;color:var(--warn-fg);margin-bottom:12px;font-size:14px;">⚠️ Missing Phone Numbers (${withoutPhone.length})</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        ${withoutPhone.map(m => `<span style="background:var(--warn-bg);border:1px solid #d4a84a;border-radius:20px;padding:5px 14px;font-size:13px;font-weight:500;color:var(--warn-fg);">${m.name}</span>`).join('')}
+      </div>
+      <div style="font-size:12px;color:var(--warn-fg);margin-top:12px;opacity:.8;">Edit each member (✎) on the Contributions tab to add their WhatsApp number.</div>
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function copyMsg(memberId) {
+  const el = document.getElementById('msg-' + memberId);
+  if (!el) return;
+  navigator.clipboard.writeText(el.textContent).then(() => showToast('Message copied'));
+}
+
+function copyAllWaMessages() {
+  const std      = getStd();
+  const period   = getPeriod();
+  const deadline = document.getElementById('waDeadline')?.value || '';
+  const template = document.getElementById('waMsgTemplate')?.value || '';
+  const filter   = document.getElementById('waFilter')?.value || 'all-unpaid';
+
+  const fmtDate = d => {
+    if (!d) return '(date TBD)';
+    const [y, m, day] = d.split('-');
+    return `${parseInt(day)} ${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][parseInt(m)-1]} ${y}`;
+  };
+
+  let targets = members.filter(m => {
+    if (filter === 'nil') return m.amount === 0;
+    if (filter === 'partial') return m.amount > 0 && m.amount < std;
+    return m.amount < std;
+  }).filter(m => m.phone && m.phone.trim());
+
+  if (!targets.length) { showToast('No unpaid members with phone numbers'); return; }
+
+  const all = targets.map(m => {
+    const balance = std - m.amount;
+    const msg = template
+      .replace(/{name}/g, m.name)
+      .replace(/{standard}/g, fmt(std))
+      .replace(/{period}/g, period)
+      .replace(/{deadline}/g, fmtDate(deadline))
+      .replace(/{amount_paid}/g, fmt(m.amount))
+      .replace(/{balance}/g, fmt(balance));
+    return `--- ${m.name} (${m.phone}) ---\n${msg}`;
+  }).join('\n\n');
+
+  navigator.clipboard.writeText(all).then(() => showToast(`${targets.length} messages copied`));
+}
+
 // ── KEYBOARD SHORTCUTS ────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') document.getElementById('addForm').classList.remove('open');
@@ -1212,7 +1438,7 @@ function subscribeToMembers() {
       set(ref(db, path), writes);
       return;
     }
-    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount }));
+    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount, phone: v.phone || '' }));
     render();
   });
 }
