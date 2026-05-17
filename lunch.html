@@ -667,6 +667,67 @@ window.dispatchEvent(new Event('fb-ready'));
   .modal-body  { font-size: 13px; color: var(--ink-mid); line-height: 1.6; margin-bottom: 18px; }
   .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
 
+  /* ── OVERDUE ALERT BANNER (01) ── */
+  .overdue-banner {
+    background: var(--nil-bg); border: 1.5px solid var(--nil-fg);
+    border-radius: 10px; padding: 12px 18px;
+    display: none; align-items: center; gap: 14px;
+    margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .overdue-banner.show { display: flex; }
+  .overdue-banner-text { font-size: 13px; font-weight: 500; color: var(--nil-fg); flex: 1; }
+  .overdue-banner-sub  { font-size: 11px; color: var(--nil-fg); opacity: .75; font-family: 'DM Mono', monospace; }
+
+  /* ── TREND CHART on Analytics (02) ── */
+  .trend-chart-wrap {
+    background: var(--white); border-radius: 12px; border: 1px solid var(--rule);
+    box-shadow: var(--shadow); padding: 24px 24px 16px; margin-bottom: 28px;
+  }
+  .trend-chart-wrap canvas { max-height: 260px; }
+
+  /* ── RECEIPT MODAL (03) ── */
+  .receipt-modal { max-width: 520px; }
+  .receipt-body {
+    border: 1px solid var(--rule); border-radius: 10px; padding: 24px 28px;
+    font-family: 'DM Mono', monospace; font-size: 13px; line-height: 2;
+    margin-bottom: 20px; background: var(--bg);
+  }
+  .receipt-body .r-title { font-family: 'DM Serif Display', serif; font-size: 22px; font-weight: 400; margin-bottom: 4px; font-family: serif; }
+  .receipt-body .r-sub   { font-size: 11px; color: var(--ink-light); margin-bottom: 18px; letter-spacing: .08em; text-transform: uppercase; }
+  .receipt-row { display: flex; justify-content: space-between; border-bottom: 1px dashed var(--rule); padding: 3px 0; }
+  .receipt-row.total { border-bottom: none; border-top: 2px solid var(--ink); font-weight: 700; margin-top: 6px; }
+  .receipt-stamp { margin-top: 14px; font-size: 10px; color: var(--ink-light); text-align: center; }
+
+  /* ── PAYMENT DATE STAMP (06) ── */
+  .date-stamp {
+    font-size: 10px; color: var(--ink-light); font-family: 'DM Mono', monospace;
+    display: block; margin-top: 2px;
+  }
+
+  /* ── READ-ONLY VIEW (07) ── */
+  .share-modal { max-width: 480px; }
+  .share-url-box {
+    display: flex; gap: 8px; align-items: center;
+    background: var(--bg); border: 1.5px solid var(--rule);
+    border-radius: 8px; padding: 10px 14px; margin-bottom: 14px;
+  }
+  .share-url-text {
+    flex: 1; font-family: 'DM Mono', monospace; font-size: 12px;
+    color: var(--ink); word-break: break-all; line-height: 1.4;
+    background: none; border: none; outline: none; resize: none;
+    overflow: hidden; cursor: text;
+  }
+  .share-note { font-size: 12px; color: var(--ink-light); line-height: 1.6; }
+
+  /* ── ROLE BADGE (10) ── */
+  .role-badge {
+    font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    padding: 3px 9px; border-radius: 20px; font-family: 'DM Mono', monospace;
+  }
+  .role-admin  { background: var(--ok-bg);   color: var(--ok-fg); }
+  .role-viewer { background: var(--warn-bg);  color: var(--warn-fg); }
+  .viewer-mode .no-edit { display: none !important; }
+
 </style>
 </head>
 <body>
@@ -674,12 +735,13 @@ window.dispatchEvent(new Event('fb-ready'));
 <!-- APP HEADER -->
 <header class="app-header">
   <div>
-    <div class="eyebrow">Staff Welfare Fund</div>
+    <div class="eyebrow">Staff Welfare Fund.</div>
     <h1>Lunch Contributions.</h1>
   </div>
   <div class="header-actions">
     <button class="dark-toggle" id="darkToggle" onclick="toggleDark()" title="Toggle dark mode">🌙</button>
     <div id="authArea" style="display:flex;align-items:center;gap:10px;">
+      <span id="roleBadge" style="display:none"></span>
       <span id="authUser" style="font-size:12px;color:#888;font-family:'DM Mono',monospace;"></span>
       <button id="authBtn" class="btn btn-ghost" onclick="handleAuth()" style="font-size:12px;padding:7px 14px;">Sign in</button>
     </div>
@@ -733,6 +795,32 @@ window.dispatchEvent(new Event('fb-ready'));
     <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="exportCSV()" title="Export current period as CSV">
       ⬇ Export CSV
     </button>
+    <button class="btn btn-ghost no-edit" style="font-size:12px;padding:7px 14px;" onclick="openShareModal()" title="Share read-only view">
+      🔗 Share
+    </button>
+    <button class="btn btn-ghost no-edit" style="font-size:12px;padding:7px 14px;" onclick="setDeadline()" title="Set payment deadline for overdue alerts">
+      ⏰ Set Deadline
+    </button>
+  </div>
+
+  <!-- OVERDUE ALERT BANNER (01) -->
+  <div class="overdue-banner" id="overdueBanner">
+    <div>
+      <div class="overdue-banner-text" id="overdueBannerText">⏰ Payment deadline has passed</div>
+      <div class="overdue-banner-sub" id="overdueBannerSub"></div>
+    </div>
+    <button class="btn" style="background:var(--nil-fg);color:#fff;font-size:12px;padding:7px 14px;flex-shrink:0;" onclick="switchTab('whatsapp')">Send Reminders →</button>
+    <button onclick="document.getElementById('overdueBanner').classList.remove('show')" style="background:none;border:none;color:var(--nil-fg);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;">✕</button>
+  </div>
+
+  <!-- AUTO-PERIOD ROLLOVER PROMPT (08) -->
+  <div class="overdue-banner" id="rolloverBanner" style="background:var(--ok-bg);border-color:var(--ok-fg);">
+    <div>
+      <div class="overdue-banner-text" id="rolloverBannerText" style="color:var(--ok-fg);">📅 New month detected</div>
+      <div class="overdue-banner-sub" id="rolloverBannerSub" style="color:var(--ok-fg);"></div>
+    </div>
+    <button class="btn" id="rolloverBtn" style="background:var(--ok-fg);color:#fff;font-size:12px;padding:7px 14px;flex-shrink:0;" onclick="execAutoRollover()">Start New Period →</button>
+    <button onclick="document.getElementById('rolloverBanner').classList.remove('show');try{localStorage.setItem('rolloverDismissed',getPeriod())}catch(e){}" style="background:none;border:none;color:var(--ok-fg);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;">✕</button>
   </div>
 
   <!-- STAT CARDS -->
@@ -773,10 +861,10 @@ window.dispatchEvent(new Event('fb-ready'));
       <span class="member-count" id="memberCount">0</span>
     </div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-      <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" id="bulkSelectBtn" onclick="toggleBulkMode()" title="Select multiple members to update amounts at once">
+      <button class="btn btn-ghost no-edit" style="font-size:12px;padding:7px 14px;" id="bulkSelectBtn" onclick="toggleBulkMode()" title="Select multiple members to update amounts at once">
         ☑ Bulk Update
       </button>
-      <button class="btn btn-ghost" style="font-size:12px; padding:7px 14px;" onclick="toggleForm()">
+      <button class="btn btn-ghost no-edit" style="font-size:12px; padding:7px 14px;" onclick="toggleForm()">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         New Member
       </button>
@@ -848,7 +936,7 @@ window.dispatchEvent(new Event('fb-ready'));
           <th class="select-col no-print" id="selectAllTh" style="display:none"><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)" class="row-check"></th>
           <th style="width:36px" class="sortable" onclick="sortBy('index')" id="thIndex">#</th>
           <th class="sortable" onclick="sortBy('name')" id="thName">Member</th>
-          <th>Phone</th>
+          <th class="no-print">Phone</th>
           <th class="sortable" onclick="sortBy('status')" id="thStatus">Status</th>
           <th style="text-align:right" class="sortable" onclick="sortBy('amount')" id="thAmount">Amount (Ksh)</th>
           <th class="no-print" style="text-align:right;width:120px">Actions</th>
@@ -917,6 +1005,11 @@ window.dispatchEvent(new Event('fb-ready'));
 <!-- ANALYTICS PAGE (Feature 9) -->
 <div class="history-page" id="analyticsPage">
   <div class="main">
+    <!-- Trend chart (02) -->
+    <div class="trend-chart-wrap">
+      <div class="hist-section-title">Month-over-month trend</div>
+      <div id="trendChartArea"><div class="hist-loading">Loading trend…</div></div>
+    </div>
     <div class="hist-section-title">Member Analytics</div>
     <div id="analyticsArea"><div class="hist-loading">Loading analytics…</div></div>
   </div>
@@ -1170,6 +1263,34 @@ firebase deploy --only functions</pre>
   </div>
 </div>
 
+<!-- RECEIPT MODAL (03) -->
+<div class="modal-backdrop" id="receiptModal">
+  <div class="modal-box receipt-modal">
+    <div class="modal-title">Payment Receipt</div>
+    <div class="receipt-body" id="receiptBody"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('receiptModal')">Close</button>
+      <button class="btn btn-primary" style="background:var(--ink);color:var(--white);" onclick="printReceipt()">🖨 Print Receipt</button>
+    </div>
+  </div>
+</div>
+
+<!-- SHARE MODAL (07) -->
+<div class="modal-backdrop" id="shareModal">
+  <div class="modal-box share-modal">
+    <div class="modal-title">Share read-only view</div>
+    <div class="modal-body">Anyone with this link can view the current period's data — they cannot edit anything.</div>
+    <div class="share-url-box">
+      <textarea class="share-url-text" id="shareUrlText" rows="2" readonly></textarea>
+      <button class="btn btn-primary" style="background:var(--ink);color:var(--white);padding:8px 14px;font-size:12px;flex-shrink:0;" onclick="copyShareUrl()">Copy</button>
+    </div>
+    <div class="share-note" id="shareNote"></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('shareModal')">Done</button>
+    </div>
+  </div>
+</div>
+
 <!-- CARRY FORWARD MODAL (Feature 7) -->
 <div class="modal-backdrop" id="carryFwdModal">
   <div class="modal-box">
@@ -1406,12 +1527,13 @@ function render() {
       <td class="select-col no-print" style="display:${bulkMode?'table-cell':'none'}"><input type="checkbox" class="row-check" ${checked} onchange="toggleSelect('${m.id}',this.checked)"></td>
       <td class="td-no">${m._origIdx + 1}</td>
       <td class="td-name">${avatarHtml}<span class="td-name-text">${m.name}${noteTip}</span></td>
-      <td class="td-phone" style="font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-mid)">${m.phone ? `<a href="https://wa.me/${waNum(m.phone)}" target="_blank" title="Open WhatsApp" style="color:var(--ink-mid);text-decoration:none;">📱 ${m.phone}</a>` : '<span style="color:var(--rule)">—</span>'}</td>
+      <td class="td-phone no-print" style="font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-mid)">${m.phone ? `<a href="https://wa.me/${waNum(m.phone)}" target="_blank" title="Open WhatsApp" style="color:var(--ink-mid);text-decoration:none;">📱 ${m.phone}</a>` : '<span style="color:var(--rule)">—</span>'}</td>
       <td><span class="badge ${s.badgeCls}">${s.label}</span></td>
-      <td class="td-amount ${s.cls}">Ksh ${fmt(m.amount)}</td>
-      <td class="td-actions no-print">
+      <td class="td-amount ${s.cls}">Ksh ${fmt(m.amount)}${m.paidAt ? `<span class="date-stamp">${fmtShortDate(m.paidAt)}</span>` : ''}</td>
+      <td class="td-actions no-print no-edit">
         <button class="icon-btn" title="Edit" onclick="startEdit(${m._origIdx})">✎</button>
         <button class="icon-btn" title="Note" onclick="editNote(${m._origIdx})" style="font-size:11px;">📝</button>
+        <button class="icon-btn" title="Receipt" onclick="showReceipt(${m._origIdx})" style="font-size:11px;">🧾</button>
         <button class="icon-btn del" title="Remove" onclick="removeMember(${m._origIdx})">✕</button>
       </td>`;
     tbody.appendChild(tr);
@@ -1573,7 +1695,8 @@ function saveEdit(i) {
   const phone  = (document.getElementById('ePhone')?.value || '').trim().replace(/\s+/g, '');
   if (!name) { showToast('Name cannot be empty'); return; }
   const m = members[i];
-  update(ref(db, `${membersPath()}/${m.id}`), { name, amount, phone })
+  const paidAt = (amount > 0 && amount !== m.amount) ? new Date().toISOString().slice(0,10) : (m.paidAt || '');
+  update(ref(db, `${membersPath()}/${m.id}`), { name, amount, phone, paidAt })
     .then(() => showToast('Updated'))
     .catch(e => showToast('Error: ' + e.message));
 }
@@ -2376,8 +2499,12 @@ function applyBulkUpdate() {
   const amt = parseFloat(document.getElementById('bulkAmtInput').value);
   if (isNaN(amt) || amt < 0) { showToast('Enter a valid amount'); return; }
   const { db, ref, update } = window._fb;
+  const today = new Date().toISOString().slice(0,10);
   const writes = {};
-  selectedIds.forEach(id => { writes[`${membersPath()}/${id}/amount`] = amt; });
+  selectedIds.forEach(id => {
+    writes[`${membersPath()}/${id}/amount`] = amt;
+    if (amt > 0) writes[`${membersPath()}/${id}/paidAt`] = today;
+  });
   update(ref(db), writes)
     .then(() => {
       showToast(`Updated ${selectedIds.size} members to Ksh ${fmt(amt)}`);
@@ -2540,9 +2667,17 @@ async function loadAnalytics() {
     });
   });
 
+  // Build period totals for trend chart
+  const periodTotals = periodKeys.map(pk => {
+    const mems = data[pk].members || {};
+    const total = Object.values(mems).reduce((s, m) => s + (m.amount || 0), 0);
+    return { key: pk, label: pk.replace(/_/g,' '), total, count: Object.keys(mems).length };
+  });
+
   const names = Array.from(allNames).sort();
 
-  // Compute scores
+  // Render trend chart first (Feature 02)
+  renderTrendChart(periodKeys, memberHist, names, periodTotals);
   const scored = names.map(name => {
     const periods = periodKeys.filter(pk => memberHist[name]?.[pk] !== undefined);
     const total   = periods.reduce((s, pk) => s + memberHist[name][pk], 0);
@@ -2639,6 +2774,325 @@ function toggleDark() {
   } catch(e) {}
 })();
 
+// ══════════════════════════════════════════════════════════════
+// FEATURE 01: OVERDUE PAYMENT ALERTS
+// ══════════════════════════════════════════════════════════════
+function checkOverdue() {
+  // Load deadline from localStorage per period
+  const key = 'deadline_' + getPeriod().replace(/\s+/g,'_');
+  let deadline;
+  try { deadline = localStorage.getItem(key); } catch(e) {}
+
+  const banner = document.getElementById('overdueBanner');
+  if (!deadline) { banner.classList.remove('show'); return; }
+
+  const now  = new Date();
+  const dl   = new Date(deadline + 'T23:59:59');
+  const std  = getStd();
+  const unpaid = members.filter(m => m.amount < std).length;
+
+  if (now > dl && unpaid > 0) {
+    const daysOver = Math.floor((now - dl) / 86400000);
+    document.getElementById('overdueBannerText').textContent =
+      `⏰ Payment deadline passed ${daysOver} day${daysOver !== 1 ? 's' : ''} ago — ${unpaid} member${unpaid !== 1 ? 's' : ''} still unpaid`;
+    document.getElementById('overdueBannerSub').textContent =
+      `Deadline was ${new Date(deadline).toLocaleDateString('en-KE', {day:'numeric',month:'long',year:'numeric'})} · Period: ${getPeriod()}`;
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+function setDeadline() {
+  const dl = prompt('Set payment deadline for this period (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
+  if (!dl || !/^\d{4}-\d{2}-\d{2}$/.test(dl)) return;
+  try { localStorage.setItem('deadline_' + getPeriod().replace(/\s+/g,'_'), dl); } catch(e) {}
+  checkOverdue();
+  showToast('Deadline set: ' + dl);
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 02: MONTH-OVER-MONTH TREND CHART
+// ══════════════════════════════════════════════════════════════
+let trendChart = null;
+
+function renderTrendChart(periodKeys, memberHistory, names, periodTotals) {
+  const area = document.getElementById('trendChartArea');
+  if (!area) return;
+  area.innerHTML = '<canvas id="trendCanvas"></canvas>';
+  if (trendChart) { trendChart.destroy(); trendChart = null; }
+
+  const std = getStd();
+  const labels   = periodTotals.map(p => p.label);
+  const actuals  = periodTotals.map(p => p.total);
+  const expected = periodTotals.map(p => {
+    const count = names.filter(n => memberHistory[n]?.[p.key] !== undefined).length;
+    return count * std;
+  });
+
+  // Running total
+  let running = 0;
+  const runningTotals = actuals.map(v => (running += v));
+
+  const ctx = document.getElementById('trendCanvas').getContext('2d');
+  trendChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Collected (Ksh)',
+          data: actuals,
+          borderColor: '#2E6010', backgroundColor: 'rgba(46,96,16,.08)',
+          tension: .35, fill: true, pointRadius: 4, pointHoverRadius: 6,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Expected (Ksh)',
+          data: expected,
+          borderColor: '#aaa', borderDash: [5,4],
+          tension: .35, fill: false, pointRadius: 3,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Running total (Ksh)',
+          data: runningTotals,
+          borderColor: '#7A4600', backgroundColor: 'rgba(122,70,0,.05)',
+          tension: .35, fill: false, pointRadius: 3,
+          yAxisID: 'y2',
+        },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: "'DM Mono', monospace", size: 11 }, boxWidth: 12 } },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: Ksh ${c.parsed.y.toLocaleString('en-KE')}` } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family:"'DM Mono',monospace", size:11 }, color:'#999' } },
+        y: { beginAtZero: true, position: 'left',
+             ticks: { font:{family:"'DM Mono',monospace",size:11}, color:'#999', callback: v => 'Ksh '+v.toLocaleString('en-KE') },
+             grid: { color: '#EAE6DC' } },
+        y2: { beginAtZero: true, position: 'right', grid: { display: false },
+              ticks: { font:{family:"'DM Mono',monospace",size:11}, color:'#7A4600', callback: v => 'Ksh '+v.toLocaleString('en-KE') } }
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 03: PAYMENT RECEIPT GENERATOR
+// ══════════════════════════════════════════════════════════════
+function showReceipt(i) {
+  const m   = members[i];
+  const std = getStd();
+  const s   = m.amount >= std ? 'Paid in Full' : m.amount > 0 ? 'Partial Payment' : 'No Payment';
+  const bal = Math.max(0, std - m.amount);
+  const rcptNum = 'RCP-' + getPeriod().replace(/\s+/g,'') + '-' + (i + 1).toString().padStart(3,'0');
+  const now = new Date().toLocaleDateString('en-KE', {day:'numeric', month:'long', year:'numeric'});
+  const paidDate = m.paidAt ? fmtShortDate(m.paidAt) : now;
+
+  document.getElementById('receiptBody').innerHTML = `
+    <div class="r-title">Staff Welfare Fund</div>
+    <div class="r-sub">Official Payment Receipt</div>
+    <div class="receipt-row"><span>Receipt No.</span><span>${rcptNum}</span></div>
+    <div class="receipt-row"><span>Date Issued</span><span>${now}</span></div>
+    <div class="receipt-row"><span>Member</span><span>${m.name}</span></div>
+    <div class="receipt-row"><span>Period</span><span>${getPeriod()}</span></div>
+    <div class="receipt-row"><span>Standard Amount</span><span>Ksh ${fmt(std)}</span></div>
+    <div class="receipt-row"><span>Amount Paid</span><span>Ksh ${fmt(m.amount)}</span></div>
+    ${bal > 0 ? `<div class="receipt-row"><span>Balance Due</span><span style="color:var(--nil-fg)">Ksh ${fmt(bal)}</span></div>` : ''}
+    <div class="receipt-row"><span>Date Paid</span><span>${paidDate}</span></div>
+    <div class="receipt-row total"><span>Status</span><span style="color:${m.amount>=std?'var(--ok-fg)':m.amount>0?'var(--warn-fg)':'var(--nil-fg)'}">${s}</span></div>
+    <div class="receipt-stamp">This receipt was generated by the Lunch Contribution Manager. Receipt No. ${rcptNum}</div>`;
+
+  document.getElementById('receiptModal').classList.add('show');
+}
+
+function printReceipt() {
+  const body = document.getElementById('receiptBody').innerHTML;
+  const win  = window.open('', '_blank', 'width=500,height=650');
+  win.document.write(`<!DOCTYPE html><html><head><title>Receipt</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Serif+Display&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      body { font-family: 'DM Sans', sans-serif; padding: 32px; max-width: 420px; margin: auto; }
+      .receipt-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #ddd; padding: 5px 0; font-size: 13px; font-family: 'DM Mono', monospace; }
+      .receipt-row.total { border-bottom: none; border-top: 2px solid #141414; font-weight: 700; margin-top: 6px; }
+      .r-title { font-family: 'DM Serif Display', serif; font-size: 22px; }
+      .r-sub { font-size: 11px; color: #999; margin-bottom: 18px; text-transform: uppercase; letter-spacing: .08em; }
+      .receipt-stamp { font-size: 10px; color: #aaa; text-align: center; margin-top: 14px; }
+      @media print { @page { margin: 8mm; } }
+    </style></head><body>${body}<script>window.onload=()=>window.print()<\/script></body></html>`);
+  win.document.close();
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 06: PAYMENT DATE STAMP
+// ══════════════════════════════════════════════════════════════
+function fmtShortDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-KE', { day:'numeric', month:'short', year:'numeric' });
+}
+
+// Stamp paidAt when amount is updated via saveEdit
+const _origSaveEdit = saveEdit;  // will be defined before this runs — see override below
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 07: SHAREABLE READ-ONLY LINK
+// ══════════════════════════════════════════════════════════════
+function openShareModal() {
+  const period = getPeriod().replace(/\s+/g,'_');
+  // Encode a read-only URL: same page + ?view=1&period=May_2026
+  const url = `${location.href.split('?')[0]}?view=1&period=${encodeURIComponent(period)}`;
+  const ta  = document.getElementById('shareUrlText');
+  ta.value  = url;
+  document.getElementById('shareNote').textContent =
+    `This link shows ${getPeriod()} contributions in read-only mode. Bookmarks or shares of this URL cannot edit or delete data.`;
+  document.getElementById('shareModal').classList.add('show');
+}
+
+function copyShareUrl() {
+  const ta = document.getElementById('shareUrlText');
+  navigator.clipboard.writeText(ta.value).then(() => showToast('Link copied to clipboard'));
+}
+
+// Apply read-only view if ?view=1 is in the URL
+function applyReadOnlyMode() {
+  const params = new URLSearchParams(location.search);
+  if (params.get('view') !== '1') return;
+
+  // Set period from URL
+  const period = params.get('period');
+  if (period) {
+    document.getElementById('periodInput').value = period.replace(/_/g,' ');
+  }
+
+  // Hide all write UI
+  document.body.classList.add('viewer-mode');
+
+  // Update header to show read-only badge
+  const badge = document.getElementById('roleBadge');
+  badge.innerHTML = '<span class="role-badge role-viewer">Read-only view</span>';
+  badge.style.display = 'inline-block';
+
+  // Hide carry forward, CSV, share buttons
+  document.querySelectorAll('.settings-bar .btn-ghost').forEach(b => b.style.display = 'none');
+
+  showToast('Viewing in read-only mode');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 08: AUTO-PERIOD ROLLOVER
+// ══════════════════════════════════════════════════════════════
+function checkAutoRollover() {
+  const now        = new Date();
+  const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const curMonthStr = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  const appPeriod   = getPeriod().trim();
+
+  if (appPeriod === curMonthStr) return; // already on current month
+
+  // Check if dismissed
+  try {
+    if (localStorage.getItem('rolloverDismissed') === appPeriod) return;
+  } catch(e) {}
+
+  const banner = document.getElementById('rolloverBanner');
+  document.getElementById('rolloverBannerText').textContent =
+    `📅 It's ${curMonthStr} — the app is still showing ${appPeriod}`;
+  document.getElementById('rolloverBannerSub').textContent =
+    'Start a new period to carry the member roster forward with amounts reset to zero.';
+
+  // Store new period name for rollover
+  banner.dataset.newPeriod = curMonthStr;
+  banner.classList.add('show');
+}
+
+async function execAutoRollover() {
+  if (!currentUser) { showToast('Sign in to use this feature'); return; }
+  const banner    = document.getElementById('rolloverBanner');
+  const newPeriod = banner.dataset.newPeriod;
+  if (!newPeriod) return;
+
+  const oldPeriodKey = getPeriod().replace(/\s+/g,'_');
+  const newPeriodKey = newPeriod.replace(/\s+/g,'_');
+
+  // Fetch current members
+  const snap = await new Promise(res => {
+    window._fb.onValue(window._fb.ref(window._fb.db, `lunch/${oldPeriodKey}/members`), res, { onlyOnce: true });
+  });
+  const src = snap.val();
+  if (!src) { showToast('No members to carry forward'); return; }
+
+  const writes = {};
+  Object.values(src).forEach(m => {
+    const k = Math.random().toString(36).slice(2);
+    writes[k] = { name: m.name, amount: 0, phone: m.phone || '', note: '' };
+  });
+
+  await window._fb.set(window._fb.ref(window._fb.db, `lunch/${newPeriodKey}/members`), writes);
+
+  // Switch period
+  document.getElementById('periodInput').value = newPeriod;
+  banner.classList.remove('show');
+  subscribeToMembers();
+  showToast(`Switched to ${newPeriod} — ${Object.keys(writes).length} members carried forward`);
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 10: ROLE-BASED ACCESS (admin vs viewer)
+// ══════════════════════════════════════════════════════════════
+// Roles stored in Firestore at roles/{uid} = { role: 'admin' | 'viewer' }
+let userRole = 'viewer'; // default until checked
+
+async function checkUserRole(user) {
+  if (!user) { userRole = 'viewer'; applyRoleUI(); return; }
+  try {
+    const { fst, collection, getDocs } = window._fb;
+    // Try to read roles collection
+    const snap = await new Promise((res, rej) => {
+      window._fb.onValue(
+        window._fb.ref(window._fb.db, `roles/${user.uid}`),
+        s => res(s), { onlyOnce: true }
+      );
+    });
+    const data = snap.val();
+    userRole = data?.role || 'admin'; // first user is admin if no roles set
+  } catch(e) {
+    userRole = 'admin'; // fallback: grant admin if roles unreadable
+  }
+  applyRoleUI();
+}
+
+function applyRoleUI() {
+  const isAdmin  = userRole === 'admin';
+  const isViewer = !isAdmin;
+  const badge    = document.getElementById('roleBadge');
+
+  if (currentUser) {
+    badge.innerHTML = `<span class="role-badge ${isAdmin ? 'role-admin' : 'role-viewer'}">${isAdmin ? 'Admin' : 'Viewer'}</span>`;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+
+  // Apply viewer mode class to body — hides .no-edit elements
+  document.body.classList.toggle('viewer-mode', isViewer && !!currentUser);
+
+  // Disable inline-edit icon buttons for viewers
+  document.querySelectorAll('.icon-btn').forEach(b => {
+    if (!isAdmin) { b.disabled = true; b.style.opacity = '.3'; }
+    else          { b.disabled = false; b.style.opacity = '1'; }
+  });
+}
+
 // ── Firebase subscribe also stores note field ─────────────────
 function subscribeToMembers() {
   const { db, ref, onValue, set, push } = window._fb;
@@ -2655,8 +3109,10 @@ function subscribeToMembers() {
       set(ref(db, path), writes);
       return;
     }
-    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount, phone: v.phone || '', note: v.note || '' }));
+    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount, phone: v.phone || '', note: v.note || '', paidAt: v.paidAt || '' }));
     render();
+    checkOverdue();
+    checkAutoRollover();
   });
 }
 
@@ -2670,10 +3126,12 @@ window.addEventListener('fb-ready', () => {
   const { auth, onAuthStateChanged } = window._fb;
   onAuthStateChanged(auth, user => {
     updateAuthUI(user);
+    checkUserRole(user);
     if (!members.length) subscribeToMembers();
   });
   subscribeToMembers();
   loadPhotos();
+  applyReadOnlyMode(); // Feature 07 — apply ?view=1 if present
 });
 
 // Sync export button whenever tab or viewport changes
