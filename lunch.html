@@ -1052,7 +1052,7 @@ window.dispatchEvent(new Event('fb-ready'));
         </div>
         <div>
           <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Message Template</label>
-          <textarea id="waMsgTemplate" rows="4" style="width:100%;padding:12px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);color:var(--ink);outline:none;resize:vertical;line-height:1.5;">Dear {name}, this is a reminder that your lunch contribution of Ksh {standard} for {period} is due by {deadline}. Kindly pay at your earliest convenience. Thank you.</textarea>
+          <textarea id="waMsgTemplate" rows="4" style="width:100%;padding:12px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);color:var(--ink);outline:none;resize:vertical;line-height:1.5;">Dear {name}, this is a reminder that your lunch contribution for {period} is due by {deadline}. Standard: Ksh {standard}. Paid: Ksh {amount_paid}. Balance: Ksh {balance}. Kindly clear your balance at your earliest convenience. Thank you.</textarea>
           <div style="font-size:11px;color:var(--ink-light);margin-top:5px;font-family:'DM Mono',monospace;">Variables: {name} · {standard} · {period} · {deadline} · {amount_paid} · {balance}</div>
         </div>
         <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;align-items:center;">
