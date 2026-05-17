@@ -1039,7 +1039,7 @@ window.dispatchEvent(new Event('fb-ready'));
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
           <div>
             <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Deadline Date</label>
-            <input type="date" id="waDeadline" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
+            <input type="date" id="waDeadline" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;" onchange="try{localStorage.setItem('deadline_'+getPeriod().replace(/\s+/g,'_'),this.value)}catch(e){}; checkOverdue();">
           </div>
           <div>
             <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Filter</label>
@@ -2224,11 +2224,16 @@ function switchWaMode(mode) {
 
 // ── INIT WA PAGE ─────────────────────────────────────────────
 function initWaPage() {
-  const now     = new Date();
-  const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  const iso     = lastDay.toISOString().split('T')[0];
-  const dl      = document.getElementById('waDeadline');
-  if (dl && !dl.value) dl.value = iso;
+  const dl = document.getElementById('waDeadline');
+  if (!dl) return;
+  // Use the deadline set via "⏰ Set Deadline" for this period, if any
+  const stored = (() => { try { return localStorage.getItem('deadline_' + getPeriod().replace(/\s+/g,'_')); } catch(e) { return null; } })();
+  if (stored) {
+    dl.value = stored;
+  } else if (!dl.value) {
+    // No deadline set yet — leave blank so the user is prompted to set one
+    dl.value = '';
+  }
 }
 
 // ── BUILD QUEUE LIST ─────────────────────────────────────────
@@ -2807,6 +2812,9 @@ function setDeadline() {
   const dl = prompt('Set payment deadline for this period (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
   if (!dl || !/^\d{4}-\d{2}-\d{2}$/.test(dl)) return;
   try { localStorage.setItem('deadline_' + getPeriod().replace(/\s+/g,'_'), dl); } catch(e) {}
+  // Sync the WhatsApp deadline input if it's visible
+  const waInput = document.getElementById('waDeadline');
+  if (waInput) waInput.value = dl;
   checkOverdue();
   showToast('Deadline set: ' + dl);
 }
