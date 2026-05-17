@@ -735,7 +735,7 @@ window.dispatchEvent(new Event('fb-ready'));
 <!-- APP HEADER -->
 <header class="app-header">
   <div>
-    <div class="eyebrow">Staff Welfare Fund.</div>
+    <div class="eyebrow">Staff Welfare Fund</div>
     <h1>Lunch Contributions.</h1>
   </div>
   <div class="header-actions">
@@ -936,7 +936,7 @@ window.dispatchEvent(new Event('fb-ready'));
           <th class="select-col no-print" id="selectAllTh" style="display:none"><input type="checkbox" id="selectAllChk" onchange="toggleSelectAll(this.checked)" class="row-check"></th>
           <th style="width:36px" class="sortable" onclick="sortBy('index')" id="thIndex">#</th>
           <th class="sortable" onclick="sortBy('name')" id="thName">Member</th>
-          <th class="no-print">Phone</th>
+          <th>Phone</th>
           <th class="sortable" onclick="sortBy('status')" id="thStatus">Status</th>
           <th style="text-align:right" class="sortable" onclick="sortBy('amount')" id="thAmount">Amount (Ksh)</th>
           <th class="no-print" style="text-align:right;width:120px">Actions</th>
@@ -1122,7 +1122,7 @@ window.dispatchEvent(new Event('fb-ready'));
         <div style="font-family:'DM Serif Display',serif;font-size:17px;margin-bottom:18px;">Setup Guide</div>
 
         <!-- Step 1 -->
-        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);">
+        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);min-width:0;overflow:hidden;">
           <div style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</div>
           <div style="flex:1;">
             <div style="font-weight:600;margin-bottom:6px;">Sign up for Africa's Talking WhatsApp sandbox</div>
@@ -1131,23 +1131,23 @@ window.dispatchEvent(new Event('fb-ready'));
         </div>
 
         <!-- Step 2 -->
-        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);">
+        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);min-width:0;overflow:hidden;">
           <div style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</div>
           <div style="flex:1;">
             <div style="font-weight:600;margin-bottom:6px;">Install Firebase CLI &amp; init Functions</div>
-            <pre style="background:var(--bg);border-radius:7px;padding:12px 14px;font-size:12px;font-family:'DM Mono',monospace;overflow-x:auto;color:var(--ink-mid);line-height:1.6;">npm install -g firebase-tools
+            <pre style="background:var(--bg);border-radius:7px;padding:12px 14px;font-size:12px;font-family:'DM Mono',monospace;white-space:pre-wrap;word-break:break-all;overflow-x:hidden;color:var(--ink-mid);line-height:1.6;">npm install -g firebase-tools
 firebase login
 firebase init functions   # choose JavaScript, your existing project</pre>
           </div>
         </div>
 
         <!-- Step 3 -->
-        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);">
+        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);min-width:0;overflow:hidden;">
           <div style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">3</div>
-          <div style="flex:1;">
+          <div style="flex:1;min-width:0;overflow:hidden;">
             <div style="font-weight:600;margin-bottom:8px;">Paste this into <code style="background:var(--bg);padding:2px 6px;border-radius:4px;font-size:11px;">functions/index.js</code></div>
-            <div style="position:relative;">
-              <pre id="cfCode" style="background:#0d1117;color:#e6edf3;border-radius:9px;padding:16px 18px;font-size:11px;font-family:'DM Mono',monospace;overflow-x:auto;line-height:1.7;max-height:340px;overflow-y:auto;"><span style="color:#ff7b72">const</span> functions = <span style="color:#d2a8ff">require</span>(<span style="color:#a5d6ff">"firebase-functions"</span>);
+            <div style="position:relative;min-width:0;overflow:hidden;">
+              <pre id="cfCode" style="background:#0d1117;color:#e6edf3;border-radius:9px;padding:16px 18px;font-size:11px;font-family:'DM Mono',monospace;white-space:pre-wrap;word-break:break-all;overflow-x:hidden;line-height:1.7;max-height:380px;overflow-y:auto;"><span style="color:#ff7b72">const</span> functions = <span style="color:#d2a8ff">require</span>(<span style="color:#a5d6ff">"firebase-functions"</span>);
 <span style="color:#ff7b72">const</span> admin = <span style="color:#d2a8ff">require</span>(<span style="color:#a5d6ff">"firebase-admin"</span>);
 <span style="color:#ff7b72">const</span> https = <span style="color:#d2a8ff">require</span>(<span style="color:#a5d6ff">"https"</span>);
 admin.<span style="color:#d2a8ff">initializeApp</span>();
@@ -1216,11 +1216,11 @@ exports.<span style="color:#79c0ff">sendLunchReminders</span> = functions.pubsub
         </div>
 
         <!-- Step 4 -->
-        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);">
+        <div style="display:flex;gap:14px;margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--bg2);min-width:0;overflow:hidden;">
           <div style="width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--white);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">4</div>
           <div style="flex:1;">
             <div style="font-weight:600;margin-bottom:8px;">Set your secrets &amp; deploy</div>
-            <pre style="background:var(--bg);border-radius:7px;padding:12px 14px;font-size:12px;font-family:'DM Mono',monospace;overflow-x:auto;color:var(--ink-mid);line-height:1.7;">firebase functions:config:set \
+            <pre style="background:var(--bg);border-radius:7px;padding:12px 14px;font-size:12px;font-family:'DM Mono',monospace;white-space:pre-wrap;word-break:break-all;overflow-x:hidden;color:var(--ink-mid);line-height:1.7;">firebase functions:config:set \
   wa.apikey="YOUR_AFRICA_TALKING_KEY" \
   wa.sender="+254XXXXXXXXX" \
   wa.day="25" \
@@ -1527,7 +1527,7 @@ function render() {
       <td class="select-col no-print" style="display:${bulkMode?'table-cell':'none'}"><input type="checkbox" class="row-check" ${checked} onchange="toggleSelect('${m.id}',this.checked)"></td>
       <td class="td-no">${m._origIdx + 1}</td>
       <td class="td-name">${avatarHtml}<span class="td-name-text">${m.name}${noteTip}</span></td>
-      <td class="td-phone no-print" style="font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-mid)">${m.phone ? `<a href="https://wa.me/${waNum(m.phone)}" target="_blank" title="Open WhatsApp" style="color:var(--ink-mid);text-decoration:none;">📱 ${m.phone}</a>` : '<span style="color:var(--rule)">—</span>'}</td>
+      <td class="td-phone" style="font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-mid)">${m.phone ? `<a href="https://wa.me/${waNum(m.phone)}" target="_blank" title="${m.phone}" style="color:var(--ink-mid);text-decoration:none;">${maskPhone(m.phone)}</a>` : '<span style="color:var(--rule)">—</span>'}</td>
       <td><span class="badge ${s.badgeCls}">${s.label}</span></td>
       <td class="td-amount ${s.cls}">Ksh ${fmt(m.amount)}${m.paidAt ? `<span class="date-stamp">${fmtShortDate(m.paidAt)}</span>` : ''}</td>
       <td class="td-actions no-print no-edit">
@@ -2931,14 +2931,26 @@ function printReceipt() {
 // ══════════════════════════════════════════════════════════════
 // FEATURE 06: PAYMENT DATE STAMP
 // ══════════════════════════════════════════════════════════════
+// Mask phone: keep first 5 and last 1 digits, replace middle with ****
+// e.g. +254712345678 → +25471****8  or  0712345678 → 07123****8
+function maskPhone(phone) {
+  if (!phone) return '';
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 7) return phone; // too short to mask meaningfully
+  const prefix = phone.slice(0, 5);   // first 5 chars including +
+  const last   = phone.slice(-1);     // last digit
+  const masked = prefix + '****' + last;
+  return '📱 ' + masked;
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 06: PAYMENT DATE STAMP
+// ══════════════════════════════════════════════════════════════
 function fmtShortDate(iso) {
   if (!iso) return '';
   const d = new Date(iso);
   return d.toLocaleDateString('en-KE', { day:'numeric', month:'short', year:'numeric' });
 }
-
-// Stamp paidAt when amount is updated via saveEdit
-const _origSaveEdit = saveEdit;  // will be defined before this runs — see override below
 
 // ══════════════════════════════════════════════════════════════
 // FEATURE 07: SHAREABLE READ-ONLY LINK
