@@ -937,7 +937,10 @@ window.dispatchEvent(new Event('fb-ready'));
       <input type="text" id="periodInput" value="May 2026"
         style="padding:7px 12px;border:1.5px solid var(--rule);border-radius:7px;
                font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);
-               color:var(--ink);outline:none;width:120px;" onchange="recalc();loadMiniDash();">
+               color:var(--ink);outline:none;width:120px;" readonly>
+      <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openNewPeriodModal()" title="Switch to a different month">
+        📅 Change Period
+      </button>
     </div>
     <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openCarryForward()" title="Copy member roster from a previous period">
       ↩ Carry Forward
@@ -1479,6 +1482,32 @@ firebase deploy --only functions</pre>
   </div>
 </div>
 
+<!-- NEW PERIOD MODAL -->
+<div class="modal-backdrop" id="newPeriodModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-title">Change Period</div>
+    <div class="modal-body">Enter the month and year to switch to. This only changes which period you're viewing — member data is stored per period and nothing is deleted or reset.</div>
+    <div class="field" style="margin-bottom:8px;">
+      <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Month</label>
+      <select id="newPeriodMonth" onchange="updateNewPeriodInfo()" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
+        <option>January</option><option>February</option><option>March</option>
+        <option>April</option><option>May</option><option>June</option>
+        <option>July</option><option>August</option><option>September</option>
+        <option>October</option><option>November</option><option>December</option>
+      </select>
+    </div>
+    <div class="field" style="margin-bottom:16px;">
+      <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Year</label>
+      <input type="number" id="newPeriodYear" min="2020" max="2099" oninput="updateNewPeriodInfo()" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Mono',monospace;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
+    </div>
+    <div id="newPeriodInfo" style="font-size:12px;color:var(--ink-light);margin-bottom:14px;font-family:'DM Mono',monospace;min-height:16px;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('newPeriodModal')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--ink);color:var(--white);" onclick="confirmNewPeriod()">Switch Period →</button>
+    </div>
+  </div>
+</div>
+
 <!-- CARRY FORWARD MODAL (Feature 7) -->
 <div class="modal-backdrop" id="carryFwdModal">
   <div class="modal-box">
@@ -1601,6 +1630,7 @@ let fbReady  = false;
 let currentUser = null;
 // photoCache: normalized-name → photoURL string
 const photoCache = {};
+let membersUnsubscribe = null; // holds the Firebase unsubscribe function
 
 // Feature state
 let currentFilter  = 'all';   // all | paid | partial | nil
@@ -2830,8 +2860,56 @@ function exportCSV() {
 }
 
 // ══════════════════════════════════════════════════════════════
-// FEATURE 7: CARRY FORWARD PREVIOUS PERIOD
+// NEW PERIOD MODAL
 // ══════════════════════════════════════════════════════════════
+function openNewPeriodModal() {
+  const now = new Date();
+  const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  // Pre-fill with current period value
+  const current = getPeriod().trim().split(' ');
+  const curMonth = current[0] || months[now.getMonth()];
+  const curYear  = parseInt(current[1]) || now.getFullYear();
+
+  const sel = document.getElementById('newPeriodMonth');
+  sel.value = curMonth;
+  document.getElementById('newPeriodYear').value = curYear;
+
+  updateNewPeriodInfo();
+  document.getElementById('newPeriodModal').classList.add('show');
+}
+
+function updateNewPeriodInfo() {
+  const month = document.getElementById('newPeriodMonth').value;
+  const year  = document.getElementById('newPeriodYear').value;
+  const info  = document.getElementById('newPeriodInfo');
+  if (month && year) {
+    info.textContent = `Will switch to: ${month} ${year}`;
+  }
+}
+
+async function confirmNewPeriod() {
+  const month = document.getElementById('newPeriodMonth').value;
+  const year  = parseInt(document.getElementById('newPeriodYear').value);
+  if (!month || !year || year < 2020 || year > 2099) {
+    showToast('Please enter a valid month and year');
+    return;
+  }
+  const newPeriod = `${month} ${year}`;
+
+  closeModal('newPeriodModal');
+
+  // Update the period input
+  document.getElementById('periodInput').value = newPeriod;
+
+  // Re-subscribe to the new period's data (unsubscribes old listener automatically)
+  subscribeToMembers();
+  recalc();
+  loadMiniDash();
+  showToast(`Switched to ${newPeriod}`);
+}
+
+// ── CARRY FORWARD ─────────────────────────────────────────────
 async function openCarryForward() {
   if (!currentUser) { showToast('Sign in to use this feature'); return; }
   if (!fbReady) { showToast('Firebase loading…'); return; }
@@ -2863,11 +2941,20 @@ async function execCarryForward() {
   const sourceKey = document.getElementById('carryFwdSource').value;
   if (!sourceKey) return;
 
+  // Determine the target period (current period in the input)
+  const targetPeriodKey = getPeriod().replace(/\s+/g,'_');
+
   const snap = await new Promise(res => {
     window._fb.onValue(window._fb.ref(window._fb.db, `lunch/${sourceKey}/members`), res, { onlyOnce: true });
   });
   const sourceMembers = snap.val();
   if (!sourceMembers) { showToast('Source period has no members'); return; }
+
+  // Detach existing listener BEFORE writing so the write doesn't trigger the old listener
+  if (membersUnsubscribe) {
+    membersUnsubscribe();
+    membersUnsubscribe = null;
+  }
 
   const { db, ref, set } = window._fb;
   const writes = {};
@@ -2876,10 +2963,12 @@ async function execCarryForward() {
     writes[newKey] = { name: m.name, amount: 0, phone: m.phone || '' };
   });
 
-  set(ref(db, membersPath()), writes)
+  set(ref(db, `lunch/${targetPeriodKey}/members`), writes)
     .then(() => {
       closeCarryForward();
       showToast(`${Object.keys(writes).length} members carried forward from ${sourceKey.replace(/_/g,' ')}`);
+      // Now re-subscribe to the (unchanged) current period — data is clean
+      subscribeToMembers();
     })
     .catch(e => showToast('Error: ' + e.message));
 }
@@ -3348,12 +3437,20 @@ async function execAutoRollover() {
     writes[k] = { name: m.name, amount: 0, phone: m.phone || '', note: '' };
   });
 
+  // Detach existing listener BEFORE writing and before switching period
+  if (membersUnsubscribe) {
+    membersUnsubscribe();
+    membersUnsubscribe = null;
+  }
+
   await window._fb.set(window._fb.ref(window._fb.db, `lunch/${newPeriodKey}/members`), writes);
 
-  // Switch period
+  // Switch period and re-subscribe
   document.getElementById('periodInput').value = newPeriod;
   banner.classList.remove('show');
   subscribeToMembers();
+  recalc();
+  loadMiniDash();
   showToast(`Switched to ${newPeriod} — ${Object.keys(writes).length} members carried forward`);
 }
 
@@ -3861,11 +3958,17 @@ function saveEdit(i) {
     .catch(e => showToast('Error: ' + e.message));
 }
 
-// ── Firebase subscribe also stores note field ─────────────────
 function subscribeToMembers() {
   const { db, ref, onValue, set, push } = window._fb;
+
+  // Detach any existing listener before subscribing to the new path
+  if (membersUnsubscribe) {
+    membersUnsubscribe();
+    membersUnsubscribe = null;
+  }
+
   const path = membersPath();
-  onValue(ref(db, path), snapshot => {
+  membersUnsubscribe = onValue(ref(db, path), snapshot => {
     const data = snapshot.val();
     if (!data) {
       // Seed on first run
@@ -3884,10 +3987,7 @@ function subscribeToMembers() {
   });
 }
 
-// Re-subscribe when period changes
-document.getElementById('periodInput').addEventListener('change', () => {
-  subscribeToMembers();
-});
+// Period is changed only via openNewPeriodModal / confirmNewPeriod (input is readonly)
 
 window.addEventListener('fb-ready', () => {
   fbReady = true;
