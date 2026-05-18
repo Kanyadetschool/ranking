@@ -429,6 +429,25 @@ window.dispatchEvent(new Event('fb-ready'));
     display: flex; gap: 6px; flex-wrap: wrap;
   }
   .hpc-breakdown .badge { font-size: 9px; padding: 2px 7px; }
+  .hpc-delete-btn {
+    margin-top: 12px; width: 100%; padding: 6px 0;
+    background: none; border: 1px solid var(--rule); border-radius: 6px;
+    font-size: 11px; font-family: 'DM Mono', monospace; color: var(--ink-light);
+    cursor: pointer; transition: all .15s; letter-spacing: .04em;
+  }
+  .hpc-delete-btn:hover { background: var(--nil-bg); border-color: var(--nil-fg); color: var(--nil-fg); }
+  #deletePeriodModal .modal-box { border-top: 4px solid var(--nil-fg); }
+  #deletePeriodModal .modal-title { color: var(--nil-fg); }
+  .period-undo-bar {
+    position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(100px);
+    background: #1e1b17; color: #e0ddd6; border: 1px solid #3a3530;
+    border-radius: 10px; padding: 12px 20px;
+    display: flex; align-items: center; gap: 16px; z-index: 1001;
+    box-shadow: 0 8px 32px rgba(0,0,0,.4); transition: transform .3s cubic-bezier(.34,1.56,.64,1);
+    font-size: 13px; white-space: nowrap;
+  }
+  .period-undo-bar.show { transform: translateX(-50%) translateY(0); }
+  .period-undo-bar .undo-btn { background: #e0ddd6; color: #141414; border: none; border-radius: 6px; padding: 5px 13px; font-size: 12px; font-weight: 700; cursor: pointer; font-family: 'DM Mono', monospace; }
 
   /* Member history table */
   .hist-member-wrap {
@@ -1543,6 +1562,24 @@ firebase deploy --only functions</pre>
   <button class="undo-btn" onclick="undoDelete()">Undo</button>
 </div>
 
+<!-- PERIOD DELETE CONFIRM MODAL -->
+<div class="modal-backdrop" id="deletePeriodModal">
+  <div class="modal-box" style="max-width:400px;">
+    <div class="modal-title">🗑 Delete Period?</div>
+    <div class="modal-body" id="deletePeriodModalBody">This will permanently delete all member data for this period.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('deletePeriodModal')">Cancel</button>
+      <button class="btn" style="background:var(--nil-fg);color:#fff;" onclick="confirmDeletePeriod()">Delete Period →</button>
+    </div>
+  </div>
+</div>
+
+<!-- PERIOD UNDO BAR -->
+<div class="period-undo-bar" id="periodUndoBar">
+  <span id="periodUndoMsg">Period deleted</span>
+  <button class="undo-btn" onclick="undoDeletePeriod()">Undo</button>
+</div>
+
 <!-- NOTE POPOVER (Feature 8) -->
 <div class="note-popover" id="notePopover"></div>
 
@@ -2367,6 +2404,7 @@ function renderPeriodCards(periods, memberHistory, names) {
         <span class="badge badge-warn">${partial} Partial</span>
         <span class="badge badge-nil">${nil} Nil</span>
       </div>
+      ${currentUser ? `<button class="hpc-delete-btn" onclick="openDeletePeriodModal('${p.key}', '${p.label}')">🗑 Delete this period</button>` : ''}
     </div>`;
   }).join('');
 }
@@ -4025,6 +4063,76 @@ window.addEventListener('fb-ready', () => {
   loadMiniDash();
   applyReadOnlyMode();
 });
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE: DELETE PERIOD (with undo)
+// ══════════════════════════════════════════════════════════════
+let periodToDelete        = null;  // { key, label }
+let deletedPeriodBuffer   = null;  // { key, data } for undo
+let periodUndoTimer       = null;
+
+function openDeletePeriodModal(periodKey, periodLabel) {
+  if (!currentUser) { showToast('Sign in to delete periods'); return; }
+  // Guard: don't allow deleting the currently active period
+  const activePeriodKey = getPeriod().replace(/\s+/g, '_');
+  if (periodKey === activePeriodKey) {
+    showToast('Cannot delete the currently active period — switch periods first');
+    return;
+  }
+  periodToDelete = { key: periodKey, label: periodLabel };
+  document.getElementById('deletePeriodModalBody').innerHTML =
+    `You are about to permanently delete all data for <strong>${periodLabel}</strong>.<br><br>` +
+    `This includes all member records for that month. You can undo this within 8 seconds.`;
+  document.getElementById('deletePeriodModal').classList.add('show');
+}
+
+async function confirmDeletePeriod() {
+  if (!currentUser || !periodToDelete) return;
+  const { db, ref, remove, onValue } = window._fb;
+  const { key, label } = periodToDelete;
+  closeModal('deletePeriodModal');
+
+  // Snapshot the full period node before deleting so we can restore it
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, `lunch/${key}`), res, { onlyOnce: true })
+  );
+  const savedData = snap.val();
+
+  remove(ref(db, `lunch/${key}`))
+    .then(() => {
+      deletedPeriodBuffer = { key, label, data: savedData };
+      periodToDelete = null;
+      showPeriodUndoBar(`"${label}" deleted`);
+      loadHistory(); // refresh the history page
+    })
+    .catch(e => { showToast('Delete failed: ' + e.message); periodToDelete = null; });
+}
+
+function showPeriodUndoBar(msg) {
+  const bar = document.getElementById('periodUndoBar');
+  document.getElementById('periodUndoMsg').textContent = msg;
+  bar.classList.add('show');
+  if (periodUndoTimer) clearTimeout(periodUndoTimer);
+  periodUndoTimer = setTimeout(() => {
+    bar.classList.remove('show');
+    deletedPeriodBuffer = null;
+  }, 8000);
+}
+
+function undoDeletePeriod() {
+  if (!deletedPeriodBuffer || !fbReady) return;
+  const { db, ref, set } = window._fb;
+  const { key, label, data } = deletedPeriodBuffer;
+  set(ref(db, `lunch/${key}`), data)
+    .then(() => {
+      document.getElementById('periodUndoBar').classList.remove('show');
+      clearTimeout(periodUndoTimer);
+      deletedPeriodBuffer = null;
+      showToast(`"${label}" restored`);
+      loadHistory();
+    })
+    .catch(e => showToast('Undo failed: ' + e.message));
+}
 
 // Sync export button whenever tab or viewport changes
 document.addEventListener('DOMContentLoaded', syncExportBtn);
