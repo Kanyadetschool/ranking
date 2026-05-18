@@ -756,7 +756,14 @@ window.dispatchEvent(new Event('fb-ready'));
   .mini-dash-card {
     background: var(--white); border-radius: 10px; border: 1px solid var(--rule);
     padding: 12px 16px; position: relative; overflow: hidden;
+    cursor: pointer; transition: transform .12s, box-shadow .12s, border-color .12s;
+    user-select: none;
   }
+  .mini-dash-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.1); border-color: var(--ink-mid); }
+  .mini-dash-card:active { transform: translateY(0); box-shadow: none; }
+  .mdc-nav-hint { font-size: 9px; color: var(--ink-light); font-family: 'DM Mono', monospace;
+    margin-top: 6px; opacity: 0; transition: opacity .15s; letter-spacing: .06em; }
+  .mini-dash-card:hover .mdc-nav-hint { opacity: 1; }
   .mini-dash-card::after {
     content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
   }
@@ -893,7 +900,7 @@ window.dispatchEvent(new Event('fb-ready'));
 <!-- APP HEADER -->
 <header class="app-header">
   <div>
-    <div class="eyebrow">Staff Welfare Fund</div>
+    <div class="eyebrow">Staff Welfare Fund.</div>
     <h1>Lunch Contributions.</h1>
   </div>
   <div class="header-actions">
@@ -3639,12 +3646,64 @@ async function loadMiniDash() {
     const rate  = exp > 0 ? Math.round(total/exp*100) : 0;
     const cls   = rate >= 90 ? 'mdc-high' : rate >= 60 ? 'mdc-mid' : 'mdc-low';
     const col   = rate >= 90 ? 'var(--ok-fg)' : rate >= 60 ? 'var(--warn-fg)' : 'var(--nil-fg)';
-    return `<div class="mini-dash-card ${cls}">
-      <div class="mdc-period">${pk.replace(/_/g,' ')}</div>
+    const label = pk.replace(/_/g,' ');
+    return `<div class="mini-dash-card ${cls}" onclick="switchToPeriod('${label}')" title="Switch to ${label}">
+      <div class="mdc-period">${label}</div>
       <div class="mdc-collected">Ksh ${total.toLocaleString('en-KE')}</div>
       <div class="mdc-rate" style="color:${col}">${rate}% collected</div>
+      <div class="mdc-nav-hint">↩ tap to switch</div>
     </div>`;
   }).join('');
+}
+
+// ── MINI DASH PERIOD SWITCHER ────────────────────────────────
+async function switchToPeriod(periodLabel) {
+  if (periodLabel === getPeriod()) return; // already here
+  const newPeriodKey = periodLabel.replace(/\s+/g, '_');
+  const oldPeriodKey = getPeriod().replace(/\s+/g, '_');
+
+  // Check if target period already has data
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, `lunch/${newPeriodKey}/members`), res, { onlyOnce: true })
+  );
+  const existingData = snap.val();
+
+  if (existingData) {
+    // Period exists — just switch view
+    document.getElementById('periodInput').value = periodLabel;
+    subscribeToMembers();
+    recalc();
+    loadMiniDash();
+    showToast(`Switched to ${periodLabel}`);
+  } else {
+    // New period — carry roster forward with amounts reset to 0
+    const srcSnap = await new Promise(res =>
+      window._fb.onValue(window._fb.ref(window._fb.db, `lunch/${oldPeriodKey}/members`), res, { onlyOnce: true })
+    );
+    const srcData = srcSnap.val();
+    if (srcData) {
+      const writes = {};
+      Object.values(srcData).forEach(m => {
+        const k = Math.random().toString(36).slice(2);
+        writes[k] = { name: m.name, amount: 0, phone: m.phone || '', note: '' };
+      });
+      if (membersUnsubscribe) { membersUnsubscribe(); membersUnsubscribe = null; }
+      suppressSeed = true;
+      await window._fb.set(window._fb.ref(window._fb.db, `lunch/${newPeriodKey}/members`), writes);
+      document.getElementById('periodInput').value = periodLabel;
+      subscribeToMembers();
+      suppressSeed = false;
+      recalc();
+      loadMiniDash();
+      showToast(`Switched to ${periodLabel} — ${Object.keys(writes).length} members carried forward`);
+    } else {
+      document.getElementById('periodInput').value = periodLabel;
+      subscribeToMembers();
+      recalc();
+      loadMiniDash();
+      showToast(`Switched to ${periodLabel}`);
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -4190,4 +4249,4 @@ document.addEventListener('DOMContentLoaded', syncExportBtn);
 window.addEventListener('resize', syncExportBtn);
 </script>
 </body>
-</html> 
+</html>
