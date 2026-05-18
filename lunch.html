@@ -261,26 +261,9 @@ window.dispatchEvent(new Event('fb-ready'));
     .main { max-width: 100%; padding: 0; }
 
     /* ── Compact print header ── */
-    .print-header { display: none !important; }
-    .pdf-pro-header { display: block !important; margin-bottom: 10px; }
-    .period-notes-pdf { display: block !important; }
-    .period-notes-wrap { display: none !important; }
-
-    /* Hide interactive elements in print */
-    .donut-wrap { display: none !important; }
-    .collection-bar-wrap { display: none !important; }
-    .overdue-banner, .rollover-banner, .pwa-banner, .mini-dash { display: none !important; }
-    .period-notes-wrap { display: none !important; }
-
-    /* PDF pro header print colors */
-    .pdf-pro-header {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .pdf-pro-header-stripe {
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
+    .print-header { display: block !important; margin-bottom: 8px; }
+    .print-header h2 { font-size: 20px; margin: 2px 0 1px; }
+    .print-header .ph-meta { font-size: 11px; }
 
     /* ── Tight stat cards ── */
     .stats { margin-bottom: 8px; gap: 6px; }
@@ -327,108 +310,6 @@ window.dispatchEvent(new Event('fb-ready'));
   .print-header h2 { font-family: 'DM Serif Display', serif; font-size: 26px; font-weight: 400; margin: 4px 0 2px; }
   .print-header .ph-meta { font-size: 12px; color: #777; }
   .print-footer { display: none; margin-top: 28px; border-top: 1px solid #ddd; padding-top: 12px; font-size: 11px; color: #aaa; display: flex; justify-content: space-between; }
-
-  /* ── PROFESSIONAL PDF HEADER ── */
-  .pdf-pro-header {
-    display: none;
-    background: #141414;
-    color: #fff;
-    padding: 0;
-    margin-bottom: 20px;
-    border-radius: 10px;
-    overflow: hidden;
-    position: relative;
-  }
-  .pdf-pro-header-inner {
-    padding: 22px 28px 18px;
-    position: relative;
-    z-index: 2;
-  }
-  .pdf-pro-header-stripe {
-    height: 5px;
-    background: linear-gradient(90deg, #2E6010 0%, #4a9a1a 30%, #7A4600 60%, #8C1F1F 100%);
-  }
-  .pdf-pro-header-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
-  }
-  .pdf-pro-header-left {}
-  .pdf-pro-eyebrow {
-    font-size: 9px; letter-spacing: .18em; text-transform: uppercase;
-    color: #888; font-family: 'DM Mono', monospace; margin-bottom: 5px;
-  }
-  .pdf-pro-title {
-    font-family: 'DM Serif Display', serif;
-    font-size: 24px; font-weight: 400; color: #fff; line-height: 1.1;
-    margin-bottom: 4px;
-  }
-  .pdf-pro-meta {
-    font-size: 11px; color: #aaa; font-family: 'DM Mono', monospace;
-    letter-spacing: .03em;
-  }
-  .pdf-pro-seal {
-    width: 64px; height: 64px; flex-shrink: 0;
-    border: 2px solid #333;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    flex-direction: column; gap: 1px;
-    text-align: center;
-    position: relative;
-  }
-  .pdf-pro-seal::before {
-    content: '';
-    position: absolute; inset: 4px;
-    border-radius: 50%;
-    border: 1px dashed #444;
-  }
-  .pdf-pro-seal-icon { font-size: 22px; line-height: 1; }
-  .pdf-pro-seal-text { font-size: 7px; font-family: 'DM Mono', monospace; color: #666; letter-spacing: .06em; text-transform: uppercase; }
-  .pdf-pro-divider {
-    border: none; border-top: 1px solid #2a2a2a;
-    margin: 14px 0 12px;
-  }
-  .pdf-pro-stats-row {
-    display: flex; gap: 0; align-items: stretch;
-  }
-  .pdf-pro-stat {
-    flex: 1; padding: 8px 14px; border-right: 1px solid #2a2a2a;
-  }
-  .pdf-pro-stat:last-child { border-right: none; }
-  .pdf-pro-stat-label {
-    font-size: 8px; letter-spacing: .1em; text-transform: uppercase;
-    color: #666; font-family: 'DM Mono', monospace; margin-bottom: 3px;
-  }
-  .pdf-pro-stat-val {
-    font-size: 14px; font-weight: 700; font-family: 'DM Mono', monospace; color: #fff;
-  }
-  .pdf-pro-stat-val.ok   { color: #7DC653; }
-  .pdf-pro-stat-val.warn { color: #E0952A; }
-  .pdf-pro-stat-val.bad  { color: #E06060; }
-
-  /* Period notes - PDF-safe static display */
-  .period-notes-pdf {
-    display: none;
-    background: #fff;
-    border: 1px solid #DDD9D0;
-    border-radius: 10px;
-    padding: 14px 18px;
-    margin-bottom: 14px;
-    font-size: 12px;
-    line-height: 1.7;
-    color: #333;
-  }
-  .period-notes-pdf-title {
-    font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
-    color: #999; font-family: 'DM Mono', monospace; margin-bottom: 8px;
-    font-weight: 600;
-  }
-  .period-notes-pdf-content {
-    font-family: 'DM Sans', sans-serif;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
 
   /* ── TOAST ── */
   .toast {
@@ -1058,53 +939,6 @@ window.dispatchEvent(new Event('fb-ready'));
     <div class="ph-eyebrow">Staff Welfare Fund</div>
     <h2>Lunch Contribution Statement</h2>
     <div class="ph-meta">Period: <span id="printPeriod"></span> &nbsp;·&nbsp; Finance Office &nbsp;·&nbsp; Standard Amount: Ksh <span id="printStd"></span></div>
-  </div>
-
-  <!-- PROFESSIONAL PDF HEADER (print/pdf only) -->
-  <div class="pdf-pro-header" id="pdfProHeader">
-    <div class="pdf-pro-header-stripe"></div>
-    <div class="pdf-pro-header-inner">
-      <div class="pdf-pro-header-top">
-        <div class="pdf-pro-header-left">
-          <div class="pdf-pro-eyebrow">Staff Welfare Fund &nbsp;·&nbsp; Finance Office</div>
-          <div class="pdf-pro-title">Lunch Contribution Statement</div>
-          <div class="pdf-pro-meta">Period: <span id="pdfProPeriod">—</span> &nbsp;·&nbsp; Standard: Ksh <span id="pdfProStd">—</span> /member &nbsp;·&nbsp; Generated: <span id="pdfProDate">—</span></div>
-        </div>
-        <div class="pdf-pro-seal">
-          <div class="pdf-pro-seal-icon">🍱</div>
-          <div class="pdf-pro-seal-text">Official</div>
-        </div>
-      </div>
-      <hr class="pdf-pro-divider">
-      <div class="pdf-pro-stats-row">
-        <div class="pdf-pro-stat">
-          <div class="pdf-pro-stat-label">Total Collected</div>
-          <div class="pdf-pro-stat-val ok" id="pdfProCollected">—</div>
-        </div>
-        <div class="pdf-pro-stat">
-          <div class="pdf-pro-stat-label">Fully Paid</div>
-          <div class="pdf-pro-stat-val ok" id="pdfProPaid">—</div>
-        </div>
-        <div class="pdf-pro-stat">
-          <div class="pdf-pro-stat-label">Partial / Nil</div>
-          <div class="pdf-pro-stat-val warn" id="pdfProUnpaid">—</div>
-        </div>
-        <div class="pdf-pro-stat">
-          <div class="pdf-pro-stat-label">Shortfall</div>
-          <div class="pdf-pro-stat-val bad" id="pdfProShortfall">—</div>
-        </div>
-        <div class="pdf-pro-stat">
-          <div class="pdf-pro-stat-label">Collection Rate</div>
-          <div class="pdf-pro-stat-val ok" id="pdfProRate">—</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- PERIOD NOTES - PDF static version (shown only in print/PDF) -->
-  <div class="period-notes-pdf" id="periodNotesPdf">
-    <div class="period-notes-pdf-title">📝 Period Notes &amp; Minutes</div>
-    <div class="period-notes-pdf-content" id="periodNotesPdfContent"></div>
   </div>
 
   <!-- PWA INSTALL BANNER (08) -->
@@ -2302,52 +2136,13 @@ async function handleExport() {
 
 // ── PRINT (home tab, desktop) ─────────────────────────────────
 function printDoc() {
-  populatePdfHeader();
   document.getElementById('printFooter').style.display = 'flex';
-  document.getElementById('printHeader').style.display = 'none';
-  document.getElementById('pdfProHeader').style.display = 'block';
-  populatePeriodNotesPdf();
+  document.getElementById('printHeader').style.display = 'block';
   window.print();
   setTimeout(() => {
     document.getElementById('printFooter').style.display = 'none';
-    document.getElementById('pdfProHeader').style.display = '';
-    const npdf = document.getElementById('periodNotesPdf');
-    if (npdf) npdf.style.display = '';
+    document.getElementById('printHeader').style.display = 'none';
   }, 500);
-}
-
-// Populate the professional PDF header with live data
-function populatePdfHeader() {
-  const std      = getStd();
-  const total    = members.reduce((s, m) => s + m.amount, 0);
-  const expected = members.reduce((s, m) => s + memberStd(m), 0);
-  const shortfall = Math.max(0, expected - total);
-  const paid     = members.filter(m => m.amount >= memberStd(m)).length;
-  const unpaid   = members.length - paid;
-  const rate     = expected > 0 ? Math.round(total / expected * 100) : 0;
-  const period   = getPeriod();
-  const today    = new Date().toLocaleDateString('en-KE', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  const el = id => document.getElementById(id);
-  if (el('pdfProPeriod'))    el('pdfProPeriod').textContent    = period;
-  if (el('pdfProStd'))       el('pdfProStd').textContent       = fmt(std);
-  if (el('pdfProDate'))      el('pdfProDate').textContent      = today;
-  if (el('pdfProCollected')) el('pdfProCollected').textContent = 'Ksh ' + fmt(total);
-  if (el('pdfProPaid'))      el('pdfProPaid').textContent      = paid + ' of ' + members.length;
-  if (el('pdfProUnpaid'))    el('pdfProUnpaid').textContent    = unpaid + ' members';
-  if (el('pdfProShortfall')) el('pdfProShortfall').textContent = 'Ksh ' + fmt(shortfall);
-  if (el('pdfProRate'))      el('pdfProRate').textContent      = rate + '%';
-}
-
-// Populate the static period notes block for PDF (textarea → div)
-function populatePeriodNotesPdf() {
-  const src  = document.getElementById('periodNotesText');
-  const dest = document.getElementById('periodNotesPdfContent');
-  const wrap = document.getElementById('periodNotesPdf');
-  if (!src || !dest || !wrap) return;
-  const text = src.value.trim();
-  dest.textContent = text || '(No notes recorded for this period.)';
-  wrap.style.display = text ? 'block' : 'none';
 }
 
 // ── PDF DOWNLOAD (mobile or non-home tabs) ────────────────────
@@ -2368,14 +2163,9 @@ async function downloadPDF(cfg) {
   // Show print-only header/footer on home tab
   const printFooter = document.getElementById('printFooter');
   const printHeader = document.getElementById('printHeader');
-  const pdfProHeader = document.getElementById('pdfProHeader');
-  const periodNotesPdf = document.getElementById('periodNotesPdf');
   if (isHome) {
     printFooter.style.display = 'flex';
-    printHeader.style.display = 'none';
-    populatePdfHeader();
-    pdfProHeader.style.display = 'block';
-    populatePeriodNotesPdf();
+    printHeader.style.display = 'block';
   }
 
   // Temporarily make target page visible and all others hidden
@@ -2419,8 +2209,6 @@ async function downloadPDF(cfg) {
     if (isHome) {
       printFooter.style.display = 'none';
       printHeader.style.display = 'none';
-      pdfProHeader.style.display = '';
-      if (periodNotesPdf) periodNotesPdf.style.display = '';
     }
     overlay.classList.remove('show');
     btn.classList.remove('loading');
