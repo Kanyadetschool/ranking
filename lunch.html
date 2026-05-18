@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <!-- Firebase v10 (modular, loaded as ESM) -->
 <script type="module">
@@ -728,6 +729,144 @@ window.dispatchEvent(new Event('fb-ready'));
   .role-viewer { background: var(--warn-bg);  color: var(--warn-fg); }
   .viewer-mode .no-edit { display: none !important; }
 
+  /* ── FEATURE 01: MULTI-PERIOD MINI DASHBOARD ── */
+  .mini-dash {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px; margin-bottom: 20px;
+  }
+  .mini-dash-card {
+    background: var(--white); border-radius: 10px; border: 1px solid var(--rule);
+    padding: 12px 16px; position: relative; overflow: hidden;
+  }
+  .mini-dash-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px;
+  }
+  .mini-dash-card.mdc-high::after { background: var(--ok-fg); }
+  .mini-dash-card.mdc-mid::after  { background: var(--warn-fg); }
+  .mini-dash-card.mdc-low::after  { background: var(--nil-fg); }
+  .mdc-period { font-size: 10px; color: var(--ink-light); font-family: 'DM Mono', monospace;
+    letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  .mdc-collected { font-size: 17px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .mdc-rate { font-size: 11px; font-family: 'DM Mono', monospace; }
+
+  /* ── FEATURE 02: PIN MODAL ── */
+  .pin-dots { display: flex; gap: 10px; justify-content: center; margin: 16px 0; }
+  .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--rule); background: transparent; transition: background .15s;
+  }
+  .pin-dot.filled { background: var(--ink); border-color: var(--ink); }
+  .pin-pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-width: 200px; margin: 0 auto; }
+  .pin-key {
+    padding: 13px; border-radius: 8px; border: 1px solid var(--rule);
+    background: var(--bg); font-size: 16px; font-weight: 500; cursor: pointer;
+    text-align: center; font-family: 'DM Mono', monospace; transition: background .1s;
+  }
+  .pin-key:hover { background: var(--bg2); }
+  .pin-key:active { background: var(--rule); }
+
+  /* ── FEATURE 03: REMINDER LOG ── */
+  .log-row {
+    display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--bg);
+    align-items: flex-start;
+  }
+  .log-row:last-child { border-bottom: none; }
+  .log-status { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
+    font-family: 'DM Mono', monospace; flex-shrink: 0; margin-top: 2px; }
+  .log-status.sent { background: var(--ok-bg); color: var(--ok-fg); }
+  .log-status.fail { background: var(--nil-bg); color: var(--nil-fg); }
+  .log-meta { font-size: 11px; color: var(--ink-light); font-family: 'DM Mono', monospace; }
+  .log-name { font-size: 13px; font-weight: 500; }
+
+  /* ── FEATURE 04: DONUT CHART ── */
+  .donut-wrap {
+    background: var(--white); border-radius: 12px; border: 1px solid var(--rule);
+    box-shadow: var(--shadow); padding: 20px 24px; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  }
+  .donut-canvas-wrap { width: 110px; height: 110px; flex-shrink: 0; position: relative; }
+  .donut-center {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; pointer-events: none;
+  }
+  .donut-center-pct { font-size: 18px; font-weight: 700; line-height: 1; }
+  .donut-center-lbl { font-size: 9px; color: var(--ink-light); font-family: 'DM Mono', monospace; text-transform: uppercase; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .donut-legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .donut-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── FEATURE 05: CSV IMPORT MODAL ── */
+  .import-modal { max-width: 500px; }
+  .drop-zone {
+    border: 2px dashed var(--rule); border-radius: 10px; padding: 32px 24px;
+    text-align: center; cursor: pointer; transition: border-color .2s, background .2s;
+    font-size: 14px; color: var(--ink-light);
+  }
+  .drop-zone.drag-over { border-color: var(--ink); background: var(--bg2); }
+  .import-preview { font-family: 'DM Mono', monospace; font-size: 12px; margin-top: 14px;
+    max-height: 200px; overflow-y: auto; background: var(--bg);
+    border-radius: 8px; padding: 12px; }
+  .import-row { display: flex; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--bg2); }
+  .import-row:last-child { border-bottom: none; }
+  .import-err { color: var(--nil-fg); font-size: 11px; }
+
+  /* ── FEATURE 06: EMAIL SUMMARY ── */
+  /* no special CSS needed — uses modal-box */
+
+  /* ── FEATURE 07: LEADERBOARD ── */
+  .lb-row {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    border-bottom: 1px solid var(--bg);
+  }
+  .lb-row:last-child { border-bottom: none; }
+  .lb-rank { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 700;
+    width: 28px; text-align: center; flex-shrink: 0; }
+  .lb-rank.gold   { color: #B8860B; }
+  .lb-rank.silver { color: #888; }
+  .lb-rank.bronze { color: #A0522D; }
+  .lb-name { flex: 1; font-weight: 500; font-size: 14px; }
+  .lb-val { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--ink-mid); }
+  .lb-badge-wrap { display: flex; gap: 4px; }
+
+  /* ── FEATURE 08: PWA ── */
+  .pwa-banner {
+    display: none; align-items: center; gap: 14px; flex-wrap: wrap;
+    background: #E6F1FB; border: 1.5px solid #378ADD;
+    border-radius: 10px; padding: 12px 18px; margin-bottom: 16px;
+  }
+  .pwa-banner.show { display: flex; }
+  .pwa-banner-text { font-size: 13px; font-weight: 500; color: #0C447C; flex: 1; }
+
+  /* ── FEATURE 09: PERIOD NOTES ── */
+  .period-notes-wrap {
+    background: var(--white); border-radius: 10px; border: 1px solid var(--rule);
+    box-shadow: var(--shadow); margin-bottom: 16px;
+  }
+  .period-notes-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; cursor: pointer; user-select: none;
+  }
+  .period-notes-header:hover { background: var(--bg); }
+  .period-notes-title { font-size: 13px; font-weight: 500; }
+  .period-notes-body { border-top: 1px solid var(--rule); padding: 14px 16px; display: none; }
+  .period-notes-body.open { display: block; }
+  .period-notes-textarea {
+    width: 100%; min-height: 100px; resize: vertical;
+    border: 1.5px solid var(--rule); border-radius: 7px;
+    padding: 10px 14px; font-family: 'DM Sans', sans-serif; font-size: 13px;
+    background: var(--bg); color: var(--ink); outline: none; line-height: 1.6;
+  }
+  .period-notes-textarea:focus { border-color: var(--ink); }
+  .period-notes-saved { font-size: 11px; color: var(--ok-fg); font-family: 'DM Mono', monospace;
+    margin-top: 6px; display: none; }
+
+  /* ── FEATURE 10: CUSTOM AMOUNTS ── */
+  .custom-std-badge {
+    display: inline-block; font-size: 9px; font-family: 'DM Mono', monospace;
+    background: var(--warn-bg); color: var(--warn-fg); border-radius: 20px;
+    padding: 1px 6px; margin-left: 5px; vertical-align: middle; font-weight: 700;
+  }
+
 </style>
 </head>
 <body>
@@ -761,6 +900,7 @@ window.dispatchEvent(new Event('fb-ready'));
   <button class="nav-tab active" id="tabHome" onclick="switchTab('home')">Contributions</button>
   <button class="nav-tab" id="tabHistory" onclick="switchTab('history')">Monthly History</button>
   <button class="nav-tab" id="tabAnalytics" onclick="switchTab('analytics')">📈 Analytics</button>
+  <button class="nav-tab" id="tabLeaderboard" onclick="switchTab('leaderboard')">🏆 Leaderboard</button>
   <button class="nav-tab" id="tabWhatsapp" onclick="switchTab('whatsapp')">📲 WhatsApp Reminders</button>
 </nav>
 
@@ -775,6 +915,16 @@ window.dispatchEvent(new Event('fb-ready'));
     <div class="ph-meta">Period: <span id="printPeriod"></span> &nbsp;·&nbsp; Finance Office &nbsp;·&nbsp; Standard Amount: Ksh <span id="printStd"></span></div>
   </div>
 
+  <!-- PWA INSTALL BANNER (08) -->
+  <div class="pwa-banner" id="pwaBanner">
+    <div class="pwa-banner-text">📱 Install this app to your home screen for quick offline access</div>
+    <button class="btn" style="background:#378ADD;color:#fff;font-size:12px;padding:7px 14px;" onclick="pwaInstall()">Install</button>
+    <button onclick="document.getElementById('pwaBanner').classList.remove('show');try{sessionStorage.setItem('pwaDismissed','1')}catch(e){}" style="background:none;border:none;color:#185FA5;cursor:pointer;font-size:16px;">✕</button>
+  </div>
+
+  <!-- MINI DASHBOARD - last 3 periods (01) -->
+  <div id="miniDash" class="mini-dash" style="display:none"></div>
+
   <!-- SETTINGS BAR -->
   <div class="settings-bar">
     <div class="field-inline">
@@ -787,7 +937,7 @@ window.dispatchEvent(new Event('fb-ready'));
       <input type="text" id="periodInput" value="May 2026"
         style="padding:7px 12px;border:1.5px solid var(--rule);border-radius:7px;
                font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);
-               color:var(--ink);outline:none;width:120px;" onchange="recalc()">
+               color:var(--ink);outline:none;width:120px;" onchange="recalc();loadMiniDash();">
     </div>
     <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openCarryForward()" title="Copy member roster from a previous period">
       ↩ Carry Forward
@@ -795,11 +945,17 @@ window.dispatchEvent(new Event('fb-ready'));
     <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="exportCSV()" title="Export current period as CSV">
       ⬇ Export CSV
     </button>
+    <button class="btn btn-ghost no-edit" style="font-size:12px;padding:7px 14px;" onclick="openImportModal()" title="Import members from CSV or Excel">
+      ⬆ Import
+    </button>
     <button class="btn btn-ghost no-edit" style="font-size:12px;padding:7px 14px;" onclick="openShareModal()" title="Share read-only view">
       🔗 Share
     </button>
     <button class="btn btn-ghost no-edit" style="font-size:12px;padding:7px 14px;" onclick="setDeadline()" title="Set payment deadline for overdue alerts">
       ⏰ Set Deadline
+    </button>
+    <button class="btn btn-ghost" style="font-size:12px;padding:7px 14px;" onclick="openEmailSummary()" title="Email period summary">
+      ✉ Email Summary
     </button>
   </div>
 
@@ -820,7 +976,7 @@ window.dispatchEvent(new Event('fb-ready'));
       <div class="overdue-banner-sub" id="rolloverBannerSub" style="color:var(--ok-fg);"></div>
     </div>
     <button class="btn" id="rolloverBtn" style="background:var(--ok-fg);color:#fff;font-size:12px;padding:7px 14px;flex-shrink:0;" onclick="execAutoRollover()">Start New Period →</button>
-    <button onclick="document.getElementById('rolloverBanner').classList.remove('show');try{localStorage.setItem('rolloverDismissed',getPeriod())}catch(e){}" style="background:none;border:none;color:var(--ok-fg);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;">✕</button>
+    <button onclick="document.getElementById('rolloverBanner').classList.remove('show');try{sessionStorage.setItem('rolloverDismissed',getPeriod())}catch(e){}" style="background:none;border:none;color:var(--ok-fg);cursor:pointer;font-size:16px;padding:0 4px;flex-shrink:0;">✕</button>
   </div>
 
   <!-- STAT CARDS -->
@@ -852,6 +1008,34 @@ window.dispatchEvent(new Event('fb-ready'));
       <div class="collection-bar-fill" id="collectionBarFill" style="width:0%"></div>
     </div>
     <span class="collection-bar-pct" id="collectionBarPct">—</span>
+  </div>
+
+  <!-- DONUT CHART (04) -->
+  <div class="donut-wrap">
+    <div class="donut-canvas-wrap">
+      <canvas id="donutCanvas" width="110" height="110"></canvas>
+      <div class="donut-center">
+        <div class="donut-center-pct" id="donutPct">—</div>
+        <div class="donut-center-lbl">paid</div>
+      </div>
+    </div>
+    <div class="donut-legend">
+      <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--ok-fg)"></div><span id="donutLblPaid">— Paid</span></div>
+      <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--warn-fg)"></div><span id="donutLblPartial">— Partial</span></div>
+      <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--nil-fg)"></div><span id="donutLblNil">— Nil</span></div>
+    </div>
+  </div>
+
+  <!-- PERIOD NOTES (09) -->
+  <div class="period-notes-wrap">
+    <div class="period-notes-header" onclick="togglePeriodNotes()">
+      <span class="period-notes-title">📝 Period Notes &amp; Minutes</span>
+      <span id="periodNotesChevron" style="font-size:12px;color:var(--ink-light)">▼</span>
+    </div>
+    <div class="period-notes-body" id="periodNotesBody">
+      <textarea class="period-notes-textarea" id="periodNotesText" placeholder="Record meeting decisions, special deductions, or notes for this period…" oninput="debounceSaveNotes()"></textarea>
+      <div class="period-notes-saved" id="periodNotesSaved">✓ Saved</div>
+    </div>
   </div>
 
   <!-- TOOLBAR -->
@@ -920,6 +1104,10 @@ window.dispatchEvent(new Event('fb-ready'));
       <div class="field">
         <label for="newAmount">Amount (Ksh)</label>
         <input type="number" id="newAmount" min="0" step="10" placeholder="420">
+      </div>
+      <div class="field">
+        <label for="newCustomStd">Custom Std (optional)</label>
+        <input type="number" id="newCustomStd" min="0" step="10" placeholder="Leave blank = global">
       </div>
     </div>
     <div class="form-actions">
@@ -1039,7 +1227,7 @@ window.dispatchEvent(new Event('fb-ready'));
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;">
           <div>
             <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Deadline Date</label>
-            <input type="date" id="waDeadline" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;" onchange="try{localStorage.setItem('deadline_'+getPeriod().replace(/\s+/g,'_'),this.value)}catch(e){}; checkOverdue();">
+            <input type="date" id="waDeadline" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;" onchange="saveDeadlineToDb(this.value)">
           </div>
           <div>
             <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Filter</label>
@@ -1318,6 +1506,74 @@ firebase deploy --only functions</pre>
 <!-- NOTE POPOVER (Feature 8) -->
 <div class="note-popover" id="notePopover"></div>
 
+<!-- LEADERBOARD PAGE (07) -->
+<div class="history-page" id="leaderboardPage">
+  <div class="main">
+    <div class="hist-section-title">🏆 Leaderboard</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px;" id="lbGrid">
+      <div class="hist-loading">Loading leaderboard…</div>
+    </div>
+  </div>
+</div>
+
+<!-- PIN MODAL (02) -->
+<div class="modal-backdrop" id="pinModal">
+  <div class="modal-box" style="max-width:320px;text-align:center;">
+    <div class="modal-title">Admin PIN</div>
+    <div class="modal-body" id="pinModalMsg">Enter the 4-digit admin PIN to continue.</div>
+    <div class="pin-dots" id="pinDots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad" id="pinPad">
+      <div class="pin-key" onclick="pinPress('1')">1</div><div class="pin-key" onclick="pinPress('2')">2</div><div class="pin-key" onclick="pinPress('3')">3</div>
+      <div class="pin-key" onclick="pinPress('4')">4</div><div class="pin-key" onclick="pinPress('5')">5</div><div class="pin-key" onclick="pinPress('6')">6</div>
+      <div class="pin-key" onclick="pinPress('7')">7</div><div class="pin-key" onclick="pinPress('8')">8</div><div class="pin-key" onclick="pinPress('9')">9</div>
+      <div class="pin-key" onclick="pinClear()" style="font-size:12px;">CLR</div><div class="pin-key" onclick="pinPress('0')">0</div><div class="pin-key" onclick="pinBackspace()">⌫</div>
+    </div>
+    <div class="modal-actions" style="margin-top:16px;justify-content:center;">
+      <button class="btn btn-ghost" onclick="closeModal('pinModal');pinClear();">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL (05) -->
+<div class="modal-backdrop" id="importModal">
+  <div class="modal-box import-modal">
+    <div class="modal-title">Import Members</div>
+    <div class="modal-body">Upload a CSV or Excel file. Required columns: <strong>Name</strong>, <strong>Amount</strong>. Optional: <strong>Phone</strong>, <strong>CustomStd</strong>.</div>
+    <div class="drop-zone" id="dropZone" onclick="document.getElementById('importFileInput').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleImportDrop(event)">
+      📂 Click to browse or drag &amp; drop a file
+      <input type="file" id="importFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFile(this.files[0])">
+    </div>
+    <div id="importPreview" class="import-preview" style="display:none"></div>
+    <div class="modal-actions" style="margin-top:16px;">
+      <button class="btn btn-ghost" onclick="closeModal('importModal');importRows=[]">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--ink);color:var(--white);" id="importConfirmBtn" onclick="confirmImport()" style="display:none">Import <span id="importCount">0</span> members</button>
+    </div>
+  </div>
+</div>
+
+<!-- EMAIL SUMMARY MODAL (06) -->
+<div class="modal-backdrop" id="emailModal">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-title">Email Period Summary</div>
+    <div class="modal-body">Fill in the recipients and we'll open your email client with a pre-built summary.</div>
+    <div class="field" style="margin-bottom:12px;">
+      <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">To (comma-separated)</label>
+      <input type="text" id="emailTo" placeholder="principal@school.ac.ke, bursar@school.ac.ke" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);color:var(--ink);outline:none;">
+    </div>
+    <div class="field" style="margin-bottom:16px;">
+      <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Subject</label>
+      <input type="text" id="emailSubject" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:13px;background:var(--bg);color:var(--ink);outline:none;">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('emailModal')">Cancel</button>
+      <button class="btn btn-primary" style="background:var(--ink);color:var(--white);" onclick="sendEmailSummary()">✉ Open in Mail</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1360,8 +1616,8 @@ function getStd() { return parseFloat(document.getElementById('stdInput').value)
 function getPeriod() { return document.getElementById('periodInput').value || 'May 2026'; }
 function fmt(v) { return v.toLocaleString('en-KE', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
-function status(amt) {
-  const std = getStd();
+function status(amt, customStd) {
+  const std = customStd || getStd();
   if (amt === 0)  return { cls: 'nil',  label: 'Nil',     badgeCls: 'badge-nil' };
   if (amt >= std) return { cls: 'ok',   label: 'Paid',    badgeCls: 'badge-ok' };
   return               { cls: 'warn', label: 'Partial', badgeCls: 'badge-warn' };
@@ -1513,20 +1769,21 @@ function render() {
   });
 
   visible.forEach((m, visIdx) => {
-    const s   = status(m.amount);
+    const s   = status(m.amount, memberStd(m));
     const url = photoFor(m.name);
     const avatarHtml = url
       ? `<img class="avatar" src="${url}" alt="${m.name}" onerror="this.replaceWith(mkPlaceholder('${initials(m.name)}'))">`
       : `<span class="avatar-placeholder">${initials(m.name)}</span>`;
     const checked  = selectedIds.has(m.id) ? 'checked' : '';
     const noteTip  = m.note ? `<span class="note-dot" onmouseenter="showNote(event,'${m.note.replace(/'/g,"&#39;")}')" onmouseleave="hideNote()" title="${m.note}"></span>` : '';
+    const customBadge = (m.customStd && m.customStd > 0) ? `<span class="custom-std-badge">Ksh ${fmt(m.customStd)}</span>` : '';
 
     const tr = document.createElement('tr');
     tr.dataset.id = m.id;
     tr.innerHTML = `
       <td class="select-col no-print" style="display:${bulkMode?'table-cell':'none'}"><input type="checkbox" class="row-check" ${checked} onchange="toggleSelect('${m.id}',this.checked)"></td>
       <td class="td-no">${m._origIdx + 1}</td>
-      <td class="td-name">${avatarHtml}<span class="td-name-text">${m.name}${noteTip}</span></td>
+      <td class="td-name">${avatarHtml}<span class="td-name-text">${m.name}${noteTip}${customBadge}</span></td>
       <td class="td-phone" style="font-size:12px;font-family:'DM Mono',monospace;color:var(--ink-mid)">${m.phone ? `<a href="https://wa.me/${waNum(m.phone)}" target="_blank" title="${m.phone}" style="color:var(--ink-mid);text-decoration:none;">${maskPhone(m.phone)}</a>` : '<span style="color:var(--rule)">—</span>'}</td>
       <td><span class="badge ${s.badgeCls}">${s.label}</span></td>
       <td class="td-amount ${s.cls}">Ksh ${fmt(m.amount)}${m.paidAt ? `<span class="date-stamp">${fmtShortDate(m.paidAt)}</span>` : ''}</td>
@@ -1560,13 +1817,17 @@ function mkPlaceholder(ini) {
   return el;
 }
 
+function memberStd(m) {
+  return (m.customStd && m.customStd > 0) ? m.customStd : getStd();
+}
+
 function recalc() {
   const std = getStd();
   const total     = members.reduce((s, m) => s + m.amount, 0);
-  const expected  = members.length * std;
-  const shortfall = expected - total;
-  const paid      = members.filter(m => m.amount >= std).length;
-  const partial   = members.filter(m => m.amount > 0 && m.amount < std).length;
+  const expected  = members.reduce((s, m) => s + memberStd(m), 0);
+  const shortfall = Math.max(0, expected - total);
+  const paid      = members.filter(m => m.amount >= memberStd(m)).length;
+  const partial   = members.filter(m => m.amount > 0 && m.amount < memberStd(m)).length;
   const nil       = members.filter(m => m.amount === 0).length;
   const rate      = expected > 0 ? (total / expected) : 0;
   const ratePct   = Math.min(100, Math.round(rate * 100));
@@ -1593,6 +1854,9 @@ function recalc() {
     pctEl.style.color = ratePct >= 90 ? 'var(--ok-fg)' : ratePct >= 60 ? 'var(--warn-fg)' : 'var(--nil-fg)';
   }
 
+  // Donut chart (04)
+  updateDonut(paid, partial, nil, ratePct);
+
   // print spans
   document.getElementById('printPeriod').textContent  = getPeriod();
   document.getElementById('printStd').textContent     = fmt(std);
@@ -1615,13 +1879,16 @@ function addMember() {
   const name   = document.getElementById('newName').value.trim();
   const amount = parseFloat(document.getElementById('newAmount').value) || 0;
   const phone  = document.getElementById('newPhone').value.trim().replace(/\s+/g, '');
+  const customStd = parseFloat(document.getElementById('newCustomStd').value) || 0;
   if (!name) { showToast('Please enter a name'); return; }
-  const newMember = { name: `${title} ${name}`, amount, phone };
+  const paidAt = amount > 0 ? new Date().toISOString().slice(0,10) : '';
+  const newMember = { name: `${title} ${name}`, amount, phone, paidAt, customStd };
   push(ref(db, membersPath()), newMember)
     .then(() => {
-      document.getElementById('newName').value   = '';
-      document.getElementById('newAmount').value = '';
-      document.getElementById('newPhone').value  = '';
+      document.getElementById('newName').value      = '';
+      document.getElementById('newAmount').value    = '';
+      document.getElementById('newPhone').value     = '';
+      document.getElementById('newCustomStd').value = '';
       document.getElementById('addForm').classList.remove('open');
       showToast(`${newMember.name} added`);
     })
@@ -1679,7 +1946,10 @@ function startEdit(i) {
 
   row.cells[1].innerHTML = `<input class="inline-input" id="eName" value="${m.name}" style="width:160px;font-family:'DM Sans',sans-serif;font-size:13px;">`;
   row.cells[2].innerHTML = `<input class="inline-input" id="ePhone" type="tel" value="${m.phone || ''}" placeholder="+254..." style="width:120px;font-family:'DM Mono',monospace;font-size:12px;">`;
-  row.cells[4].innerHTML = `<input class="inline-input" id="eAmt" type="number" value="${m.amount}" min="0">`;
+  row.cells[4].innerHTML = `<div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end;">
+    <input class="inline-input" id="eAmt" type="number" value="${m.amount}" min="0" style="width:90px;">
+    <input class="inline-input" id="eCustomStd" type="number" value="${m.customStd||''}" min="0" placeholder="Custom std" style="width:90px;font-size:11px;opacity:.7;" title="Custom standard amount (leave blank for global)">
+  </div>`;
   row.cells[5].innerHTML = `
     <button class="icon-btn" onclick="saveEdit(${i})" title="Save">✓</button>
     <button class="icon-btn del" onclick="render()" title="Cancel">✕</button>`;
@@ -1880,15 +2150,18 @@ function switchTab(tab) {
   document.getElementById('homePage').classList.toggle('hidden', tab !== 'home');
   document.getElementById('historyPage').classList.toggle('active', tab === 'history');
   document.getElementById('analyticsPage').classList.toggle('active', tab === 'analytics');
+  document.getElementById('leaderboardPage').classList.toggle('active', tab === 'leaderboard');
   document.getElementById('whatsappPage').classList.toggle('active', tab === 'whatsapp');
   document.getElementById('tabHome').classList.toggle('active', tab === 'home');
   document.getElementById('tabHistory').classList.toggle('active', tab === 'history');
   document.getElementById('tabAnalytics').classList.toggle('active', tab === 'analytics');
+  document.getElementById('tabLeaderboard').classList.toggle('active', tab === 'leaderboard');
   document.getElementById('tabWhatsapp').classList.toggle('active', tab === 'whatsapp');
   syncExportBtn();
-  if (tab === 'history')   loadHistory();
-  if (tab === 'analytics') loadAnalytics();
-  if (tab === 'whatsapp')  initWaPage();
+  if (tab === 'history')     loadHistory();
+  if (tab === 'analytics')   loadAnalytics();
+  if (tab === 'leaderboard') loadLeaderboard();
+  if (tab === 'whatsapp')    initWaPage();
 }
 
 // ── HISTORY: LOAD ALL PERIODS ─────────────────────────────────
@@ -2223,17 +2496,13 @@ function switchWaMode(mode) {
 }
 
 // ── INIT WA PAGE ─────────────────────────────────────────────
-function initWaPage() {
+async function initWaPage() {
   const dl = document.getElementById('waDeadline');
-  if (!dl) return;
-  // Use the deadline set via "⏰ Set Deadline" for this period, if any
-  const stored = (() => { try { return localStorage.getItem('deadline_' + getPeriod().replace(/\s+/g,'_')); } catch(e) { return null; } })();
-  if (stored) {
-    dl.value = stored;
-  } else if (!dl.value) {
-    // No deadline set yet — leave blank so the user is prompted to set one
-    dl.value = '';
-  }
+  if (!dl || !fbReady) return;
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, deadlinePath()), res, { onlyOnce: true })
+  );
+  dl.value = snap.val() || '';
 }
 
 // ── BUILD QUEUE LIST ─────────────────────────────────────────
@@ -2320,6 +2589,9 @@ function markSent(memberId) {
   card.style.opacity = '0.55';
   const idx  = document.getElementById('waIdx-' + memberId);
   if (idx) { idx.textContent = '✓'; idx.style.color = '#25D366'; idx.style.borderColor = '#25D366'; }
+  // Log reminder (Feature 03)
+  const m = members.find(m => m.id === memberId);
+  if (m) logReminder(m.name, m.phone, 'sent');
 }
 
 // ── SEND ALL QUEUE ────────────────────────────────────────────
@@ -2782,18 +3054,38 @@ function toggleDark() {
 // ══════════════════════════════════════════════════════════════
 // FEATURE 01: OVERDUE PAYMENT ALERTS
 // ══════════════════════════════════════════════════════════════
-function checkOverdue() {
-  // Load deadline from localStorage per period
-  const key = 'deadline_' + getPeriod().replace(/\s+/g,'_');
-  let deadline;
-  try { deadline = localStorage.getItem(key); } catch(e) {}
+// ── DEADLINE DB PATH ──────────────────────────────────────────
+function deadlinePath() {
+  return `lunch/${getPeriod().replace(/\s+/g,'_')}/deadline`;
+}
 
-  const banner = document.getElementById('overdueBanner');
+function saveDeadlineToDb(value) {
+  if (!fbReady) { showToast('Firebase loading…'); return; }
+  const { db, ref, set } = window._fb;
+  set(ref(db, deadlinePath()), value || null)
+    .then(() => {
+      const waInput = document.getElementById('waDeadline');
+      if (waInput) waInput.value = value;
+      checkOverdue();
+    })
+    .catch(e => showToast('Error saving deadline: ' + e.message));
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 01: OVERDUE PAYMENT ALERTS
+// ══════════════════════════════════════════════════════════════
+async function checkOverdue() {
+  if (!fbReady) return;
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, deadlinePath()), res, { onlyOnce: true })
+  );
+  const deadline = snap.val();
+  const banner   = document.getElementById('overdueBanner');
   if (!deadline) { banner.classList.remove('show'); return; }
 
-  const now  = new Date();
-  const dl   = new Date(deadline + 'T23:59:59');
-  const std  = getStd();
+  const now    = new Date();
+  const dl     = new Date(deadline + 'T23:59:59');
+  const std    = getStd();
   const unpaid = members.filter(m => m.amount < std).length;
 
   if (now > dl && unpaid > 0) {
@@ -2809,14 +3101,13 @@ function checkOverdue() {
 }
 
 function setDeadline() {
-  const dl = prompt('Set payment deadline for this period (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
-  if (!dl || !/^\d{4}-\d{2}-\d{2}$/.test(dl)) return;
-  try { localStorage.setItem('deadline_' + getPeriod().replace(/\s+/g,'_'), dl); } catch(e) {}
-  // Sync the WhatsApp deadline input if it's visible
-  const waInput = document.getElementById('waDeadline');
-  if (waInput) waInput.value = dl;
-  checkOverdue();
-  showToast('Deadline set: ' + dl);
+  if (!currentUser) { showToast('Sign in to set a deadline'); return; }
+  const current = document.getElementById('waDeadline')?.value || '';
+  const dl = prompt('Set payment deadline for this period (YYYY-MM-DD):', current || new Date().toISOString().slice(0,10));
+  if (dl === null) return;
+  if (dl && !/^\d{4}-\d{2}-\d{2}$/.test(dl)) { showToast('Invalid date format — use YYYY-MM-DD'); return; }
+  saveDeadlineToDb(dl);
+  showToast(dl ? 'Deadline saved: ' + dl : 'Deadline cleared');
 }
 
 // ══════════════════════════════════════════════════════════════
@@ -3019,9 +3310,9 @@ function checkAutoRollover() {
 
   if (appPeriod === curMonthStr) return; // already on current month
 
-  // Check if dismissed
+  // Check if dismissed this session
   try {
-    if (localStorage.getItem('rolloverDismissed') === appPeriod) return;
+    if (sessionStorage.getItem('rolloverDismissed') === appPeriod) return;
   } catch(e) {}
 
   const banner = document.getElementById('rolloverBanner');
@@ -3113,6 +3404,463 @@ function applyRoleUI() {
   });
 }
 
+// ══════════════════════════════════════════════════════════════
+// FEATURE 01: MULTI-PERIOD MINI DASHBOARD
+// ══════════════════════════════════════════════════════════════
+async function loadMiniDash() {
+  if (!fbReady) return;
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, 'lunch'), res, { onlyOnce: true })
+  );
+  const data = snap.val();
+  if (!data) return;
+  const currentKey = getPeriod().replace(/\s+/g,'_');
+  const std = getStd();
+  const periods = Object.keys(data)
+    .filter(k => k !== currentKey)
+    .sort((a,b) => parsePeriod(b) - parsePeriod(a))
+    .slice(0, 3);
+  if (!periods.length) return;
+
+  const el = document.getElementById('miniDash');
+  el.style.display = 'grid';
+  el.innerHTML = periods.map(pk => {
+    const mems  = Object.values(data[pk].members || {});
+    const total = mems.reduce((s,m) => s + (m.amount||0), 0);
+    const exp   = mems.length * std;
+    const rate  = exp > 0 ? Math.round(total/exp*100) : 0;
+    const cls   = rate >= 90 ? 'mdc-high' : rate >= 60 ? 'mdc-mid' : 'mdc-low';
+    const col   = rate >= 90 ? 'var(--ok-fg)' : rate >= 60 ? 'var(--warn-fg)' : 'var(--nil-fg)';
+    return `<div class="mini-dash-card ${cls}">
+      <div class="mdc-period">${pk.replace(/_/g,' ')}</div>
+      <div class="mdc-collected">Ksh ${total.toLocaleString('en-KE')}</div>
+      <div class="mdc-rate" style="color:${col}">${rate}% collected</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 02: PIN-PROTECTED ADMIN MODE
+// ══════════════════════════════════════════════════════════════
+let pinBuffer = '';
+let pinCallback = null;
+const PIN_PATH = 'settings/adminPin';
+
+async function getStoredPin() {
+  if (!fbReady) return null;
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, PIN_PATH), res, { onlyOnce: true })
+  );
+  return snap.val();
+}
+
+function openPinModal(callback, msg) {
+  pinBuffer = '';
+  pinCallback = callback;
+  updatePinDots();
+  document.getElementById('pinModalMsg').textContent = msg || 'Enter the 4-digit admin PIN.';
+  document.getElementById('pinModal').classList.add('show');
+}
+
+function pinPress(digit) {
+  if (pinBuffer.length >= 4) return;
+  pinBuffer += digit;
+  updatePinDots();
+  if (pinBuffer.length === 4) setTimeout(checkPin, 150);
+}
+
+function pinBackspace() { pinBuffer = pinBuffer.slice(0,-1); updatePinDots(); }
+function pinClear()     { pinBuffer = ''; updatePinDots(); }
+
+function updatePinDots() {
+  for (let i = 0; i < 4; i++) {
+    document.getElementById('pd'+i)?.classList.toggle('filled', i < pinBuffer.length);
+  }
+}
+
+async function checkPin() {
+  const stored = await getStoredPin();
+  if (!stored) {
+    // No PIN set yet — set this as the new PIN
+    await window._fb.set(window._fb.ref(window._fb.db, PIN_PATH), pinBuffer);
+    closeModal('pinModal'); pinClear();
+    showToast('Admin PIN set to ' + pinBuffer.replace(/./g,'*'));
+    if (pinCallback) { pinCallback(); pinCallback = null; }
+    return;
+  }
+  if (pinBuffer === stored) {
+    closeModal('pinModal'); pinClear();
+    if (pinCallback) { pinCallback(); pinCallback = null; }
+  } else {
+    document.getElementById('pinModalMsg').textContent = '❌ Wrong PIN — try again';
+    pinClear();
+  }
+}
+
+async function requirePin(action) {
+  const stored = await getStoredPin();
+  if (!stored) {
+    // First time — let user set a PIN
+    openPinModal(action, 'Set a new 4-digit admin PIN (first time setup).');
+  } else {
+    openPinModal(action, 'Enter admin PIN to continue.');
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 03: REMINDER LOG (enhanced — write + read)
+// ══════════════════════════════════════════════════════════════
+// Writing to the log happens when a WA message is manually sent via the queue
+function logReminder(memberName, phone, status) {
+  if (!fbReady) return;
+  const { db, ref, push } = window._fb;
+  push(ref(db, `lunch/${getPeriod().replace(/\s+/g,'_')}/reminderLog`), {
+    name: memberName, phone: maskPhone(phone), status,
+    ts: new Date().toISOString(), period: getPeriod()
+  });
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 04: LIVE DONUT CHART
+// ══════════════════════════════════════════════════════════════
+let donutChart = null;
+
+function updateDonut(paid, partial, nil, ratePct) {
+  const canvas = document.getElementById('donutCanvas');
+  if (!canvas) return;
+
+  const total = paid + partial + nil;
+  const paidPct    = total > 0 ? Math.round(paid/total*100)    : 0;
+  const partialPct = total > 0 ? Math.round(partial/total*100) : 0;
+  const nilPct     = total > 0 ? Math.round(nil/total*100)     : 0;
+
+  document.getElementById('donutPct').textContent     = ratePct + '%';
+  document.getElementById('donutLblPaid').textContent    = `${paid} Paid (${paidPct}%)`;
+  document.getElementById('donutLblPartial').textContent = `${partial} Partial (${partialPct}%)`;
+  document.getElementById('donutLblNil').textContent     = `${nil} Nil (${nilPct}%)`;
+
+  const data = {
+    datasets: [{
+      data: [paid, partial, nil],
+      backgroundColor: [
+        getComputedStyle(document.documentElement).getPropertyValue('--ok-fg').trim()  || '#2E6010',
+        getComputedStyle(document.documentElement).getPropertyValue('--warn-fg').trim() || '#7A4600',
+        getComputedStyle(document.documentElement).getPropertyValue('--nil-fg').trim()  || '#8C1F1F',
+      ],
+      borderWidth: 2,
+      borderColor: getComputedStyle(document.documentElement).getPropertyValue('--white').trim() || '#fff',
+    }]
+  };
+
+  if (donutChart) {
+    donutChart.data = data;
+    donutChart.update();
+  } else {
+    donutChart = new Chart(canvas, {
+      type: 'doughnut',
+      data,
+      options: {
+        cutout: '68%', responsive: false,
+        plugins: { legend: { display: false }, tooltip: {
+          callbacks: { label: c => ` ${['Paid','Partial','Nil'][c.dataIndex]}: ${c.parsed}` }
+        }}
+      }
+    });
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 05: CSV / EXCEL IMPORT
+// ══════════════════════════════════════════════════════════════
+let importRows = [];
+
+function openImportModal() {
+  importRows = [];
+  document.getElementById('importPreview').style.display = 'none';
+  document.getElementById('importConfirmBtn').style.display = 'none';
+  document.getElementById('importFileInput').value = '';
+  document.getElementById('dropZone').innerHTML = '📂 Click to browse or drag &amp; drop a file<input type="file" id="importFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="handleImportFile(this.files[0])">';
+  document.getElementById('importModal').classList.add('show');
+}
+
+function handleImportDrop(e) {
+  e.preventDefault();
+  document.getElementById('dropZone').classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) handleImportFile(file);
+}
+
+function handleImportFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wb  = XLSX.read(e.target.result, { type: 'array' });
+    const ws  = wb.Sheets[wb.SheetNames[0]];
+    const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    importRows = [];
+    const errors = [];
+
+    raw.forEach((row, i) => {
+      const name = String(row.Name || row.name || row.NAME || '').trim();
+      const amt  = parseFloat(row.Amount || row.amount || row.AMOUNT || 0);
+      const phone = String(row.Phone || row.phone || row.PHONE || '').trim();
+      const customStd = parseFloat(row.CustomStd || row.customstd || row.custom_std || 0);
+      if (!name) { errors.push(`Row ${i+2}: missing Name`); return; }
+      importRows.push({ name, amount: isNaN(amt) ? 0 : amt, phone, customStd });
+    });
+
+    const preview = document.getElementById('importPreview');
+    preview.style.display = 'block';
+    preview.innerHTML = importRows.map((r,i) => `
+      <div class="import-row">
+        <span style="min-width:28px;color:var(--ink-light)">${i+1}</span>
+        <span style="flex:1">${r.name}</span>
+        <span style="color:var(--ok-fg)">Ksh ${fmt(r.amount)}</span>
+        ${r.phone ? `<span style="color:var(--ink-light);font-size:11px">${maskPhone(r.phone)}</span>` : ''}
+      </div>`).join('') +
+      errors.map(e => `<div class="import-err">⚠ ${e}</div>`).join('');
+
+    const btn = document.getElementById('importConfirmBtn');
+    btn.style.display = importRows.length ? 'inline-flex' : 'none';
+    document.getElementById('importCount').textContent = importRows.length;
+    document.getElementById('dropZone').innerHTML = `✓ ${file.name} loaded`;
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+async function confirmImport() {
+  if (!currentUser) { showToast('Sign in to import'); return; }
+  if (!importRows.length) return;
+  const { db, ref, push } = window._fb;
+  const today = new Date().toISOString().slice(0,10);
+  let count = 0;
+  for (const r of importRows) {
+    await push(ref(db, membersPath()), {
+      name: r.name, amount: r.amount, phone: r.phone, customStd: r.customStd,
+      paidAt: r.amount > 0 ? today : ''
+    });
+    count++;
+  }
+  closeModal('importModal');
+  showToast(`${count} members imported`);
+  importRows = [];
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 06: EMAIL SUMMARY REPORT
+// ══════════════════════════════════════════════════════════════
+function openEmailSummary() {
+  const subject = `Lunch Contributions — ${getPeriod()} Summary`;
+  document.getElementById('emailSubject').value = subject;
+  document.getElementById('emailModal').classList.add('show');
+}
+
+function sendEmailSummary() {
+  const std     = getStd();
+  const total   = members.reduce((s,m) => s + m.amount, 0);
+  const expected = members.reduce((s,m) => s + memberStd(m), 0);
+  const shortfall = Math.max(0, expected - total);
+  const paid    = members.filter(m => m.amount >= memberStd(m));
+  const partial = members.filter(m => m.amount > 0 && m.amount < memberStd(m));
+  const nil     = members.filter(m => m.amount === 0);
+  const to      = document.getElementById('emailTo').value.trim();
+  const subject = document.getElementById('emailSubject').value.trim();
+
+  const rows = members.map(m => {
+    const s = status(m.amount, memberStd(m));
+    return `  ${m.name.padEnd(30)} ${s.label.padEnd(10)} Ksh ${fmt(m.amount)}`;
+  }).join('\n');
+
+  const body = `Lunch Contribution Summary — ${getPeriod()}
+Standard: Ksh ${fmt(std)}/member
+Generated: ${new Date().toLocaleDateString('en-KE',{day:'numeric',month:'long',year:'numeric'})}
+
+SUMMARY
+-------
+Total Collected : Ksh ${fmt(total)}
+Expected        : Ksh ${fmt(expected)}
+Shortfall       : Ksh ${fmt(shortfall)}
+Paid in full    : ${paid.length} members
+Partial         : ${partial.length} members
+Nil             : ${nil.length} members
+
+MEMBER DETAILS
+--------------
+${rows}
+
+---
+Sent from Lunch Contribution Manager`;
+
+  const mailtoLink = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.open(mailtoLink);
+  closeModal('emailModal');
+  showToast('Opening email client…');
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 07: LEADERBOARD
+// ══════════════════════════════════════════════════════════════
+async function loadLeaderboard() {
+  const grid = document.getElementById('lbGrid');
+  grid.innerHTML = '<div class="hist-loading">Loading leaderboard…</div>';
+  if (!fbReady) return;
+
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, 'lunch'), res, { onlyOnce: true })
+  );
+  const data = snap.val();
+  if (!data) { grid.innerHTML = '<div class="hist-empty">No data yet.</div>'; return; }
+
+  const std = getStd();
+  const periodKeys = Object.keys(data).sort((a,b) => parsePeriod(a)-parsePeriod(b));
+  const allNames = new Set();
+  const memberHist = {};
+
+  periodKeys.forEach(pk => {
+    Object.values(data[pk].members || {}).forEach(m => {
+      if (!m.name) return;
+      allNames.add(m.name);
+      if (!memberHist[m.name]) memberHist[m.name] = {};
+      memberHist[m.name][pk] = m.amount || 0;
+    });
+  });
+
+  const names = Array.from(allNames);
+  const scored = names.map(name => {
+    const periods = periodKeys.filter(pk => memberHist[name]?.[pk] !== undefined);
+    const total   = periods.reduce((s,pk) => s + memberHist[name][pk], 0);
+    const paidN   = periods.filter(pk => memberHist[name][pk] >= std).length;
+    let streak = 0;
+    for (let i = periodKeys.length-1; i >= 0; i--) {
+      const a = memberHist[name]?.[periodKeys[i]];
+      if (a === undefined || a < std) break;
+      streak++;
+    }
+    const consistency = periods.length ? Math.round(paidN/periods.length*100) : 0;
+    const improved = periods.length >= 2 && memberHist[name][periodKeys[periodKeys.length-1]] > memberHist[name][periodKeys[periodKeys.length-2]];
+    return { name, total, paidN, periods: periods.length, streak, consistency, improved };
+  });
+
+  function lbSection(title, icon, list, valFn) {
+    const rankCls = ['gold','silver','bronze'];
+    const medals  = ['🥇','🥈','🥉'];
+    return `<div class="hist-member-wrap">
+      <div style="padding:14px 16px;border-bottom:1px solid var(--rule);font-family:'DM Serif Display',serif;font-size:17px;">${icon} ${title}</div>
+      ${list.slice(0,5).map((s,i) => `
+        <div class="lb-row">
+          <div class="lb-rank ${rankCls[i]||''}">${medals[i]||i+1}</div>
+          <div class="lb-name">${s.name}</div>
+          <div class="lb-badge-wrap">${s.streak>=3?`<span class="badge badge-warn">🔥${s.streak}</span>`:''} ${s.improved?`<span class="badge badge-ok">↑</span>`:''}</div>
+          <div class="lb-val">${valFn(s)}</div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  grid.innerHTML = [
+    lbSection('Top Contributors', '💰', [...scored].sort((a,b)=>b.total-a.total), s=>`Ksh ${s.total.toLocaleString('en-KE')}`),
+    lbSection('Most Consistent', '🎯', [...scored].sort((a,b)=>b.consistency-a.consistency), s=>`${s.consistency}% (${s.paidN}/${s.periods})`),
+    lbSection('Longest Streak', '🔥', [...scored].sort((a,b)=>b.streak-a.streak), s=>`${s.streak} month${s.streak!==1?'s':''}`),
+    lbSection('Most Improved', '📈', [...scored].filter(s=>s.improved).sort((a,b)=>b.total-a.total), s=>`Ksh ${s.total.toLocaleString('en-KE')}`),
+  ].join('');
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 08: PWA / INSTALL TO HOME SCREEN
+// ══════════════════════════════════════════════════════════════
+let pwaPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  pwaPrompt = e;
+  try { if (!sessionStorage.getItem('pwaDismissed')) document.getElementById('pwaBanner')?.classList.add('show'); } catch(err) {}
+});
+
+function pwaInstall() {
+  if (!pwaPrompt) { showToast('Install via browser menu → Add to Home Screen'); return; }
+  pwaPrompt.prompt();
+  pwaPrompt.userChoice.then(r => {
+    document.getElementById('pwaBanner').classList.remove('show');
+    if (r.outcome === 'accepted') showToast('App installed!');
+    pwaPrompt = null;
+  });
+}
+
+// Inject web manifest dynamically
+(function injectManifest() {
+  const manifest = {
+    name: 'Lunch Contribution Manager', short_name: 'Lunch Fund',
+    start_url: location.pathname, display: 'standalone',
+    background_color: '#F4F1EB', theme_color: '#141414',
+    icons: [{ src: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14/assets/72x72/1f371.png', sizes: '72x72', type: 'image/png' }]
+  };
+  const blob = new Blob([JSON.stringify(manifest)], { type: 'application/manifest+json' });
+  const url  = URL.createObjectURL(blob);
+  const link = document.createElement('link');
+  link.rel = 'manifest'; link.href = url;
+  document.head.appendChild(link);
+})();
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 09: PERIOD NOTES / MINUTES
+// ══════════════════════════════════════════════════════════════
+function periodNotesPath() {
+  return `lunch/${getPeriod().replace(/\s+/g,'_')}/notes`;
+}
+
+function togglePeriodNotes() {
+  const body = document.getElementById('periodNotesBody');
+  const chev = document.getElementById('periodNotesChevron');
+  const isOpen = body.classList.toggle('open');
+  chev.textContent = isOpen ? '▲' : '▼';
+  if (isOpen) loadPeriodNotes();
+}
+
+async function loadPeriodNotes() {
+  if (!fbReady) return;
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, periodNotesPath()), res, { onlyOnce: true })
+  );
+  document.getElementById('periodNotesText').value = snap.val() || '';
+}
+
+let notesSaveTimer = null;
+function debounceSaveNotes() {
+  clearTimeout(notesSaveTimer);
+  notesSaveTimer = setTimeout(savePeriodNotes, 1200);
+}
+
+function savePeriodNotes() {
+  if (!currentUser || !fbReady) return;
+  const text = document.getElementById('periodNotesText').value;
+  window._fb.set(window._fb.ref(window._fb.db, periodNotesPath()), text || null)
+    .then(() => {
+      const saved = document.getElementById('periodNotesSaved');
+      saved.style.display = 'block';
+      setTimeout(() => { saved.style.display = 'none'; }, 2000);
+    });
+}
+
+// ══════════════════════════════════════════════════════════════
+// FEATURE 10: CUSTOM STD PER MEMBER (edit support)
+// ══════════════════════════════════════════════════════════════
+// saveEdit already picks up customStd from the inline edit row — extend it:
+const _baseSaveEdit = saveEdit;
+// Override saveEdit to also save customStd
+function saveEdit(i) {
+  if (!currentUser) { showToast('Sign in to make changes'); return; }
+  const { db, ref, update } = window._fb;
+  const name       = document.getElementById('eName').value.trim();
+  const amount     = parseFloat(document.getElementById('eAmt').value) || 0;
+  const phone      = (document.getElementById('ePhone')?.value || '').trim().replace(/\s+/g, '');
+  const customStd  = parseFloat(document.getElementById('eCustomStd')?.value) || 0;
+  if (!name) { showToast('Name cannot be empty'); return; }
+  const m      = members[i];
+  const paidAt = (amount > 0 && amount !== m.amount) ? new Date().toISOString().slice(0,10) : (m.paidAt || '');
+  update(ref(db, `${membersPath()}/${m.id}`), { name, amount, phone, paidAt, customStd })
+    .then(() => showToast('Updated'))
+    .catch(e => showToast('Error: ' + e.message));
+}
+
 // ── Firebase subscribe also stores note field ─────────────────
 function subscribeToMembers() {
   const { db, ref, onValue, set, push } = window._fb;
@@ -3129,7 +3877,7 @@ function subscribeToMembers() {
       set(ref(db, path), writes);
       return;
     }
-    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount, phone: v.phone || '', note: v.note || '', paidAt: v.paidAt || '' }));
+    members = Object.entries(data).map(([id, v]) => ({ id, name: v.name, amount: v.amount, phone: v.phone || '', note: v.note || '', paidAt: v.paidAt || '', customStd: v.customStd || 0 }));
     render();
     checkOverdue();
     checkAutoRollover();
@@ -3151,7 +3899,8 @@ window.addEventListener('fb-ready', () => {
   });
   subscribeToMembers();
   loadPhotos();
-  applyReadOnlyMode(); // Feature 07 — apply ?view=1 if present
+  loadMiniDash();
+  applyReadOnlyMode();
 });
 
 // Sync export button whenever tab or viewport changes
