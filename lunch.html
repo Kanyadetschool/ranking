@@ -893,7 +893,7 @@ window.dispatchEvent(new Event('fb-ready'));
 <!-- APP HEADER -->
 <header class="app-header">
   <div>
-    <div class="eyebrow">Staff Welfare Fund</div>
+    <div class="eyebrow">Staff Welfare Fund.</div>
     <h1>Lunch Contributions.</h1>
   </div>
   <div class="header-actions">
@@ -3452,24 +3452,36 @@ function closeModal(id) {
 function checkAutoRollover() {
   const now        = new Date();
   const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-  const curMonthStr = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
-  const appPeriod   = getPeriod().trim();
+  const realMonthStr = `${monthNames[now.getMonth()]} ${now.getFullYear()}`;
+  const appPeriod    = getPeriod().trim();
 
-  if (appPeriod === curMonthStr) return; // already on current month
+  // Parse the app's current period into a Date for comparison
+  const appParts    = appPeriod.split(' ');
+  const appMonthIdx = monthNames.indexOf(appParts[0]);
+  const appYear     = parseInt(appParts[1]) || now.getFullYear();
+  const appDate     = new Date(appYear, appMonthIdx < 0 ? now.getMonth() : appMonthIdx, 1);
+  const realDate    = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  // Check if dismissed this session
+  // Only show banner if the app period is BEHIND the real current month
+  if (appDate >= realDate) return;
+
+  // The new period to roll into is always the month AFTER the current app period
+  const nextMonthDate = new Date(appYear, (appMonthIdx < 0 ? now.getMonth() : appMonthIdx) + 1, 1);
+  const nextMonthStr  = `${monthNames[nextMonthDate.getMonth()]} ${nextMonthDate.getFullYear()}`;
+
+  // Check if dismissed this session (keyed to the app period, not the new one)
   try {
     if (sessionStorage.getItem('rolloverDismissed') === appPeriod) return;
   } catch(e) {}
 
   const banner = document.getElementById('rolloverBanner');
   document.getElementById('rolloverBannerText').textContent =
-    `📅 It's ${curMonthStr} — the app is still showing ${appPeriod}`;
+    `📅 It's ${realMonthStr} — the app is still showing ${appPeriod}`;
   document.getElementById('rolloverBannerSub').textContent =
-    'Start a new period to carry the member roster forward with amounts reset to zero.';
+    `Start a new period to carry the member roster into ${nextMonthStr} with amounts reset to zero.`;
 
-  // Store new period name for rollover
-  banner.dataset.newPeriod = curMonthStr;
+  // Store the NEXT period (not the real clock month) as the rollover target
+  banner.dataset.newPeriod = nextMonthStr;
   banner.classList.add('show');
 }
 
