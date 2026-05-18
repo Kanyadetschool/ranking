@@ -893,7 +893,7 @@ window.dispatchEvent(new Event('fb-ready'));
 <!-- APP HEADER -->
 <header class="app-header">
   <div>
-    <div class="eyebrow">Staff Welfare Fund.</div>
+    <div class="eyebrow">Staff Welfare Fund</div>
     <h1>Lunch Contributions.</h1>
   </div>
   <div class="header-actions">
@@ -1516,7 +1516,7 @@ firebase deploy --only functions</pre>
 <div class="modal-backdrop" id="newPeriodModal">
   <div class="modal-box" style="max-width:400px;">
     <div class="modal-title">Change Period</div>
-    <div class="modal-body">Enter the month and year to switch to. This only changes which period you're viewing — member data is stored per period and nothing is deleted or reset.</div>
+    <div class="modal-body">Enter the month and year to switch to. If that period already exists, you'll see its data. If it's new, the current roster will be carried forward with all amounts reset to zero.</div>
     <div class="field" style="margin-bottom:8px;">
       <label style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-light);display:block;margin-bottom:6px;font-family:'DM Mono',monospace;">Month</label>
       <select id="newPeriodMonth" onchange="updateNewPeriodInfo()" style="width:100%;padding:10px 14px;border:1.5px solid var(--rule);border-radius:7px;font-family:'DM Sans',sans-serif;font-size:14px;background:var(--bg);color:var(--ink);outline:none;">
@@ -2951,18 +2951,57 @@ async function confirmNewPeriod() {
     showToast('Please enter a valid month and year');
     return;
   }
-  const newPeriod = `${month} ${year}`;
+  const newPeriod    = `${month} ${year}`;
+  const newPeriodKey = newPeriod.replace(/\s+/g, '_');
+  const oldPeriodKey = getPeriod().replace(/\s+/g, '_');
 
   closeModal('newPeriodModal');
 
-  // Update the period input
-  document.getElementById('periodInput').value = newPeriod;
+  // Check if the target period already has data in Firebase
+  const snap = await new Promise(res =>
+    window._fb.onValue(window._fb.ref(window._fb.db, `lunch/${newPeriodKey}/members`), res, { onlyOnce: true })
+  );
+  const existingData = snap.val();
 
-  // Re-subscribe to the new period's data (unsubscribes old listener automatically)
-  subscribeToMembers();
-  recalc();
-  loadMiniDash();
-  showToast(`Switched to ${newPeriod}`);
+  if (existingData) {
+    // Period already has data — just switch the view, preserve everything
+    document.getElementById('periodInput').value = newPeriod;
+    subscribeToMembers();
+    recalc();
+    loadMiniDash();
+    showToast(`Switched to ${newPeriod}`);
+  } else {
+    // New period — carry the current roster forward with amounts reset to 0
+    const srcSnap = await new Promise(res =>
+      window._fb.onValue(window._fb.ref(window._fb.db, `lunch/${oldPeriodKey}/members`), res, { onlyOnce: true })
+    );
+    const srcData = srcSnap.val();
+
+    if (srcData) {
+      const writes = {};
+      Object.values(srcData).forEach(m => {
+        const k = Math.random().toString(36).slice(2);
+        writes[k] = { name: m.name, amount: 0, phone: m.phone || '', note: '' };
+      });
+
+      if (membersUnsubscribe) { membersUnsubscribe(); membersUnsubscribe = null; }
+      suppressSeed = true;
+      await window._fb.set(window._fb.ref(window._fb.db, `lunch/${newPeriodKey}/members`), writes);
+      document.getElementById('periodInput').value = newPeriod;
+      subscribeToMembers();
+      suppressSeed = false;
+      recalc();
+      loadMiniDash();
+      showToast(`Switched to ${newPeriod} — ${Object.keys(writes).length} members carried forward`);
+    } else {
+      // No source data at all — just switch (empty period)
+      document.getElementById('periodInput').value = newPeriod;
+      subscribeToMembers();
+      recalc();
+      loadMiniDash();
+      showToast(`Switched to ${newPeriod}`);
+    }
+  }
 }
 
 // ── CARRY FORWARD ─────────────────────────────────────────────
@@ -4151,4 +4190,4 @@ document.addEventListener('DOMContentLoaded', syncExportBtn);
 window.addEventListener('resize', syncExportBtn);
 </script>
 </body>
-</html>
+</html> 
