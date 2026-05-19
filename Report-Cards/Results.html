@@ -28,20 +28,34 @@
 
     <style>
         :root {
-            --navy:    #0f2744;
-            --navy-mid:#1a3a5c;
-            --navy-lt: #22518a;
-            --gold:    #e8a020;
-            --gold-lt: #f5c842;
-            --cream:   #faf8f3;
-            --cream2:  #f2ede3;
-            --slate:   #5a6e84;
-            --text:    #1c2b3a;
-            --border:  #d6dde8;
-            --success: #1d8a5e;
-            --danger:  #c0392b;
-            --radius:  12px;
-            --shadow:  0 4px 24px rgba(15,39,68,.10);
+            --navy:    #0d1f35;
+            --navy-mid:#152d4a;
+            --navy-lt: #1e4080;
+            --navy-glass: rgba(13,31,53,.85);
+            --gold:    #f0a500;
+            --gold-lt: #fbbf24;
+            --gold-dim: rgba(240,165,0,.15);
+            --surface: #ffffff;
+            --surface2: #f6f8fb;
+            --surface3: #eef1f7;
+            --cream:   #f4f6fa;
+            --slate:   #64748b;
+            --slate-lt:#94a3b8;
+            --text:    #0f172a;
+            --text2:   #475569;
+            --border:  #e2e8f0;
+            --border2: #cbd5e1;
+            --success: #059669;
+            --success-lt:#d1fae5;
+            --danger:  #dc2626;
+            --danger-lt:#fee2e2;
+            --info:    #0284c7;
+            --info-lt: #e0f2fe;
+            --radius:  10px;
+            --radius-lg:16px;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,.07), 0 1px 2px rgba(0,0,0,.05);
+            --shadow:  0 4px 16px rgba(13,31,53,.09);
+            --shadow-lg:0 12px 40px rgba(13,31,53,.16);
         }
 
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -54,740 +68,503 @@
             min-height: 100vh;
         }
 
-        /* ── TOPBAR ───────────────────────────────────── */
+        /* ══ TOPBAR ══════════════════════════════════════ */
         .topbar {
-            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1f4b7d 100%);
-            padding: 0 2rem;
-            height: 72px;
+            background: var(--navy);
+            padding: 0 1.75rem;
+            height: 64px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 20px rgba(15,39,68,.35);
+            border-bottom: 1px solid rgba(255,255,255,.06);
+            box-shadow: 0 1px 0 rgba(255,255,255,.04), var(--shadow-lg);
         }
-
-        .topbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
+        .topbar-brand { display: flex; align-items: center; gap: .875rem; }
         .topbar-logo {
-            width: 44px;
-            height: 44px;
-            object-fit: contain;
-            filter: brightness(1.1) drop-shadow(0 0 8px rgba(232,160,32,.4));
+            width: 36px; height: 36px; object-fit: contain;
+            filter: drop-shadow(0 0 6px rgba(240,165,0,.5));
         }
-
         .topbar-title {
             font-family: 'Playfair Display', serif;
-            font-size: 1.25rem;
-            font-weight: 800;
-            color: #fff;
-            line-height: 1.1;
+            font-size: 1.05rem; font-weight: 800; color: #fff; line-height: 1.1;
         }
-
         .topbar-sub {
-            font-size: 0.72rem;
-            color: rgba(255,255,255,.55);
-            font-weight: 400;
-            letter-spacing: .04em;
-            text-transform: uppercase;
+            font-size: .65rem; color: rgba(255,255,255,.4);
+            font-weight: 500; letter-spacing: .08em; text-transform: uppercase;
         }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-
+        .topbar-right { display: flex; align-items: center; gap: .75rem; }
         #user-id-display {
-            font-size: 0.85rem;
-            color: rgba(255,255,255,.75);
-            font-weight: 500;
+            font-size: .82rem; color: rgba(255,255,255,.7); font-weight: 500;
+            display: flex; align-items: center; gap: .5rem;
         }
-
         #user-id-display img {
-            width: 34px !important;
-            height: 34px !important;
+            width: 32px !important; height: 32px !important;
             border-radius: 50% !important;
             border: 2px solid var(--gold);
             display: inline-block;
-            vertical-align: middle;
-            margin-right: 6px;
         }
 
-        /* ── BUTTONS ─────────────────────────────────── */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: .45rem;
-            padding: .5rem 1.1rem;
-            border-radius: 8px;
-            font-size: .85rem;
-            font-weight: 600;
-            cursor: pointer !important;
-            border: none;
-            transition: all .2s ease;
-            font-family: 'DM Sans', sans-serif;
-        }
-        /* Tailwind preflight resets button cursor — override globally */
+        /* ══ BUTTONS ══════════════════════════════════════ */
         button { cursor: pointer !important; }
-        .btn-primary   { background: var(--navy-lt); color: #fff; }
-        .btn-primary:hover { background: var(--navy); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,39,68,.3); }
-        .btn-danger    { background: var(--danger); color: #fff; }
-        .btn-danger:hover { background: #a93226; transform: translateY(-1px); }
-        .btn-success   { background: var(--success); color: #fff; }
-        .btn-success:hover { background: #16724e; }
-        .btn-gold      { background: var(--gold); color: var(--navy); }
+        .btn {
+            display: inline-flex; align-items: center; gap: .4rem;
+            padding: .5rem 1rem; border-radius: 8px;
+            font-size: .83rem; font-weight: 600;
+            cursor: pointer !important; border: none;
+            transition: all .18s ease;
+            font-family: 'DM Sans', sans-serif; white-space: nowrap;
+        }
+        .btn-primary { background: var(--navy-lt); color: #fff; }
+        .btn-primary:hover { background: var(--navy-mid); box-shadow: 0 4px 12px rgba(30,64,128,.35); transform: translateY(-1px); }
+        .btn-danger  { background: var(--danger); color: #fff; }
+        .btn-danger:hover  { background: #b91c1c; transform: translateY(-1px); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #047857; transform: translateY(-1px); }
+        .btn-gold    { background: var(--gold); color: var(--navy); font-weight: 700; }
         .btn-gold:hover { background: var(--gold-lt); transform: translateY(-1px); }
-        .btn-ghost     { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2); }
-        .btn-ghost:hover { background: rgba(255,255,255,.22); }
-        .btn-outline   { background: transparent; color: var(--navy-lt); border: 1.5px solid var(--navy-lt); }
-        .btn-outline:hover { background: var(--navy-lt); color: #fff; }
+        .btn-ghost   { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.15); }
+        .btn-ghost:hover { background: rgba(255,255,255,.18); }
+        .btn-outline { background: transparent; color: var(--navy-lt); border: 1.5px solid var(--border2); }
+        .btn-outline:hover { background: var(--navy-lt); color: #fff; border-color: var(--navy-lt); }
+        .btn-sm { padding: .35rem .75rem; font-size: .78rem; border-radius: 6px; }
+        #sign-out-btn { background: rgba(255,255,255,.08); color: rgba(255,255,255,.85); border: 1px solid rgba(255,255,255,.12); }
+        #sign-out-btn:hover { background: rgba(255,255,255,.15); }
 
-        #sign-out-btn { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2); }
+        /* ══ LAYOUT ══════════════════════════════════════ */
+        .page-wrap { max-width: 1480px; margin: 0 auto; padding: 1.75rem 1.5rem 3rem; }
 
-        /* ── LAYOUT ──────────────────────────────────── */
-        .page-wrap {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 2rem 1.5rem 3rem;
-        }
-
-        /* ── SIGN-IN CARD ────────────────────────────── */
+        /* ══ SIGN-IN ══════════════════════════════════════ */
         #sign-in-section {
-            min-height: 60vh;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
+            min-height: 70vh; display: flex !important;
+            align-items: center; justify-content: center;
         }
-
         .signin-card {
-            background: #fff;
-            border-radius: 20px;
-            box-shadow: 0 8px 48px rgba(15,39,68,.14);
-            padding: 3rem 2.5rem;
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
+            background: var(--surface); border-radius: 20px;
+            box-shadow: var(--shadow-lg); padding: 2.75rem 2.25rem;
+            width: 100%; max-width: 400px; text-align: center;
+            border: 1px solid var(--border);
         }
-
         .signin-card h2 {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: var(--navy);
-            margin-bottom: .5rem;
+            font-family: 'Playfair Display', serif; font-size: 1.75rem;
+            font-weight: 800; color: var(--navy); margin-bottom: .4rem;
         }
-
-        .signin-card p {
-            color: var(--slate);
-            font-size: .9rem;
-            margin-bottom: 2rem;
-        }
-
+        .signin-card p { color: var(--slate); font-size: .88rem; margin-bottom: 2rem; }
         .signin-card .btn {
-            width: 100%;
-            justify-content: center;
-            padding: .85rem 1.5rem;
-            font-size: .95rem;
-            border-radius: 10px;
-            margin-bottom: .75rem;
+            width: 100%; justify-content: center; padding: .8rem 1.5rem;
+            font-size: .92rem; border-radius: 10px; margin-bottom: .6rem;
         }
 
-        /* ── SECTION CARDS ───────────────────────────── */
+        /* ══ CARDS ═══════════════════════════════════════ */
         .card {
-            background: #fff;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
             border: 1px solid var(--border);
             overflow: hidden;
         }
-
         .card-header {
-            padding: 1.1rem 1.5rem;
+            padding: 1rem 1.25rem;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 1rem;
-            background: #fdfcfa;
+            display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+            background: var(--surface);
         }
-
         .card-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.05rem;
-            font-weight: 700;
-            color: var(--navy);
-            display: flex;
-            align-items: center;
-            gap: .6rem;
+            font-size: .92rem; font-weight: 700; color: var(--navy);
+            display: flex; align-items: center; gap: .55rem;
         }
-
         .card-icon {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--navy);
-            color: #fff;
-            flex-shrink: 0;
+            width: 30px; height: 30px; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--navy); color: #fff; flex-shrink: 0;
         }
+        .card-body { padding: 1.25rem; }
 
-        .card-body {
-            padding: 1.5rem;
-        }
-
-        /* ── UPLOAD DROP ZONE ────────────────────────── */
+        /* ══ DROP ZONE ════════════════════════════════════ */
         .drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: 10px;
-            padding: 2.5rem 1rem;
-            text-align: center;
-            cursor: pointer;
-            transition: all .2s;
-            background: var(--cream);
-            position: relative;
-            display: block;
+            border: 2px dashed var(--border2); border-radius: var(--radius);
+            padding: 2rem 1rem; text-align: center; cursor: pointer;
+            transition: all .2s; background: var(--cream);
+            position: relative; display: block;
         }
-
-        .drop-zone:hover {
-            border-color: var(--navy-lt);
-            background: #eef3f9;
-        }
-
+        .drop-zone:hover { border-color: var(--navy-lt); background: #eef3fb; }
         .drop-zone input[type="file"] {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-            cursor: pointer;
-            z-index: 1;
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            opacity: 0; cursor: pointer; z-index: 1;
         }
-
         .drop-zone-icon {
-            width: 48px;
-            height: 48px;
-            margin: 0 auto .75rem;
-            color: var(--slate);
-            position: relative;
-            z-index: 2;
-            pointer-events: none;
+            width: 40px; height: 40px; margin: 0 auto .6rem;
+            color: var(--slate-lt); position: relative; z-index: 2; pointer-events: none;
         }
-
         .drop-zone span {
-            display: block;
-            font-size: .9rem;
-            color: var(--navy-lt);
-            font-weight: 600;
-            position: relative;
-            z-index: 2;
-            pointer-events: none;
+            display: block; font-size: .87rem; color: var(--navy-lt);
+            font-weight: 600; position: relative; z-index: 2; pointer-events: none;
         }
-
         .drop-zone .hint {
-            color: var(--slate);
-            font-size: .78rem;
-            font-weight: 400;
-            margin-top: .25rem;
-            position: relative;
-            z-index: 2;
-            pointer-events: none;
+            color: var(--slate-lt); font-size: .75rem; font-weight: 400;
+            margin-top: .2rem; position: relative; z-index: 2; pointer-events: none;
         }
 
-        /* ── FORM FIELDS ─────────────────────────────── */
-        .field {
-            display: flex;
-            flex-direction: column;
-            gap: .3rem;
-        }
-
+        /* ══ FORM FIELDS ══════════════════════════════════ */
+        .field { display: flex; flex-direction: column; gap: .3rem; }
         .field label {
-            font-size: .78rem;
-            font-weight: 600;
-            color: var(--slate);
-            text-transform: uppercase;
-            letter-spacing: .05em;
+            font-size: .72rem; font-weight: 700; color: var(--slate);
+            text-transform: uppercase; letter-spacing: .06em;
         }
-
-        input[type="text"],
-        input[type="email"],
-        select,
-        .field input,
-        .field select {
-            width: 100%;
-            padding: .6rem .85rem;
+        input[type="text"], input[type="email"], select,
+        .field input, .field select {
+            width: 100%; padding: .55rem .8rem;
             border: 1.5px solid var(--border);
-            border-radius: 8px;
-            font-size: .88rem;
-            font-family: 'DM Sans', sans-serif;
-            color: var(--text);
-            background: #fff;
-            transition: border-color .2s, box-shadow .2s;
-            outline: none;
+            border-radius: 8px; font-size: .87rem;
+            font-family: 'DM Sans', sans-serif; color: var(--text);
+            background: var(--surface); transition: border-color .15s, box-shadow .15s; outline: none;
+        }
+        input[type="text"]:focus, input[type="email"]:focus, select:focus {
+            border-color: var(--navy-lt); box-shadow: 0 0 0 3px rgba(30,64,128,.1);
         }
 
-        input[type="text"]:focus,
-        input[type="email"]:focus,
-        select:focus {
-            border-color: var(--navy-lt);
-            box-shadow: 0 0 0 3px rgba(34,81,138,.12);
-        }
-
-        /* ── TOOLBAR ROW ─────────────────────────────── */
+        /* ══ TOOLBAR ══════════════════════════════════════ */
         .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: .75rem;
-            padding: 1rem 1.5rem;
-            background: #fdfcfa;
-            border-bottom: 1px solid var(--border);
+            display: flex; flex-wrap: wrap; align-items: center;
+            gap: .6rem; padding: .875rem 1.25rem;
+            background: var(--surface); border-bottom: 1px solid var(--border);
         }
-
-        .toolbar-label {
-            font-size: .78rem;
-            font-weight: 600;
-            color: var(--slate);
-            white-space: nowrap;
+        .toolbar-title {
+            font-weight: 700; font-size: .92rem; color: var(--navy);
         }
-
+        .toolbar-label { font-size: .75rem; font-weight: 600; color: var(--slate); white-space: nowrap; }
         .search-wrap {
-            position: relative;
-            flex: 1;
-            min-width: 200px;
-            max-width: 340px;
+            position: relative; flex: 1; min-width: 180px; max-width: 300px;
         }
-
         .search-wrap svg {
-            position: absolute;
-            left: .75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--slate);
-            pointer-events: none;
+            position: absolute; left: .7rem; top: 50%;
+            transform: translateY(-50%); color: var(--slate-lt); pointer-events: none;
         }
+        #search-input { padding-left: 2.1rem; }
 
-        #search-input {
-            padding-left: 2.3rem;
-        }
-
-        /* ── TABLE ───────────────────────────────────── */
+        /* ══ TABLE ════════════════════════════════════════ */
         #student-table {
-            width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: .83rem;
+            width: 100%; border-collapse: separate; border-spacing: 0; font-size: .82rem;
         }
-
-        #student-table thead tr {
-            background: var(--navy);
-        }
-
+        #student-table thead tr { background: var(--navy); }
         #student-table thead th {
-            padding: .75rem 1rem;
-            color: #fff;
-            font-weight: 600;
-            font-size: .78rem;
-            text-align: left;
-            letter-spacing: .03em;
-            white-space: nowrap;
-            border: none;
-            font-family: 'DM Sans', sans-serif;
+            padding: .7rem .9rem; color: rgba(255,255,255,.9);
+            font-weight: 600; font-size: .73rem; text-align: left;
+            letter-spacing: .04em; white-space: nowrap; border: none;
         }
-
-        #student-table tbody tr {
-            cursor: pointer;
-            transition: background .15s;
-        }
-
-        #student-table tbody tr:nth-child(even) { background: #f8f9fc; }
-        #student-table tbody tr:hover td:not(.action-buttons) {
-            background: #e8f0fb !important;
-        }
-
+        #student-table thead th:first-child { border-radius: 0; }
+        #student-table tbody tr { cursor: pointer; transition: background .12s; }
+        #student-table tbody tr:nth-child(even) { background: var(--surface2); }
+        #student-table tbody tr:hover td { background: #e8effa !important; }
         #student-table tbody td {
-            padding: .65rem 1rem;
-            color: var(--text);
-            border-bottom: 1px solid #eef0f5;
-            white-space: nowrap;
-            vertical-align: middle;
+            padding: .6rem .9rem; color: var(--text2);
+            border-bottom: 1px solid var(--border); white-space: nowrap; vertical-align: middle;
+        }
+        #student-table tbody td:first-child { color: var(--text); }
+
+        /* ── STICKY ACTIONS COLUMN ─────────────────────── */
+        .action-cell {
+            position: sticky; left: 0; z-index: 2;
+            background: var(--surface) !important;
+            padding: .5rem .75rem !important;
+            border-right: 1px solid var(--border);
+        }
+        #student-table tbody tr:nth-child(even) .action-cell { background: var(--surface2) !important; }
+        #student-table tbody tr:hover .action-cell { background: #e8effa !important; }
+        .th-actions {
+            position: sticky; left: 0; z-index: 3; background: var(--navy) !important;
+            border-right: 1px solid rgba(255,255,255,.1);
         }
 
-        .action-buttons {
-            background: transparent !important;
-            white-space: nowrap;
-        }
-
-        .edit-btn {
-            padding: .3rem .7rem;
-            background: var(--navy-lt);
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-size: .78rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background .2s;
+        /* ── ACTION BUTTONS ──────────────────────────────── */
+        .action-wrap { display: flex; gap: .35rem; align-items: center; }
+        .btn-edit {
+            display: inline-flex; align-items: center; gap: .3rem;
+            padding: .3rem .65rem; border-radius: 6px; border: none;
+            background: #0d1f35; color: #fff;
+            font-size: .75rem; font-weight: 700;
             font-family: 'DM Sans', sans-serif;
+            cursor: pointer; transition: all .15s;
         }
-
-        .edit-btn:hover { background: var(--navy); }
-
-        .delete-btn {
-            padding: .3rem .7rem;
-            background: var(--danger);
-            color: #fff;
-            border: none;
-            border-radius: 6px;
-            font-size: .78rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background .2s;
-            font-family: 'DM Sans', sans-serif;
+        .btn-edit:hover { background: #1e4080; color: #fff; box-shadow: 0 4px 12px rgba(13,31,53,.35); transform: translateY(-1px); }
+        .btn-del {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; border-radius: 6px; border: none;
+            background: var(--danger-lt); color: var(--danger);
+            cursor: pointer; transition: all .15s;
         }
+        .btn-del:hover { background: var(--danger); color: #fff; }
 
-        .delete-btn:hover { background: #a93226; }
-
+        /* ══ STUDENT PHOTO ════════════════════════════════ */
         .student-image {
-            width: 38px;
-            height: 38px;
-            object-fit: cover;
-            border-radius: 6px;
-            border: 1.5px solid var(--border);
+            width: 34px; height: 34px; object-fit: cover;
+            border-radius: 6px; border: 1.5px solid var(--border);
         }
 
-        /* inline edit inputs */
-        #student-table input[type="text"] {
-            padding: .35rem .55rem;
-            font-size: .82rem;
-            border-radius: 6px;
-            background: #eef3f9;
+        /* ══ LEVEL BADGE ══════════════════════════════════ */
+        .level-badge {
+            display: inline-block; padding: .2rem .5rem;
+            border-radius: 5px; font-size: .72rem; font-weight: 700;
+            letter-spacing: .03em;
         }
 
-        /* ── PAGINATION ──────────────────────────────── */
+        /* ══ PAGINATION ═══════════════════════════════════ */
         #pagination-controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: .35rem;
-            padding: 1rem 1.5rem;
-            background: #fafafa;
-            border-top: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            flex-wrap: wrap; gap: .3rem; padding: .875rem 1.25rem;
+            background: var(--surface2); border-top: 1px solid var(--border);
         }
-
         .pagination-btn {
-            padding: .42rem .9rem;
-            border: 1.5px solid var(--border);
-            border-radius: 7px;
-            background: #fff;
-            color: var(--text);
-            font-size: .82rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all .15s;
-            font-family: 'DM Sans', sans-serif;
+            padding: .38rem .8rem; border: 1.5px solid var(--border);
+            border-radius: 7px; background: var(--surface); color: var(--text2);
+            font-size: .8rem; font-weight: 500; cursor: pointer;
+            transition: all .12s; font-family: 'DM Sans', sans-serif;
         }
-
         .pagination-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
         .pagination-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 700; }
-        .pagination-btn:disabled { background: #f3f4f6; color: #aaa; cursor: not-allowed; border-color: #e5e7eb; }
+        .pagination-btn:disabled { background: var(--surface3); color: var(--slate-lt); cursor: not-allowed; border-color: var(--border); }
 
-        /* ── LOADER ──────────────────────────────────── */
+        /* ══ LOADER ═══════════════════════════════════════ */
         #loader {
-            position: fixed;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 999;
-            background: rgba(255,255,255,.6);
-            backdrop-filter: blur(6px);
+            position: fixed; inset: 0;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; background: rgba(13,31,53,.5); backdrop-filter: blur(4px);
         }
-
         .loader-ring {
-            width: 52px;
-            height: 52px;
-            border-radius: 50%;
-            border: 4px solid var(--border);
-            border-top-color: var(--navy-lt);
-            animation: spin .8s linear infinite;
+            width: 48px; height: 48px; border-radius: 50%;
+            border: 4px solid rgba(255,255,255,.2); border-top-color: var(--gold);
+            animation: spin .75s linear infinite;
         }
-
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* ── MODAL OVERLAYS ──────────────────────────── */
+        /* ══ MODALS ═══════════════════════════════════════ */
         .modal-backdrop {
-            position: fixed;
-            inset: 0;
-            background: rgba(15,39,68,.55);
-            backdrop-filter: blur(4px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 500;
-            padding: 1rem;
+            position: fixed; inset: 0;
+            background: rgba(13,31,53,.6); backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 500; padding: 1rem;
         }
-
         .modal-box {
-            background: #fff;
-            border-radius: 16px;
-            box-shadow: 0 20px 64px rgba(15,39,68,.25);
-            padding: 2rem;
-            width: 100%;
-            max-width: 440px;
-            animation: modalIn .2s ease;
+            background: var(--surface); border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg); padding: 1.75rem;
+            width: 100%; max-width: 430px; animation: modalIn .2s ease;
+            border: 1px solid var(--border);
         }
-
-        .modal-box-wide {
-            max-width: 960px;
-            max-height: 90vh;
-            display: flex;
-            flex-direction: column;
-        }
-
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(.95) translateY(8px); }
-            to   { opacity: 1; transform: none; }
-        }
-
+        .modal-box-wide { max-width: 960px; max-height: 90vh; display: flex; flex-direction: column; }
+        @keyframes modalIn { from { opacity:0; transform:scale(.96) translateY(8px); } to { opacity:1; transform:none; } }
         .modal-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 1.3rem;
-            font-weight: 800;
-            color: var(--navy);
-            margin-bottom: 1.25rem;
-            text-align: center;
+            font-family: 'Playfair Display', serif; font-size: 1.2rem;
+            font-weight: 800; color: var(--navy); margin-bottom: 1rem; text-align: center;
         }
 
-        /* ── EXPORT MODAL ────────────────────────────── */
+        /* ══ EXPORT MODAL ═════════════════════════════════ */
         .export-fmt-btn {
-            padding: .7rem 1.5rem;
-            border: none;
-            border-radius: 10px;
-            font-size: .9rem;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            transition: all .2s;
+            padding: .65rem 1.25rem; border: none; border-radius: 10px;
+            font-size: .88rem; font-weight: 700; cursor: pointer;
+            font-family: 'DM Sans', sans-serif; transition: all .18s;
+            display: inline-flex; align-items: center; gap: .4rem;
         }
+        #print-excel-btn { background: #065f46; color: #fff; }
+        #print-excel-btn:hover { background: #047857; }
+        #print-pdf-btn { background: var(--danger); color: #fff; }
+        #print-pdf-btn:hover { background: #b91c1c; }
+        #print-word-btn { background: var(--navy-lt); color: #fff; }
+        #print-word-btn:hover { background: var(--navy-mid); }
 
-        #print-excel-btn { background: #1a7a4a; color: #fff; }
-        #print-excel-btn:hover { background: #155f3a; }
-        #print-pdf-btn   { background: var(--danger); color: #fff; }
-        #print-pdf-btn:hover { background: #a93226; }
-        #print-word-btn  { background: var(--navy-lt); color: #fff; }
-        #print-word-btn:hover { background: var(--navy); }
-
-        /* ── GRADE/EXPORT TOGGLE BTNS ────────────────── */
+        /* ══ GRADE TOGGLE BTNS ════════════════════════════ */
         .grade-toggle-btn {
-            padding: .35rem .85rem;
-            border: 1.5px solid var(--border);
-            border-radius: 6px;
-            background: #fff;
-            color: var(--text);
-            font-size: .78rem;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            transition: all .15s;
+            padding: .3rem .75rem; border: 1.5px solid var(--border2);
+            border-radius: 6px; background: var(--surface); color: var(--text2);
+            font-size: .75rem; font-weight: 600; cursor: pointer;
+            font-family: 'DM Sans', sans-serif; transition: all .12s;
         }
-
         .grade-toggle-btn:hover, .grade-toggle-btn.active {
-            background: var(--navy);
-            color: #fff;
-            border-color: var(--navy);
+            background: var(--navy); color: #fff; border-color: var(--navy);
         }
-
         .export-btn {
-            padding: .4rem .9rem;
-            border: 1.5px solid var(--border);
-            border-radius: 6px;
-            background: #fff;
-            color: var(--text);
-            font-size: .82rem;
-            font-weight: 600;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            transition: all .15s;
+            padding: .38rem .8rem; border: 1.5px solid var(--border2); border-radius: 6px;
+            background: var(--surface); color: var(--text2); font-size: .78rem; font-weight: 600;
+            cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .12s;
         }
-
         .export-btn:hover { background: var(--navy-lt); color: #fff; border-color: var(--navy-lt); }
 
-        /* ── ANALYTICS DISTRIBUTIONS ─────────────────── */
+        /* ══ ANALYTICS ════════════════════════════════════ */
         [data-filter-field] {
-            cursor: pointer;
-            border-radius: 8px;
-            transition: all .15s;
-            padding: .5rem .75rem;
+            cursor: pointer; border-radius: 8px; transition: all .12s; padding: .45rem .7rem;
         }
+        [data-filter-field]:hover { background: var(--surface3); transform: translateX(2px); }
+        .chart-container { max-height: 180px; margin-bottom: .75rem; }
 
-        [data-filter-field]:hover {
-            background: #eef3f9;
-            transform: translateX(3px);
-        }
-
-        /* ── CHART CONTAINER ─────────────────────────── */
-        .chart-container {
-            max-height: 190px;
-            margin-bottom: .75rem;
-        }
-
-        /* ── STATUS MESSAGES ─────────────────────────── */
+        /* ══ STATUS ═══════════════════════════════════════ */
         #status-message {
-            margin-top: .75rem;
-            text-align: center;
-            font-size: .85rem;
-            font-weight: 500;
-            padding: .5rem 1rem;
-            border-radius: 8px;
-            background: #f0f4f8;
+            margin-top: .65rem; text-align: center; font-size: .84rem;
+            font-weight: 500; padding: .5rem 1rem; border-radius: 8px; background: var(--surface3);
         }
-
-        /* ── SECTION HEADINGS ────────────────────────── */
         .section-label {
-            font-size: .7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: .1em;
-            color: var(--slate);
-            margin-bottom: .5rem;
+            font-size: .68rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .1em; color: var(--slate-lt); margin-bottom: .5rem;
         }
+        .divider { height: 1px; background: var(--border); margin: 1rem 0; }
 
-        /* ── DIVIDER ─────────────────────────────────── */
-        .divider {
-            height: 1px;
-            background: var(--border);
-            margin: 1rem 0;
-        }
-
-        /* ── PRINT/GRADE BTNS (top) ──────────────────── */
+        /* ══ TOOLBAR BUTTONS (export/delete) ═════════════ */
         #print-all-btn, #print-grade-btn {
-            background: var(--gold);
-            color: var(--navy);
-            border: none;
-            border-radius: 8px;
-            padding: .5rem 1rem;
-            font-size: .82rem;
-            font-weight: 700;
-            cursor: pointer;
-            font-family: 'DM Sans', sans-serif;
-            transition: all .2s;
+            display: inline-flex; align-items: center; gap: .35rem;
+            background: var(--gold); color: var(--navy); border: none;
+            border-radius: 8px; padding: .45rem .9rem; font-size: .8rem;
+            font-weight: 700; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .18s;
         }
-
-        #print-all-btn:hover, #print-grade-btn:hover {
-            background: var(--gold-lt);
-            transform: translateY(-1px);
-        }
-
-        /* delete grade btn */
+        #print-all-btn:hover, #print-grade-btn:hover { background: var(--gold-lt); }
         #delete-grade-btn {
-            background: var(--danger);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            padding: .5rem .75rem;
-            cursor: pointer;
-            transition: all .2s;
-            display: flex;
-            align-items: center;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--danger-lt); color: var(--danger); border: none;
+            border-radius: 8px; width: 34px; height: 34px; cursor: pointer; transition: all .18s;
         }
+        #delete-grade-btn:hover { background: var(--danger); color: #fff; }
 
-        #delete-grade-btn:hover { background: #a93226; }
+        /* ══ CENTERED EDIT MODAL (converted from drawer) ═══ */
+        #edit-drawer-overlay {
+            position: fixed; inset: 0;
+            background: rgba(13,31,53,.55);
+            backdrop-filter: blur(6px);
+            z-index: 799;
+            opacity: 0; pointer-events: none;
+            transition: opacity .3s ease;
+            display: flex; align-items: center; justify-content: center;
+            padding: 1rem;
+        }
+        #edit-drawer-overlay.open { opacity: 1; pointer-events: all; }
 
-        /* ── PDF MODAL ───────────────────────────────── */
-        #pdf-modal-backdrop .modal-box-wide {
+        #edit-drawer {
+            position: relative;
+            width: min(560px, 100%);
             max-height: 90vh;
+            background: var(--surface);
+            border-radius: 20px;
+            box-shadow: 0 24px 80px rgba(13,31,53,.35), 0 0 0 1px rgba(255,255,255,.08);
+            z-index: 800;
+            display: flex; flex-direction: column;
+            opacity: 0;
+            transform: scale(.88) translateY(32px);
+            transition:
+                opacity .35s cubic-bezier(.34,1.56,.64,1),
+                transform .35s cubic-bezier(.34,1.56,.64,1);
+            border: 1px solid var(--border);
+            overflow: hidden;
         }
+        #edit-drawer-overlay.open #edit-drawer {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+        .drawer-header {
+            padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            background: var(--navy); color: #fff; flex-shrink: 0;
+        }
+        .drawer-header-title {
+            font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700;
+        }
+        .drawer-header-sub { font-size: .75rem; color: rgba(255,255,255,.5); margin-top: .15rem; }
+        .drawer-close {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: rgba(255,255,255,.12); border: none; color: #fff;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: background .15s;
+        }
+        .drawer-close:hover { background: rgba(255,255,255,.22); }
+        .drawer-body {
+            flex: 1; overflow-y: auto; padding: 1.25rem 1.5rem;
+            display: flex; flex-direction: column; gap: .75rem;
+        }
+        .drawer-body::-webkit-scrollbar { width: 6px; }
+        .drawer-body::-webkit-scrollbar-track { background: var(--surface2); }
+        .drawer-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+        .drawer-field { display: flex; flex-direction: column; gap: .25rem; }
+        .drawer-field label {
+            font-size: .7rem; font-weight: 700; color: var(--slate);
+            text-transform: uppercase; letter-spacing: .06em;
+        }
+        .drawer-field input {
+            padding: .55rem .8rem; border: 1.5px solid var(--border);
+            border-radius: 8px; font-size: .88rem;
+            font-family: 'DM Sans', sans-serif; color: var(--text);
+            background: var(--surface); outline: none; transition: border-color .15s, box-shadow .15s;
+        }
+        .drawer-field input:focus {
+            border-color: var(--navy-lt); box-shadow: 0 0 0 3px rgba(30,64,128,.1);
+        }
+        .drawer-field input.required-field { border-color: var(--gold); }
+        .drawer-footer {
+            padding: 1rem 1.5rem; border-top: 1px solid var(--border);
+            display: flex; gap: .6rem; flex-shrink: 0; background: var(--surface2);
+        }
+        .drawer-save-btn {
+            flex: 1; padding: .65rem; border-radius: 9px; border: none;
+            background: var(--navy); color: #fff; font-size: .9rem; font-weight: 700;
+            font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .18s;
+            display: flex; align-items: center; justify-content: center; gap: .4rem;
+        }
+        .drawer-save-btn:hover { background: var(--navy-lt); }
+        .drawer-save-btn.saving { opacity: .7; cursor: not-allowed; }
+        .drawer-cancel-btn {
+            padding: .65rem 1.2rem; border-radius: 9px;
+            border: 1.5px solid var(--border2); background: transparent;
+            color: var(--slate); font-size: .88rem; font-weight: 600;
+            font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .18s;
+        }
+        .drawer-cancel-btn:hover { border-color: var(--danger); color: var(--danger); }
+        .drawer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
 
-        /* ── TOGGLE BTN (sidebar nav) ────────────────── */
+        /* ══ MISC ═════════════════════════════════════════ */
         .toggle-btn {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            z-index: 200;
-            width: 42px;
-            height: 42px;
-            background: var(--navy);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 2px 10px rgba(15,39,68,.35);
+            position: fixed; top: 16px; left: 16px; z-index: 200;
+            width: 38px; height: 38px; background: rgba(255,255,255,.12);
+            color: #fff; border: 1px solid rgba(255,255,255,.2); border-radius: 9px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
         }
-
-        .menu-icon { width: 20px; height: 20px; }
-
-        /* Force-hide the external auth widget container — we use our own sign-in UI */
+        .menu-icon { width: 18px; height: 18px; }
         #main_container { display: none !important; }
-
-        /* Logged-in state — applied to body, hides sign-in and shows data */
         body.user-logged-in #sign-in-section { display: none !important; }
         body.user-logged-out #data-section   { display: none !important; }
         body.user-logged-out #sign-in-section { display: flex !important; }
-
-        /* hide/show helpers */
         .hidden { display: none !important; }
-
-        /* ── MODAL WRAPPER (sidebar) ─────────────────── */
         .modal-overlay {
-            position: fixed;
-            inset: 0;
-            z-index: 300;
-            background: rgba(0,0,0,.35);
-            display: flex;
+            position: fixed; inset: 0; z-index: 300; background: rgba(0,0,0,.35); display: flex;
         }
-
         .modal-content {
-            background: #fff;
-            height: 100%;
-            width: 260px;
-            box-shadow: 4px 0 24px rgba(15,39,68,.2);
+            background: var(--surface); height: 100%; width: 260px;
+            box-shadow: 4px 0 24px rgba(13,31,53,.2);
         }
-
-        /* ── WARNING BANNER ──────────────────────────── */
         .warning-banner {
-            background: #fff8e6;
-            border: 1.5px solid #f0c050;
-            border-radius: 10px;
-            padding: .85rem 1rem;
-            font-size: .85rem;
-            color: #7a5a00;
-            margin-bottom: 1rem;
+            background: #fffbeb; border: 1.5px solid #fbbf24; border-radius: 9px;
+            padding: .8rem 1rem; font-size: .83rem; color: #92400e; margin-bottom: 1rem;
         }
-
-        /* ── RESPONSIVE ──────────────────────────────── */
+        .two-col-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 1.1rem; margin-bottom: 1.25rem;
+        }
+        @media (max-width: 900px) { .two-col-grid { grid-template-columns: 1fr; } }
         @media (max-width: 768px) {
             .topbar { padding: 0 1rem; }
-            .topbar-title { font-size: 1rem; }
+            .topbar-title { font-size: .95rem; }
             .topbar-brand > div { display: none; }
-            .topbar-logo { width: 40px; height: 40px; }
             .page-wrap { padding: 1rem .75rem 2rem; }
             .toolbar { flex-direction: column; align-items: stretch; }
             .search-wrap { max-width: 100%; }
+            #edit-drawer { width: 100%; border-radius: 14px; }
+            .drawer-grid { grid-template-columns: 1fr; }
         }
 
-        /* utility grid override for upload/manual section */
-        .two-col-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.25rem;
-            margin-bottom: 1.5rem;
+        /* ══ INLINE TABLE INPUT (legacy compat) ════════ */
+        #student-table input[type="text"] {
+            padding: .3rem .5rem; font-size: .8rem; border-radius: 6px; background: var(--surface3);
         }
 
-        @media (max-width: 900px) {
-            .two-col-grid { grid-template-columns: 1fr; }
-        }
+        /* ══ SWAl OVERRIDES ════════════════════════════ */
+        .swal2-popup { font-family: 'DM Sans', sans-serif !important; border-radius: var(--radius-lg) !important; }
+        .swal2-title { font-family: 'Playfair Display', serif !important; color: var(--navy) !important; }
+        .swal2-confirm { border-radius: 8px !important; font-weight: 700 !important; }
+        .swal2-cancel  { border-radius: 8px !important; }
     </style>
 </head>
 
@@ -951,13 +728,22 @@
             <div class="card">
                 <!-- Toolbar -->
                 <div class="toolbar">
-                    <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--navy);margin-right:.5rem;">
-                        Student Records
+                    <div class="toolbar-title">Student Records</div>
+
+                    <div class="search-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input id="search-input" type="text" placeholder="Search students…" onfocus="this.select()">
                     </div>
 
-                    <div style="display:flex;align-items:center;gap:.5rem;margin-left:auto;">
-                        <span class="toolbar-label">Per page:</span>
-                        <select id="students-per-page" style="width:auto;padding:.45rem .75rem;">
+                    <select id="grade-filter-select" style="width:auto;padding:.45rem .75rem;min-width:120px;">
+                        <option value="">All Grades</option>
+                    </select>
+
+                    <div style="display:flex;align-items:center;gap:.4rem;">
+                        <span class="toolbar-label">Rows:</span>
+                        <select id="students-per-page" style="width:auto;padding:.42rem .65rem;">
                             <option value="10">10</option>
                             <option value="100">100</option>
                             <option value="200">200</option>
@@ -967,34 +753,25 @@
                         </select>
                     </div>
 
-                    <div class="search-wrap">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                        <input id="search-input" type="text" placeholder="Search anything…" onfocus="this.select()">
+                    <div style="margin-left:auto;display:flex;align-items:center;gap:.4rem;">
+                        <button id="print-all-btn" class="hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Export All
+                        </button>
+                        <button id="print-grade-btn" class="hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                            </svg>
+                            Export Grade
+                        </button>
+                        <button id="delete-grade-btn" class="hidden" title="Delete selected grade">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/>
+                            </svg>
+                        </button>
                     </div>
-
-                    <select id="grade-filter-select" style="width:auto;padding:.45rem .75rem;min-width:130px;">
-                        <option value="">All Grades</option>
-                    </select>
-
-                    <button id="print-all-btn" class="hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                        Export All
-                    </button>
-                    <button id="print-grade-btn" class="hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
-                        </svg>
-                        Export Grade
-                    </button>
-                    <button id="delete-grade-btn" class="hidden" title="Delete selected grade">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
                 </div>
 
                 <div id="data-display" class="overflow-x-auto"></div>
@@ -1081,6 +858,33 @@
             </div>
             <div id="pdf-content" style="flex:1;width:100%;position:relative;min-height:400px;height:70vh;">
                 <iframe id="pdf-iframe" style="width:100%;height:100%;border-radius:8px;border:none;" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ EDIT MODAL (centered) ════════════════════════ -->
+    <div id="edit-drawer-overlay">
+        <div id="edit-drawer">
+            <div class="drawer-header">
+                <div>
+                    <div class="drawer-header-title">Edit Student Record</div>
+                    <div class="drawer-header-sub" id="drawer-student-label">—</div>
+                </div>
+                <button class="drawer-close" id="drawer-close-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="drawer-body" id="drawer-body"></div>
+            <div class="drawer-footer">
+                <button class="drawer-save-btn" id="drawer-save-btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    Save Changes
+                </button>
+                <button class="drawer-cancel-btn" id="drawer-cancel-btn">Cancel</button>
             </div>
         </div>
     </div>
@@ -2281,15 +2085,30 @@ const renderStudents = (students, activeFilter = null) => {
             table.id = 'student-table';
             table.className = "min-w-full bg-white rounded-lg shadow-md overflow-hidden";
             let tableHTML =  `<thead style="background-color: rgb(41, 128, 185);"><tr>`;
+            tableHTML += `<th class="py-3 px-4 text-left font-semibold text-white th-actions" style="min-width:90px;">Actions</th>`;
             headers.forEach(header => {
                 tableHTML += `<th class="py-3 px-4 text-left font-semibold text-white w-full border-collapse" style="font-family: Helvetica, Arial, sans-serif;">${header}</th>`;
             });
-            tableHTML += `<th class="py-3 px-4 text-left font-semibold text-white">Actions</th></tr></thead>`;
+            tableHTML += `</tr></thead>`;
             tableHTML += `<tbody class="divide-y divide-gray-200">`;
 
             paginatedStudents.forEach(student => {
                 tableHTML += `
                     <tr id="row-${student.id}" class="cursor-pointer" data-id="${student.id}" onclick="if(!event.target.closest('.action-buttons') && !event.target.classList.contains('student-image')) openLocalPDF('${student['Assessment No']}', '${student['Official Student Name'] || ''}')">
+                `;
+                // ── Actions cell FIRST (sticky left) ──
+                tableHTML += `
+                    <td class="action-cell">
+                        <div class="action-wrap">
+                            <button onclick="editStudent('${student.id}')" class="btn-edit">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/></svg>
+                                Edit
+                            </button>
+                            <button onclick="deleteStudent('${student.id}')" class="btn-del" title="Delete">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/></svg>
+                            </button>
+                        </div>
+                    </td>
                 `;
                 headers.forEach(header => {
                     if (header === 'Image') {
@@ -2304,12 +2123,6 @@ const renderStudents = (students, activeFilter = null) => {
                         tableHTML += `<td class="py-3 px-4 whitespace-nowrap text-sm text-gray-600" data-header="${header}">${value}</td>`;
                     }
                 });
-                tableHTML += `
-                    <td class="py-2 px-4 whitespace-nowrap flex items-center space-x-2 action-buttons">
-                        <button onclick="editStudent('${student.id}')" class="edit-btn p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-300">Edit</button>
-                        <button onclick="deleteStudent('${student.id}')" class="delete-btn p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-300">Delete</button>
-                    </td>
-                `;
                 tableHTML += `</tr>`;
             });
 
@@ -2322,30 +2135,104 @@ const renderStudents = (students, activeFilter = null) => {
         };
 
         
+        // ══ EDIT DRAWER ═══════════════════════════════════════════
+        const editDrawer = document.getElementById('edit-drawer');
+        const editDrawerOverlay = document.getElementById('edit-drawer-overlay');
+        const drawerBody = document.getElementById('drawer-body');
+        const drawerStudentLabel = document.getElementById('drawer-student-label');
+        const drawerSaveBtn = document.getElementById('drawer-save-btn');
+        const drawerCancelBtn = document.getElementById('drawer-cancel-btn');
+        const drawerCloseBtn = document.getElementById('drawer-close-btn');
+        let drawerCurrentId = null;
+
+        const openDrawer = () => {
+            editDrawer.classList.add('open');
+            editDrawerOverlay.classList.add('open');
+            document.body.style.overflow = 'hidden';
+        };
+        const closeDrawer = () => {
+            editDrawer.classList.remove('open');
+            editDrawerOverlay.classList.remove('open');
+            document.body.style.overflow = '';
+            drawerCurrentId = null;
+        };
+        drawerCloseBtn.addEventListener('click', closeDrawer);
+        drawerCancelBtn.addEventListener('click', closeDrawer);
+        editDrawerOverlay.addEventListener('click', (e) => { if (e.target === editDrawerOverlay) closeDrawer(); });
+
+        drawerSaveBtn.addEventListener('click', async () => {
+            if (!drawerCurrentId || drawerSaveBtn.classList.contains('saving')) return;
+            const inputs = drawerBody.querySelectorAll('input[data-field]');
+            const updatedData = {};
+            inputs.forEach(inp => { updatedData[inp.dataset.field] = inp.value.trim(); });
+            if (!updatedData['Assessment No']) {
+                Swal.fire({ icon: 'warning', title: 'Required', text: '"Assessment No" cannot be empty.', confirmButtonColor: '#1e4080' });
+                return;
+            }
+            drawerSaveBtn.classList.add('saving');
+            drawerSaveBtn.textContent = 'Saving…';
+            try {
+                const { ref: fbRef, update: fbUpdate } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+                const studentRef = fbRef(db, `Results/${sanitizedAppId}/students/${drawerCurrentId}`);
+                await fbUpdate(studentRef, updatedData);
+                const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
+                if (idx !== -1) studentsData[idx] = { id: drawerCurrentId, ...updatedData };
+                closeDrawer();
+                showModal('Student record updated successfully!');
+                const selGrade = gradeFilterSelect.value;
+                const sTerm = searchInput.value;
+                if (selGrade) renderStudents(studentsData.filter(s => s.Grade === selGrade), { field: 'Grade', value: selGrade });
+                else if (sTerm) { const lo = sTerm.toLowerCase(); renderStudents(studentsData.filter(s => Object.values(s).some(v => String(v).toLowerCase().includes(lo))), { field: 'Search', value: sTerm }); }
+                else renderStudents(studentsData);
+            } catch (e) {
+                showModal(`Error: ${e.message}`);
+            } finally {
+                drawerSaveBtn.classList.remove('saving');
+                drawerSaveBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg> Save Changes`;
+            }
+        });
+
         window.editStudent = (id) => {
-            const row = document.getElementById(`row-${id}`);
-            if (!row) return;
+            const student = studentsData.find(s => s.id === id);
+            if (!student) return;
+            drawerCurrentId = id;
+            const skipFields = new Set(['id', 'Image', 'deletedAt', 'deletedBy']);
+            const fields = Object.keys(student).filter(k => !skipFields.has(k));
+            const name = student['Official Student Name'] || student['Assessment No'] || id;
+            drawerStudentLabel.textContent = name;
 
-            row.classList.add('no-hover');
+            // Priority fields full-width, others in pairs
+            const PRIORITY_FULL = ['Assessment No', 'Official Student Name'];
+            const fullFields = fields.filter(f => PRIORITY_FULL.includes(f));
+            const gridFields = fields.filter(f => !PRIORITY_FULL.includes(f));
 
-            const currentValues = {};
-            const cells = row.querySelectorAll('td[data-header]');
-            cells.forEach(cell => {
-                const header = cell.getAttribute('data-header');
-                if (header !== 'Image') {
-                    const value = cell.textContent;
-                    currentValues[header] = value;
-                    cell.innerHTML = `<input type="text" class="w-full bg-gray-200 border rounded-md p-1 focus:outline-none focus:ring-2 focus:ring-red-500" value="${value === '-' ? '' : value}" data-field-name="${header}">`;
-                }
+            let html = '';
+            // Full-width priority fields
+            fullFields.forEach(f => {
+                const val = (student[f] !== undefined && student[f] !== null) ? String(student[f]) : '';
+                const req = f === 'Assessment No' ? 'required-field' : '';
+                html += `<div class="drawer-field">
+                    <label>${f}${f === 'Assessment No' ? ' *' : ''}</label>
+                    <input type="text" data-field="${f}" value="${val.replace(/"/g,'&quot;')}" class="${req}">
+                </div>`;
             });
-            row.dataset.currentValues = JSON.stringify(currentValues);
-
-            const actionButtons = row.querySelector('.action-buttons');
-            actionButtons.innerHTML = `
-                <button onclick="saveStudent('${id}')" class="p-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors duration-300">Save</button>
-                <button onclick="cancelEdit('${id}')" class="p-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors duration-300">Cancel</button>
-            `;
-            row.removeAttribute('onclick');
+            // Grid pairs
+            if (gridFields.length) {
+                html += `<div class="drawer-grid">`;
+                gridFields.forEach(f => {
+                    const val = (student[f] !== undefined && student[f] !== null) ? String(student[f]) : '';
+                    html += `<div class="drawer-field">
+                        <label>${f}</label>
+                        <input type="text" data-field="${f}" value="${val.replace(/"/g,'&quot;')}">
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+            drawerBody.innerHTML = html;
+            openDrawer();
+            // Focus first input
+            const first = drawerBody.querySelector('input');
+            if (first) setTimeout(() => first.focus(), 300);
         };
 
         window.saveStudent = async (id) => {
@@ -2419,10 +2306,17 @@ const renderStudents = (students, activeFilter = null) => {
                 }
             });
 
-            const actionButtons = row.querySelector('.action-buttons');
-            actionButtons.innerHTML = `
-                <button onclick="editStudent('${id}')" class="edit-btn p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors duration-300">Edit</button>
-                <button onclick="deleteStudent('${id}')" class="delete-btn p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors duration-300">Delete</button>
+            const actionButtons = row.querySelector('.action-cell');
+            if (actionButtons) actionButtons.innerHTML = `
+                <div class="action-wrap">
+                    <button onclick="editStudent('${id}')" class="btn-edit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/></svg>
+                        Edit
+                    </button>
+                    <button onclick="deleteStudent('${id}')" class="btn-del" title="Delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/></svg>
+                    </button>
+                </div>
             `;
             row.setAttribute('onclick', `if(!event.target.closest('.action-buttons') && !event.target.classList.contains('student-image')) openLocalPDF('${originalValues['Assessment No']}', '${originalValues['Official Student Name'] || ''}')`);
         };
