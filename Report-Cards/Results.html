@@ -907,11 +907,11 @@ if (grid) grid.style.display = 'none';
 
 // Create toggle button
 const toggleBtn = document.createElement('button');
-toggleBtn.textContent = 'Show Content';
+toggleBtn.textContent = 'Upload';
 toggleBtn.style.cssText = `
   padding: 10px 20px;
   margin-left: 20px ! important;
-  background: #3b82f6;
+  background: #0d1f35;
   color: white;
   border: none;
   border-radius: 6px;
@@ -939,11 +939,11 @@ toggleBtn.addEventListener('click', () => {
   if (isVisible) {
     // Hide content
     grid.style.display = 'none';
-    toggleBtn.textContent = 'Show Content';
+    toggleBtn.textContent = 'Upload';
   } else {
     // Show content
     grid.style.display = 'grid';
-    toggleBtn.textContent = 'Hide Content';
+    toggleBtn.textContent = 'Hide Upload Section';
   }
   isVisible = !isVisible;
 });
