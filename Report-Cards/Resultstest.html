@@ -1,0 +1,3289 @@
+<!-- deletes sect class and saves in deteled students -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results — Kanyadet School</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link rel="stylesheet" href="https://kanyadet-school-admin.web.app/css/swalOnly.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+    <style>
+        :root {
+            --navy:    #0f2744;
+            --navy-mid:#1a3a5c;
+            --navy-lt: #22518a;
+            --gold:    #e8a020;
+            --gold-lt: #f5c842;
+            --cream:   #faf8f3;
+            --cream2:  #f2ede3;
+            --slate:   #5a6e84;
+            --text:    #1c2b3a;
+            --border:  #d6dde8;
+            --success: #1d8a5e;
+            --danger:  #c0392b;
+            --radius:  12px;
+            --shadow:  0 4px 24px rgba(15,39,68,.10);
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--cream);
+            color: var(--text);
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+        }
+
+        /* ── TOPBAR ───────────────────────────────────── */
+        .topbar {
+            background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, #1f4b7d 100%);
+            padding: 0 2rem;
+            height: 72px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 20px rgba(15,39,68,.35);
+        }
+
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .topbar-logo {
+            width: 44px;
+            height: 44px;
+            object-fit: contain;
+            filter: brightness(1.1) drop-shadow(0 0 8px rgba(232,160,32,.4));
+        }
+
+        .topbar-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1.1;
+        }
+
+        .topbar-sub {
+            font-size: 0.72rem;
+            color: rgba(255,255,255,.55);
+            font-weight: 400;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #user-id-display {
+            font-size: 0.85rem;
+            color: rgba(255,255,255,.75);
+            font-weight: 500;
+        }
+
+        #user-id-display img {
+            width: 34px !important;
+            height: 34px !important;
+            border-radius: 50% !important;
+            border: 2px solid var(--gold);
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        /* ── BUTTONS ─────────────────────────────────── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .5rem 1.1rem;
+            border-radius: 8px;
+            font-size: .85rem;
+            font-weight: 600;
+            cursor: pointer !important;
+            border: none;
+            transition: all .2s ease;
+            font-family: 'DM Sans', sans-serif;
+        }
+        /* Tailwind preflight resets button cursor — override globally */
+        button { cursor: pointer !important; }
+        .btn-primary   { background: var(--navy-lt); color: #fff; }
+        .btn-primary:hover { background: var(--navy); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(15,39,68,.3); }
+        .btn-danger    { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #a93226; transform: translateY(-1px); }
+        .btn-success   { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #16724e; }
+        .btn-gold      { background: var(--gold); color: var(--navy); }
+        .btn-gold:hover { background: var(--gold-lt); transform: translateY(-1px); }
+        .btn-ghost     { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2); }
+        .btn-ghost:hover { background: rgba(255,255,255,.22); }
+        .btn-outline   { background: transparent; color: var(--navy-lt); border: 1.5px solid var(--navy-lt); }
+        .btn-outline:hover { background: var(--navy-lt); color: #fff; }
+
+        #sign-out-btn { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.2); }
+
+        /* ── LAYOUT ──────────────────────────────────── */
+        .page-wrap {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem 3rem;
+        }
+
+        /* ── SIGN-IN CARD ────────────────────────────── */
+        #sign-in-section {
+            min-height: 60vh;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .signin-card {
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 8px 48px rgba(15,39,68,.14);
+            padding: 3rem 2.5rem;
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+
+        .signin-card h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: .5rem;
+        }
+
+        .signin-card p {
+            color: var(--slate);
+            font-size: .9rem;
+            margin-bottom: 2rem;
+        }
+
+        .signin-card .btn {
+            width: 100%;
+            justify-content: center;
+            padding: .85rem 1.5rem;
+            font-size: .95rem;
+            border-radius: 10px;
+            margin-bottom: .75rem;
+        }
+
+        /* ── SECTION CARDS ───────────────────────────── */
+        .card {
+            background: #fff;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            background: #fdfcfa;
+        }
+
+        .card-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--navy);
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+        }
+
+        .card-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--navy);
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        /* ── UPLOAD DROP ZONE ────────────────────────── */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 10px;
+            padding: 2.5rem 1rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all .2s;
+            background: var(--cream);
+            position: relative;
+            display: block;
+        }
+
+        .drop-zone:hover {
+            border-color: var(--navy-lt);
+            background: #eef3f9;
+        }
+
+        .drop-zone input[type="file"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            z-index: 1;
+        }
+
+        .drop-zone-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto .75rem;
+            color: var(--slate);
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .drop-zone span {
+            display: block;
+            font-size: .9rem;
+            color: var(--navy-lt);
+            font-weight: 600;
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        .drop-zone .hint {
+            color: var(--slate);
+            font-size: .78rem;
+            font-weight: 400;
+            margin-top: .25rem;
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+        }
+
+        /* ── FORM FIELDS ─────────────────────────────── */
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: .3rem;
+        }
+
+        .field label {
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--slate);
+            text-transform: uppercase;
+            letter-spacing: .05em;
+        }
+
+        input[type="text"],
+        input[type="email"],
+        select,
+        .field input,
+        .field select {
+            width: 100%;
+            padding: .6rem .85rem;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-size: .88rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            background: #fff;
+            transition: border-color .2s, box-shadow .2s;
+            outline: none;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        select:focus {
+            border-color: var(--navy-lt);
+            box-shadow: 0 0 0 3px rgba(34,81,138,.12);
+        }
+
+        /* ── TOOLBAR ROW ─────────────────────────────── */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: .75rem;
+            padding: 1rem 1.5rem;
+            background: #fdfcfa;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .toolbar-label {
+            font-size: .78rem;
+            font-weight: 600;
+            color: var(--slate);
+            white-space: nowrap;
+        }
+
+        .search-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+            max-width: 340px;
+        }
+
+        .search-wrap svg {
+            position: absolute;
+            left: .75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--slate);
+            pointer-events: none;
+        }
+
+        #search-input {
+            padding-left: 2.3rem;
+        }
+
+        /* ── TABLE ───────────────────────────────────── */
+        #student-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: .83rem;
+        }
+
+        #student-table thead tr {
+            background: var(--navy);
+        }
+
+        #student-table thead th {
+            padding: .75rem 1rem;
+            color: #fff;
+            font-weight: 600;
+            font-size: .78rem;
+            text-align: left;
+            letter-spacing: .03em;
+            white-space: nowrap;
+            border: none;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        #student-table tbody tr {
+            cursor: pointer;
+            transition: background .15s;
+        }
+
+        #student-table tbody tr:nth-child(even) { background: #f8f9fc; }
+        #student-table tbody tr:hover td:not(.action-buttons) {
+            background: #e8f0fb !important;
+        }
+
+        #student-table tbody td {
+            padding: .65rem 1rem;
+            color: var(--text);
+            border-bottom: 1px solid #eef0f5;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .action-buttons {
+            background: #fff !important;
+            white-space: nowrap;
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            box-shadow: 2px 0 6px rgba(15,39,68,.08);
+        }
+
+        #student-table tbody tr:nth-child(even) .action-buttons {
+            background: #f8f9fc !important;
+        }
+
+        #student-table tbody tr:hover .action-buttons {
+            background: #e8f0fb !important;
+        }
+
+        .th-actions {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            background: var(--navy) !important;
+        }
+
+        .swal2-popup.swal-edit-popup {
+            font-family: 'DM Sans', sans-serif !important;
+            border-radius: 16px !important;
+        }
+        .swal2-popup.swal-edit-popup .swal2-html-container {
+            margin: .5rem 0 0 !important;
+            overflow: visible !important;
+        }
+
+        /* ── EDIT MODAL FORM ─────────────────────────── */
+        .edit-modal-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .65rem;
+        }
+        .edit-modal-field {
+            display: flex;
+            flex-direction: column;
+            gap: .2rem;
+        }
+        .edit-modal-field label {
+            font-size: .72rem;
+            font-weight: 700;
+            color: var(--slate);
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .edit-modal-field input {
+            padding: .45rem .7rem;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            font-size: .85rem;
+            font-family: 'DM Sans', sans-serif;
+            color: var(--text);
+            background: #fff;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+            width: 100%;
+        }
+        .edit-modal-field input:focus {
+            border-color: var(--navy-lt);
+            box-shadow: 0 0 0 3px rgba(34,81,138,.12);
+        }
+
+        .edit-btn {
+            padding: .3rem .7rem;
+            background: var(--navy-lt);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: .78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .edit-btn:hover { background: var(--navy); }
+
+        .delete-btn {
+            padding: .3rem .7rem;
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: .78rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background .2s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .delete-btn:hover { background: #a93226; }
+
+        .student-image {
+            width: 38px;
+            height: 38px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1.5px solid var(--border);
+        }
+
+        /* inline edit inputs */
+        #student-table input[type="text"] {
+            padding: .35rem .55rem;
+            font-size: .82rem;
+            border-radius: 6px;
+            background: #eef3f9;
+        }
+
+        /* ── PAGINATION ──────────────────────────────── */
+        #pagination-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: .35rem;
+            padding: 1rem 1.5rem;
+            background: #fafafa;
+            border-top: 1px solid var(--border);
+        }
+
+        .pagination-btn {
+            padding: .42rem .9rem;
+            border: 1.5px solid var(--border);
+            border-radius: 7px;
+            background: #fff;
+            color: var(--text);
+            font-size: .82rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all .15s;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        .pagination-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+        .pagination-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 700; }
+        .pagination-btn:disabled { background: #f3f4f6; color: #aaa; cursor: not-allowed; border-color: #e5e7eb; }
+
+        /* ── LOADER ──────────────────────────────────── */
+        #loader {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            background: rgba(255,255,255,.6);
+            backdrop-filter: blur(6px);
+        }
+
+        .loader-ring {
+            width: 52px;
+            height: 52px;
+            border-radius: 50%;
+            border: 4px solid var(--border);
+            border-top-color: var(--navy-lt);
+            animation: spin .8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ── MODAL OVERLAYS ──────────────────────────── */
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15,39,68,.55);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 500;
+            padding: 1rem;
+        }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 20px 64px rgba(15,39,68,.25);
+            padding: 2rem;
+            width: 100%;
+            max-width: 440px;
+            animation: modalIn .2s ease;
+        }
+
+        .modal-box-wide {
+            max-width: 960px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(.95) translateY(8px); }
+            to   { opacity: 1; transform: none; }
+        }
+
+        .modal-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            font-weight: 800;
+            color: var(--navy);
+            margin-bottom: 1.25rem;
+            text-align: center;
+        }
+
+        /* ── EXPORT MODAL ────────────────────────────── */
+        .export-fmt-btn {
+            padding: .7rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: .9rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all .2s;
+        }
+
+        #print-excel-btn { background: #1a7a4a; color: #fff; }
+        #print-excel-btn:hover { background: #155f3a; }
+        #print-pdf-btn   { background: var(--danger); color: #fff; }
+        #print-pdf-btn:hover { background: #a93226; }
+        #print-word-btn  { background: var(--navy-lt); color: #fff; }
+        #print-word-btn:hover { background: var(--navy); }
+
+        /* ── GRADE/EXPORT TOGGLE BTNS ────────────────── */
+        .grade-toggle-btn {
+            padding: .35rem .85rem;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            background: #fff;
+            color: var(--text);
+            font-size: .78rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all .15s;
+        }
+
+        .grade-toggle-btn:hover, .grade-toggle-btn.active {
+            background: var(--navy);
+            color: #fff;
+            border-color: var(--navy);
+        }
+
+        .export-btn {
+            padding: .4rem .9rem;
+            border: 1.5px solid var(--border);
+            border-radius: 6px;
+            background: #fff;
+            color: var(--text);
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all .15s;
+        }
+
+        .export-btn:hover { background: var(--navy-lt); color: #fff; border-color: var(--navy-lt); }
+
+        /* ── ANALYTICS DISTRIBUTIONS ─────────────────── */
+        [data-filter-field] {
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all .15s;
+            padding: .5rem .75rem;
+        }
+
+        [data-filter-field]:hover {
+            background: #eef3f9;
+            transform: translateX(3px);
+        }
+
+        /* ── CHART CONTAINER ─────────────────────────── */
+        .chart-container {
+            max-height: 190px;
+            margin-bottom: .75rem;
+        }
+
+        /* ── STATUS MESSAGES ─────────────────────────── */
+        #status-message {
+            margin-top: .75rem;
+            text-align: center;
+            font-size: .85rem;
+            font-weight: 500;
+            padding: .5rem 1rem;
+            border-radius: 8px;
+            background: #f0f4f8;
+        }
+
+        /* ── SECTION HEADINGS ────────────────────────── */
+        .section-label {
+            font-size: .7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--slate);
+            margin-bottom: .5rem;
+        }
+
+        /* ── DIVIDER ─────────────────────────────────── */
+        .divider {
+            height: 1px;
+            background: var(--border);
+            margin: 1rem 0;
+        }
+
+        /* ── PRINT/GRADE BTNS (top) ──────────────────── */
+        #print-all-btn, #print-grade-btn {
+            background: var(--gold);
+            color: var(--navy);
+            border: none;
+            border-radius: 8px;
+            padding: .5rem 1rem;
+            font-size: .82rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: 'DM Sans', sans-serif;
+            transition: all .2s;
+        }
+
+        #print-all-btn:hover, #print-grade-btn:hover {
+            background: var(--gold-lt);
+            transform: translateY(-1px);
+        }
+
+        /* delete grade btn */
+        #delete-grade-btn {
+            background: var(--danger);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: .5rem .75rem;
+            cursor: pointer;
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+        }
+
+        #delete-grade-btn:hover { background: #a93226; }
+
+        /* ── PDF MODAL ───────────────────────────────── */
+        #pdf-modal-backdrop .modal-box-wide {
+            max-height: 90vh;
+        }
+
+        /* ── TOGGLE BTN (sidebar nav) ────────────────── */
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 200;
+            width: 42px;
+            height: 42px;
+            background: var(--navy);
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(15,39,68,.35);
+        }
+
+        .menu-icon { width: 20px; height: 20px; }
+
+        /* Force-hide the external auth widget container — we use our own sign-in UI */
+        #main_container { display: none !important; }
+
+        /* Logged-in state — applied to body, hides sign-in and shows data */
+        body.user-logged-in #sign-in-section { display: none !important; }
+        body.user-logged-out #data-section   { display: none !important; }
+        body.user-logged-out #sign-in-section { display: flex !important; }
+
+        /* hide/show helpers */
+        .hidden { display: none !important; }
+
+        /* ── MODAL WRAPPER (sidebar) ─────────────────── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            background: rgba(0,0,0,.35);
+            display: flex;
+        }
+
+        .modal-content {
+            background: #fff;
+            height: 100%;
+            width: 260px;
+            box-shadow: 4px 0 24px rgba(15,39,68,.2);
+        }
+
+        /* ── WARNING BANNER ──────────────────────────── */
+        .warning-banner {
+            background: #fff8e6;
+            border: 1.5px solid #f0c050;
+            border-radius: 10px;
+            padding: .85rem 1rem;
+            font-size: .85rem;
+            color: #7a5a00;
+            margin-bottom: 1rem;
+        }
+
+        /* ── RESPONSIVE ──────────────────────────────── */
+        @media (max-width: 768px) {
+            .topbar { padding: 0 1rem; }
+            .topbar-title { font-size: 1rem; }
+            .topbar-brand > div { display: none; }
+            .topbar-logo { width: 40px; height: 40px; }
+            .page-wrap { padding: 1rem .75rem 2rem; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .search-wrap { max-width: 100%; }
+        }
+
+        /* utility grid override for upload/manual section */
+        .two-col-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .two-col-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body class="user-logged-out">
+    <div id="main_container" style="display:none;"></div>
+
+    <!-- Loader -->
+    <div id="loader">
+        <div class="loader-ring"></div>
+    </div>
+
+    <!-- Sidebar Toggle Button -->
+    <button id="toggleBtn" class="toggle-btn">
+        <svg xmlns="http://www.w3.org/2000/svg" class="menu-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+    </button>
+
+    <!-- Sidebar Modal Wrapper -->
+    <div id="linkModal" class="modal-overlay hidden">
+        <div id="modalContent" class="modal-content">
+            <!-- JS will inject modal content here -->
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://kanyadet-school-admin.web.app/css/mainToggle.css">
+    <script src="https://kanyadet-school-admin.web.app/js/mainToggle.js"></script>
+
+    <!-- ══════════════════════════════════════
+         TOP BAR
+    ══════════════════════════════════════ -->
+    <header class="topbar">
+        <div class="topbar-brand">
+            <img src="../images/logo.png" alt="School Logo" class="topbar-logo">
+            <div>
+                <div class="topbar-title">Kanyadet Pri &amp; Junior School</div>
+                <div class="topbar-sub">Student Results Portal</div>
+            </div>
+        </div>
+
+        <div class="topbar-right">
+            <span id="user-id-display"></span>
+            <button id="sign-out-btn" class="btn btn-ghost hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+                </svg>
+                Sign Out
+            </button>
+        </div>
+    </header>
+
+    <!-- ══════════════════════════════════════
+         PAGE WRAP
+    ══════════════════════════════════════ -->
+    <div class="page-wrap">
+
+        <!-- ── SIGN-IN SECTION ───────────────────────── -->
+        <div id="sign-in-section" class="hidden">
+            <div class="signin-card">
+                <div style="width:60px;height:60px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                    </svg>
+                </div>
+                <h2>Welcome Back</h2>
+                <p>Sign in to access student results and analytics</p>
+
+                <button id="sign-in-google-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:.85rem;font-size:.95rem;border-radius:10px;margin-bottom:.75rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48">
+                        <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+                        <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+                        <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+                        <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+                    </svg>
+                    Continue with Google
+                </button>
+                <button id="sign-in-fingerprint-btn" class="btn btn-outline" style="width:100%;justify-content:center;padding:.85rem;font-size:.95rem;border-radius:10px;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
+                    </svg>
+                    Sign in with Fingerprint
+                </button>
+            </div>
+        </div>
+
+        <!-- ── MAIN DATA SECTION ─────────────────────── -->
+        <main id="data-section" class="hidden">
+
+            <!-- Upload + Manual Entry -->
+            <div class="two-col-grid">
+
+                <!-- Excel Upload -->
+                <section id="excel-upload-section" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                                </svg>
+                            </div>
+                            Upload Excel File
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <label for="file-input" class="drop-zone">
+                            <svg class="drop-zone-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.4">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            <span>Drag &amp; drop or click to upload</span>
+                            <span class="hint">.xlsx or .xls — Column A1 must be "Assessment No"</span>
+                            <input id="file-input" type="file" accept=".xlsx, .xls">
+                        </label>
+                        <p id="status-message" class="hidden"></p>
+                    </div>
+                </section>
+
+                <!-- Manual Entry -->
+                <section id="manual-entry-section" class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <div class="card-icon">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                </svg>
+                            </div>
+                            Add Student Manually
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <form id="manual-form" style="display:flex;flex-direction:column;gap:.85rem;">
+                            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+                                <input type="text" name="assessmentNo" placeholder="Assessment No (Required)" required>
+                                <input type="text" name="studentName" placeholder="Official Student Name">
+                                <input type="text" name="studentClass" placeholder="Class of (e.g. 2025)">
+                                <input type="text" name="studentGrade" placeholder="Grade">
+                            </div>
+                            <div id="custom-fields-container"></div>
+                            <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;">
+                                <button type="button" id="add-field-btn" class="btn btn-outline" style="font-size:.82rem;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    Add Field
+                                </button>
+                                <button type="submit" class="btn btn-success">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                                    </svg>
+                                    Add Student
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Stats Section -->
+            <section id="stats-section" class="mb-8" hidden></section>
+
+            <!-- Student Records Table -->
+            <div class="card">
+                <!-- Toolbar -->
+                <div class="toolbar">
+                    <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--navy);margin-right:.5rem;">
+                        Student Records
+                    </div>
+
+                    <div style="display:flex;align-items:center;gap:.5rem;margin-left:auto;">
+                        <span class="toolbar-label">Per page:</span>
+                        <select id="students-per-page" style="width:auto;padding:.45rem .75rem;">
+                            <option value="10">10</option>
+                            <option value="100">100</option>
+                            <option value="200">200</option>
+                            <option value="300">300</option>
+                            <option value="400">400</option>
+                            <option value="500">500</option>
+                        </select>
+                    </div>
+
+                    <div class="search-wrap">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input id="search-input" type="text" placeholder="Search anything…" onfocus="this.select()">
+                    </div>
+
+                    <select id="grade-filter-select" style="width:auto;padding:.45rem .75rem;min-width:130px;">
+                        <option value="">All Grades</option>
+                    </select>
+
+                    <button id="print-all-btn" class="hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Export All
+                    </button>
+                    <button id="print-grade-btn" class="hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Export Grade
+                    </button>
+                    <button id="delete-grade-btn" class="hidden" title="Delete selected grade">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+
+                <div id="data-display" class="overflow-x-auto"></div>
+            </div>
+
+        </main>
+    </div><!-- /page-wrap -->
+
+    <!-- ══════════════════════════════════════
+         MODALS
+    ══════════════════════════════════════ -->
+
+    <!-- Simple message modal -->
+    <div id="message-modal" class="modal-backdrop hidden">
+        <div class="modal-box" style="max-width:360px;text-align:center;">
+            <div style="width:48px;height:48px;border-radius:50%;background:#eef3f9;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--navy-lt)" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <p id="modal-text" style="color:var(--text);font-size:.92rem;font-weight:500;margin-bottom:1.25rem;"></p>
+            <button id="close-modal-btn" class="btn btn-primary" style="width:100%;justify-content:center;">OK</button>
+        </div>
+    </div>
+
+    <!-- Export / Print modal -->
+    <div id="print-modal" class="modal-backdrop hidden">
+        <div class="modal-box">
+            <div class="modal-title">Export Options</div>
+
+            <p id="export-context-info" style="text-align:center;font-size:.85rem;color:var(--navy-lt);font-weight:600;margin-bottom:1rem;"></p>
+
+            <!-- Large export warning -->
+            <div id="export-warning" class="warning-banner hidden">
+                <strong>⚠️ Large Export:</strong> You are about to export
+                <span id="export-warning-count"></span> students across all grades.
+                <div style="display:flex;gap:.5rem;margin-top:.75rem;">
+                    <button id="export-warning-select-grade-btn" class="btn btn-gold" style="font-size:.78rem;padding:.4rem .9rem;">Select a Grade First</button>
+                    <button id="export-warning-continue-btn" class="btn btn-outline" style="font-size:.78rem;padding:.4rem .9rem;">Export Anyway</button>
+                </div>
+            </div>
+
+            <!-- Format buttons -->
+            <div id="export-buttons-section">
+                <div id="export-buttons-section">
+                    <p class="section-label">Choose Format</p>
+                    <div style="display:flex;justify-content:center;gap:.75rem;margin-bottom:1.25rem;">
+                        <button id="print-excel-btn" class="export-fmt-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:5px;vertical-align:middle;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Excel
+                        </button>
+                        <button id="print-pdf-btn" class="export-fmt-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:5px;vertical-align:middle;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                            PDF
+                        </button>
+                        <button id="print-word-btn" class="export-fmt-btn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="display:inline;margin-right:5px;vertical-align:middle;"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Word
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button id="close-print-modal-btn" class="btn btn-outline" style="width:100%;justify-content:center;margin-top:.25rem;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- PDF Viewer Modal -->
+    <div id="pdf-modal-backdrop" class="modal-backdrop hidden" style="align-items:center;">
+        <div class="modal-box modal-box-wide" style="padding:1.5rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+                <div style="display:flex;align-items:center;gap:1rem;">
+                    <img id="pdf-modal-student-image" class="modal-student-image" src="" alt="Student Image" style="width:64px;height:64px;object-fit:cover;border-radius:10px;border:2px solid var(--border);">
+                    <div>
+                        <div id="pdf-modal-student-name" style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--navy);"></div>
+                        <div style="font-size:.8rem;color:var(--slate);">Birth Certificate</div>
+                    </div>
+                </div>
+                <button id="close-pdf-modal-btn" style="width:36px;height:36px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="pdf-content" style="flex:1;width:100%;position:relative;min-height:400px;height:70vh;">
+                <iframe id="pdf-iframe" style="width:100%;height:100%;border-radius:8px;border:none;" src=""></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- External scripts -->
+    <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
+    <script src="https://kanyadet-school-admin.web.app/js/6GoogleAuthmain.js"></script>
+    <script src="https://kanyadet-school-admin.web.app/New-Students-Database/js/image-popup.js"></script>
+    <script src="https://kanyadet-school-admin.web.app/Print-Individual-Results/js/Toggle.js"></script>
+
+<script type="module">
+
+
+
+// Get the grid element (redesigned file uses .two-col-grid, not .grid)
+const grid = document.querySelector('.two-col-grid');
+
+// Hide grid by default
+if (grid) grid.style.display = 'none';
+
+// Create toggle button
+const toggleBtn = document.createElement('button');
+toggleBtn.textContent = 'Show Content';
+toggleBtn.style.cssText = `
+  padding: 10px 20px;
+  margin-left: 20px ! important;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  transition: background 0.3s;
+`;
+
+toggleBtn.addEventListener('mouseenter', () => {
+  toggleBtn.style.background = '#2563eb';
+});
+
+toggleBtn.addEventListener('mouseleave', () => {
+  toggleBtn.style.background = '#3b82f6';
+});
+
+// Insert button before grid
+if (grid) grid.parentNode.insertBefore(toggleBtn, grid);
+
+// Toggle function
+let isVisible = false;
+
+toggleBtn.addEventListener('click', () => {
+  if (isVisible) {
+    // Hide content
+    grid.style.display = 'none';
+    toggleBtn.textContent = 'Show Content';
+  } else {
+    // Show content
+    grid.style.display = 'grid';
+    toggleBtn.textContent = 'Hide Content';
+  }
+  isVisible = !isVisible;
+});
+
+
+
+
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getDatabase, ref, set, onValue, remove, update,get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const sanitizedAppId = appId.replace(/\./g, '_');
+        const customFirebaseConfig = {
+            apiKey: "AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE",
+            authDomain: "kanyadet-school-admin.firebaseapp.com",
+            projectId: "kanyadet-school-admin",
+            databaseURL: "https://kanyadet-school-admin-default-rtdb.firebaseio.com",
+            storageBucket: "kanyadet-school-admin.firebasestorage.app",
+            messagingSenderId: "409708360032",
+            appId: "1:409708360032:web:a21d63e8cb5fa1ecabee05",
+            measurementId: "G-Y4C0ZRRL52"
+        };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : customFirebaseConfig;
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth, userId = null;
+        let studentsData = [];
+        let currentPage = 1;
+        let studentsPerPage = 10;
+        let currentFilteredStudents = []; // tracks currently visible students for export
+
+        const deleteGradeBtn = document.getElementById('delete-grade-btn');
+        const studentsPerPageSelect = document.getElementById('students-per-page');
+        const fileInput = document.getElementById('file-input');
+        const manualForm = document.getElementById('manual-form');
+        const addFieldBtn = document.getElementById('add-field-btn');
+        const customFieldsContainer = document.getElementById('custom-fields-container');
+        const dataDisplay = document.getElementById('data-display');
+        const statusMessage = document.getElementById('status-message');
+        const modal = document.getElementById('message-modal');
+        const modalText = document.getElementById('modal-text');
+        const closeModalBtn = document.getElementById('close-modal-btn');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const loader = document.getElementById('loader');
+        const signInSection = document.getElementById('sign-in-section');
+        const dataSection = document.getElementById('data-section');
+        const signInGoogleBtn = document.getElementById('sign-in-google-btn');
+        const signInFingerprintBtn = document.getElementById('sign-in-fingerprint-btn');
+        const signOutBtn = document.getElementById('sign-out-btn');
+        const excelUploadSection = document.getElementById('excel-upload-section');
+        const manualEntrySection = document.getElementById('manual-entry-section');
+        const printAllBtn = document.getElementById('print-all-btn');
+        const gradeFilterSelect = document.getElementById('grade-filter-select');
+        const printGradeBtn = document.getElementById('print-grade-btn');
+        const printModal = document.getElementById('print-modal');
+        const closePrintModalBtn = document.getElementById('close-print-modal-btn');
+        const printExcelBtn = document.getElementById('print-excel-btn');
+        const printWordBtn = document.getElementById('print-word-btn');
+        const printPdfBtn = document.getElementById('print-pdf-btn');
+        const searchInput = document.getElementById('search-input');
+        const statsSection = document.getElementById('stats-section');
+        const pdfModalBackdrop = document.getElementById('pdf-modal-backdrop');
+        const pdfIframe = document.getElementById('pdf-iframe');
+        const closePdfModalBtn = document.getElementById('close-pdf-modal-btn');
+        const pdfModalStudentImage = document.getElementById('pdf-modal-student-image');
+        const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
+
+        const showModal = (message) => {
+            modalText.textContent = message;
+            modal.classList.remove('hidden');
+            // Auto-close after 2 seconds
+    setTimeout(() => {
+        modal.classList.add('hidden');
+    }, 1500);
+        };
+
+        studentsPerPageSelect.addEventListener('change', (e) => {
+            studentsPerPage = parseInt(e.target.value);
+            currentPage = 1;
+            const selectedGrade = gradeFilterSelect.value;
+            const searchTerm = searchInput.value;
+
+            if (selectedGrade) {
+                const filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
+                renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
+            } else if (searchTerm) {
+                const searchTermLower = searchTerm.toLowerCase();
+                const filteredStudents = studentsData.filter(student => 
+                    Object.values(student).some(value => 
+                        String(value).toLowerCase().includes(searchTermLower)
+                    )
+                );
+                renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+            } else {
+                renderStudents(studentsData);
+            }
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            modal.classList.add('hidden');
+        });
+
+        const openExportModal = () => {
+            const exportContextInfo = document.getElementById('export-context-info');
+            const exportWarning = document.getElementById('export-warning');
+            const exportWarningCount = document.getElementById('export-warning-count');
+            const selectedGrade = gradeFilterSelect.value;
+            const searchTerm = searchInput.value.trim();
+            const count = currentFilteredStudents.length;
+
+            // Context label
+            if (searchTerm && selectedGrade) {
+                exportContextInfo.textContent = `Exporting ${count} student(s) — Grade: ${selectedGrade}, Search: "${searchTerm}"`;
+            } else if (searchTerm) {
+                exportContextInfo.textContent = `Exporting ${count} student(s) matching "${searchTerm}"`;
+            } else if (selectedGrade) {
+                exportContextInfo.textContent = `Exporting ${count} student(s) from ${selectedGrade}`;
+            } else {
+                exportContextInfo.textContent = `Exporting all ${count} student(s) across all grades`;
+            }
+
+            // Warning for large unfiltered export — hide format buttons until resolved
+            const exportButtonsSection = document.getElementById('export-buttons-section');
+            if (!selectedGrade && !searchTerm && count > 50) {
+                exportWarning.classList.remove('hidden');
+                exportWarningCount.textContent = `${count}`;
+                exportButtonsSection.classList.add('hidden');
+            } else {
+                exportWarning.classList.add('hidden');
+                exportButtonsSection.classList.remove('hidden');
+            }
+
+            // Check for missing scores — warn if any subject has gaps
+            const subjectCols = getSubjectColumns(currentFilteredStudents);
+            const missingWarnings = [];
+            subjectCols.forEach(subj => {
+                const missing = currentFilteredStudents.filter(s => !s[subj] && s[subj] !== 0).length;
+                if (missing > 0) missingWarnings.push(`${missing} student(s) missing ${subj}`);
+            });
+            if (missingWarnings.length > 0) {
+                exportContextInfo.textContent += ` ⚠️ Missing scores: ${missingWarnings.slice(0,2).join('; ')}${missingWarnings.length > 2 ? '…' : ''}`;
+            }
+
+            printModal.classList.remove('hidden');
+        };
+
+        printAllBtn.addEventListener('click', () => {
+            renderStudents(studentsData);
+            gradeFilterSelect.value = '';
+            searchInput.value = '';
+            openExportModal();
+        });
+
+        printGradeBtn.addEventListener('click', () => {
+            openExportModal();
+        });
+
+        closePrintModalBtn.addEventListener('click', () => {
+            printModal.classList.add('hidden');
+        });
+
+        document.getElementById('export-warning-select-grade-btn').addEventListener('click', () => {
+            printModal.classList.add('hidden');
+            gradeFilterSelect.focus();
+            // Scroll grade filter into view
+            gradeFilterSelect.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+
+        document.getElementById('export-warning-continue-btn').addEventListener('click', () => {
+            document.getElementById('export-warning').classList.add('hidden');
+            document.getElementById('export-buttons-section').classList.remove('hidden');
+        });
+
+        closePdfModalBtn.addEventListener('click', () => {
+            pdfModalBackdrop.classList.add('hidden');
+            pdfModalBackdrop.classList.remove('flex');
+            pdfIframe.src = '';
+            pdfModalStudentImage.src = '';
+            pdfModalStudentName.textContent = '';
+        });
+
+        const signInWithGoogle = async () => {
+            try {
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+            } catch (error) {
+                console.error("Error during Google sign-in:", error);
+                showModal(`Failed to sign in with Google: ${error.message}`);
+            }
+        };
+
+        const signInWithFingerprint = async () => {
+            if (!window.PublicKeyCredential) {
+                showModal("Fingerprint authentication not supported on this device or browser.");
+                return;
+            }
+            try {
+                const challenge = new Uint8Array(32);
+                window.crypto.getRandomValues(challenge);
+
+                let credential;
+                try {
+                    credential = await navigator.credentials.get({
+                        publicKey: {
+                            challenge: challenge,
+                            rpId: window.location.hostname,
+                            userVerification: 'required',
+                        }
+                    });
+                } catch (e) {
+                    credential = await navigator.credentials.create({
+                        publicKey: {
+                            challenge: challenge,
+                            rp: {
+                                name: "Student Data Uploader",
+                                id: window.location.hostname,
+                            },
+                            user: {
+                                id: new Uint8Array(16),
+                                name: "webauthn-user",
+                                displayName: "WebAuthn User",
+                            },
+                            pubKeyCredParams: [{
+                                type: "public-key",
+                                alg: -7
+                            }],
+                            timeout: 60000,
+                            attestation: "direct"
+                        }
+                    });
+                }
+                showModal("Successfully authenticated with fingerprint!");
+                const credentialId = btoa(String.fromCharCode(...new Uint8Array(credential.rawId)));
+                await signInWithCustomToken(auth, credentialId);
+            } catch (error) {
+                console.error("Error during fingerprint sign-in:", error);
+                showModal(`Fingerprint authentication failed: ${error.message}`);
+            }
+        };
+
+        const signOutUser = async () => {
+            try {
+                await signOut(auth);
+                showModal("You have been signed out.");
+            } catch (error) {
+                console.error("Error during sign-out:", error);
+                showModal("Failed to sign out. Check console for details.");
+            }
+        };
+
+        signOutBtn.addEventListener('click', signOutUser);
+
+        const setupFirebase = async () => {
+            try {
+                const app = initializeApp(firebaseConfig);
+                auth = getAuth(app);
+                db = getDatabase(app);
+
+                // Attach AFTER auth is ready
+                if (signInGoogleBtn) signInGoogleBtn.addEventListener('click', signInWithGoogle);
+                if (signInFingerprintBtn) signInFingerprintBtn.addEventListener('click', signInWithFingerprint);
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        console.log("Authenticated with user ID:", userId);
+                        const email = user.email;
+                        let username = email.split("@")[0];
+                        username = username.replace(/[^a-zA-Z]/g, "");
+                        let spacedName = username.replace(/([a-z])([A-Z])/g, '$1 $2');
+                        spacedName = spacedName.replace(/\b\w/g, char => char.toUpperCase());
+                        userIdDisplay.textContent = `${spacedName}`;
+
+                        if (user.photoURL) {
+                            const userImg = document.createElement("img");
+                            userImg.src = user.photoURL;
+                            userImg.alt = "User profile picture";
+                            userImg.style.width = "50px";
+                            userImg.style.height = "50px";
+                            userImg.style.borderRadius = "50%";
+                            userIdDisplay.insertAdjacentElement("beforebegin", userImg);
+                        }
+
+                        document.body.classList.add('user-logged-in');
+                        document.body.classList.remove('user-logged-out');
+                        signInSection.classList.add('hidden');
+                        document.getElementById('main_container').style.display = 'none';
+                        signOutBtn.classList.remove('hidden');
+                        dataSection.classList.remove('hidden');
+
+                        const studentsRef = ref(db, `Results/${sanitizedAppId}/students`);
+                        loader.classList.remove('hidden');
+                        onValue(studentsRef, (snapshot) => {
+                            const students = [];
+                            const data = snapshot.val();
+                            if (data) {
+                                for (let key in data) {
+                                    students.push({ id: key, ...data[key] });
+                                }
+                            }
+                            students.sort((a, b) => {
+                                const assessmentNoA = parseFloat(a['Assessment No']) || Infinity;
+                                const assessmentNoB = parseFloat(b['Assessment No']) || Infinity;
+                                return assessmentNoA - assessmentNoB;
+                            });
+                            studentsData = students;
+                            currentPage = 1;
+                            populateFilters(students);
+                            renderStudents(students);
+                            loader.classList.add('hidden');
+                        }, (error) => {
+                            console.error("Error fetching students:", error);
+                            showModal(`Error fetching data: ${error.message}`);
+                            loader.classList.add('hidden');
+                        });
+                    } else {
+                        userId = null;
+                        userIdDisplay.textContent = `User ID: Not Signed In`;
+                        document.body.classList.add('user-logged-out');
+                        document.body.classList.remove('user-logged-in');
+                        signInSection.classList.remove('hidden');
+                        document.getElementById('main_container').style.display = 'none';
+                        signOutBtn.classList.add('hidden');
+                        dataSection.classList.add('hidden');
+                        loader.classList.add('hidden');
+                        dataDisplay.innerHTML = '';
+                    }
+                });
+            } catch (e) {
+                console.error("Error setting up Firebase: ", e);
+                showModal(`Failed to initialize application. Check console for details.`);
+                loader.classList.add('hidden');
+            }
+        };
+
+        const populateFilters = (students) => {
+            const grades = new Set();
+            students.forEach(student => {
+                if (student.Grade) {
+                    grades.add(student.Grade);
+                }
+            });
+            
+            gradeFilterSelect.innerHTML = '<option value="">All Grades</option>';
+            const sortedGrades = Array.from(grades).sort();
+            sortedGrades.forEach(gradeName => {
+                const option = document.createElement('option');
+                option.value = gradeName;
+                option.textContent = gradeName;
+                gradeFilterSelect.appendChild(option);
+            });
+            
+            if (students.length > 0) {
+                printAllBtn.classList.remove('hidden');
+            } else {
+                printAllBtn.classList.add('hidden');
+            }
+        };
+
+      // Update the gradeFilterSelect event listener to show the delete button
+gradeFilterSelect.addEventListener('change', () => {
+    const selectedGrade = gradeFilterSelect.value;
+    searchInput.value = '';
+    currentPage = 1;
+    if (selectedGrade) {
+        const filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
+        renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
+        printGradeBtn.classList.remove('hidden');
+        deleteGradeBtn.classList.remove('hidden'); // Show the delete button
+    } else {
+        renderStudents(studentsData);
+        printGradeBtn.classList.add('hidden');
+        deleteGradeBtn.classList.add('hidden'); // Hide the delete button
+    }
+});
+
+        const readFileAsArrayBuffer = (file) => {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (e) => reject(e);
+                reader.readAsArrayBuffer(file);
+            });
+        };
+
+        fileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            statusMessage.textContent = 'Processing file...';
+            statusMessage.classList.remove('hidden');
+            loader.classList.remove('hidden');
+
+            try {
+                const data = await readFileAsArrayBuffer(file);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+                if (jsonRows.length < 2) {
+                    throw new Error("File must contain a header row and at least one data row.");
+                }
+
+                const headers = jsonRows[0].map(h => String(h).trim());
+                const studentData = jsonRows.slice(1);
+
+                if (!headers.includes("Term")) {
+                    throw new Error("Excel file must have a column titled 'Term'.");
+                }
+                const termIndex = headers.indexOf("Term");
+
+                const studentsRef = ref(db, `Results/${sanitizedAppId}/students`);
+                for (const row of studentData) {
+                    const term = row[termIndex];
+                    if (!term) {
+                        console.warn("Skipping row with missing 'Term'.");
+                        continue;
+                    }
+                    const studentDocKey = String(term).trim();
+                    const studentObj = {};
+                    headers.forEach((header, index) => {
+                        studentObj[header] = row[index];
+                    });
+                    await set(ref(db, `Results/${sanitizedAppId}/students/${studentDocKey}`), studentObj);
+                }
+
+                statusMessage.textContent = 'Data uploaded successfully!';
+                statusMessage.classList.remove('text-red-500');
+                statusMessage.classList.add('text-green-500');
+            } catch (e) {
+                console.error("Error processing file:", e);
+                statusMessage.textContent = `Error: ${e.message}`;
+                statusMessage.classList.remove('text-green-500');
+                statusMessage.classList.add('text-red-500');
+            } finally {
+                fileInput.value = '';
+                loader.classList.add('hidden');
+            }
+        });
+
+        addFieldBtn.addEventListener('click', () => {
+            const fieldGroup = document.createElement('div');
+            fieldGroup.className = "flex items-center space-x-2 mt-2";
+            fieldGroup.innerHTML = `
+                <input type="text" placeholder="Custom Field Title" class="field-title flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <input type="text" placeholder="Value" class="field-value flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                <button type="button" class="remove-field-btn p-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-all duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" />
+                    </svg>
+                </button>
+            `;
+            customFieldsContainer.appendChild(fieldGroup);
+
+            fieldGroup.querySelector('.remove-field-btn').addEventListener('click', () => {
+                fieldGroup.remove();
+            });
+        });
+
+        manualForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(manualForm);
+            const studentData = {};
+            let hasAssessmentNo = false;
+
+            for (let [key, value] of formData.entries()) {
+                if (key === 'assessmentNo') {
+                    studentData['Assessment No'] = value;
+                    hasAssessmentNo = true;
+                } else if (key === 'studentName') {
+                    studentData['Official Student Name'] = value;
+                } else if (key === 'studentClass') {
+                    studentData['Class'] = value;
+                } else if (key === 'studentGrade') {
+                    studentData['Grade'] = value;
+                }
+            }
+
+            const customFields = customFieldsContainer.querySelectorAll('.flex');
+            customFields.forEach(group => {
+                const titleInput = group.querySelector('.field-title');
+                const valueInput = group.querySelector('.field-value');
+                if (titleInput && titleInput.value) {
+                    studentData[titleInput.value.trim()] = valueInput ? valueInput.value.trim() : '';
+                }
+            });
+
+            if (!hasAssessmentNo || !studentData['Assessment No']) {
+                showModal('The "Assessment No" field is required.');
+                return;
+            }
+
+            try {
+                const studentDocKey = String(studentData['Assessment No']);
+                const studentsRef = ref(db, `Results/${sanitizedAppId}/students/${studentDocKey}`);
+                await set(studentsRef, studentData);
+                showModal('Student data added successfully!');
+                manualForm.reset();
+                customFieldsContainer.innerHTML = '';
+            } catch (e) {
+                console.error("Error adding student:", e);
+                showModal(`Error adding student: ${e.message}`);
+            }
+        });
+
+        
+        const exportGradeGenderData = (gradeGenderData) => {
+            const headers = ['Grade', 'Male', 'Female', 'Other'];
+            const csvRows = [headers.join(',')];
+            Object.entries(gradeGenderData).forEach(([grade, genders]) => {
+                const row = [
+                    grade,
+                    genders.Male || 0,
+                    genders.Female || 0,
+                    genders.Other || 0
+                ];
+                csvRows.push(row.join(','));
+            });
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'grade_gender_data.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const exportFilterGenderData = (filterGenderData, filterField, filterValue) => {
+            const headers = ['Gender', 'Count'];
+            const csvRows = [headers.join(',')];
+            Object.entries(filterGenderData).forEach(([gender, count]) => {
+                csvRows.push([gender, count].join(','));
+            });
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `filter_${filterField}_${filterValue}_gender_data.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+
+        const updateAnalyticsDashboard = (students, activeFilter = null) => {
+            if (!studentsData) {
+                statsSection.innerHTML = '';
+                return;
+            }
+
+            const totalStudentsInDB = studentsData.length; // Dynamic count
+            if (totalStudentsInDB === 0) {
+                statsSection.innerHTML = '<p class="text-center text-gray-500">Upload data to see analytics.</p>';
+                return;
+            }
+
+            const createDistribution = (field) => {
+                const distribution = {};
+                let count = 0;
+                studentsData.forEach(student => {
+                    const value = student[field] || 'N/A';
+                    distribution[value] = (distribution[value] || 0) + 1;
+                    if (student[field]) count++;
+                });
+                return count > 0 ? distribution : null;
+            };
+
+            const gradeDistribution = createDistribution('Grade');
+            const classDistribution = createDistribution('Class');
+            const genderDistribution = createDistribution('Gender');
+
+            // Calculate grade-wise gender counts
+            const gradeGenderData = {};
+            studentsData.forEach(student => {
+                const grade = student.Grade || 'N/A';
+                const gender = student.Gender ? student.Gender.toLowerCase() : 'other';
+                if (!gradeGenderData[grade]) {
+                    gradeGenderData[grade] = { Male: 0, Female: 0, totalSum: 0 };
+                }
+                gradeGenderData[grade][gender.charAt(0).toUpperCase() + gender.slice(1)]++;
+            });
+
+            // Calculate gender counts for complete records
+            let completeRecords = 0;
+            const completeGenderData = { Male: 0, Female: 0, Other: 0 };
+            studentsData.forEach(s => {
+                if (s['Official Student Name'] && s['Grade']) {
+                    completeRecords++;
+                    const gender = s.Gender ? s.Gender.toLowerCase() : 'other';
+                    completeGenderData[gender.charAt(0).toUpperCase() + gender.slice(1)]++;
+                }
+            });
+            const completenessPercentage = Math.round((completeRecords / totalStudentsInDB) * 100);
+
+            // Calculate gender counts for filtered students
+            const filterGenderData = { Male: 0, Female: 0, Other: 0 };
+            if (activeFilter) {
+                students.forEach(student => {
+                    const gender = student.Gender ? student.Gender.toLowerCase() : 'other';
+                    filterGenderData[gender.charAt(0).toUpperCase() + gender.slice(1)]++;
+                });
+            }
+
+            const generateDistributionHTML = (title, distribution, fieldName, colorClass) => {
+                if (!distribution) return '';
+                const totalItems = Object.values(distribution).reduce((sum, count) => sum + count, 0);
+                return `
+                    <div class="bg-white p-4 rounded-lg shadow-md">
+                        <h3 class="font-semibold mb-3 text-gray-700">${title}</h3>
+                        <div class="space-y-3">
+                            ${Object.entries(distribution).sort((a, b) => b[1] - a[1]).map(([value, count]) => {
+                                const percentage = totalItems > 0 ? (count / totalItems) * 100 : 0;
+                                return `
+                                <div class="p-2 rounded-md transition-all" data-filter-field="${fieldName}" data-filter-value="${value}">
+                                    <div class="flex justify-between items-center mb-1 text-sm">
+                                        <span class="font-medium text-gray-600">${value}</span>
+                                        <span class="font-bold text-gray-800">${count}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                        <div class="${colorClass} h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                                    </div>
+                                </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>`;
+            };
+
+            // Total Students Chart and Summary
+            const totalStudentsChartData = {
+                labels: Object.keys(gradeGenderData),
+                datasets: [
+                    {
+                        label: 'Male',
+                        data: Object.values(gradeGenderData).map(g => g.Male || 0),
+                        backgroundColor: '#3b82f6'
+                    },
+                    {
+                        label: 'Female',
+                        data: Object.values(gradeGenderData).map(g => g.Female || 0),
+                        backgroundColor: '#ec4899'
+                    },
+                    {
+                        label: 'Other',
+                        data: Object.values(gradeGenderData).map(g => g.Other || 0),
+                        backgroundColor: '#6b7280'
+                    }
+                ]
+            };
+
+            let totalStudentsChartHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-md" hidden>
+                    <h3 class="font-semibold text-blue-800 mb-2">Total Students: ${totalStudentsInDB}</h3>
+                    <div class="chart-container">
+                        <canvas id="total-students-chart"></canvas>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        ${Object.entries(gradeGenderData).map(([grade, genders]) => `
+                            <p>${grade}: Male: ${genders.Male || 0}, Female: ${genders.Female || 0}, Other: ${genders.Other || 0}</p>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Unique Grades Chart and Summary
+            let selectedGrade = null;
+            const getUniqueGradesChartData = (grade = null) => {
+                if (grade) {
+                    return {
+                        labels: ['Male', 'Female', 'Other'],
+                        datasets: [{
+                            label: `Gender in ${grade}`,
+                            data: [
+                                gradeGenderData[grade]?.Male || 0,
+                                gradeGenderData[grade]?.Female || 0,
+                                gradeGenderData[grade]?.Other || 0
+                            ],
+                            backgroundColor: ['#3b82f6', '#ec4899', '#6b7280']
+                        }]
+                    };
+                }
+                return {
+                    labels: Object.keys(gradeDistribution || {}),
+                    datasets: [
+                        {
+                            label: 'Male',
+                            data: Object.values(gradeGenderData).map(g => g.Male || 0),
+                            backgroundColor: '#3b82f6'
+                        },
+                        {
+                            label: 'Female',
+                            data: Object.values(gradeGenderData).map(g => g.Female || 0),
+                            backgroundColor: '#ec4899'
+                        },
+                        {
+                            label: 'Other',
+                            data: Object.values(gradeGenderData).map(g => g.Other || 0),
+                            backgroundColor: '#6b7280'
+                        }
+                    ]
+                };
+            };
+
+            const uniqueGradesSummary = Object.entries(gradeGenderData).map(([grade, genders]) => {
+                const total = (genders.Male || 0) + (genders.Female || 0) + (genders.Other || 0);
+                const maxGender = Object.entries(genders).reduce((max, [gender, count]) => count > (max[1] || 0) ? [gender, count] : max, ['', 0])[0];
+                return `<p>${grade}: ${total} students, Highest: ${maxGender || 'None'} (${genders[maxGender] || 0})</p>`;
+            }).join('');
+
+            let uniqueGradesChartHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-md" hidden>
+                    <h3 class="font-semibold text-green-800 mb-2">Unique Grades: ${gradeDistribution ? Object.keys(gradeDistribution).length : 0}</h3>
+                    <div class="flex flex-wrap gap-2 mb-2">
+                        <button class="grade-toggle-btn active" data-grade="all">All Grades</button>
+                        ${Object.keys(gradeDistribution || {}).map(grade => `
+                            <button class="grade-toggle-btn" data-grade="${grade}">${grade}</button>
+                        `).join('')}
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="unique-grades-chart"></canvas>
+                    </div>
+                    <div class="text-sm text-gray-600 mb-2">
+                        ${uniqueGradesSummary}
+                    </div>
+                    <button id="export-grade-data-btn" class="export-btn">Download Grade Data</button>
+                </div>
+            `;
+
+            // Data Completeness Chart and Summary
+            const dataCompletenessChartData = {
+                labels: ['Male', 'Female', 'Other'],
+                datasets: [{
+                    label: 'Complete Records by Gender',
+                    data: [
+                        completeGenderData.Male || 0,
+                        completeGenderData.Female || 0,
+                        completeGenderData.Other || 0
+                    ],
+                    backgroundColor: ['#3b82f6', '#ec4899', '#6b7280']
+                }]
+            };
+
+            let dataCompletenessChartHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-md" hidden>
+                    <h3 class="font-semibold text-orange-800 mb-2">Data Completeness: ${completenessPercentage}%</h3>
+                    <div class="chart-container">
+                        <canvas id="data-completeness-chart"></canvas>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <p>Complete Records - Male: ${completeGenderData.Male || 0}, Female: ${completeGenderData.Female || 0}, Other: ${completeGenderData.Other || 0}</p>
+                    </div>
+                </div>
+            `;
+
+            // Active Filter Chart and Summary
+            let activeFilterChartHTML = `
+                <div class="bg-white p-4 rounded-lg shadow-md" hidden>
+                    <h3 class="font-semibold text-red-800 mb-2">${activeFilter ? `${activeFilter.field}: ${activeFilter.value}` : 'Active Filter: None'}</h3>
+                    ${activeFilter ? `
+                        <div class="chart-container">
+                            <canvas id="active-filter-chart"></canvas>
+                        </div>
+                        <div class="text-sm text-gray-600 mb-2">
+                            <p>Filter ${activeFilter.field}: ${activeFilter.value} - Male: ${filterGenderData.Male || 0}, Female: ${filterGenderData.Female || 0}, Other: ${filterGenderData.Other || 0}</p>
+                        </div>
+                        <button id="export-filter-data-btn" class="export-btn">Download Filter Data</button>
+                    ` : `
+                        <p class="text-sm text-gray-600">No active filter applied.</p>
+                    `}
+                    ${activeFilter ? `
+                        <div class="flex justify-between items-center mt-2">
+                            <p class="text-sm text-red-700">Showing <strong>${students.length}</strong> matching students</p>
+                            <button id="clear-filter-btn" title="Clear Filter" class="text-sm bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+
+            statsSection.innerHTML = `
+                <div class="flex flex-wrap gap-4 mb-6" hidden>
+                    ${totalStudentsChartHTML}
+                    ${uniqueGradesChartHTML}
+                    ${dataCompletenessChartHTML}
+                    ${activeFilterChartHTML}
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6" hiddden> 
+                    ${generateDistributionHTML('Grade Distribution', gradeDistribution, 'Grade', 'bg-blue-500')}
+                    ${generateDistributionHTML('Graduation Years', classDistribution, 'Class', 'bg-green-500')}
+                    ${generateDistributionHTML('Gender Distribution', genderDistribution, 'Gender', 'bg-purple-500')}
+                </div>
+            `;
+
+            // Render Total Students Chart
+            const totalStudentsChartCanvas = document.getElementById('total-students-chart');
+            if (totalStudentsChartCanvas) {
+                new Chart(totalStudentsChartCanvas, {
+                    type: 'bar',
+                    data: totalStudentsChartData,
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            x: { stacked: true },
+                            y: { stacked: true, beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            // Render Unique Grades Chart
+            const uniqueGradesChartCanvas = document.getElementById('unique-grades-chart');
+            let uniqueGradesChart;
+            if (uniqueGradesChartCanvas) {
+                uniqueGradesChart = new Chart(uniqueGradesChartCanvas, {
+                    type: 'bar',
+                    data: getUniqueGradesChartData(),
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            x: { stacked: true },
+                            y: { stacked: true, beginAtZero: true }
+                        }
+                    }
+                });
+            }
+
+            // Render Data Completeness Chart
+            const dataCompletenessChartCanvas = document.getElementById('data-completeness-chart');
+            if (dataCompletenessChartCanvas) {
+                new Chart(dataCompletenessChartCanvas, {
+                    type: 'bar',
+                    data: dataCompletenessChartData,
+                    options: {
+                        responsive: true,
+                        plugins: { legend: { position: 'top' } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }
+// Render Active Filter Chart
+            if (activeFilter) {
+                const activeFilterChartCanvas = document.getElementById('active-filter-chart');
+                if (activeFilterChartCanvas) {
+                    const totalSum = (filterGenderData.Male || 0) + (filterGenderData.Female || 0) + (filterGenderData.Other || 0);
+                    new Chart(activeFilterChartCanvas, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Male', 'Female', 'Total'],
+                            datasets: [{
+                                label: `  ${activeFilter.value}`,
+                                data: [
+                                    filterGenderData.Male || 0,
+                                    filterGenderData.Female || 0,
+                                    totalSum
+                                ],
+                                backgroundColor: ['#3b82f6', '#ec4899', '#6b7280']
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: { legend: { position: 'top' } },
+                            scales: { y: { beginAtZero: true } }
+                        }
+                    });
+                }
+            }
+            // Grade Toggle Buttons
+            document.querySelectorAll('.grade-toggle-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.grade-toggle-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    selectedGrade = btn.dataset.grade === 'all' ? null : btn.dataset.grade;
+                    uniqueGradesChart.data = getUniqueGradesChartData(selectedGrade);
+                    uniqueGradesChart.update();
+                });
+            });
+
+            // Export Grade Data Button
+            const exportGradeBtn = document.getElementById('export-grade-data-btn');
+            if (exportGradeBtn) {
+                exportGradeBtn.addEventListener('click', () => exportGradeGenderData(gradeGenderData));
+            }
+
+            // Export Filter Data Button
+            const exportFilterBtn = document.getElementById('export-filter-data-btn');
+            if (exportFilterBtn) {
+                exportFilterBtn.addEventListener('click', () => exportFilterGenderData(filterGenderData, activeFilter.field, activeFilter.value));
+            }
+        };
+
+        statsSection.addEventListener('click', (event) => {
+            const filterElement = event.target.closest('[data-filter-field]');
+            const clearButton = event.target.closest('#clear-filter-btn');
+
+            if (filterElement) {
+                const field = filterElement.dataset.filterField;
+                const value = filterElement.dataset.filterValue;
+
+                const filteredStudents = studentsData.filter(student => (student[field] || 'N/A') === value);
+                currentPage = 1;
+
+                let maleCount = 0, femaleCount = 0;
+                if (field === 'Grade') {
+                    filteredStudents.forEach(student => {
+                        if (student.Gender && student.Gender.toLowerCase() === 'male') maleCount++;
+                        if (student.Gender && student.Gender.toLowerCase() === 'female') femaleCount++;
+                    });
+                }
+
+                renderStudents(filteredStudents, { 
+                    field, 
+                    value, 
+                    total: filteredStudents.length,
+                    maleCount,
+                    femaleCount
+                });
+
+                if (field === 'Grade') {
+                    gradeFilterSelect.value = value;
+                } else {
+                    gradeFilterSelect.value = '';
+                }
+                searchInput.value = '';
+            }
+
+            if (clearButton) {
+                currentPage = 1;
+                renderStudents(studentsData);
+                gradeFilterSelect.value = '';
+                searchInput.value = '';
+            }
+        });
+
+        const searchStudents = (searchTerm) => {
+            if (!searchTerm) {
+                currentPage = 1;
+                renderStudents(studentsData);
+                return;
+            }
+
+            const searchTermLower = searchTerm.toLowerCase();
+            const filteredStudents = studentsData.filter(student => {
+                return Object.entries(student).some(([key, value]) => {
+                    if (key === 'id') return false;
+                    return String(value).toLowerCase().includes(searchTermLower);
+                });
+            });
+
+            currentPage = 1;
+            renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+        };
+
+      searchInput.addEventListener('input', (e) => {
+    const searchTerm = e.target.value;
+    const selectedGrade = gradeFilterSelect.value;
+    
+    if (!searchTerm) {
+        // If search is empty, show filtered by grade or all students
+        if (selectedGrade) {
+            const filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
+            currentPage = 1;
+            renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
+        } else {
+            currentPage = 1;
+            renderStudents(studentsData);
+        }
+        return;
+    }
+
+    const searchTermLower = searchTerm.toLowerCase();
+    
+    // Filter by grade first (if selected), then by search term
+    let filteredStudents = selectedGrade 
+        ? studentsData.filter(student => student.Grade === selectedGrade)
+        : studentsData;
+    
+    filteredStudents = filteredStudents.filter(student => {
+        return Object.entries(student).some(([key, value]) => {
+            if (key === 'id') return false;
+            return String(value).toLowerCase().includes(searchTermLower);
+        });
+    });
+
+    currentPage = 1;
+    
+    // Set appropriate filter context
+    if (selectedGrade) {
+        renderStudents(filteredStudents, { field: 'Grade + Search', value: `${selectedGrade} - "${searchTerm}"` });
+    } else {
+        renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+    }
+});
+
+        
+
+        const renderPagination = (totalStudents, students, activeFilter = null) => {
+            const totalPages = Math.ceil(totalStudents / studentsPerPage);
+            const paginationContainer = document.createElement('div');
+            paginationContainer.id = 'pagination-controls';
+            paginationContainer.className = 'flex justify-center items-center mt-4 space-x-2';
+
+            const startIndex = (currentPage - 1) * studentsPerPage + 1;
+            const endIndex = Math.min(currentPage * studentsPerPage, totalStudents);
+            const showingText = document.createElement('p');
+            showingText.className = 'text-sm text-gray-600 mr-4';
+            showingText.textContent = totalStudents > 0 ? `Showing ${startIndex}-${endIndex} of ${totalStudents} students` : 'No students to display';
+            paginationContainer.appendChild(showingText);
+
+            const prevButton = document.createElement('button');
+            prevButton.textContent = 'Previous';
+            prevButton.className = 'pagination-btn';
+            prevButton.disabled = currentPage === 1;
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
+                        ? studentsData.filter(student => student.Grade === activeFilter.value)
+                        : activeFilter && activeFilter.field === 'Search'
+                        ? studentsData.filter(student => 
+                            Object.values(student).some(value => 
+                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
+                            )
+                        )
+                        : students;
+                    renderStudents(filteredStudents, activeFilter);
+                }
+            });
+            paginationContainer.appendChild(prevButton);
+
+            const maxVisiblePages = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            if (endPage - startPage + 1 < maxVisiblePages) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                const pageButton = document.createElement('button');
+                pageButton.textContent = i;
+                pageButton.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
+                pageButton.addEventListener('click', () => {
+                    currentPage = i;
+                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
+                        ? studentsData.filter(student => student.Grade === activeFilter.value)
+                        : activeFilter && activeFilter.field === 'Search'
+                        ? studentsData.filter(student => 
+                            Object.values(student).some(value => 
+                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
+                            )
+                        )
+                        : students;
+                    renderStudents(filteredStudents, activeFilter);
+                });
+                paginationContainer.appendChild(pageButton);
+            }
+
+            const nextButton = document.createElement('button');
+            nextButton.textContent = 'Next';
+            nextButton.className = 'pagination-btn';
+            nextButton.disabled = currentPage === totalPages;
+            nextButton.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
+                        ? studentsData.filter(student => student.Grade === activeFilter.value)
+                        : activeFilter && activeFilter.field === 'Search'
+                        ? studentsData.filter(student => 
+                            Object.values(student).some(value => 
+                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
+                            )
+                        )
+                        : students;
+                    renderStudents(filteredStudents, activeFilter);
+                }
+            });
+            paginationContainer.appendChild(nextButton);
+
+            return paginationContainer;
+        };
+
+        const getOrderedHeaders = (students) => {
+            const allKeys = new Set();
+            students.forEach(student => {
+                Object.keys(student).forEach(key => allKeys.add(key));
+            });
+            // Remove internal keys never shown in the table
+            ['id', 'deletedAt', 'deletedBy'].forEach(k => allKeys.delete(k));
+
+            // Priority columns shown first (only if present in data)
+            const PRIORITY = [
+                'Grade', 'Term', 'Assessment No', 'Official Student Name', 'UPI', 'Gender',
+                'Mathematics', 'English', 'Kiswahili', 'Integrated Science',
+                'Creative Arts & Social studies', 'Creative Arts & Sports',
+                'Creative Arts', 'Social studies', 'Agriculture', 'CRE',
+                'Pre-Technical Studies', 'Integrated Learning Area',
+                'Total Marks', 'Perc Avrg', 'Level', 'Class',
+                'Closing Date', 'Opening Date'
+            ];
+            const priorityPresent = PRIORITY.filter(k => allKeys.has(k));
+            const otherHeaders = Array.from(allKeys)
+                .filter(k => !PRIORITY.includes(k))
+                .sort();
+            return ['Image', ...priorityPresent, ...otherHeaders];
+        };
+
+const renderStudents = (students, activeFilter = null) => {
+            currentFilteredStudents = students; // always track what's visible
+            dataDisplay.innerHTML = '';
+            updateAnalyticsDashboard(students, activeFilter);
+
+            if (students.length === 0 && studentsData.length > 0) {
+                dataDisplay.innerHTML = '<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-500 italic">No student data found for this selection.</p></div>';
+                const paginationContainer = renderPagination(students.length, students, activeFilter);
+                dataDisplay.appendChild(paginationContainer);
+                return;
+            } else if (studentsData.length === 0) {
+                dataDisplay.innerHTML = '<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-500 italic">No student data has been uploaded yet.</p></div>';
+                return;
+            }
+
+            const startIndex = (currentPage - 1) * studentsPerPage;
+            const endIndex = startIndex + studentsPerPage;
+            const paginatedStudents = students.slice(startIndex, endIndex);
+
+            const headers = getOrderedHeaders(students);
+
+            const table = document.createElement('table');
+            table.id = 'student-table';
+            table.className = "min-w-full bg-white rounded-lg shadow-md overflow-hidden";
+            let tableHTML =  `<thead style="background-color: rgb(41, 128, 185);"><tr>`;
+            tableHTML += `<th class="py-3 px-4 text-left font-semibold text-white th-actions">Actions</th>`;
+            headers.forEach(header => {
+                tableHTML += `<th class="py-3 px-4 text-left font-semibold text-white w-full border-collapse" style="font-family: Helvetica, Arial, sans-serif;">${header}</th>`;
+            });
+            tableHTML += `</tr></thead>`;
+            tableHTML += `<tbody class="divide-y divide-gray-200">`;
+
+            paginatedStudents.forEach(student => {
+                tableHTML += `
+                    <tr id="row-${student.id}" class="cursor-pointer" data-id="${student.id}" onclick="if(!event.target.closest('.action-buttons') && !event.target.classList.contains('student-image')) openLocalPDF('${student['Assessment No']}', '${student['Official Student Name'] || ''}')">
+                `;
+                // ── Actions cell FIRST (sticky left) ──
+                tableHTML += `
+                    <td class="py-2 px-3 whitespace-nowrap action-buttons">
+                        <div style="display:flex;gap:.35rem;align-items:center;">
+                            <button onclick="editStudent('${student.id}')" class="edit-btn" title="Edit student" style="padding:.3rem .65rem;display:inline-flex;align-items:center;gap:.3rem;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/></svg>
+                                Edit
+                            </button>
+                            <button onclick="deleteStudent('${student.id}')" class="delete-btn" title="Delete student" style="padding:.3rem .55rem;display:inline-flex;align-items:center;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/></svg>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                headers.forEach(header => {
+                    if (header === 'Image') {
+                        const imageName = student['Official Student Name'] ? encodeURIComponent(student['Official Student Name']) : '';
+                        const imagePath = imageName ? `./student_images/${imageName}.jpg` : './student_images/default.jpg';
+                        tableHTML += `
+                            <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-600" data-header="Image">
+                                <img src="${imagePath}" alt="${student['Official Student Name'] || 'Student Image'}" class="student-image" onerror="this.src='./student_images/default.jpg';this.alt='Default Image'">
+                            </td>`;
+                    } else {
+                        const value = student[header] !== undefined ? student[header] : '-';
+                        tableHTML += `<td class="py-3 px-4 whitespace-nowrap text-sm text-gray-600" data-header="${header}">${value}</td>`;
+                    }
+                });
+                tableHTML += `</tr>`;
+            });
+
+            tableHTML += `</tbody>`;
+            table.innerHTML = tableHTML;
+            dataDisplay.appendChild(table);
+
+            const paginationContainer = renderPagination(students.length, students, activeFilter);
+            dataDisplay.appendChild(paginationContainer);
+        };
+
+        
+        window.editStudent = (id) => {
+            const student = studentsData.find(s => s.id === id);
+            if (!student) return;
+
+            // Build all editable fields (skip internal ones and Image)
+            const skipFields = new Set(['id', 'Image', 'deletedAt', 'deletedBy']);
+            const fields = Object.keys(student).filter(k => !skipFields.has(k));
+
+            // Two-column grid of inputs
+            const fieldsHTML = `
+                <div class="edit-modal-grid" style="max-height:60vh;overflow-y:auto;padding:4px 2px;">
+                    ${fields.map(f => `
+                        <div class="edit-modal-field">
+                            <label>${f}</label>
+                            <input type="text" id="swal-field-${f.replace(/[^a-zA-Z0-9]/g,'_')}" value="${(student[f] !== undefined && student[f] !== null) ? String(student[f]).replace(/"/g,'&quot;') : ''}" data-field="${f}">
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            Swal.fire({
+                title: `<span style="font-family:'Playfair Display',serif;color:#0f2744;font-size:1.15rem;">Edit Student</span>`,
+                html: fieldsHTML,
+                width: 700,
+                showCancelButton: true,
+                confirmButtonText: 'Save Changes',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#22518a',
+                cancelButtonColor: '#5a6e84',
+                focusConfirm: false,
+                customClass: { popup: 'swal-edit-popup' },
+                preConfirm: () => {
+                    const updatedData = {};
+                    fields.forEach(f => {
+                        const el = document.getElementById(`swal-field-${f.replace(/[^a-zA-Z0-9]/g,'_')}`);
+                        if (el) updatedData[f] = el.value.trim();
+                    });
+                    if (!updatedData['Assessment No']) {
+                        Swal.showValidationMessage('"Assessment No" cannot be empty.');
+                        return false;
+                    }
+                    return updatedData;
+                }
+            }).then(async (result) => {
+                if (!result.isConfirmed) return;
+                const updatedData = result.value;
+                try {
+                    const { ref: fbRef, update: fbUpdate } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js");
+                    const studentRef = fbRef(db, `Results/${sanitizedAppId}/students/${id}`);
+                    await fbUpdate(studentRef, updatedData);
+                    showModal('Student record updated successfully!');
+                    const idx = studentsData.findIndex(s => s.id === id);
+                    if (idx !== -1) studentsData[idx] = { id, ...updatedData };
+                    // Re-render with current filter
+                    const selectedGrade = gradeFilterSelect.value;
+                    const searchTerm = searchInput.value;
+                    if (selectedGrade) {
+                        renderStudents(studentsData.filter(s => s.Grade === selectedGrade), { field: 'Grade', value: selectedGrade });
+                    } else if (searchTerm) {
+                        const lower = searchTerm.toLowerCase();
+                        renderStudents(studentsData.filter(s => Object.values(s).some(v => String(v).toLowerCase().includes(lower))), { field: 'Search', value: searchTerm });
+                    } else {
+                        renderStudents(studentsData);
+                    }
+                } catch (e) {
+                    console.error("Error updating student:", e);
+                    showModal(`Error updating record: ${e.message}`);
+                }
+            });
+        };
+
+        window.saveStudent = async (id) => {
+            const row = document.getElementById(`row-${id}`);
+            if (!row) {
+                showModal('Error: Student row not found.');
+                return;
+            }
+
+            const updatedData = {};
+            const inputFields = row.querySelectorAll('input[type="text"]');
+            inputFields.forEach(input => {
+                const fieldName = input.dataset.fieldName;
+                updatedData[fieldName] = input.value.trim();
+            });
+
+            if (!updatedData['Assessment No']) {
+                showModal('The "Assessment No" field cannot be empty.');
+                return;
+            }
+
+            try {
+                const studentRef = ref(db, `Results/${sanitizedAppId}/students/${id}`);
+                await update(studentRef, updatedData);
+                showModal('Student record updated successfully!');
+
+                const studentIndex = studentsData.findIndex(student => student.id === id);
+                if (studentIndex !== -1) {
+                    studentsData[studentIndex] = { id, ...updatedData };
+                }
+
+                const selectedGrade = gradeFilterSelect.value;
+                const searchTerm = searchInput.value;
+                let filteredStudents = studentsData;
+                if (selectedGrade) {
+                    filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
+                    renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
+                } else if (searchTerm) {
+                    const searchTermLower = searchTerm.toLowerCase();
+                    filteredStudents = studentsData.filter(student => 
+                        Object.values(student).some(value => 
+                            String(value).toLowerCase().includes(searchTermLower)
+                        )
+                    );
+                    renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+                } else {
+                    renderStudents(studentsData);
+                }
+            } catch (e) {
+                console.error("Error updating student:", e);
+                showModal(`Error updating record: ${e.message}. Check Firebase rules and network.`);
+            }
+        };
+
+        window.cancelEdit = (id) => {
+            const row = document.getElementById(`row-${id}`);
+            if (!row) return;
+
+            row.classList.remove('no-hover');
+
+            const originalValues = JSON.parse(row.dataset.currentValues || '{}');
+            const cells = row.querySelectorAll('td[data-header]');
+            cells.forEach(cell => {
+                const header = cell.getAttribute('data-header');
+                if (header === 'Image') {
+                    const imageName = originalValues['Official Student Name'] ? encodeURIComponent(originalValues['Official Student Name']) : '';
+                    const imagePath = imageName ? `./student_images/${imageName}.jpg` : './student_images/default.jpg';
+                    cell.innerHTML = `<img src="${imagePath}" alt="${originalValues['Official Student Name'] || 'Student Image'}" class="student-image" onerror="this.src='./student_images/default.jpg';this.alt='Default Image'">`;
+                } else {
+                    cell.textContent = originalValues[header] || '-';
+                }
+            });
+
+            const actionButtons = row.querySelector('.action-buttons');
+            actionButtons.innerHTML = `
+                <div style="display:flex;gap:.35rem;align-items:center;">
+                    <button onclick="editStudent('${id}')" class="edit-btn" title="Edit student" style="padding:.3rem .65rem;display:inline-flex;align-items:center;gap:.3rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/></svg>
+                        Edit
+                    </button>
+                    <button onclick="deleteStudent('${id}')" class="delete-btn" title="Delete student" style="padding:.3rem .55rem;display:inline-flex;align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/></svg>
+                    </button>
+                </div>
+            `;
+            row.setAttribute('onclick', `if(!event.target.closest('.action-buttons') && !event.target.classList.contains('student-image')) openLocalPDF('${originalValues['Assessment No']}', '${originalValues['Official Student Name'] || ''}')`);
+        };
+
+     
+window.deleteStudent = async (id) => {
+    if (!confirm('Are you sure you want to delete this student record? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        const studentRef = ref(db, `Results/${sanitizedAppId}/students/${id}`);
+        const deletedStudentRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${id}`);
+
+        const snapshot = await get(studentRef);
+        if (snapshot.exists()) {
+            const studentData = snapshot.val();
+            const userEmail = auth.currentUser ? auth.currentUser.email : 'unknown';
+            await set(deletedStudentRef, {
+                ...studentData,
+                deletedAt: new Date().toISOString(),
+                deletedBy: userEmail // Add the user's email to the deleted record
+            });
+        }
+
+        await remove(studentRef);
+        showModal('Student record deleted successfully and moved to DeletedResults.');
+        // Remove totalStudents-- and replace fetchAndRenderStudents with renderStudents
+        renderStudents(studentsData);
+    } catch (e) {
+        console.error("Error deleting student:", e);
+        showModal(`Error deleting record: ${e.message}. Check Firebase rules and network.`);
+    }
+};
+
+deleteGradeBtn.addEventListener('click', async () => {
+    const selectedGrade = gradeFilterSelect.value;
+    if (!selectedGrade) {
+        showModal("Please select a grade to delete.");
+        return;
+    }
+
+    if (confirm(`Are you sure you want to delete all students in ${selectedGrade}? This action cannot be undone.`)) {
+        showModal(`Deleting all students in ${selectedGrade}...`);
+        const studentsInGrade = studentsData.filter(student => student.Grade === selectedGrade);
+        const userEmail = auth.currentUser ? auth.currentUser.email : 'unknown';
+
+        const deletionPromises = studentsInGrade.map(async (student) => {
+            const studentRef = ref(db, `Results/${sanitizedAppId}/students/${student.id}`);
+            const deletedStudentRef = ref(db, `DeletedResults/${sanitizedAppId}/artifacts/${student.id}`);
+
+            // Save student data to DeletedResults
+            await set(deletedStudentRef, {
+                ...student,
+                deletedAt: new Date().toISOString(),
+                deletedBy: userEmail
+            });
+
+            // Remove student from main database
+            return remove(studentRef);
+        });
+
+        try {
+            await Promise.all(deletionPromises);
+            showModal(`Successfully deleted all students from ${selectedGrade} and moved to DeletedResults.`);
+            // Update studentsData and re-render
+            studentsData = studentsData.filter(student => student.Grade !== selectedGrade);
+            gradeFilterSelect.value = '';
+            renderStudents(studentsData);
+        } catch (error) {
+            console.error("Error deleting grade:", error);
+            showModal(`Error deleting grade: ${error.message}`);
+        }
+    }
+});
+        // ─── SHARED HELPER: detect learning areas & compute totals/averages ────────
+        const NON_SUBJECT_KEYS = new Set([
+            'id', 'Image', 'Grade', 'Term', 'Assessment No', 'Official Student Name',
+            'UPI', 'Gender', 'Class', 'Total Marks', 'Perc Avrg', 'Level',
+            'deletedAt', 'deletedBy', 'Closing Date', 'Opening Date'
+        ]);
+
+        const getSubjectColumns = (students) => {
+            const subjectSet = new Set();
+            students.forEach(student => {
+                Object.keys(student).forEach(key => {
+                    if (!NON_SUBJECT_KEYS.has(key)) {
+                        const val = student[key];
+                        // Only treat as a subject if value is a number or numeric string
+                        if (val !== undefined && val !== '' && !isNaN(parseFloat(val))) {
+                            subjectSet.add(key);
+                        }
+                    }
+                });
+            });
+            return Array.from(subjectSet).sort();
+        };
+
+        const getLevelFromAverage = (avg) => {
+            if (avg >= 90) return 'EE1';  // Exceeding Expectation EE1
+            if (avg >= 75) return 'EE2';  // Exceeding Expectation EE2
+            if (avg >= 58) return 'ME1';  // Meeting Expectation ME1
+            if (avg >= 41) return 'ME2';  // Meeting Expectation ME2
+            if (avg >= 31) return 'AE1';  // Approaching Expectation AE1
+            if (avg >= 21) return 'AE2';  // Approaching Expectation AE2
+            if (avg >= 11) return 'BE1';  // Below Expectation BE1
+            return 'BE2';                 // Below Expectation BE2
+        };
+
+        const computeExportData = (students) => {
+            const subjectColsRaw = getSubjectColumns(students);
+
+            // Priority subject order: core subjects first, rest alphabetically after
+            const SUBJECT_PRIORITY = [
+                'Mathematics', 'English', 'Kiswahili', 'Integrated Science',
+                'Creative Arts & Social studies', 'Creative Arts & Sports',
+                'Creative Arts', 'Social studies', 'Agriculture', 'CRE',
+                'Pre-Technical Studies', 'Integrated Learning Area'
+            ];
+            const prioritySubjects = SUBJECT_PRIORITY.filter(s => subjectColsRaw.includes(s));
+            const otherSubjects = subjectColsRaw.filter(s => !SUBJECT_PRIORITY.includes(s)).sort();
+            const subjectCols = [...prioritySubjects, ...otherSubjects];
+
+            // Collect ALL keys from data (excluding internal-only keys)
+            const INTERNAL_KEYS = new Set(['id', 'deletedAt', 'deletedBy', 'Image']);
+            const allKeys = new Set();
+            students.forEach(s => Object.keys(s).forEach(k => { if (!INTERNAL_KEYS.has(k)) allKeys.add(k); }));
+
+            // Computed columns we always add
+            const COMPUTED = new Set(['Rank', 'Total Marks', 'Average (%)', 'Level']);
+
+            // Known non-subject meta columns (ordered)
+            const META_PRIORITY = [
+                'Assessment No', 'UPI', 'Official Student Name', 'Gender',
+                'Grade', 'Term', 'Class', 'Closing Date', 'Opening Date'
+            ];
+            const metaCols = META_PRIORITY.filter(k => allKeys.has(k));
+
+            // Any remaining keys in the DB not yet accounted for
+            const knownCols = new Set([...META_PRIORITY, ...subjectCols, ...COMPUTED]);
+            const extraCols = Array.from(allKeys).filter(k => !knownCols.has(k)).sort();
+
+            // Final column order
+            const exportHeaders = [
+                'Rank',
+                ...metaCols.slice(0, 4),   // Assessment No, UPI, Official Student Name, Gender
+                ...subjectCols,
+                ...extraCols,
+                'Total Marks',
+                'Average (%)',
+                'Level',
+                ...metaCols.slice(4),       // Grade, Term, Class, Closing Date, Opening Date
+            ];
+
+            const exportRows = students.map((student, idx) => {
+                // Calculate total from raw subject scores
+                let total = 0;
+                let scoredCount = 0;
+                subjectCols.forEach(col => {
+                    const v = parseFloat(student[col]);
+                    if (!isNaN(v)) { total += v; scoredCount++; }
+                });
+                const average  = scoredCount > 0 ? parseFloat((total / scoredCount).toFixed(1)) : 0;
+                const level    = getLevelFromAverage(average);
+
+                const row = {};
+                exportHeaders.forEach(h => {
+                    if (h === 'Rank')          row[h] = idx + 1; // placeholder, re-ranked below
+                    else if (h === 'Total Marks')  row[h] = scoredCount > 0 ? total : '-';
+                    else if (h === 'Average (%)')  row[h] = scoredCount > 0 ? average : '-';
+                    else if (h === 'Level')        row[h] = scoredCount > 0 ? level : '-';
+                    else row[h] = student[h] !== undefined && student[h] !== '' ? student[h] : '-';
+                });
+                return row;
+            });
+
+            // Sort descending by Total Marks (students with no scores go to the bottom)
+            exportRows.sort((a, b) => {
+                const aTotal = typeof a['Total Marks'] === 'number' ? a['Total Marks'] : -Infinity;
+                const bTotal = typeof b['Total Marks'] === 'number' ? b['Total Marks'] : -Infinity;
+                return bTotal - aTotal;
+            });
+
+            // Assign ranks with tie handling (equal marks share same rank)
+            let rank = 1;
+            exportRows.forEach((row, i) => {
+                if (i > 0) {
+                    const prevTotal = exportRows[i - 1]['Total Marks'];
+                    const currTotal = row['Total Marks'];
+                    if (currTotal !== prevTotal) rank = i + 1;
+                }
+                row['Rank'] = typeof row['Total Marks'] === 'number' ? rank : 'N/A';
+            });
+
+            return { exportHeaders, exportRows, subjectCols };
+        };
+        // ────────────────────────────────────────────────────────────────────────────
+
+        // All columns are included (column toggle UI removed; export is fully dynamic from DB)
+        const getExcludedCols = () => new Set();
+
+        const getExportFilename = (ext) => {
+            const grade = gradeFilterSelect.value || 'All';
+            const term = (currentFilteredStudents[0] && currentFilteredStudents[0]['Term']) ? 
+                currentFilteredStudents[0]['Term'].replace(/[^a-zA-Z0-9-_]/g, '_') : 'Term';
+            const date = new Date().toISOString().split('T')[0];
+            return `Assessment_${grade}_${term}_${date}.${ext}`;
+        };
+
+        const exportToExcel = () => {
+            const dataToExport = currentFilteredStudents;
+            if (dataToExport.length === 0) { showModal('No data to export.'); return; }
+
+            const userExcluded = getExcludedCols();
+            const { exportHeaders, exportRows } = computeExportData(dataToExport);
+            const filteredHeaders = exportHeaders.filter(h => !userExcluded.has(h));
+            const filteredRows = exportRows.map(row => {
+                const r = {};
+                filteredHeaders.forEach(h => { r[h] = row[h]; });
+                return r;
+            });
+
+            const worksheet = XLSX.utils.json_to_sheet(filteredRows, { header: filteredHeaders });
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+            XLSX.writeFile(workbook, getExportFilename('xlsx'));
+            printModal.classList.add('hidden');
+        };
+
+
+
+const exportToPdf = async () => {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('landscape');
+
+    const dataToExport = currentFilteredStudents;
+
+    if (dataToExport.length === 0) {
+        showModal('No data to export.');
+        return;
+    }
+
+    const selectedGrade = gradeFilterSelect.value;
+
+    // Get term from the first student
+    const term = dataToExport[0]['Term'] || 'N/A';
+
+    const title = `P O BOX 45 - 40139, AKALA, KENYA`;
+    const subtitle = `LEVEL: ${selectedGrade || 'All Grades'} | Term: ${term} | Academic Year: ${new Date().getFullYear()}`;
+    const totalStudents = dataToExport.length;
+    
+    // Load and process logo image to make it completely white
+    const logoImg = new Image();
+    logoImg.src = '../images/logo.png';
+    logoImg.crossOrigin = 'anonymous';
+    
+    // Load Kenya Ministry of Education logo for background
+    const ministryLogoImg = new Image();
+    ministryLogoImg.src = '../images/kenya_ministry_education.png';
+    ministryLogoImg.crossOrigin = 'anonymous';
+    
+    // Wait for logo to load and apply 100% white filter
+    await new Promise((resolve, reject) => {
+        logoImg.onload = () => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = logoImg.width;
+            canvas.height = logoImg.height;
+            ctx.drawImage(logoImg, 0, 0);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            for (let i = 0; i < data.length; i += 4) {
+                if (data[i + 3] > 0) {
+                    data[i] = 255; data[i + 1] = 255; data[i + 2] = 255;
+                }
+            }
+            ctx.putImageData(imageData, 0, 0);
+            logoImg.src = canvas.toDataURL();
+            resolve();
+        };
+        logoImg.onerror = reject;
+    });
+    
+    // Wait for ministry logo to load (no filter needed)
+    await new Promise((resolve, reject) => {
+        ministryLogoImg.onload = resolve;
+        ministryLogoImg.onerror = () => resolve();
+    });
+
+    // ── Dynamic columns: detect subjects from DB data, compute totals/averages ──
+    const { exportHeaders, exportRows } = computeExportData(dataToExport);
+
+
+    // For PDF: exclude Grade, Term & Class, truncate long headers with ellipsis
+    const PDF_EXCLUDE = new Set(['Grade', 'Term', 'Class', 'UPI', 'Closing Date', 'Opening Date']);
+    const PDF_MAX_LEN = 9; // max chars before ellipsis
+    // Columns completely exempt from truncation — shown exactly as-is
+    const PDF_NO_TRUNCATE = new Set(['Official Student Name']);
+    const truncate = (s) => PDF_NO_TRUNCATE.has(s)
+        ? s
+        : (s.length > PDF_MAX_LEN ? s.slice(0, PDF_MAX_LEN - 1) + '…' : s);
+
+    const filteredHeaders = exportHeaders.filter(h => !PDF_EXCLUDE.has(h));
+
+    // Map truncated header → original key (truncated header used only for display)
+    const headerKeyMap = {};
+    filteredHeaders.forEach(h => { headerKeyMap[truncate(h)] = h; });
+
+    const headers = filteredHeaders.map(h => truncate(h));
+
+    const body = exportRows.map(row => {
+        return headers.map(h => {
+            const key = headerKeyMap[h] || h;
+            const val = row[key];
+            return val !== undefined && val !== null ? String(val) : '-';
+        });
+    });
+
+    // ── Grade summary row ──────────────────────────────────────────────────────
+    // Compute per-subject averages, class total average, and EE/ME/AE/BE counts
+    const { subjectCols } = computeExportData(dataToExport);
+    const scoredStudents = exportRows.filter(r => typeof r['Total Marks'] === 'number');
+
+    const summaryRow = headers.map(h => {
+        const origKey = headerKeyMap[h] || h;
+        if (origKey === 'Rank' || origKey === 'Assessment No' ||
+            origKey === 'Official Student Name' || origKey === 'Gender') {
+            return h === headers[0] ? 'CLASS AVG' : '';
+        }
+        if (origKey === 'Total Marks') {
+            const avg = scoredStudents.length
+                ? (scoredStudents.reduce((s, r) => s + r['Total Marks'], 0) / scoredStudents.length).toFixed(1)
+                : '-';
+            return `Avg: ${avg}`;
+        }
+        if (origKey === 'Average (%)') {
+            const avg = scoredStudents.length
+                ? (scoredStudents.reduce((s, r) => s + r['Average (%)'], 0) / scoredStudents.length).toFixed(1)
+                : '-';
+            return `${avg}%`;
+        }
+        if (origKey === 'Level') {
+            const ee1 = scoredStudents.filter(r => r['Level'] === 'EE1').length;
+            const ee2 = scoredStudents.filter(r => r['Level'] === 'EE2').length;
+            const me1 = scoredStudents.filter(r => r['Level'] === 'ME1').length;
+            const me2 = scoredStudents.filter(r => r['Level'] === 'ME2').length;
+            const ae1 = scoredStudents.filter(r => r['Level'] === 'AE1').length;
+            const ae2 = scoredStudents.filter(r => r['Level'] === 'AE2').length;
+            const be1 = scoredStudents.filter(r => r['Level'] === 'BE1').length;
+            const be2 = scoredStudents.filter(r => r['Level'] === 'BE2').length;
+            return `EE1:${ee1} EE2:${ee2} ME1:${me1} ME2:${me2} AE1:${ae1} AE2:${ae2} BE1:${be1} BE2:${be2}`;
+        }
+        // Subject column — compute average
+        if (subjectCols.includes(origKey)) {
+            const vals = scoredStudents.map(r => parseFloat(r[origKey])).filter(v => !isNaN(v));
+            return vals.length ? (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : '-';
+        }
+        return '';
+    });
+
+    // ── Column widths: fixed narrow for meta/summary, equal share for subjects ──
+    const pageWidth = doc.internal.pageSize.width;
+    const margins = 20; // left + right margins
+    const usableWidth = pageWidth - margins;
+
+    // Fixed widths for known short columns (mm)
+    const FIXED_WIDTHS = {
+        'Rank'                 : 10,
+        'Assessment No'        : 20,
+        'UPI'                  : 18,
+        'Gender'               : 14,
+        'Total Marks'          : 18,
+        'Avg%'                 : 14,
+        'Level'                : 12,
+        'Official Student Name': 32,
+    };
+
+    // Calculate how much width is left for subject columns
+    const fixedTotal = headers.reduce((sum, h) => sum + (FIXED_WIDTHS[h] || 0), 0);
+    const subjectHeaders = headers.filter(h => !FIXED_WIDTHS[h]);
+    const subjectWidth = subjectHeaders.length > 0
+        ? parseFloat(((usableWidth - fixedTotal) / subjectHeaders.length).toFixed(1))
+        : 20;
+
+    // Build columnStyles object keyed by column index
+    const columnStyles = {};
+    headers.forEach((h, i) => {
+        columnStyles[i] = { cellWidth: FIXED_WIDTHS[h] || subjectWidth };
+    });
+
+    // Premium Header Function
+    const addHeader = (data) => {
+        const hPageWidth = doc.internal.pageSize.width;
+        
+        // Add Kenya Ministry of Education logo as watermark background (centered on page)
+        const pageHeight = doc.internal.pageSize.height;
+        try {
+            if (ministryLogoImg.complete && ministryLogoImg.naturalHeight !== 0) {
+                const watermarkSize = 80;
+                const watermarkX = (hPageWidth - watermarkSize) / 2;
+                const watermarkY = (pageHeight - watermarkSize) / 2;
+                doc.saveGraphicsState();
+                doc.setGState(new doc.GState({ opacity: 0.08 }));
+                doc.addImage(ministryLogoImg, 'PNG', watermarkX, watermarkY, watermarkSize, watermarkSize);
+                doc.restoreGraphicsState();
+            }
+        } catch (e) {
+            console.log('Ministry logo not available for watermark');
+        }
+        
+        doc.setFillColor(41, 128, 185);
+        doc.rect(0, 0, hPageWidth, 20, 'F');
+        
+        const logoWidth = 15;
+        const logoHeight = 15;
+        const logoX = 14;
+        const logoY = 2.5;
+        doc.addImage(logoImg, 'PNG', logoX, logoY, logoWidth, logoHeight);
+        
+        doc.setTextColor(255, 255, 255);
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text('KANYADET PRI & JUNIOR SCHOOL', logoX + logoWidth + 5, 10);
+        
+        doc.setFontSize(12);
+        doc.text(title, logoX + logoWidth + 5, 16);
+        
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        const dateText = `Date: ${new Date().toLocaleDateString()}`;
+        const gradeText = subtitle;
+        const studentCount = `Assessment Outcome: Total Students: ${totalStudents}`;
+        doc.text(dateText, hPageWidth - 14, 8, { align: 'right' });
+        doc.text(gradeText, hPageWidth - 14, 13, { align: 'right' });
+        doc.text(studentCount, hPageWidth - 14, 18, { align: 'right' });
+        
+        doc.setDrawColor(41, 128, 185);
+        doc.setLineWidth(0.5);
+        doc.line(0, 20, hPageWidth, 20);
+    };
+
+    // Premium Footer Function (now accepts totalPages parameter)
+    const addFooter = (data, totalPages) => {
+        const pageWidth = doc.internal.pageSize.width;
+        const pageHeight = doc.internal.pageSize.height;
+        const footerY = pageHeight - 15;
+        
+        // Footer background (light gray)
+        doc.setFillColor(245, 245, 245);
+        doc.rect(0, footerY - 5, pageWidth, 20, 'F');
+        
+        // Top border line
+        doc.setDrawColor(41, 128, 185);
+        doc.setLineWidth(0.3);
+        doc.line(0, footerY - 5, pageWidth, footerY - 5);
+        
+        doc.setTextColor(60, 60, 60);
+        doc.setFontSize(8);
+        
+        // Left section - Prepared by
+        doc.setFont(undefined, 'bold');
+        doc.text('Prepared by:', 14, footerY);
+        doc.setFont(undefined, 'normal');
+        doc.text('Automated Online School System ', 14, footerY + 4);
+        doc.setFontSize(7);
+        doc.text('Ict Dept - Digital Signature ©️2025', 14, footerY + 8);
+        
+        // Center section - Page number (now with correct total)
+        doc.setFontSize(9);
+        doc.setFont(undefined, 'normal');
+        const pageText = `Page ${data.pageNumber} of ${totalPages}`;
+        doc.text(pageText, pageWidth / 2, footerY + 2, { align: 'center' });
+        
+        // Right section - Verified stamp
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'bold');
+        doc.text('Verified by:', pageWidth - 14, footerY, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        doc.text('_________________', pageWidth - 14, footerY + 4, { align: 'right' });
+        doc.setFontSize(7);
+        doc.text('Signature & Stamp', pageWidth - 14, footerY + 8, { align: 'right' });
+        
+        // Stamp box outline (right side)
+        doc.setDrawColor(41, 128, 185);
+        doc.setLineWidth(0.2);
+        doc.rect(pageWidth - 85, footerY - 3, 28, 10);
+        doc.setFontSize(6);
+        doc.setTextColor(150, 150, 150);
+        doc.text('OFFICIAL', pageWidth - 71, footerY + 2, { align: 'center' });
+        doc.text('STAMP', pageWidth - 71, footerY + 5, { align: 'center' });
+    };
+
+    // Generate table with header and footer on each page
+    doc.autoTable({
+        head: [headers],
+        body: [...body, summaryRow],
+        startY: 25,
+        styles: { 
+            fontSize: 8,
+            cellPadding: 2,
+            overflow: 'linebreak',
+            halign: 'center',
+            valign: 'middle',
+        },
+        headStyles: { 
+            fillColor: [41, 128, 185], 
+            textColor: [255, 255, 255],
+            fontStyle: 'bold',
+            fontSize: 7,
+            halign: 'center',
+        },
+        columnStyles,
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 25, right: 10, bottom: 20, left: 10 },
+        didParseCell: function(data) {
+            // Style the summary row distinctly
+            if (data.row.index === body.length) {
+                data.cell.styles.fillColor = [41, 128, 185];
+                data.cell.styles.textColor = [255, 255, 255];
+                data.cell.styles.fontStyle = 'bold';
+                data.cell.styles.fontSize = 7;
+            }
+            // Official Student Name: left-align; all other columns: centre
+            const origKey = headerKeyMap[data.column.dataKey] || data.column.dataKey;
+            if (origKey === 'Official Student Name') {
+                data.cell.styles.halign = 'left';
+                data.cell.styles.overflow = 'linebreak';
+                data.cell.styles.cellWidth = 48;
+            } else {
+                data.cell.styles.halign = 'center';
+            }
+        },
+        didDrawPage: function(data) {
+            addHeader(data);
+        }
+    });
+
+    // ── Rubric legend on its OWN dedicated page ───────────────────────────────
+    doc.addPage();
+    const rubricPageNum = doc.internal.getNumberOfPages();
+
+    // Add header to the rubric page (same as data pages)
+    addHeader({ pageNumber: rubricPageNum });
+
+    const rubric = [
+        { score: '90 – 100', level: 'EE1', meaning: 'Exceeding Expectation 1', description: 'Outstanding performance. Student consistently surpasses all learning objectives.',            color: [39, 174, 96]  },
+        { score: '75 – 89',  level: 'EE2', meaning: 'Exceeding Expectation 2', description: 'Very good performance. Student frequently goes beyond the expected standard.',                color: [82, 190, 128] },
+        { score: '58 – 74',  level: 'ME1', meaning: 'Meeting Expectation 1',   description: 'Good performance. Student meets most learning objectives with confidence.',                  color: [41, 128, 185] },
+        { score: '41 – 57',  level: 'ME2', meaning: 'Meeting Expectation 2',   description: 'Satisfactory performance. Student adequately meets the basic learning objectives.',          color: [93, 173, 226] },
+        { score: '31 – 40',  level: 'AE1', meaning: 'Approaching Expectation 1',description: 'Needs improvement. Student is working towards meeting the learning objectives.',            color: [230, 126, 34] },
+        { score: '21 – 30',  level: 'AE2', meaning: 'Approaching Expectation 2',description: 'Requires support. Student shows partial understanding but needs more guidance.',            color: [243, 156, 18] },
+        { score: '11 – 20',  level: 'BE1', meaning: 'Below Expectation 1',     description: 'Significant support needed. Student struggles to meet minimum learning objectives.',        color: [192, 57, 43]  },
+        { score: '1  – 10',  level: 'BE2', meaning: 'Below Expectation 2',     description: 'Critical intervention required. Student has not met the learning objectives.',              color: [231, 76, 60]  },
+    ];
+
+    const pW   = doc.internal.pageSize.width;
+    const pH   = doc.internal.pageSize.height;
+
+    // 4 columns: Score Range | Level | Meaning | Description
+    const colW = [28, 18, 58, 83];
+    const rowH = 12;
+    const tableW = colW.reduce((a, b) => a + b, 0);
+    const startX = (pW - tableW) / 2;
+    const legendY = 38;
+
+    // Page section heading
+    doc.setFontSize(13);
+    doc.setFont(undefined, 'bold');
+    doc.setTextColor(41, 128, 185);
+    doc.text('ASSESSMENT RUBRIC / PERFORMANCE LEVELS', pW / 2, legendY - 6, { align: 'center' });
+
+    // Decorative underline
+    doc.setDrawColor(41, 128, 185);
+    doc.setLineWidth(0.5);
+    doc.line(startX, legendY - 3, startX + tableW, legendY - 3);
+
+    // Header row
+    doc.setFillColor(41, 128, 185);
+    doc.rect(startX, legendY, tableW, rowH, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(9);
+    doc.setFont(undefined, 'bold');
+    const hLabels = ['Score Range', 'Level', 'Meaning', 'Description'];
+    let cx = startX;
+    hLabels.forEach((lbl, i) => {
+        doc.text(lbl, cx + colW[i] / 2, legendY + 7.5, { align: 'center' });
+        cx += colW[i];
+    });
+
+    // Vertical dividers in header
+    doc.setDrawColor(255, 255, 255);
+    doc.setLineWidth(0.3);
+    let dvx = startX + colW[0];
+    [0,1,2].forEach(i => {
+        doc.line(dvx, legendY, dvx, legendY + rowH);
+        dvx += colW[i + 1];
+    });
+
+    // Data rows
+    rubric.forEach((row, idx) => {
+        const ry = legendY + rowH + idx * rowH;
+        doc.setFillColor(idx % 2 === 0 ? 245 : 255, idx % 2 === 0 ? 248 : 255, idx % 2 === 0 ? 252 : 255);
+        doc.rect(startX, ry, tableW, rowH, 'F');
+
+        // Colour swatch filling the Level cell
+        doc.setFillColor(...row.color);
+        doc.roundedRect(startX + colW[0] + 1.5, ry + 1.5, colW[1] - 3, rowH - 3, 1.5, 1.5, 'F');
+
+        doc.setFontSize(8.5);
+        // Score Range — centred
+        doc.setTextColor(60, 60, 60);
+        doc.setFont(undefined, 'normal');
+        doc.text(row.score, startX + colW[0] / 2, ry + 7.5, { align: 'center' });
+
+        // Level code — white bold on swatch
+        doc.setTextColor(255, 255, 255);
+        doc.setFont(undefined, 'bold');
+        doc.text(row.level, startX + colW[0] + colW[1] / 2, ry + 7.5, { align: 'center' });
+
+        // Meaning — dark, left-padded, wrapped
+        doc.setTextColor(60, 60, 60);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        const meaningLines = doc.splitTextToSize(row.meaning, colW[2] - 4);
+        const meaningTextY = ry + rowH / 2 + (meaningLines.length === 1 ? 2.5 : -0.5);
+        doc.text(meaningLines, startX + colW[0] + colW[1] + 3, meaningTextY);
+
+        // Description — dark, left-padded, wrapped
+        const descLines = doc.splitTextToSize(row.description, colW[3] - 4);
+        const descTextY = ry + rowH / 2 + (descLines.length === 1 ? 2.5 : -0.5);
+        doc.text(descLines, startX + colW[0] + colW[1] + colW[2] + 3, descTextY);
+
+        // Subtle vertical dividers in data rows
+        doc.setDrawColor(210, 210, 210);
+        doc.setLineWidth(0.2);
+        let vx = startX + colW[0];
+        [0,1,2].forEach(j => {
+            doc.line(vx, ry, vx, ry + rowH);
+            vx += colW[j + 1];
+        });
+    });
+
+    // Outer border
+    doc.setDrawColor(180, 180, 180);
+    doc.setLineWidth(0.4);
+    doc.rect(startX, legendY, tableW, rowH + rubric.length * rowH);
+
+    // Note below table
+    const noteY = legendY + rowH + rubric.length * rowH + 8;
+    doc.setFontSize(8);
+    doc.setFont(undefined, 'italic');
+    doc.setTextColor(120, 120, 120);
+    doc.text('*....', pW / 2, noteY, { align: 'center' });
+    doc.setFont(undefined, 'normal');
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, pW / 2, noteY + 5, { align: 'center' });
+    // ─────────────────────────────────────────────────────────────────────────
+
+    // Add footer to rubric page with the final page count
+    const finalTotalPages = doc.internal.getNumberOfPages();
+    addFooter({ pageNumber: rubricPageNum }, finalTotalPages);
+
+    // Also update all previous footers with the corrected final total
+    // (re-run second pass over all pages including rubric page)
+    for (let i = 1; i <= finalTotalPages; i++) {
+        doc.setPage(i);
+        addFooter({ pageNumber: i }, finalTotalPages);
+    }
+    // ─────────────────────────────────────────────────────────────────────────
+
+    doc.save(getExportFilename('pdf'));
+    printModal.classList.add('hidden');
+};
+
+        const exportToWord = () => {
+            const { Document, Packer, Paragraph, Table, TableCell, TableRow } = window.docx;
+
+            const dataToExport = currentFilteredStudents;
+
+            if (dataToExport.length === 0) {
+                showModal('No data to export.');
+                return;
+            }
+
+            const userExcluded = getExcludedCols();
+            const { exportHeaders, exportRows } = computeExportData(dataToExport);
+            const filteredHeaders = exportHeaders.filter(h => !userExcluded.has(h));
+
+            const headerRow = new TableRow({
+                children: filteredHeaders.map(header => new TableCell({ 
+                    children: [new Paragraph({ text: header, bold: true })] 
+                })),
+            });
+
+            const dataRows = exportRows.map(row => {
+                return new TableRow({
+                    children: filteredHeaders.map(header => new TableCell({ 
+                        children: [new Paragraph(String(row[header] !== undefined ? row[header] : '-'))] 
+                    })),
+                });
+            });
+
+            const table = new Table({ rows: [headerRow, ...dataRows] });
+
+            const selectedGrade = gradeFilterSelect.value;
+            const doc = new Document({
+                sections: [{
+                    children: [
+                        new Paragraph({ 
+                            text: `Student Assessment Outcome (${selectedGrade || 'All Grades'})`, 
+                            heading: 'Heading1',
+                            alignment: 'center'
+                        }),
+                        new Paragraph({ text: '' }),
+                        table,
+                    ],
+                }],
+            });
+
+            Packer.toBlob(doc).then(blob => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = getExportFilename('docx');
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+
+            printModal.classList.add('hidden');
+        };
+
+        printExcelBtn.addEventListener('click', exportToExcel);
+        printPdfBtn.addEventListener('click', exportToPdf);
+        printWordBtn.addEventListener('click', exportToWord);
+
+        setupFirebase(); // module scripts are deferred — DOM is always ready
+    </script>
+</body>
+</html>
