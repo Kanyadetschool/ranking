@@ -758,6 +758,7 @@ auth = getAuth(app);
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         userId = user.uid;
+        userIdDisplay.innerHTML = ''; // clear any previous avatar + name
 
         // Build display name from email the same way Results does
         const email = user.email || '';
@@ -770,7 +771,8 @@ onAuthStateChanged(auth, async (user) => {
             const img = document.createElement('img');
             img.src = user.photoURL;
             img.alt = 'User profile picture';
-            userIdDisplay.insertAdjacentElement('beforebegin', img);
+            img.style.cssText = 'width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;flex-shrink:0;';
+            userIdDisplay.prepend(img);
         }
 
         // ── body-class approach (exact Results pattern) ──
