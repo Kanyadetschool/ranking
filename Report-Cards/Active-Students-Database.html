@@ -267,6 +267,13 @@
             .kpi-grid { grid-template-columns: repeat(2, 1fr); }
             .tab-toolbar { gap: .3rem; }
         }
+
+        /* ══ AUTH STATE — body-class approach (from Results) ══ */
+        #main_container { display: none !important; }
+        body.user-logged-in  #sign-in-section { display: none !important; }
+        body.user-logged-out #data-section    { display: none !important; }
+        body.user-logged-out #sign-in-section { display: flex !important; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -328,8 +335,8 @@
 <!-- PAGE WRAP -->
 <div class="page-wrap">
 
-    <!-- SIGN-IN SECTION -->
-    <div id="sign-in-section" class="hidden">
+    <!-- SIGN-IN SECTION — visible by default; hidden after login via body.user-logged-in CSS -->
+    <div id="sign-in-section">
         <div class="signin-card">
             <div style="width:60px;height:60px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
@@ -347,7 +354,7 @@
         </div>
     </div>
 
-    <!-- MAIN DATA SECTION -->
+    <!-- MAIN DATA SECTION — hidden by default; shown after login via body.user-logged-in CSS -->
     <main id="data-section" class="hidden">
 
         <!-- Upload + Manual Entry (collapsible) -->
@@ -691,22 +698,54 @@ db = getDatabase(app);
 auth = getAuth(app);
 
 onAuthStateChanged(auth, async (user) => {
-    loader.style.display = 'none';
     if (user) {
         userId = user.uid;
-        const photoHTML = user.photoURL ? `<img src="${user.photoURL}" alt="">` : '';
-        userIdDisplay.innerHTML = `${photoHTML} ${user.displayName || user.email}`;
+
+        // Build display name from email the same way Results does
+        const email = user.email || '';
+        let username = email.split('@')[0].replace(/[^a-zA-Z]/g, '');
+        let spacedName = username.replace(/([a-z])([A-Z])/g, '$1 $2');
+        spacedName = spacedName.replace(/\b\w/g, c => c.toUpperCase());
+        userIdDisplay.textContent = spacedName || user.displayName || email;
+
+        if (user.photoURL) {
+            const img = document.createElement('img');
+            img.src = user.photoURL;
+            img.alt = 'User profile picture';
+            userIdDisplay.insertAdjacentElement('beforebegin', img);
+        }
+
+        // ── body-class approach (exact Results pattern) ──
+        document.body.classList.add('user-logged-in');
+        document.body.classList.remove('user-logged-out');
+        signInSection.classList.add('hidden');           // belt-and-suspenders
+        document.getElementById('main_container').style.display = 'none';
         signOutBtn.classList.remove('hidden');
         bulkSelectToggleBtn.classList.remove('hidden');
         dataSection.classList.remove('hidden');
-        signInSection.classList.add('hidden');
         printAllBtn.classList.remove('hidden');
-        await fetchStudents();
+
+        loader.classList.remove('hidden');
+        fetchStudents();   // loader hidden inside onValue callback after first render
+
     } else {
-        dataSection.classList.add('hidden');
-        signInSection.classList.remove('hidden');
+        userId = null;
+        userIdDisplay.textContent = '';
+
+        // ── body-class approach (exact Results pattern) ──
+        document.body.classList.add('user-logged-out');
+        document.body.classList.remove('user-logged-in');
+        signInSection.classList.remove('hidden');        // belt-and-suspenders
+        document.getElementById('main_container').style.display = 'none';
         signOutBtn.classList.add('hidden');
         bulkSelectToggleBtn.classList.add('hidden');
+        dataSection.classList.add('hidden');
+        loader.classList.add('hidden');
+
+        studentsData = [];
+        if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
+        kpiGrid.style.display = 'none';
+        statsSection.innerHTML = '';
     }
 });
 
@@ -720,24 +759,25 @@ signInFingerprintBtn.addEventListener('click', async () => {
 });
 signOutBtn.addEventListener('click', async () => {
     await signOut(auth);
-    studentsData = [];
-    if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
-    kpiGrid.style.display = 'none';
-    statsSection.innerHTML = '';
+    // onAuthStateChanged fires automatically and resets body classes / UI
 });
 
 // ── FETCH STUDENTS ────────────────────────────────────
-const fetchStudents = async () => {
+const fetchStudents = () => {
     const studentsRef = ref(db, `artifacts/${sanitizedAppId}/students`);
     onValue(studentsRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-            studentsData = Object.entries(data).map(([id, val]) => ({ id, ...val }));
-        } else {
-            studentsData = [];
-        }
+        studentsData = data
+            ? Object.entries(data)
+                .map(([id, val]) => ({ id, ...val }))
+                .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
+            : [];
         updateGradeFilter();
         renderStudents(studentsData);
+        loader.classList.add('hidden');   // hide loader once first render completes
+    }, (error) => {
+        showModal(`Error fetching data: ${error.message}`);
+        loader.classList.add('hidden');
     });
 };
 
