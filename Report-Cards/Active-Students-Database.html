@@ -147,6 +147,14 @@
         #tabulator-table .tabulator-row:nth-child(even) { background: var(--surface2) !important; }
         #tabulator-table .tabulator-row:hover { background: #e8effa !important; }
         #tabulator-table .tabulator-row.tabulator-selected { background: var(--gold-dim) !important; }
+        #tabulator-table .tabulator-row.tabulator-selected:hover { background: #fef3c7 !important; }
+        /* Checkbox column cells */
+        #tabulator-table .tabulator-cell[tabulator-field="_sel"],
+        #tabulator-table .tabulator-col[tabulator-field="_sel"] { text-align: center !important; padding: 0 !important; }
+        #tabulator-table .tabulator-cell[tabulator-field="_sel"] input[type="checkbox"],
+        #tabulator-table .tabulator-col[tabulator-field="_sel"] input[type="checkbox"] {
+            width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer; display: block; margin: auto;
+        }
         #tabulator-table .tabulator-cell { padding: .6rem .9rem !important; color: var(--text2) !important; font-size: .82rem !important; border-right: none !important; }
         #tabulator-table .tabulator-frozen { background: inherit !important; }
         #tabulator-table .tabulator-frozen.tabulator-frozen-left { border-right: 2px solid var(--border2) !important; }
@@ -325,10 +333,6 @@
     </div>
     <div class="topbar-right">
         <span id="user-id-display"></span>
-        <button id="bulk-select-toggle-btn" class="btn btn-ghost btn-sm hidden">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Bulk Select
-        </button>
         <button id="sign-out-btn" class="btn btn-ghost hidden">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
             Sign Out
@@ -449,6 +453,10 @@
                     </select>
                 </div>
                 <div style="margin-left:auto;display:flex;align-items:center;gap:.4rem;">
+                    <button id="promote-all-btn" class="btn btn-gold btn-sm hidden" title="Promote all students in selected grade to next grade">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                        Promote All
+                    </button>
                     <button id="print-all-btn" class="btn btn-outline btn-sm hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                         Export All
@@ -715,7 +723,7 @@ const pdfModalStudentImage = document.getElementById('pdf-modal-student-image');
 const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
 const studentsPerPageSelect = document.getElementById('students-per-page');
 const kpiGrid = document.getElementById('kpi-grid');
-const bulkSelectToggleBtn = document.getElementById('bulk-select-toggle-btn');
+const bulkSelectToggleBtn = null; // removed from UI — checkboxes always visible
 const bulkActionToolbar = document.getElementById('bulk-action-toolbar');
 const selectedCountEl = document.getElementById('selected-count');
 const tabCountBadge = document.getElementById('tab-count-badge');
@@ -781,9 +789,9 @@ onAuthStateChanged(auth, async (user) => {
         signInSection.classList.add('hidden');           // belt-and-suspenders
         const _mc = document.getElementById('main_container'); if (_mc) _mc.style.display = 'none';
         signOutBtn.classList.remove('hidden');
-        bulkSelectToggleBtn.classList.remove('hidden');
         dataSection.classList.remove('hidden');
         printAllBtn.classList.remove('hidden');
+        document.getElementById('promote-all-btn').classList.remove('hidden');
 
         loader.classList.remove('hidden');
         fetchStudents();   // loader hidden inside onValue callback after first render
@@ -798,7 +806,6 @@ onAuthStateChanged(auth, async (user) => {
         signInSection.classList.remove('hidden');        // belt-and-suspenders
         const _mc2 = document.getElementById('main_container'); if (_mc2) _mc2.style.display = 'none';
         signOutBtn.classList.add('hidden');
-        bulkSelectToggleBtn.classList.add('hidden');
         dataSection.classList.add('hidden');
         loader.classList.add('hidden');
 
@@ -945,7 +952,17 @@ const renderStudents = (students) => {
 
     const columns = [
         {
-            title: 'Actions', field: '_actions', frozen: true, headerSort: false, width: 110,
+            // ── Checkbox selection column ──
+            title: '<input type="checkbox" id="tab-select-all-chk" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" title="Select / deselect all visible rows">',
+            field: '_sel', frozen: true, headerSort: false, resizable: false,
+            width: 40, hozAlign: 'center', headerHozAlign: 'center',
+            headerFilter: false,
+            formatter: 'rowSelection',
+            titleFormatter: 'rowSelection',
+            cellClick: (e, cell) => { cell.getRow().toggleSelect(); },
+        },
+        {
+            title: 'Actions', field: '_actions', frozen: true, headerSort: false, resizable: false, width: 110,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
                 return `<div class="action-wrap">
@@ -960,7 +977,7 @@ const renderStudents = (students) => {
             }
         },
         {
-            title: 'Photo', field: '_img', headerSort: false, width: 60,
+            title: 'Photo', field: '_img', headerSort: false, resizable: false, width: 60, headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
                 const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
@@ -1003,6 +1020,7 @@ const renderStudents = (students) => {
         paginationButtonCount: 5,
         columnDefaults: { headerSortTristate: true },
         selectable: true,
+        selectableRangeMode: 'click',
         movableColumns: true,
         groupBy: groupingEnabled ? 'Grade' : '',
         groupHeader: (value, count) =>
@@ -1027,7 +1045,10 @@ const renderStudents = (students) => {
         // Wire selection listener HERE, after table is built
         tabulatorTable.on('rowSelectionChanged', (data, rows) => {
             selectedStudents = new Set(rows.map(r => r.getData().id));
-            selectedCountEl.textContent = `${selectedStudents.size} selected`;
+            const count = selectedStudents.size;
+            selectedCountEl.textContent = `${count} selected`;
+            // Auto-show/hide bulk toolbar
+            bulkActionToolbar.classList.toggle('visible', count > 0);
             syncBulkBtns();
         });
     });
@@ -1383,32 +1404,23 @@ printWordBtn.addEventListener('click', () => {
 });
 
 // ── BULK SELECT ───────────────────────────────────────
-bulkSelectToggleBtn.addEventListener('click', () => {
-    bulkSelectMode = !bulkSelectMode;
-    selectedStudents.clear();
-    bulkActionToolbar.classList.toggle('visible', bulkSelectMode);
-    selectedCountEl.textContent = '0 selected';
-    bulkSelectToggleBtn.classList.toggle('active', bulkSelectMode);
-    renderStudents(currentFilteredStudents);
-});
+// Checkboxes always visible — bulk toolbar appears automatically when rows are selected
 
 document.getElementById('close-bulk-mode').addEventListener('click', () => {
-    bulkSelectMode = false;
+    if (tabulatorTable) tabulatorTable.deselectRow();
     selectedStudents.clear();
     bulkActionToolbar.classList.remove('visible');
-    renderStudents(currentFilteredStudents);
+    syncBulkBtns();
 });
 
 document.getElementById('select-all-btn').addEventListener('click', () => {
     if (!tabulatorTable) return;
     tabulatorTable.selectRow(tabulatorTable.getRows());
-    // rowSelectionChanged fires and updates selectedStudents + count automatically
 });
 
 document.getElementById('deselect-all-btn').addEventListener('click', () => {
     if (!tabulatorTable) return;
     tabulatorTable.deselectRow();
-    // rowSelectionChanged fires and clears selectedStudents automatically
 });
 
 // rowSelectionChanged is wired inside renderStudents after tableBuilt
@@ -1435,9 +1447,7 @@ document.getElementById('bulk-delete-btn').addEventListener('click', async () =>
     }));
     studentsData = studentsData.filter(s => !selectedStudents.has(s.id));
     selectedStudents.clear();
-    bulkSelectMode = false;
     bulkActionToolbar.classList.remove('visible');
-    bulkSelectToggleBtn.classList.remove('active');
     syncBulkBtns();
     updateGradeFilter();
     renderStudents(studentsData);
@@ -1471,7 +1481,13 @@ const openPromoteModal = (ids, fromGrade) => {
 promoteCancelBtn.addEventListener('click', () => promoteModal.classList.add('hidden'));
 promoteModal.addEventListener('click', e => { if (e.target === promoteModal) promoteModal.classList.add('hidden'); });
 
-// Promote entire grade
+// Promote All students
+document.getElementById('promote-all-btn').addEventListener('click', () => {
+    if (!studentsData.length) { showModal('No students to promote.'); return; }
+    openPromoteModal(studentsData.map(s => s.id), 'All Grades');
+});
+
+// Promote entire selected grade
 promoteGradeBtn.addEventListener('click', () => {
     const grade = gradeFilterSelect.value;
     if (!grade) { showModal('Select a grade first.'); return; }
@@ -1519,14 +1535,11 @@ promoteConfirmBtn.addEventListener('click', async () => {
 
         promoteModal.classList.add('hidden');
 
-        // Exit bulk mode if active
-        if (bulkSelectMode) {
-            bulkSelectMode = false;
-            selectedStudents.clear();
-            bulkActionToolbar.classList.remove('visible');
-            bulkSelectToggleBtn.classList.remove('active');
-            syncBulkBtns();
-        }
+        // Deselect all rows after promotion
+        if (tabulatorTable) tabulatorTable.deselectRow();
+        selectedStudents.clear();
+        bulkActionToolbar.classList.remove('visible');
+        syncBulkBtns();
 
         Swal.fire({
             icon: 'success',
