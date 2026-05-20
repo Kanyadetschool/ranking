@@ -301,7 +301,7 @@
 </div>
 
 <!-- Loader -->
-<div id="loader">
+<div id="loader" class="hidden">
     <div style="position:relative;width:56px;height:56px;">
         <div style="position:absolute;inset:0;border-radius:50%;border:4px solid var(--border);"></div>
         <div style="position:absolute;inset:0;border-radius:50%;border:4px solid transparent;border-top-color:var(--navy-lt);animation:spin .8s linear infinite;"></div>
@@ -638,8 +638,8 @@
 </div>
 
 <!-- External scripts -->
-<!-- <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
-<script src="https://kanyadet-school-admin.web.app/js/GoogleAuthmain.js"></script> -->
+<script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
+<script src="https://kanyadet-school-admin.web.app/js/GoogleAuthmain.js"></script>
 <script src="./image-popup.js"></script>
 <script src="./js/image-popup.js"></script>
 <script src="https://kanyadet-school-admin.web.app/Report-Cards/js/Toggle.js"></script>
@@ -777,7 +777,7 @@ onAuthStateChanged(auth, async (user) => {
         document.body.classList.add('user-logged-in');
         document.body.classList.remove('user-logged-out');
         signInSection.classList.add('hidden');           // belt-and-suspenders
-        document.getElementById('main_container').style.display = 'none';
+        const _mc = document.getElementById('main_container'); if (_mc) _mc.style.display = 'none';
         signOutBtn.classList.remove('hidden');
         bulkSelectToggleBtn.classList.remove('hidden');
         dataSection.classList.remove('hidden');
@@ -794,7 +794,7 @@ onAuthStateChanged(auth, async (user) => {
         document.body.classList.add('user-logged-out');
         document.body.classList.remove('user-logged-in');
         signInSection.classList.remove('hidden');        // belt-and-suspenders
-        document.getElementById('main_container').style.display = 'none';
+        const _mc2 = document.getElementById('main_container'); if (_mc2) _mc2.style.display = 'none';
         signOutBtn.classList.add('hidden');
         bulkSelectToggleBtn.classList.add('hidden');
         dataSection.classList.add('hidden');
