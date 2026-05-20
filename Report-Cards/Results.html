@@ -10,6 +10,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tabulator -->
+    <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
+    <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -565,6 +568,163 @@
         .swal2-title { font-family: 'Playfair Display', serif !important; color: var(--navy) !important; }
         .swal2-confirm { border-radius: 8px !important; font-weight: 700 !important; }
         .swal2-cancel  { border-radius: 8px !important; }
+
+        /* ══ TABULATOR THEME ═══════════════════════════ */
+        #tabulator-table { border: none !important; font-family: 'DM Sans', sans-serif !important; background: transparent !important; }
+
+        /* Column headers */
+        #tabulator-table .tabulator-header {
+            background: var(--navy) !important;
+            border-bottom: 2px solid var(--gold) !important;
+            border-top: none !important;
+        }
+        #tabulator-table .tabulator-col {
+            background: var(--navy) !important;
+            border-right: 1px solid rgba(255,255,255,.1) !important;
+            color: rgba(255,255,255,.9) !important;
+        }
+        #tabulator-table .tabulator-col:hover { background: var(--navy-mid) !important; }
+        #tabulator-table .tabulator-col-title {
+            font-size: .73rem !important; font-weight: 600 !important;
+            letter-spacing: .04em !important; color: rgba(255,255,255,.9) !important;
+        }
+        /* Sort arrows */
+        #tabulator-table .tabulator-col .tabulator-col-sorter .tabulator-arrow { border-bottom-color: rgba(255,255,255,.5) !important; }
+        #tabulator-table .tabulator-col.tabulator-col-sorter-element .tabulator-col-sorter .tabulator-arrow { border-bottom-color: var(--gold) !important; }
+
+        /* Rows */
+        #tabulator-table .tabulator-row {
+            border-bottom: 1px solid var(--border) !important;
+            font-size: .82rem !important; color: var(--text2) !important;
+            cursor: pointer;
+        }
+        #tabulator-table .tabulator-row:nth-child(even) { background: var(--surface2) !important; }
+        #tabulator-table .tabulator-row:hover { background: #e8effa !important; }
+        #tabulator-table .tabulator-row.tabulator-selected { background: var(--gold-dim) !important; }
+        #tabulator-table .tabulator-cell {
+            border-right: 1px solid var(--border) !important;
+            padding: .55rem .9rem !important;
+            color: var(--text2) !important;
+        }
+
+        /* Frozen actions column */
+        #tabulator-table .tabulator-frozen { background: inherit !important; }
+        #tabulator-table .tabulator-frozen.tabulator-frozen-left { border-right: 2px solid var(--border2) !important; }
+        #tabulator-table .tabulator-col.tabulator-frozen { background: var(--navy) !important; }
+
+        /* Footer / pagination */
+        #tabulator-table .tabulator-footer {
+            background: var(--surface2) !important;
+            border-top: 1px solid var(--border) !important;
+            padding: .5rem 1rem !important;
+            font-family: 'DM Sans', sans-serif !important;
+        }
+        #tabulator-table .tabulator-footer .tabulator-page {
+            background: var(--surface) !important;
+            border: 1.5px solid var(--border) !important;
+            border-radius: 7px !important;
+            color: var(--text2) !important;
+            font-size: .8rem !important;
+            font-weight: 500 !important;
+            padding: .3rem .75rem !important;
+            font-family: 'DM Sans', sans-serif !important;
+            transition: all .12s !important;
+        }
+        #tabulator-table .tabulator-footer .tabulator-page:hover:not([disabled]) {
+            background: var(--navy) !important; color: #fff !important; border-color: var(--navy) !important;
+        }
+        #tabulator-table .tabulator-footer .tabulator-page.active {
+            background: var(--navy) !important; color: #fff !important;
+            border-color: var(--navy) !important; font-weight: 700 !important;
+        }
+        #tabulator-table .tabulator-footer .tabulator-page[disabled] {
+            background: var(--surface3) !important; color: var(--slate-lt) !important; cursor: not-allowed !important;
+        }
+        #tabulator-table .tabulator-footer .tabulator-page-size {
+            font-family: 'DM Sans', sans-serif !important; border: 1.5px solid var(--border) !important;
+            border-radius: 7px !important; padding: .3rem .5rem !important; font-size: .8rem !important;
+        }
+
+        /* Column resize handle */
+        #tabulator-table .tabulator-col-resize-handle { background: rgba(255,255,255,.15) !important; }
+
+        /* Row group headers */
+        #tabulator-table .tabulator-row.tabulator-group {
+            background: var(--navy-mid) !important;
+            color: #fff !important; font-weight: 700 !important;
+            border-bottom: 1px solid rgba(255,255,255,.1) !important;
+            font-size: .8rem !important;
+        }
+        #tabulator-table .tabulator-row.tabulator-group span { color: var(--gold) !important; }
+
+        /* Column header filter inputs */
+        #tabulator-table .tabulator-header-filter input,
+        #tabulator-table .tabulator-header-filter select {
+            font-family: 'DM Sans', sans-serif !important;
+            border: 1.5px solid rgba(255,255,255,.25) !important;
+            background: rgba(255,255,255,.1) !important;
+            color: #fff !important;
+            border-radius: 5px !important;
+            padding: .25rem .5rem !important;
+            font-size: .72rem !important;
+        }
+        #tabulator-table .tabulator-header-filter input::placeholder { color: rgba(255,255,255,.4) !important; }
+
+        /* Tooltip */
+        .tabulator-tooltip {
+            font-family: 'DM Sans', sans-serif !important;
+            background: var(--navy) !important; color: #fff !important;
+            border-radius: 6px !important; font-size: .75rem !important;
+        }
+
+        /* Edit cell highlight */
+        #tabulator-table .tabulator-cell.tabulator-editing {
+            border: 2px solid var(--navy-lt) !important;
+            box-shadow: 0 0 0 3px rgba(30,64,128,.15) !important;
+            background: #fff !important;
+        }
+        #tabulator-table .tabulator-cell.tabulator-editing input {
+            font-family: 'DM Sans', sans-serif !important;
+        }
+
+        /* Scrollbar */
+        #tabulator-table .tabulator-tableholder::-webkit-scrollbar { height: 7px; width: 7px; }
+        #tabulator-table .tabulator-tableholder::-webkit-scrollbar-track { background: var(--surface2); }
+        #tabulator-table .tabulator-tableholder::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+
+        /* Column visibility toggle menu */
+        .tabulator-col-header-menu { background: var(--surface) !important; border: 1px solid var(--border) !important; border-radius: 10px !important; box-shadow: var(--shadow-lg) !important; }
+        .tabulator-col-header-menu .tabulator-menu-item { font-family: 'DM Sans', sans-serif !important; font-size: .83rem !important; padding: .45rem 1rem !important; }
+        .tabulator-col-header-menu .tabulator-menu-item:hover { background: var(--surface3) !important; }
+
+        /* Spreadsheet range selection */
+        #tabulator-table .tabulator-cell.tabulator-range-selected { background: rgba(30,64,128,.12) !important; }
+        #tabulator-table .tabulator-cell.tabulator-range-top { border-top: 2px solid var(--navy-lt) !important; }
+        #tabulator-table .tabulator-cell.tabulator-range-bottom { border-bottom: 2px solid var(--navy-lt) !important; }
+        #tabulator-table .tabulator-cell.tabulator-range-left { border-left: 2px solid var(--navy-lt) !important; }
+        #tabulator-table .tabulator-cell.tabulator-range-right { border-right: 2px solid var(--navy-lt) !important; }
+
+        /* Tabulator toolbar extras */
+        .tab-toolbar {
+            display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+            padding: .6rem 1.25rem; background: var(--surface2);
+            border-top: 1px solid var(--border);
+        }
+        .tab-toolbar-btn {
+            display: inline-flex; align-items: center; gap: .3rem;
+            padding: .32rem .75rem; border-radius: 7px; border: 1.5px solid var(--border2);
+            background: var(--surface); color: var(--text2); font-size: .75rem;
+            font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif;
+            transition: all .15s; white-space: nowrap;
+        }
+        .tab-toolbar-btn:hover { background: var(--navy); color: #fff; border-color: var(--navy); }
+        .tab-toolbar-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
+        .tab-count-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            background: var(--gold-dim); color: var(--navy); border: 1px solid rgba(240,165,0,.3);
+            border-radius: 20px; padding: .2rem .7rem; font-size: .75rem; font-weight: 700;
+            font-family: 'DM Sans', sans-serif; margin-left: auto;
+        }
     </style>
 </head>
 
@@ -774,7 +934,37 @@
                     </div>
                 </div>
 
-                <div id="data-display" class="overflow-x-auto"></div>
+                <!-- Tabulator Extra Toolbar -->
+                <div class="tab-toolbar" id="tab-toolbar">
+                    <button class="tab-toolbar-btn" id="tab-toggle-filters" title="Toggle per-column search filters">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
+                        Col Filters
+                    </button>
+                    <button class="tab-toolbar-btn" id="tab-toggle-group" title="Group by Grade">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                        Group by Grade
+                    </button>
+                    <button class="tab-toolbar-btn" id="tab-toggle-cols" title="Show/hide columns">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
+                        Columns
+                    </button>
+                    <button class="tab-toolbar-btn" id="tab-freeze-cols" title="Freeze first data column">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M5.5 8.5l6.5 3.5-6.5 3.5M18.5 8.5L12 12l6.5 3.5"/></svg>
+                        Freeze Name
+                    </button>
+                    <button class="tab-toolbar-btn" id="tab-fit-cols" title="Auto-fit columns to data">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
+                        Fit Cols
+                    </button>
+                    <button class="tab-toolbar-btn" id="tab-clear-filters" title="Clear all active filters">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        Clear Filters
+                    </button>
+                    <span class="tab-count-badge" id="tab-count-badge">0 students</span>
+                </div>
+
+                <div id="tabulator-table"></div>
+                <div id="data-display" class="overflow-x-auto" style="display:none;"></div>
             </div>
 
         </main>
@@ -907,11 +1097,11 @@ if (grid) grid.style.display = 'none';
 
 // Create toggle button
 const toggleBtn = document.createElement('button');
-toggleBtn.textContent = 'Upload';
+toggleBtn.textContent = 'Show Content';
 toggleBtn.style.cssText = `
   padding: 10px 20px;
   margin-left: 20px ! important;
-  background: #0d1f35 ! important;
+  background: #3b82f6;
   color: white;
   border: none;
   border-radius: 6px;
@@ -922,11 +1112,11 @@ toggleBtn.style.cssText = `
 `;
 
 toggleBtn.addEventListener('mouseenter', () => {
-  toggleBtn.style.background = '##030a16';
+  toggleBtn.style.background = '#2563eb';
 });
 
 toggleBtn.addEventListener('mouseleave', () => {
-  toggleBtn.style.background = '#030a16';
+  toggleBtn.style.background = '#3b82f6';
 });
 
 // Insert button before grid
@@ -939,11 +1129,11 @@ toggleBtn.addEventListener('click', () => {
   if (isVisible) {
     // Hide content
     grid.style.display = 'none';
-    toggleBtn.textContent = 'Upload';
+    toggleBtn.textContent = 'Show Content';
   } else {
     // Show content
     grid.style.display = 'grid';
-    toggleBtn.textContent = 'Hide Upload Section';
+    toggleBtn.textContent = 'Hide Content';
   }
   isVisible = !isVisible;
 });
@@ -1023,24 +1213,7 @@ toggleBtn.addEventListener('click', () => {
 
         studentsPerPageSelect.addEventListener('change', (e) => {
             studentsPerPage = parseInt(e.target.value);
-            currentPage = 1;
-            const selectedGrade = gradeFilterSelect.value;
-            const searchTerm = searchInput.value;
-
-            if (selectedGrade) {
-                const filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
-                renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
-            } else if (searchTerm) {
-                const searchTermLower = searchTerm.toLowerCase();
-                const filteredStudents = studentsData.filter(student => 
-                    Object.values(student).some(value => 
-                        String(value).toLowerCase().includes(searchTermLower)
-                    )
-                );
-                renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
-            } else {
-                renderStudents(studentsData);
-            }
+            if (tabulatorTable) tabulatorTable.setPageSize(studentsPerPage);
         });
 
         closeModalBtn.addEventListener('click', () => {
@@ -1092,7 +1265,7 @@ toggleBtn.addEventListener('click', () => {
         };
 
         printAllBtn.addEventListener('click', () => {
-            renderStudents(studentsData);
+            if (tabulatorTable) { tabulatorTable.clearFilter(); updateCountBadge(); }
             gradeFilterSelect.value = '';
             searchInput.value = '';
             openExportModal();
@@ -1304,20 +1477,32 @@ toggleBtn.addEventListener('click', () => {
             }
         };
 
-      // Update the gradeFilterSelect event listener to show the delete button
+      // gradeFilterSelect → Tabulator filter
 gradeFilterSelect.addEventListener('change', () => {
     const selectedGrade = gradeFilterSelect.value;
     searchInput.value = '';
-    currentPage = 1;
-    if (selectedGrade) {
-        const filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
-        renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
-        printGradeBtn.classList.remove('hidden');
-        deleteGradeBtn.classList.remove('hidden'); // Show the delete button
+    if (tabulatorTable) {
+        tabulatorTable.clearFilter();
+        if (selectedGrade) {
+            tabulatorTable.setFilter('Grade', '=', selectedGrade);
+            printGradeBtn.classList.remove('hidden');
+            deleteGradeBtn.classList.remove('hidden');
+        } else {
+            printGradeBtn.classList.add('hidden');
+            deleteGradeBtn.classList.add('hidden');
+        }
+        // update analytics with filtered data
+        const visible = selectedGrade
+            ? studentsData.filter(s => s.Grade === selectedGrade)
+            : studentsData;
+        currentFilteredStudents = visible;
+        updateAnalyticsDashboard(visible, selectedGrade ? { field: 'Grade', value: selectedGrade } : null);
+        updateCountBadge();
     } else {
-        renderStudents(studentsData);
-        printGradeBtn.classList.add('hidden');
-        deleteGradeBtn.classList.add('hidden'); // Hide the delete button
+        const filtered = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
+        renderStudents(filtered, selectedGrade ? { field: 'Grade', value: selectedGrade } : null);
+        printGradeBtn.classList.toggle('hidden', !selectedGrade);
+        deleteGradeBtn.classList.toggle('hidden', !selectedGrade);
     }
 });
 
@@ -1854,8 +2039,6 @@ gradeFilterSelect.addEventListener('change', () => {
                 const value = filterElement.dataset.filterValue;
 
                 const filteredStudents = studentsData.filter(student => (student[field] || 'N/A') === value);
-                currentPage = 1;
-
                 let maleCount = 0, femaleCount = 0;
                 if (field === 'Grade') {
                     filteredStudents.forEach(student => {
@@ -1864,25 +2047,31 @@ gradeFilterSelect.addEventListener('change', () => {
                     });
                 }
 
-                renderStudents(filteredStudents, { 
-                    field, 
-                    value, 
-                    total: filteredStudents.length,
-                    maleCount,
-                    femaleCount
-                });
-
-                if (field === 'Grade') {
-                    gradeFilterSelect.value = value;
+                if (tabulatorTable) {
+                    tabulatorTable.clearFilter();
+                    tabulatorTable.setFilter(field, '=', value);
+                    currentFilteredStudents = filteredStudents;
+                    updateAnalyticsDashboard(filteredStudents, { field, value, total: filteredStudents.length, maleCount, femaleCount });
+                    updateCountBadge();
                 } else {
-                    gradeFilterSelect.value = '';
+                    renderStudents(filteredStudents, { field, value, total: filteredStudents.length, maleCount, femaleCount });
                 }
+
+                if (field === 'Grade') gradeFilterSelect.value = value;
+                else gradeFilterSelect.value = '';
                 searchInput.value = '';
             }
 
             if (clearButton) {
-                currentPage = 1;
-                renderStudents(studentsData);
+                if (tabulatorTable) {
+                    tabulatorTable.clearFilter();
+                    tabulatorTable.clearSort();
+                    currentFilteredStudents = studentsData;
+                    updateAnalyticsDashboard(studentsData, null);
+                    updateCountBadge();
+                } else {
+                    renderStudents(studentsData);
+                }
                 gradeFilterSelect.value = '';
                 searchInput.value = '';
             }
@@ -1908,231 +2097,310 @@ gradeFilterSelect.addEventListener('change', () => {
         };
 
       searchInput.addEventListener('input', (e) => {
-    const searchTerm = e.target.value;
+    const searchTerm = e.target.value.trim();
     const selectedGrade = gradeFilterSelect.value;
-    
-    if (!searchTerm) {
-        // If search is empty, show filtered by grade or all students
-        if (selectedGrade) {
-            const filteredStudents = studentsData.filter(student => student.Grade === selectedGrade);
-            currentPage = 1;
-            renderStudents(filteredStudents, { field: 'Grade', value: selectedGrade });
-        } else {
-            currentPage = 1;
-            renderStudents(studentsData);
+
+    if (tabulatorTable) {
+        const filters = [];
+        if (selectedGrade) filters.push({ field: 'Grade', type: '=', value: selectedGrade });
+        if (searchTerm) {
+            filters.push((data) => {
+                return Object.entries(data).some(([k, v]) => {
+                    if (k === 'id' || k === '_actions') return false;
+                    return String(v).toLowerCase().includes(searchTerm.toLowerCase());
+                });
+            });
         }
-        return;
-    }
-
-    const searchTermLower = searchTerm.toLowerCase();
-    
-    // Filter by grade first (if selected), then by search term
-    let filteredStudents = selectedGrade 
-        ? studentsData.filter(student => student.Grade === selectedGrade)
-        : studentsData;
-    
-    filteredStudents = filteredStudents.filter(student => {
-        return Object.entries(student).some(([key, value]) => {
-            if (key === 'id') return false;
-            return String(value).toLowerCase().includes(searchTermLower);
-        });
-    });
-
-    currentPage = 1;
-    
-    // Set appropriate filter context
-    if (selectedGrade) {
-        renderStudents(filteredStudents, { field: 'Grade + Search', value: `${selectedGrade} - "${searchTerm}"` });
+        tabulatorTable.setFilter(filters);
+        updateCountBadge();
     } else {
-        renderStudents(filteredStudents, { field: 'Search', value: searchTerm });
+        let filteredStudents = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
+        if (searchTerm) {
+            const lower = searchTerm.toLowerCase();
+            filteredStudents = filteredStudents.filter(s =>
+                Object.entries(s).some(([k, v]) => k !== 'id' && String(v).toLowerCase().includes(lower))
+            );
+        }
+        const ctx = selectedGrade && searchTerm
+            ? { field: 'Grade + Search', value: `${selectedGrade} - "${searchTerm}"` }
+            : searchTerm ? { field: 'Search', value: searchTerm }
+            : selectedGrade ? { field: 'Grade', value: selectedGrade } : null;
+        renderStudents(filteredStudents, ctx);
     }
 });
 
         
 
-        const renderPagination = (totalStudents, students, activeFilter = null) => {
-            const totalPages = Math.ceil(totalStudents / studentsPerPage);
-            const paginationContainer = document.createElement('div');
-            paginationContainer.id = 'pagination-controls';
-            paginationContainer.className = 'flex justify-center items-center mt-4 space-x-2';
 
-            const startIndex = (currentPage - 1) * studentsPerPage + 1;
-            const endIndex = Math.min(currentPage * studentsPerPage, totalStudents);
-            const showingText = document.createElement('p');
-            showingText.className = 'text-sm text-gray-600 mr-4';
-            showingText.textContent = totalStudents > 0 ? `Showing ${startIndex}-${endIndex} of ${totalStudents} students` : 'No students to display';
-            paginationContainer.appendChild(showingText);
 
-            const prevButton = document.createElement('button');
-            prevButton.textContent = 'Previous';
-            prevButton.className = 'pagination-btn';
-            prevButton.disabled = currentPage === 1;
-            prevButton.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
-                        ? studentsData.filter(student => student.Grade === activeFilter.value)
-                        : activeFilter && activeFilter.field === 'Search'
-                        ? studentsData.filter(student => 
-                            Object.values(student).some(value => 
-                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
-                            )
-                        )
-                        : students;
-                    renderStudents(filteredStudents, activeFilter);
-                }
-            });
-            paginationContainer.appendChild(prevButton);
+        // ══ TABULATOR SETUP ════════════════════════════════════════
 
-            const maxVisiblePages = 5;
-            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
-            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
-            if (endPage - startPage + 1 < maxVisiblePages) {
-                startPage = Math.max(1, endPage - maxVisiblePages + 1);
-            }
+        const PRIORITY_COLS = [
+            'Grade','Term','Assessment No','Official Student Name','UPI','Gender',
+            'Mathematics','English','Kiswahili','Integrated Science',
+            'Creative Arts & Social studies','Creative Arts & Sports',
+            'Creative Arts','Social studies','Agriculture','CRE',
+            'Pre-Technical Studies','Integrated Learning Area',
+            'Total Marks','Perc Avrg','Level','Class','Closing Date','Opening Date'
+        ];
 
-            for (let i = startPage; i <= endPage; i++) {
-                const pageButton = document.createElement('button');
-                pageButton.textContent = i;
-                pageButton.className = `pagination-btn ${i === currentPage ? 'active' : ''}`;
-                pageButton.addEventListener('click', () => {
-                    currentPage = i;
-                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
-                        ? studentsData.filter(student => student.Grade === activeFilter.value)
-                        : activeFilter && activeFilter.field === 'Search'
-                        ? studentsData.filter(student => 
-                            Object.values(student).some(value => 
-                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
-                            )
-                        )
-                        : students;
-                    renderStudents(filteredStudents, activeFilter);
-                });
-                paginationContainer.appendChild(pageButton);
-            }
-
-            const nextButton = document.createElement('button');
-            nextButton.textContent = 'Next';
-            nextButton.className = 'pagination-btn';
-            nextButton.disabled = currentPage === totalPages;
-            nextButton.addEventListener('click', () => {
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    const filteredStudents = activeFilter && activeFilter.field === 'Grade' 
-                        ? studentsData.filter(student => student.Grade === activeFilter.value)
-                        : activeFilter && activeFilter.field === 'Search'
-                        ? studentsData.filter(student => 
-                            Object.values(student).some(value => 
-                                String(value).toLowerCase().includes(activeFilter.value.toLowerCase())
-                            )
-                        )
-                        : students;
-                    renderStudents(filteredStudents, activeFilter);
-                }
-            });
-            paginationContainer.appendChild(nextButton);
-
-            return paginationContainer;
-        };
+        let tabulatorTable = null;
+        let colFiltersVisible = false;
+        let groupingEnabled = false;
+        let nameColFrozen = false;
 
         const getOrderedHeaders = (students) => {
             const allKeys = new Set();
-            students.forEach(student => {
-                Object.keys(student).forEach(key => allKeys.add(key));
-            });
-            // Remove internal keys never shown in the table
-            ['id', 'deletedAt', 'deletedBy'].forEach(k => allKeys.delete(k));
-
-            // Priority columns shown first (only if present in data)
-            const PRIORITY = [
-                'Grade', 'Term', 'Assessment No', 'Official Student Name', 'UPI', 'Gender',
-                'Mathematics', 'English', 'Kiswahili', 'Integrated Science',
-                'Creative Arts & Social studies', 'Creative Arts & Sports',
-                'Creative Arts', 'Social studies', 'Agriculture', 'CRE',
-                'Pre-Technical Studies', 'Integrated Learning Area',
-                'Total Marks', 'Perc Avrg', 'Level', 'Class',
-                'Closing Date', 'Opening Date'
-            ];
-            const priorityPresent = PRIORITY.filter(k => allKeys.has(k));
-            const otherHeaders = Array.from(allKeys)
-                .filter(k => !PRIORITY.includes(k))
-                .sort();
+            students.forEach(s => Object.keys(s).forEach(k => allKeys.add(k)));
+            ['id','deletedAt','deletedBy'].forEach(k => allKeys.delete(k));
+            allKeys.delete('Image');
+            const priorityPresent = PRIORITY_COLS.filter(k => allKeys.has(k));
+            const otherHeaders = Array.from(allKeys).filter(k => !PRIORITY_COLS.includes(k)).sort();
             return ['Image', ...priorityPresent, ...otherHeaders];
         };
 
-const renderStudents = (students, activeFilter = null) => {
-            currentFilteredStudents = students; // always track what's visible
-            dataDisplay.innerHTML = '';
+        const NUMERIC_COLS = new Set([
+            'Mathematics','English','Kiswahili','Integrated Science',
+            'Creative Arts & Social studies','Creative Arts & Sports',
+            'Creative Arts','Social studies','Agriculture','CRE',
+            'Pre-Technical Studies','Integrated Learning Area',
+            'Total Marks','Perc Avrg'
+        ]);
+
+        const buildTabulatorColumns = (students) => {
+            const headers = getOrderedHeaders(students);
+            const cols = [];
+
+            // Frozen Actions column
+            cols.push({
+                title: 'Actions', field: '_actions', frozen: true,
+                resizable: false, headerSort: false, headerFilter: false,
+                width: 100,
+                formatter: (cell) => {
+                    const id = cell.getRow().getData().id;
+                    return `<div class="action-wrap">
+                        <button onclick="editStudent('${id}')" class="btn-edit">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/></svg>
+                            Edit
+                        </button>
+                        <button onclick="deleteStudent('${id}')" class="btn-del" title="Delete">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/></svg>
+                        </button>
+                    </div>`;
+                }
+            });
+
+            headers.forEach(header => {
+                const isNumeric = NUMERIC_COLS.has(header);
+                const col = {
+                    title: header, field: header,
+                    resizable: true, headerSort: true, minWidth: 90, tooltip: true,
+                    headerFilter: colFiltersVisible ? (isNumeric ? 'number' : 'input') : false,
+                    headerFilterPlaceholder: 'Filter…',
+                };
+
+                if (header === 'Image') {
+                    Object.assign(col, { width: 68, resizable: false, headerSort: false, headerFilter: false,
+                        formatter: (cell) => {
+                            const name = cell.getRow().getData()['Official Student Name'] || '';
+                            const enc = encodeURIComponent(name);
+                            const src = enc ? `./student_images/${enc}.jpg` : './student_images/default.jpg';
+                            return `<img src="${src}" alt="${name}" class="student-image" onerror="this.src='./student_images/default.jpg'">`;
+                        }
+                    });
+                } else if (isNumeric) {
+                    Object.assign(col, {
+                        hozAlign: 'center', headerHozAlign: 'center', width: 100,
+                        sorter: 'number',
+                        formatter: (cell) => {
+                            const v = cell.getValue();
+                            if (v === undefined || v === null || v === '' || v === '-') return '<span style="color:var(--slate-lt)">—</span>';
+                            const n = parseFloat(v);
+                            if (isNaN(n)) return v;
+                            let color = '#e53e3e';
+                            if (n >= 75) color = '#276749';
+                            else if (n >= 58) color = '#2b6cb0';
+                            else if (n >= 41) color = '#d69e2e';
+                            return `<span style="font-weight:600;color:${color}">${n}</span>`;
+                        }
+                    });
+                } else if (header === 'Level') {
+                    Object.assign(col, {
+                        width: 80, hozAlign: 'center',
+                        formatter: (cell) => {
+                            const v = cell.getValue() || '';
+                            const colors = {EE1:'#276749',EE2:'#38a169',ME1:'#2b6cb0',ME2:'#4299e1',AE1:'#d69e2e',AE2:'#ed8936',BE1:'#e53e3e',BE2:'#c53030'};
+                            const c = colors[v] || 'var(--slate)';
+                            return v ? `<span style="font-weight:700;color:${c};background:${c}18;padding:2px 7px;border-radius:4px;font-size:.72rem">${v}</span>` : '—';
+                        }
+                    });
+                } else if (header === 'Gender') {
+                    Object.assign(col, {
+                        width: 80, hozAlign: 'center',
+                        headerFilter: colFiltersVisible ? 'select' : false,
+                        headerFilterParams: { values: {'':'All','Male':'Male','Female':'Female'} },
+                        formatter: (cell) => {
+                            const v = (cell.getValue() || '').trim();
+                            if (!v) return '—';
+                            const color = v.toLowerCase() === 'male' ? '#2b6cb0' : '#b83280';
+                            return `<span style="color:${color};font-weight:600">${v}</span>`;
+                        }
+                    });
+                } else if (header === 'Official Student Name') {
+                    col.minWidth = 160;
+                    col.frozen = nameColFrozen;
+                } else if (header === 'Assessment No') {
+                    col.width = 130;
+                } else if (header === 'Grade') {
+                    col.width = 80;
+                }
+
+                cols.push(col);
+            });
+            return cols;
+        };
+
+        const updateCountBadge = () => {
+            const badge = document.getElementById('tab-count-badge');
+            if (!badge || !tabulatorTable) return;
+            const count = tabulatorTable.getDataCount('active');
+            badge.textContent = count === 1 ? '1 student' : `${count} students`;
+        };
+
+        const renderStudents = (students, activeFilter = null) => {
+            currentFilteredStudents = students;
             updateAnalyticsDashboard(students, activeFilter);
 
+            if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
+
+            const el = document.getElementById('tabulator-table');
+
             if (students.length === 0 && studentsData.length > 0) {
-                dataDisplay.innerHTML = '<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-500 italic">No student data found for this selection.</p></div>';
-                const paginationContainer = renderPagination(students.length, students, activeFilter);
-                dataDisplay.appendChild(paginationContainer);
-                return;
-            } else if (studentsData.length === 0) {
-                dataDisplay.innerHTML = '<div class="bg-white p-8 rounded-lg shadow-md text-center"><p class="text-gray-500 italic">No student data has been uploaded yet.</p></div>';
-                return;
+                el.innerHTML = '<div style="padding:2.5rem;text-align:center;color:var(--slate);font-style:italic">No student data found for this selection.</div>';
+                updateCountBadge(); return;
+            }
+            if (studentsData.length === 0) {
+                el.innerHTML = '<div style="padding:2.5rem;text-align:center;color:var(--slate);font-style:italic">No student data has been uploaded yet.</div>';
+                updateCountBadge(); return;
             }
 
-            const startIndex = (currentPage - 1) * studentsPerPage;
-            const endIndex = startIndex + studentsPerPage;
-            const paginatedStudents = students.slice(startIndex, endIndex);
+            const rowData = students.map(s => ({ ...s, _actions: '' }));
+            const columns = buildTabulatorColumns(students);
 
-            const headers = getOrderedHeaders(students);
+            tabulatorTable = new Tabulator('#tabulator-table', {
+                data: rowData,
+                columns: columns,
+                index: 'id',
+                layout: 'fitDataFill',
+                height: 'calc(100vh - 420px)',
+                minHeight: 340,
 
-            const table = document.createElement('table');
-            table.id = 'student-table';
-            table.className = "min-w-full bg-white rounded-lg shadow-md overflow-hidden";
-            let tableHTML =  `<thead style="background-color: rgb(41, 128, 185);"><tr>`;
-            tableHTML += `<th class="py-3 px-4 text-left font-semibold text-white th-actions" style="min-width:90px;">Actions</th>`;
-            headers.forEach(header => {
-                tableHTML += `<th class="py-3 px-4 text-left font-semibold text-white w-full border-collapse" style="font-family: Helvetica, Arial, sans-serif;">${header}</th>`;
+                // Pagination
+                pagination: true,
+                paginationMode: 'local',
+                paginationSize: studentsPerPage,
+                paginationSizeSelector: [10, 25, 50, 100, 200, 500],
+                paginationCounter: 'rows',
+
+                // Multi-column sort
+                columnDefaults: { headerSortTristate: true },
+
+                // Row selection
+                selectable: true,
+
+                // Drag to reorder columns
+                movableColumns: true,
+
+                // Grouping
+                groupBy: groupingEnabled ? 'Grade' : '',
+                groupHeader: (value, count) =>
+                    `<span style="font-weight:700">${value || 'No Grade'}</span>&nbsp;
+                     <span style="font-size:.74rem;opacity:.7">${count} student${count !== 1 ? 's' : ''}</span>`,
+                groupToggleElement: 'header',
+                groupStartOpen: true,
+
+                // Clipboard copy selected rows
+                clipboard: true,
+                clipboardCopyRowRange: 'selected',
+                clipboardCopyStyled: false,
+
+                // Row click → PDF
+                rowClick: (e, row) => {
+                    if (e.target.closest('.action-wrap')) return;
+                    if (e.target.tagName === 'IMG') return;
+                    const d = row.getData();
+                    openLocalPDF(d['Assessment No'], d['Official Student Name'] || '');
+                },
+
+                dataFiltered: updateCountBadge,
+                dataSorted: updateCountBadge,
+                pageLoaded: updateCountBadge,
+                tableBuilt: updateCountBadge,
             });
-            tableHTML += `</tr></thead>`;
-            tableHTML += `<tbody class="divide-y divide-gray-200">`;
-
-            paginatedStudents.forEach(student => {
-                tableHTML += `
-                    <tr id="row-${student.id}" class="cursor-pointer" data-id="${student.id}" onclick="if(!event.target.closest('.action-buttons') && !event.target.classList.contains('student-image')) openLocalPDF('${student['Assessment No']}', '${student['Official Student Name'] || ''}')">
-                `;
-                // ── Actions cell FIRST (sticky left) ──
-                tableHTML += `
-                    <td class="action-cell">
-                        <div class="action-wrap">
-                            <button onclick="editStudent('${student.id}')" class="btn-edit">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/></svg>
-                                Edit
-                            </button>
-                            <button onclick="deleteStudent('${student.id}')" class="btn-del" title="Delete">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd"/></svg>
-                            </button>
-                        </div>
-                    </td>
-                `;
-                headers.forEach(header => {
-                    if (header === 'Image') {
-                        const imageName = student['Official Student Name'] ? encodeURIComponent(student['Official Student Name']) : '';
-                        const imagePath = imageName ? `./student_images/${imageName}.jpg` : './student_images/default.jpg';
-                        tableHTML += `
-                            <td class="py-3 px-4 whitespace-nowrap text-sm text-gray-600" data-header="Image">
-                                <img src="${imagePath}" alt="${student['Official Student Name'] || 'Student Image'}" class="student-image" onerror="this.src='./student_images/default.jpg';this.alt='Default Image'">
-                            </td>`;
-                    } else {
-                        const value = student[header] !== undefined ? student[header] : '-';
-                        tableHTML += `<td class="py-3 px-4 whitespace-nowrap text-sm text-gray-600" data-header="${header}">${value}</td>`;
-                    }
-                });
-                tableHTML += `</tr>`;
-            });
-
-            tableHTML += `</tbody>`;
-            table.innerHTML = tableHTML;
-            dataDisplay.appendChild(table);
-
-            const paginationContainer = renderPagination(students.length, students, activeFilter);
-            dataDisplay.appendChild(paginationContainer);
         };
+
+        // Toolbar wiring
+        document.getElementById('tab-toggle-filters').addEventListener('click', function () {
+            colFiltersVisible = !colFiltersVisible;
+            this.classList.toggle('active', colFiltersVisible);
+            if (tabulatorTable) renderStudents(currentFilteredStudents);
+        });
+
+        document.getElementById('tab-toggle-group').addEventListener('click', function () {
+            groupingEnabled = !groupingEnabled;
+            this.classList.toggle('active', groupingEnabled);
+            if (tabulatorTable) {
+                groupingEnabled ? tabulatorTable.setGroupBy('Grade') : tabulatorTable.setGroupBy('');
+            }
+        });
+
+        document.getElementById('tab-toggle-cols').addEventListener('click', function () {
+            if (!tabulatorTable) return;
+            const existing = document.getElementById('tab-col-menu');
+            if (existing) { existing.remove(); return; }
+            const menu = document.createElement('div');
+            menu.id = 'tab-col-menu';
+            const btn = this;
+            const rect = btn.getBoundingClientRect();
+            menu.style.cssText = `position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);
+                border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:.5rem 0;
+                min-width:200px;max-height:360px;overflow-y:auto;
+                top:${rect.bottom + 6}px;left:${rect.left}px;`;
+            tabulatorTable.getColumns().forEach(col => {
+                const field = col.getField();
+                if (!field || field === '_actions') return;
+                const isVis = col.isVisible();
+                const item = document.createElement('label');
+                item.style.cssText = 'display:flex;align-items:center;gap:.6rem;padding:.4rem 1rem;cursor:pointer;font-size:.82rem;color:var(--text2);font-family:"DM Sans",sans-serif;user-select:none;';
+                item.innerHTML = `<input type="checkbox" ${isVis ? 'checked' : ''} style="accent-color:var(--navy)"> ${col.getDefinition().title}`;
+                item.querySelector('input').addEventListener('change', e => {
+                    e.target.checked ? col.show() : col.hide();
+                });
+                menu.appendChild(item);
+            });
+            document.body.appendChild(menu);
+            setTimeout(() => {
+                document.addEventListener('click', function h(e) {
+                    if (!menu.contains(e.target) && e.target !== btn) { menu.remove(); document.removeEventListener('click', h); }
+                });
+            }, 100);
+        });
+
+        document.getElementById('tab-freeze-cols').addEventListener('click', function () {
+            nameColFrozen = !nameColFrozen;
+            this.classList.toggle('active', nameColFrozen);
+            if (tabulatorTable) renderStudents(currentFilteredStudents);
+        });
+
+        document.getElementById('tab-fit-cols').addEventListener('click', () => {
+            if (tabulatorTable) tabulatorTable.redraw(true);
+        });
+
+        document.getElementById('tab-clear-filters').addEventListener('click', () => {
+            if (tabulatorTable) { tabulatorTable.clearFilter(); tabulatorTable.clearSort(); updateCountBadge(); }
+        });
+
+
 
         
         // ══ EDIT DRAWER ═══════════════════════════════════════════
@@ -2179,11 +2447,18 @@ const renderStudents = (students, activeFilter = null) => {
                 if (idx !== -1) studentsData[idx] = { id: drawerCurrentId, ...updatedData };
                 closeDrawer();
                 showModal('Student record updated successfully!');
-                const selGrade = gradeFilterSelect.value;
-                const sTerm = searchInput.value;
-                if (selGrade) renderStudents(studentsData.filter(s => s.Grade === selGrade), { field: 'Grade', value: selGrade });
-                else if (sTerm) { const lo = sTerm.toLowerCase(); renderStudents(studentsData.filter(s => Object.values(s).some(v => String(v).toLowerCase().includes(lo))), { field: 'Search', value: sTerm }); }
-                else renderStudents(studentsData);
+                if (tabulatorTable) {
+                    const trow = tabulatorTable.getRow(drawerCurrentId);
+                    if (trow) trow.update({ ...updatedData, _actions: '' });
+                    else tabulatorTable.replaceData(studentsData.map(s => ({ ...s, _actions: '' })));
+                    updateCountBadge();
+                } else {
+                    const selGrade = gradeFilterSelect.value;
+                    const sTerm = searchInput.value;
+                    if (selGrade) renderStudents(studentsData.filter(s => s.Grade === selGrade), { field: 'Grade', value: selGrade });
+                    else if (sTerm) { const lo = sTerm.toLowerCase(); renderStudents(studentsData.filter(s => Object.values(s).some(v => String(v).toLowerCase().includes(lo))), { field: 'Search', value: sTerm }); }
+                    else renderStudents(studentsData);
+                }
             } catch (e) {
                 showModal(`Error: ${e.message}`);
             } finally {
@@ -2344,8 +2619,15 @@ window.deleteStudent = async (id) => {
 
         await remove(studentRef);
         showModal('Student record deleted successfully and moved to DeletedResults.');
-        // Remove totalStudents-- and replace fetchAndRenderStudents with renderStudents
-        renderStudents(studentsData);
+        studentsData = studentsData.filter(s => s.id !== id);
+        if (tabulatorTable) {
+            const row = tabulatorTable.getRow(id);
+            if (row) row.delete();
+            else tabulatorTable.replaceData(studentsData.map(s => ({ ...s, _actions: '' })));
+            updateCountBadge();
+        } else {
+            renderStudents(studentsData);
+        }
     } catch (e) {
         console.error("Error deleting student:", e);
         showModal(`Error deleting record: ${e.message}. Check Firebase rules and network.`);
@@ -2385,7 +2667,13 @@ deleteGradeBtn.addEventListener('click', async () => {
             // Update studentsData and re-render
             studentsData = studentsData.filter(student => student.Grade !== selectedGrade);
             gradeFilterSelect.value = '';
-            renderStudents(studentsData);
+            if (tabulatorTable) {
+                tabulatorTable.clearFilter();
+                tabulatorTable.replaceData(studentsData.map(s => ({ ...s, _actions: '' })));
+                updateCountBadge();
+            } else {
+                renderStudents(studentsData);
+            }
         } catch (error) {
             console.error("Error deleting grade:", error);
             showModal(`Error deleting grade: ${error.message}`);
