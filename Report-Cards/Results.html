@@ -1101,7 +1101,7 @@ toggleBtn.textContent = 'Show Content';
 toggleBtn.style.cssText = `
   padding: 10px 20px;
   margin-left: 20px ! important;
-  background: #3b82f6;
+  background: #0d1f35;
   color: white;
   border: none;
   border-radius: 6px;
@@ -1112,11 +1112,11 @@ toggleBtn.style.cssText = `
 `;
 
 toggleBtn.addEventListener('mouseenter', () => {
-  toggleBtn.style.background = '#2563eb';
+  toggleBtn.style.background = '#1e4080';
 });
 
 toggleBtn.addEventListener('mouseleave', () => {
-  toggleBtn.style.background = '#3b82f6';
+  toggleBtn.style.background = '#0d1f35';
 });
 
 // Insert button before grid
@@ -1265,7 +1265,7 @@ toggleBtn.addEventListener('click', () => {
         };
 
         printAllBtn.addEventListener('click', () => {
-            if (tabulatorTable) { tabulatorTable.clearFilter(); updateCountBadge(); }
+            if (tabulatorTable) { tabulatorTable.clearFilter(true); setTimeout(updateCountBadge, 30); }
             gradeFilterSelect.value = '';
             searchInput.value = '';
             openExportModal();
@@ -1482,22 +1482,21 @@ gradeFilterSelect.addEventListener('change', () => {
     const selectedGrade = gradeFilterSelect.value;
     searchInput.value = '';
     if (tabulatorTable) {
-        tabulatorTable.clearFilter();
+        tabulatorTable.clearFilter(true);
         if (selectedGrade) {
-            tabulatorTable.setFilter('Grade', '=', selectedGrade);
+            tabulatorTable.addFilter('Grade', '=', selectedGrade);
             printGradeBtn.classList.remove('hidden');
             deleteGradeBtn.classList.remove('hidden');
         } else {
             printGradeBtn.classList.add('hidden');
             deleteGradeBtn.classList.add('hidden');
         }
-        // update analytics with filtered data
         const visible = selectedGrade
             ? studentsData.filter(s => s.Grade === selectedGrade)
             : studentsData;
         currentFilteredStudents = visible;
         updateAnalyticsDashboard(visible, selectedGrade ? { field: 'Grade', value: selectedGrade } : null);
-        updateCountBadge();
+        setTimeout(updateCountBadge, 30);
     } else {
         const filtered = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
         renderStudents(filtered, selectedGrade ? { field: 'Grade', value: selectedGrade } : null);
@@ -2048,11 +2047,11 @@ gradeFilterSelect.addEventListener('change', () => {
                 }
 
                 if (tabulatorTable) {
-                    tabulatorTable.clearFilter();
-                    tabulatorTable.setFilter(field, '=', value);
+                    tabulatorTable.clearFilter(true);
+                    tabulatorTable.addFilter(field, '=', value);
                     currentFilteredStudents = filteredStudents;
                     updateAnalyticsDashboard(filteredStudents, { field, value, total: filteredStudents.length, maleCount, femaleCount });
-                    updateCountBadge();
+                    setTimeout(updateCountBadge, 30);
                 } else {
                     renderStudents(filteredStudents, { field, value, total: filteredStudents.length, maleCount, femaleCount });
                 }
@@ -2101,18 +2100,18 @@ gradeFilterSelect.addEventListener('change', () => {
     const selectedGrade = gradeFilterSelect.value;
 
     if (tabulatorTable) {
-        const filters = [];
-        if (selectedGrade) filters.push({ field: 'Grade', type: '=', value: selectedGrade });
+        tabulatorTable.clearFilter(true);
+        if (selectedGrade) tabulatorTable.addFilter('Grade', '=', selectedGrade);
         if (searchTerm) {
-            filters.push((data) => {
+            const lower = searchTerm.toLowerCase();
+            tabulatorTable.addFilter((data) => {
                 return Object.entries(data).some(([k, v]) => {
                     if (k === 'id' || k === '_actions') return false;
-                    return String(v).toLowerCase().includes(searchTerm.toLowerCase());
+                    return String(v).toLowerCase().includes(lower);
                 });
             });
         }
-        tabulatorTable.setFilter(filters);
-        updateCountBadge();
+        setTimeout(updateCountBadge, 30);
     } else {
         let filteredStudents = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
         if (searchTerm) {
@@ -2262,9 +2261,12 @@ gradeFilterSelect.addEventListener('change', () => {
 
         const updateCountBadge = () => {
             const badge = document.getElementById('tab-count-badge');
-            if (!badge || !tabulatorTable) return;
-            const count = tabulatorTable.getDataCount('active');
-            badge.textContent = count === 1 ? '1 student' : `${count} students`;
+            if (!badge) return;
+            if (!tabulatorTable) { badge.textContent = '0 students'; return; }
+            try {
+                const count = tabulatorTable.getData('active').length;
+                badge.textContent = count === 1 ? '1 student' : `${count} students`;
+            } catch(e) { badge.textContent = '— students'; }
         };
 
         const renderStudents = (students, activeFilter = null) => {
@@ -2301,6 +2303,7 @@ gradeFilterSelect.addEventListener('change', () => {
                 paginationSize: studentsPerPage,
                 paginationSizeSelector: [10, 25, 50, 100, 200, 500],
                 paginationCounter: 'rows',
+                paginationButtonCount: 5,
 
                 // Multi-column sort
                 columnDefaults: { headerSortTristate: true },
@@ -2332,10 +2335,11 @@ gradeFilterSelect.addEventListener('change', () => {
                     openLocalPDF(d['Assessment No'], d['Official Student Name'] || '');
                 },
 
+                // Count badge — use dataLoaded for initial count after build
+                dataLoaded: () => setTimeout(updateCountBadge, 50),
                 dataFiltered: updateCountBadge,
                 dataSorted: updateCountBadge,
                 pageLoaded: updateCountBadge,
-                tableBuilt: updateCountBadge,
             });
         };
 
@@ -2397,7 +2401,7 @@ gradeFilterSelect.addEventListener('change', () => {
         });
 
         document.getElementById('tab-clear-filters').addEventListener('click', () => {
-            if (tabulatorTable) { tabulatorTable.clearFilter(); tabulatorTable.clearSort(); updateCountBadge(); }
+            if (tabulatorTable) { tabulatorTable.clearFilter(true); tabulatorTable.clearSort(); setTimeout(updateCountBadge, 30); }
         });
 
 
