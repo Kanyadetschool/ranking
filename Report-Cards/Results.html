@@ -291,7 +291,7 @@
             font-family: 'DM Sans', sans-serif;
             cursor: pointer; transition: all .15s;
         }
-        .btn-edit:hover { background: #1e4080; color: #fff; box-shadow: 0 4px 12px rgba(13,31,53,.35); transform: translateY(-1px); }
+        .btn-edit:hover { background: #c53030; color: #fff; box-shadow: 0 4px 12px rgba(197,48,48,.35); transform: translateY(-1px); }
         .btn-del {
             display: inline-flex; align-items: center; justify-content: center;
             width: 28px; height: 28px; border-radius: 6px; border: none;
@@ -618,8 +618,24 @@
             border-top: 1px solid var(--border) !important;
             padding: .5rem 1rem !important;
             font-family: 'DM Sans', sans-serif !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: .35rem !important;
         }
-        #tabulator-table .tabulator-footer .tabulator-page {
+        #tabulator-table .tabulator-footer .tabulator-paginator {
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: .3rem !important;
+            flex: 1 !important;
+        }
+        /* Tabulator v6 page buttons — both .tabulator-page and button[data-page] */
+        #tabulator-table .tabulator-footer .tabulator-page,
+        #tabulator-table .tabulator-footer button[data-page] {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
             background: var(--surface) !important;
             border: 1.5px solid var(--border) !important;
             border-radius: 7px !important;
@@ -629,20 +645,30 @@
             padding: .3rem .75rem !important;
             font-family: 'DM Sans', sans-serif !important;
             transition: all .12s !important;
+            cursor: pointer !important;
+            min-width: 2rem !important;
         }
-        #tabulator-table .tabulator-footer .tabulator-page:hover:not([disabled]) {
+        #tabulator-table .tabulator-footer .tabulator-page:hover:not([disabled]),
+        #tabulator-table .tabulator-footer button[data-page]:hover:not([disabled]) {
             background: var(--navy) !important; color: #fff !important; border-color: var(--navy) !important;
         }
-        #tabulator-table .tabulator-footer .tabulator-page.active {
+        #tabulator-table .tabulator-footer .tabulator-page.active,
+        #tabulator-table .tabulator-footer button[data-page].active {
             background: var(--navy) !important; color: #fff !important;
             border-color: var(--navy) !important; font-weight: 700 !important;
         }
-        #tabulator-table .tabulator-footer .tabulator-page[disabled] {
-            background: var(--surface3) !important; color: var(--slate-lt) !important; cursor: not-allowed !important;
+        #tabulator-table .tabulator-footer .tabulator-page[disabled],
+        #tabulator-table .tabulator-footer button[data-page][disabled] {
+            background: var(--surface3) !important; color: var(--slate-lt) !important;
+            cursor: not-allowed !important; opacity: .5 !important;
         }
         #tabulator-table .tabulator-footer .tabulator-page-size {
             font-family: 'DM Sans', sans-serif !important; border: 1.5px solid var(--border) !important;
             border-radius: 7px !important; padding: .3rem .5rem !important; font-size: .8rem !important;
+        }
+        #tabulator-table .tabulator-footer .tabulator-counter {
+            font-size: .8rem !important; color: var(--slate) !important;
+            font-family: 'DM Sans', sans-serif !important; margin-left: auto !important;
         }
 
         /* Column resize handle */
@@ -1112,7 +1138,7 @@ toggleBtn.style.cssText = `
 `;
 
 toggleBtn.addEventListener('mouseenter', () => {
-  toggleBtn.style.background = '#1e4080';
+  toggleBtn.style.background = '#c53030';
 });
 
 toggleBtn.addEventListener('mouseleave', () => {
@@ -2264,7 +2290,11 @@ gradeFilterSelect.addEventListener('change', () => {
             if (!badge) return;
             if (!tabulatorTable) { badge.textContent = '0 students'; return; }
             try {
-                const count = tabulatorTable.getData('active').length;
+                // In Tabulator v6, getData('active') returns currently filtered rows across all pages
+                // Fall back to getDataCount() which returns total if 'active' isn't supported
+                let count = 0;
+                try { count = tabulatorTable.getData('active').length; }
+                catch(e2) { count = tabulatorTable.getDataCount(); }
                 badge.textContent = count === 1 ? '1 student' : `${count} students`;
             } catch(e) { badge.textContent = '— students'; }
         };
@@ -2335,11 +2365,14 @@ gradeFilterSelect.addEventListener('change', () => {
                     openLocalPDF(d['Assessment No'], d['Official Student Name'] || '');
                 },
 
-                // Count badge — use dataLoaded for initial count after build
-                dataLoaded: () => setTimeout(updateCountBadge, 50),
                 dataFiltered: updateCountBadge,
                 dataSorted: updateCountBadge,
                 pageLoaded: updateCountBadge,
+            });
+
+            // tableBuilt fires after the DOM is fully ready — safest place to set initial count
+            tabulatorTable.on('tableBuilt', () => {
+                updateCountBadge();
             });
         };
 
