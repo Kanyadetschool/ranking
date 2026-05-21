@@ -1481,10 +1481,144 @@ const openPromoteModal = (ids, fromGrade) => {
 promoteCancelBtn.addEventListener('click', () => promoteModal.classList.add('hidden'));
 promoteModal.addEventListener('click', e => { if (e.target === promoteModal) promoteModal.classList.add('hidden'); });
 
-// Promote All students
+// ── PROMOTE ALL — each grade → next grade automatically ──
 document.getElementById('promote-all-btn').addEventListener('click', () => {
     if (!studentsData.length) { showModal('No students to promote.'); return; }
-    openPromoteModal(studentsData.map(s => s.id), 'All Grades');
+
+    // Build grade map: detect numeric part and increment
+    const nextGradeFor = (grade) => {
+        if (!grade) return null;
+        // Match patterns like "Grade 1", "Std 3", "Form 2", "Class 4", "1", "2" etc.
+        const m = grade.match(/^(.*?)(\d+)(\D*)$/);
+        if (!m) return null;
+        const prefix = m[1], num = parseInt(m[2], 10), suffix = m[3];
+        return `${prefix}${num + 1}${suffix}`;
+    };
+
+    const grades = [...new Set(studentsData.map(s => s.Grade).filter(Boolean))].sort((a, b) => {
+        const na = parseInt((a.match(/\d+/) || [0])[0]);
+        const nb = parseInt((b.match(/\d+/) || [0])[0]);
+        return na - nb;
+    });
+
+    const gradeMap = {}; // { currentGrade: nextGrade }
+    grades.forEach(g => { gradeMap[g] = nextGradeFor(g) || ''; });
+
+    // Count students per grade
+    const gradeCounts = {};
+    studentsData.forEach(s => { if (s.Grade) gradeCounts[s.Grade] = (gradeCounts[s.Grade] || 0) + 1; });
+
+    // Build preview rows HTML
+    const rows = grades.map(g => `
+        <tr>
+            <td style="padding:.5rem .75rem;font-weight:600;color:var(--navy);">${g}</td>
+            <td style="padding:.5rem .75rem;text-align:center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </td>
+            <td style="padding:.5rem .75rem;">
+                <input type="text" data-from="${g}" value="${gradeMap[g]}"
+                    style="width:120px;padding:.3rem .6rem;border:1.5px solid var(--border);border-radius:6px;font-size:.83rem;font-family:'DM Sans',sans-serif;color:var(--navy);font-weight:600;outline:none;"
+                    onfocus="this.style.borderColor='var(--gold)'" onblur="this.style.borderColor='var(--border)'">
+            </td>
+            <td style="padding:.5rem .75rem;text-align:right;font-size:.78rem;color:var(--slate);">${gradeCounts[g] || 0} learner${(gradeCounts[g] || 0) !== 1 ? 's' : ''}</td>
+        </tr>`).join('');
+
+    const totalStudents = studentsData.length;
+
+    Swal.fire({
+        title: 'Promote All Grades',
+        html: `
+            <p style="font-size:.85rem;color:var(--slate);margin-bottom:1rem;">
+                Each grade will be promoted to the next grade. You can adjust any destination below.
+            </p>
+            <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;">
+                <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;font-size:.85rem;">
+                    <thead>
+                        <tr style="background:var(--navy);color:#fff;position:sticky;top:0;">
+                            <th style="padding:.55rem .75rem;text-align:left;font-weight:600;">Current Grade</th>
+                            <th style="padding:.55rem .75rem;"></th>
+                            <th style="padding:.55rem .75rem;text-align:left;font-weight:600;">Promote To</th>
+                            <th style="padding:.55rem .75rem;text-align:right;font-weight:600;">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="promote-all-preview">${rows}</tbody>
+                </table>
+            </div>
+            <p style="margin-top:.75rem;font-size:.8rem;color:var(--slate-lt);text-align:right;">${totalStudents} total learners across ${grades.length} grade${grades.length !== 1 ? 's' : ''}</p>
+        `,
+        width: 560,
+        showCancelButton: true,
+        confirmButtonText: `Promote All ${totalStudents} Learners`,
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#f0a500',
+        cancelButtonColor: '#64748b',
+        customClass: { confirmButton: 'swal-promote-btn' },
+        didOpen: () => {
+            // Style confirm button text dark (gold bg)
+            const btn = Swal.getConfirmButton();
+            if (btn) { btn.style.color = '#0d1f35'; btn.style.fontWeight = '700'; }
+        },
+        preConfirm: () => {
+            // Read all editable destination inputs
+            const inputs = document.querySelectorAll('#promote-all-preview input[data-from]');
+            const mapping = {};
+            let hasEmpty = false;
+            inputs.forEach(inp => {
+                const from = inp.dataset.from;
+                const to = inp.value.trim();
+                if (!to) { inp.style.borderColor = 'var(--danger)'; hasEmpty = true; }
+                mapping[from] = to;
+            });
+            if (hasEmpty) {
+                Swal.showValidationMessage('Fill in all destination grades or remove empty ones.');
+                return false;
+            }
+            return mapping;
+        }
+    }).then(async result => {
+        if (!result.isConfirmed || !result.value) return;
+        const mapping = result.value; // { "Grade 1": "Grade 2", ... }
+
+        Swal.fire({
+            title: 'Promoting…',
+            html: '<p style="color:var(--slate)">Updating all student records…</p>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => Swal.showLoading(),
+        });
+
+        try {
+            const email = auth.currentUser?.email || 'unknown';
+            const ts = new Date().toISOString();
+            await Promise.all(studentsData.map(async s => {
+                const newGrade = mapping[s.Grade];
+                if (!newGrade || newGrade === s.Grade) return;
+                const sRef = ref(db, `artifacts/${sanitizedAppId}/students/${s.id}`);
+                return update(sRef, {
+                    Grade:       newGrade,
+                    _prevGrade:  s.Grade,
+                    _promotedAt: ts,
+                    _promotedBy: email,
+                });
+            }));
+
+            // Build summary for toast
+            const summaryLines = Object.entries(mapping)
+                .map(([from, to]) => `${from} → ${to}`)
+                .join('<br>');
+
+            Swal.fire({
+                icon: 'success',
+                title: 'All Grades Promoted!',
+                html: `<div style="font-size:.83rem;color:var(--text2);line-height:1.8;">${summaryLines}</div>`,
+                confirmButtonColor: 'var(--navy-lt)',
+                timer: 5000,
+                timerProgressBar: true,
+            });
+        } catch(e) {
+            Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+        }
+    });
 });
 
 // Promote entire selected grade
