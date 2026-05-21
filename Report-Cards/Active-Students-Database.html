@@ -22,8 +22,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-auth-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-firestore-compat.js"></script>
     <script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="https://kanyadet-school-admin.web.app/css/swalOnly.css">
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
     <style>
@@ -303,6 +302,59 @@
         body.user-logged-out #data-section    { display: none !important; }
         body.user-logged-out #sign-in-section { display: flex !important; }
         .hidden { display: none !important; }
+
+        /* ══ UNIVERSAL MODAL ══ */
+        #uni-modal { position:fixed;inset:0;background:rgba(13,31,53,.58);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s ease; }
+        #uni-modal.open { opacity:1;pointer-events:all; }
+        #uni-modal .um-box { background:var(--surface);border-radius:18px;box-shadow:0 24px 64px rgba(13,31,53,.32);width:100%;max-width:480px;border:1px solid var(--border);transform:scale(.96) translateY(8px);transition:transform .22s ease;overflow:hidden;display:flex;flex-direction:column; }
+        #uni-modal.open .um-box { transform:scale(1) translateY(0); }
+        #uni-modal .um-box.um-wide { max-width:680px; }
+        #uni-modal .um-icon-ring { width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;flex-shrink:0; }
+        #uni-modal .um-icon-ring.danger { background:var(--danger-lt);border:2px solid var(--danger); }
+        #uni-modal .um-icon-ring.warning { background:#fffbeb;border:2px solid var(--gold); }
+        #uni-modal .um-icon-ring.success { background:var(--success-lt);border:2px solid var(--success); }
+        #uni-modal .um-icon-ring.info { background:var(--info-lt);border:2px solid var(--info); }
+        #uni-modal .um-icon-ring.plain { background:var(--surface2);border:2px solid var(--border2); }
+        #uni-modal .um-header { padding:1.75rem 1.75rem 0;text-align:center; }
+        #uni-modal .um-title { font-family:'Playfair Display',serif;font-size:1.12rem;font-weight:800;color:var(--navy);margin-bottom:.35rem; }
+        #uni-modal .um-subtitle { font-size:.83rem;color:var(--slate);line-height:1.5; }
+        #uni-modal .um-body { padding:1rem 1.75rem;flex:1;min-height:0; }
+        #uni-modal .um-scroll { max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:10px; }
+        #uni-modal .um-scroll::-webkit-scrollbar { width:6px; }
+        #uni-modal .um-scroll::-webkit-scrollbar-track { background:var(--surface2); }
+        #uni-modal .um-scroll::-webkit-scrollbar-thumb { background:var(--border2);border-radius:3px; }
+        #uni-modal .um-input-wrap { margin-top:.5rem; }
+        #uni-modal .um-input-wrap label { display:block;font-size:.7rem;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.35rem; }
+        #uni-modal .um-text-input { width:100%;padding:.6rem .85rem;border:1.5px solid var(--border);border-radius:9px;font-size:.9rem;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s; }
+        #uni-modal .um-text-input:focus { border-color:var(--navy-lt);box-shadow:0 0 0 3px rgba(30,64,128,.1); }
+        #uni-modal .um-validation-msg { font-size:.78rem;color:var(--danger);margin-top:.35rem;display:none; }
+        #uni-modal .um-validation-msg.visible { display:block; }
+        #uni-modal .um-footer { padding:1rem 1.75rem 1.5rem;display:flex;gap:.65rem;flex-direction:row-reverse; }
+        #uni-modal .um-btn-confirm { flex:1;display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.65rem 1.25rem;border-radius:9px;font-size:.87rem;font-weight:700;font-family:'DM Sans',sans-serif;border:none;cursor:pointer;transition:all .17s; }
+        #uni-modal .um-btn-confirm.primary { background:var(--navy-lt);color:#fff; }
+        #uni-modal .um-btn-confirm.primary:hover { background:var(--navy-mid); }
+        #uni-modal .um-btn-confirm.danger { background:var(--danger);color:#fff; }
+        #uni-modal .um-btn-confirm.danger:hover { background:#b91c1c; }
+        #uni-modal .um-btn-confirm.success { background:var(--success);color:#fff; }
+        #uni-modal .um-btn-confirm.success:hover { background:#047857; }
+        #uni-modal .um-btn-confirm.gold { background:var(--gold);color:var(--navy); }
+        #uni-modal .um-btn-confirm.gold:hover { background:var(--gold-lt); }
+        #uni-modal .um-btn-cancel { padding:.65rem 1.1rem;border-radius:9px;font-size:.87rem;font-weight:600;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .17s; }
+        #uni-modal .um-btn-cancel:hover { border-color:var(--navy-lt);color:var(--navy-lt); }
+        #uni-modal .um-btn-deny { padding:.65rem 1.1rem;border-radius:9px;font-size:.87rem;font-weight:600;font-family:'DM Sans',sans-serif;border:1.5px solid var(--border2);background:transparent;color:var(--slate);cursor:pointer;transition:all .17s; }
+        #uni-modal .um-btn-deny:hover { border-color:var(--slate);color:var(--navy); }
+        /* loading state */
+        #uni-modal .um-loading { display:flex;flex-direction:column;align-items:center;gap:1rem;padding:2rem; }
+        #uni-modal .um-spinner { width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--navy-lt);border-radius:50%;animation:um-spin .7s linear infinite; }
+        @keyframes um-spin { to { transform:rotate(360deg); } }
+        /* toast */
+        #uni-toast { position:fixed;bottom:1.5rem;right:1.5rem;z-index:9100;display:flex;flex-direction:column;gap:.5rem;align-items:flex-end; }
+        .ut-item { display:flex;align-items:center;gap:.6rem;padding:.65rem 1.1rem;background:var(--navy);color:#fff;border-radius:10px;box-shadow:0 8px 24px rgba(13,31,53,.25);font-size:.84rem;font-weight:600;font-family:'DM Sans',sans-serif;animation:ut-in .25s ease;max-width:320px;border-left:4px solid var(--gold); }
+        .ut-item.success { border-left-color:var(--success); }
+        .ut-item.danger { border-left-color:var(--danger); }
+        .ut-item.info { border-left-color:var(--info); }
+        @keyframes ut-in { from { opacity:0;transform:translateX(24px); } to { opacity:1;transform:none; } }
+        @keyframes ut-out { from { opacity:1;transform:none; } to { opacity:0;transform:translateX(24px); } }
     </style>
 </head>
 <body class="user-logged-out">
@@ -664,6 +716,15 @@
     </div>
 </div>
 
+<!-- ══ UNIVERSAL MODAL ══ -->
+<div id="uni-modal" role="dialog" aria-modal="true">
+    <div class="um-box" id="uni-modal-box">
+        <!-- Content injected by openModal() -->
+    </div>
+</div>
+<!-- Toast container -->
+<div id="uni-toast"></div>
+
 <!-- EDIT MODAL -->
 <div id="edit-drawer-overlay">
     <div id="edit-drawer">
@@ -689,6 +750,163 @@
         </div>
     </div>
 </div>
+
+<!-- ══ openModal() — Universal Modal API (replaces SweetAlert2) ══ -->
+<script>
+(function(){
+    const ICONS = {
+        warning: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`,
+        danger:  `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--danger)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>`,
+        success: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--success)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>`,
+        info:    `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--info)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+        promote: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>`,
+        edit:    `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--navy-lt)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>`,
+        history: `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--navy-lt)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`,
+        chart:   `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--info)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>`,
+    };
+
+    // ── Toast ───────────────────────────────────────────────────────────────
+    window.showToast = function(msg, type='success', duration=2800) {
+        const container = document.getElementById('uni-toast');
+        if (!container) return;
+        const item = document.createElement('div');
+        item.className = `ut-item ${type}`;
+        item.textContent = msg;
+        container.appendChild(item);
+        setTimeout(() => { item.style.animation='ut-out .3s ease forwards'; setTimeout(()=>item.remove(),300); }, duration);
+    };
+
+    function openEl() { const m=document.getElementById('uni-modal'); if(m){m.classList.add('open');document.body.style.overflow='hidden';} }
+    function closeEl() { const m=document.getElementById('uni-modal'); if(m){m.classList.remove('open');document.body.style.overflow='';} }
+
+    window.closeModal = closeEl;
+
+    // Swal compat shim — used for Swal.close() calls inside inline onclick=""
+    window.Swal = {
+        close: closeEl,
+        showLoading: ()=>{},
+        getConfirmButton: ()=>null,
+        showValidationMessage: (m)=>{ const el=document.getElementById('um-validation-msg'); if(el){el.textContent=m;el.classList.add('visible');} }
+    };
+
+    /**
+     * openModal(options) → Promise<{isConfirmed, isDenied, isCancelled, value}>
+     *
+     * options:
+     *   icon              — 'warning'|'danger'|'success'|'info'|'promote'|'edit'|'history'|'chart'
+     *   title             — string
+     *   text              — string (plain subtitle)
+     *   html              — string (rich HTML)
+     *   scrollable        — bool   (wrap html in scrollable div)
+     *   wide              — bool   (~680px wide)
+     *   input             — bool   (show text input field)
+     *   inputLabel        — string
+     *   inputPlaceholder  — string
+     *   inputValue        — string
+     *   confirmButtonText — string  (default 'OK')
+     *   confirmButtonColor— 'primary'|'danger'|'success'|'gold'
+     *   cancelButtonText  — string
+     *   denyButtonText    — string
+     *   showCancelButton  — bool
+     *   showDenyButton    — bool
+     *   showConfirmButton — bool (default true)
+     *   loading           — bool (spinner, no buttons)
+     *   timer             — ms  (auto-dismiss)
+     *   preConfirm        — async fn → return false to block, return value to pass through
+     */
+    window.openModal = function(options={}) {
+        return new Promise((resolve) => {
+            const modal = document.getElementById('uni-modal');
+            const box   = document.getElementById('uni-modal-box');
+            if (!modal || !box) { resolve({isCancelled:true}); return; }
+
+            box.className = 'um-box' + (options.wide ? ' um-wide' : '');
+
+            // Loading spinner state
+            if (options.loading) {
+                box.innerHTML = `<div class="um-loading">
+                    <div class="um-spinner"></div>
+                    <p style="font-size:.85rem;color:var(--slate);margin-top:.25rem;">${options.text||'Please wait…'}</p>
+                </div>`;
+                openEl();
+                return; // caller will call closeModal() when done
+            }
+
+            const iconKey     = options.icon || '';
+            const iconSVG     = ICONS[iconKey] || '';
+            const ringClass   = ({warning:'warning',danger:'danger',success:'success',info:'info',promote:'warning',edit:'info',history:'info',chart:'info'})[iconKey] || (iconSVG ? 'plain' : '');
+            const showConfirm = options.showConfirmButton !== false;
+            const showCancel  = !!(options.showCancelButton || options.cancelButtonText);
+            const showDeny    = !!(options.showDenyButton   || options.denyButtonText);
+            const confirmText  = options.confirmButtonText || 'OK';
+            const confirmColor = options.confirmButtonColor || 'primary';
+            const cancelText   = options.cancelButtonText  || 'Cancel';
+            const denyText     = options.denyButtonText    || '';
+            const hasInput     = !!options.input;
+
+            const bodyHTML = options.html
+                ? (options.scrollable ? `<div class="um-scroll">${options.html}</div>` : options.html)
+                : '';
+
+            const hasBody = !!(bodyHTML || hasInput);
+
+            box.innerHTML = `
+                <div class="um-header">
+                    ${iconSVG ? `<div class="um-icon-ring ${ringClass}">${iconSVG}</div>` : ''}
+                    ${options.title ? `<div class="um-title">${options.title}</div>` : ''}
+                    ${options.text  ? `<p class="um-subtitle">${options.text}</p>` : ''}
+                </div>
+                ${hasBody ? `<div class="um-body">
+                    ${bodyHTML}
+                    ${hasInput ? `<div class="um-input-wrap">
+                        ${options.inputLabel ? `<label>${options.inputLabel}</label>` : ''}
+                        <input class="um-text-input" id="um-text-input" type="text"
+                            placeholder="${options.inputPlaceholder||''}"
+                            value="${options.inputValue||''}">
+                        <div class="um-validation-msg" id="um-validation-msg"></div>
+                    </div>` : ''}
+                </div>` : '<div style="height:.5rem"></div>'}
+                <div class="um-footer">
+                    ${showConfirm ? `<button class="um-btn-confirm ${confirmColor}" id="um-confirm-btn">${confirmText}</button>` : ''}
+                    ${showDeny    ? `<button class="um-btn-deny" id="um-deny-btn">${denyText}</button>` : ''}
+                    ${showCancel  ? `<button class="um-btn-cancel" id="um-cancel-btn">${cancelText}</button>` : ''}
+                </div>`;
+
+            const done = (result) => { cleanupListeners(); closeEl(); resolve(result); };
+
+            const confirmBtn = box.querySelector('#um-confirm-btn');
+            const cancelBtn  = box.querySelector('#um-cancel-btn');
+            const denyBtn    = box.querySelector('#um-deny-btn');
+            const textInput  = box.querySelector('#um-text-input');
+
+            if (confirmBtn) {
+                confirmBtn.addEventListener('click', async () => {
+                    let value = hasInput ? (textInput?.value||'') : undefined;
+                    if (options.preConfirm) {
+                        const r = await options.preConfirm();
+                        if (r === false) return;
+                        if (r !== undefined) value = r;
+                    }
+                    done({isConfirmed:true, isDenied:false, isCancelled:false, value});
+                });
+            }
+            if (cancelBtn) cancelBtn.addEventListener('click', () => done({isConfirmed:false, isDenied:false, isCancelled:true}));
+            if (denyBtn)   denyBtn.addEventListener('click',   () => done({isConfirmed:false, isDenied:true,  isCancelled:false}));
+            if (textInput) setTimeout(() => textInput.focus(), 80);
+
+            const onBd  = (e) => { if(e.target===modal) done({isConfirmed:false,isDenied:false,isCancelled:true}); };
+            const onEsc = (e) => { if(e.key==='Escape')  done({isConfirmed:false,isDenied:false,isCancelled:true}); };
+            modal.addEventListener('click', onBd);
+            document.addEventListener('keydown', onEsc);
+            function cleanupListeners() { modal.removeEventListener('click',onBd); document.removeEventListener('keydown',onEsc); }
+
+            if (options.timer) setTimeout(() => { if(modal.classList.contains('open')) done({isConfirmed:false,isDenied:false,isCancelled:true,timedOut:true}); }, options.timer);
+
+            openEl();
+        });
+    };
+})();
+</script>
 
 <!-- External scripts -->
 <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
@@ -1052,11 +1270,10 @@ const renderStudents = (students) => {
                 const field = cell.getColumn().getField();
                 const id = cell.getRow().getData().id;
                 const oldVal = String(cell.getValue()||'');
-                const { value: newVal, isConfirmed } = await Swal.fire({
-                    title: `Edit: ${field}`, input: 'text',
-                    inputValue: oldVal === '-' ? '' : oldVal,
-                    showCancelButton: true, confirmButtonColor: 'var(--navy-lt)',
-                    inputAttributes: { style: 'font-family:"DM Sans",sans-serif;font-size:.9rem;' },
+                const { value: newVal, isConfirmed } = await openModal({
+                    icon: 'edit', title: `Edit: ${field}`,
+                    input: true, inputValue: oldVal === '-' ? '' : oldVal,
+                    showCancelButton: true, confirmButtonText: 'Update', confirmButtonColor: 'primary',
                 });
                 if (!isConfirmed || newVal === oldVal) return;
                 try {
@@ -1253,7 +1470,7 @@ drawerSaveBtn.addEventListener('click', async () => {
     const updatedData = {};
     inputs.forEach(inp => { updatedData[inp.dataset.field] = inp.value.trim(); });
     if (!updatedData['Assessment No']) {
-        Swal.fire({ icon: 'warning', title: 'Required', text: '"Assessment No" cannot be empty.', confirmButtonColor: '#1e4080' });
+        openModal({ icon:'warning', title:'Required Field', text:'"Assessment No" cannot be empty.', confirmButtonText:'OK' });
         return;
     }
     drawerSaveBtn.classList.add('saving');
@@ -1295,9 +1512,9 @@ drawerSaveBtn.addEventListener('click', async () => {
 
 // ── DELETE ROW ────────────────────────────────────────
 window._delRow = async (id) => {
-    const result = await Swal.fire({
-        icon: 'warning', title: 'Delete Student?', text: 'This cannot be undone.',
-        showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Delete'
+    const result = await openModal({
+        icon: 'danger', title: 'Delete Student?', text: 'This cannot be undone.',
+        showCancelButton: true, confirmButtonText: 'Delete', confirmButtonColor: 'danger'
     });
     if (!result.isConfirmed) return;
     try {
@@ -1320,9 +1537,9 @@ window._delRow = async (id) => {
 deleteGradeBtn.addEventListener('click', async () => {
     const grade = gradeFilterSelect.value;
     if (!grade) { showModal('Please select a grade first.'); return; }
-    const result = await Swal.fire({
-        icon: 'warning', title: `Delete all in ${grade}?`, text: 'All students in this grade will be archived.',
-        showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Delete Grade'
+    const result = await openModal({
+        icon: 'danger', title: `Delete all in ${grade}?`, text: 'All students in this grade will be archived.',
+        showCancelButton: true, confirmButtonColor: 'danger', confirmButtonText: 'Delete Grade'
     });
     if (!result.isConfirmed) return;
     const toDelete = studentsData.filter(s => s.Grade === grade);
@@ -1526,10 +1743,10 @@ syncBulkBtns();
 
 document.getElementById('bulk-delete-btn').addEventListener('click', async () => {
     if (selectedStudents.size === 0) { showModal('Select students first.'); return; }
-    const result = await Swal.fire({
-        icon: 'warning', title: `Delete ${selectedStudents.size} students?`,
+    const result = await openModal({
+        icon: 'danger', title: `Delete ${selectedStudents.size} students?`,
         text: 'They will be archived in Deletedstudents.',
-        showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Delete All'
+        showCancelButton: true, confirmButtonColor: 'danger', confirmButtonText: 'Delete All'
     });
     if (!result.isConfirmed) return;
     const email = auth.currentUser?.email || 'unknown';
@@ -1546,7 +1763,7 @@ document.getElementById('bulk-delete-btn').addEventListener('click', async () =>
     syncBulkBtns();
     updateGradeFilter();
     renderStudents(studentsData);
-    Swal.fire({ icon: 'success', title: 'Deleted', text: 'Selected students deleted and archived.', timer: 2500, timerProgressBar: true, showConfirmButton: false });
+    showToast('Selected students deleted and archived.', 'success');
 });
 
 // ── PROMOTE LOGIC ─────────────────────────────────────
@@ -1620,8 +1837,10 @@ document.getElementById('promote-all-btn').addEventListener('click', () => {
 
     const totalStudents = studentsData.length;
 
-    Swal.fire({
+    openModal({
+        icon: 'promote',
         title: 'Promote All Grades',
+        wide: true,
         html: `
             <p style="font-size:.85rem;color:var(--slate);margin-bottom:1rem;">
                 Each grade will be promoted to the next grade. You can adjust any destination below.
@@ -1641,20 +1860,10 @@ document.getElementById('promote-all-btn').addEventListener('click', () => {
             </div>
             <p style="margin-top:.75rem;font-size:.8rem;color:var(--slate-lt);text-align:right;">${totalStudents} total learners across ${grades.length} grade${grades.length !== 1 ? 's' : ''}</p>
         `,
-        width: 560,
         showCancelButton: true,
         confirmButtonText: `Promote All ${totalStudents} Learners`,
-        cancelButtonText: 'Cancel',
-        confirmButtonColor: '#f0a500',
-        cancelButtonColor: '#64748b',
-        customClass: { confirmButton: 'swal-promote-btn' },
-        didOpen: () => {
-            // Style confirm button text dark (gold bg)
-            const btn = Swal.getConfirmButton();
-            if (btn) { btn.style.color = '#0d1f35'; btn.style.fontWeight = '700'; }
-        },
+        confirmButtonColor: 'gold',
         preConfirm: () => {
-            // Read all editable destination inputs
             const inputs = document.querySelectorAll('#promote-all-preview input[data-from]');
             const mapping = {};
             let hasEmpty = false;
@@ -1665,22 +1874,16 @@ document.getElementById('promote-all-btn').addEventListener('click', () => {
                 mapping[from] = to;
             });
             if (hasEmpty) {
-                Swal.showValidationMessage('Fill in all destination grades or remove empty ones.');
+                window.Swal.showValidationMessage('Fill in all destination grades or remove empty ones.');
                 return false;
             }
             return mapping;
         }
     }).then(async result => {
         if (!result.isConfirmed || !result.value) return;
-        const mapping = result.value; // { "Grade 1": "Grade 2", ... }
+        const mapping = result.value;
 
-        Swal.fire({
-            title: 'Promoting…',
-            html: '<p style="color:var(--slate)">Updating all student records…</p>',
-            allowOutsideClick: false,
-            allowEscapeKey: false,
-            didOpen: () => Swal.showLoading(),
-        });
+        openModal({ loading: true, text: 'Updating all student records…' });
 
         try {
             const email = auth.currentUser?.email || 'unknown';
@@ -1700,18 +1903,13 @@ document.getElementById('promote-all-btn').addEventListener('click', () => {
             // Build summary for toast
             const summaryLines = Object.entries(mapping)
                 .map(([from, to]) => `${from} → ${to}`)
-                .join('<br>');
+                .join(', ');
 
-            Swal.fire({
-                icon: 'success',
-                title: 'All Grades Promoted!',
-                html: `<div style="font-size:.83rem;color:var(--text2);line-height:1.8;">${summaryLines}</div>`,
-                confirmButtonColor: 'var(--navy-lt)',
-                timer: 5000,
-                timerProgressBar: true,
-            });
+            closeModal();
+            showToast('All Grades Promoted! ' + summaryLines, 'success', 5000);
         } catch(e) {
-            Swal.fire({ icon: 'error', title: 'Error', text: e.message });
+            closeModal();
+            openModal({ icon: 'danger', title: 'Error', text: e.message });
         }
     });
 });
@@ -1770,14 +1968,7 @@ promoteConfirmBtn.addEventListener('click', async () => {
         bulkActionToolbar.classList.remove('visible');
         syncBulkBtns();
 
-        Swal.fire({
-            icon: 'success',
-            title: 'Promotion Complete!',
-            html: `<b>${promoteTargetIds.length}</b> learner${promoteTargetIds.length !== 1 ? 's' : ''} promoted to <b>${toGrade}</b>`,
-            confirmButtonColor: 'var(--navy-lt)',
-            timer: 3500,
-            timerProgressBar: true,
-        });
+        showToast(`${promoteTargetIds.length} learner${promoteTargetIds.length !== 1 ? 's' : ''} promoted to ${toGrade}`, 'success', 3500);
     } catch (e) {
         showModal(`Error: ${e.message}`);
     } finally {
@@ -1878,7 +2069,7 @@ const renderPresets = () => {
 };
 renderPresets();
 $('save-preset-btn')?.addEventListener('click', async () => {
-    const{value:name,isConfirmed}=await Swal.fire({title:'Save Filter Preset',input:'text',inputPlaceholder:'e.g. "Grade 6 Boys"',showCancelButton:true,confirmButtonColor:'var(--navy-lt)'});
+    const{value:name,isConfirmed}=await openModal({title:'Save Filter Preset',input:true,inputPlaceholder:'e.g. "Grade 6 Boys"',showCancelButton:true,confirmButtonText:'Save',confirmButtonColor:'primary'});
     if(!isConfirmed||!name) return;
     const p=getPresets();
     p[name]={grade:$('grade-filter-select')?.value||'',search:$('search-input')?.value||''};
@@ -1916,19 +2107,21 @@ window._viewProfile = (id) => {
     const enc=encodeURIComponent(name);
     const fields=Object.entries(s).filter(([k])=>k!=='id'&&!k.startsWith('_'));
     const rows=fields.map(([k,v])=>`<tr><td style="padding:.4rem .75rem;font-weight:600;color:var(--slate);font-size:.76rem;text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid var(--border);white-space:nowrap;">${k}</td><td style="padding:.4rem .75rem;color:var(--text);font-size:.84rem;border-bottom:1px solid var(--border);">${v||'—'}</td></tr>`).join('');
-    Swal.fire({
-        title:'',
+    openModal({
+        icon: 'info',
+        title: '',
+        wide: false,
         html:`<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.1rem;text-align:left;">
             <img src="./student_images/${enc}.jpg" onerror="this.src='./student_images/default.jpg'" style="width:60px;height:60px;border-radius:10px;object-fit:cover;border:2px solid var(--border);flex-shrink:0;">
             <div><div style="font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:800;color:var(--navy);">${name}</div>
             <div style="font-size:.8rem;color:var(--slate);margin-top:.2rem;">${s.Grade||''} ${s['Class']?'· Class of '+s['Class']:''}</div>
             <div style="display:flex;gap:.4rem;margin-top:.4rem;">
-                <button onclick="Swal.close();window._printCard('${id}')" style="font-size:.72rem;padding:.22rem .6rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;">🖨 Print Card</button>
-                <button onclick="Swal.close();window._viewAuditLog('${id}')" style="font-size:.72rem;padding:.22rem .6rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;">📋 History</button>
+                <button onclick="closeModal();window._printCard('${id}')" style="font-size:.72rem;padding:.22rem .6rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;">🖨 Print Card</button>
+                <button onclick="closeModal();window._viewAuditLog('${id}')" style="font-size:.72rem;padding:.22rem .6rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;">📋 History</button>
             </div></div></div>
         <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;"><table style="width:100%;border-collapse:collapse;">${rows}</table></div>`,
-        width:500,showCancelButton:true,cancelButtonText:'Close',confirmButtonText:'Edit',confirmButtonColor:'var(--navy-lt)',
-        showDenyButton:true,denyButtonText:'View PDF',denyButtonColor:'var(--slate)',
+        showCancelButton:true, cancelButtonText:'Close', confirmButtonText:'Edit', confirmButtonColor:'primary',
+        showDenyButton:true,   denyButtonText:'View PDF',
     }).then(r=>{
         if(r.isConfirmed) window._editRow(id);
         else if(r.isDenied) window.openLocalPDF?.(s['Assessment No'],name);
@@ -1953,10 +2146,12 @@ window._viewAuditLog = async (id) => {
             <td style="padding:.35rem .6rem;font-size:.78rem;color:var(--success);">${e.newVal||'—'}</td>
             <td style="padding:.35rem .6rem;font-size:.74rem;color:var(--slate-lt);">${e.changedBy}</td>
         </tr>`).join('');
-        Swal.fire({
+        openModal({
+            icon: 'history',
             title: 'Change History',
-            html: `<div style="max-height:360px;overflow:auto;border:1px solid var(--border);border-radius:8px;">
-                <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
+            wide: true,
+            scrollable: true,
+            html: `<table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
                     <thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;">
                         <th style="padding:.4rem .6rem;text-align:left;font-size:.72rem;">Time</th>
                         <th style="padding:.4rem .6rem;text-align:left;font-size:.72rem;">Field</th>
@@ -1964,8 +2159,8 @@ window._viewAuditLog = async (id) => {
                         <th style="padding:.4rem .6rem;text-align:left;font-size:.72rem;">New Value</th>
                         <th style="padding:.4rem .6rem;text-align:left;font-size:.72rem;">Changed By</th>
                     </tr></thead><tbody>${rows}</tbody>
-                </table></div>`,
-            width: 680, confirmButtonColor: 'var(--navy-lt)',
+                </table>`,
+            confirmButtonText: 'Close',
         });
     } catch(e) { showMsg('Error loading history: ' + e.message); }
 };
@@ -2018,19 +2213,22 @@ $('completeness-btn')?.addEventListener('click', () => {
         <td style="padding:.45rem .6rem;">${f.missing.length?`<button onclick="window._showMissingField('${f.field}')" style="font-size:.72rem;padding:.2rem .55rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;color:var(--navy);">View ${f.missing.length}</button>`:'<span style="color:var(--success);font-size:.72rem;">✓</span>'}</td></tr>`;
     }).join('');
     const overall=Math.round(stats.reduce((a,f)=>a+f.pct,0)/stats.length)||0;
-    Swal.fire({
-        title:'Data Completeness Report',
+    openModal({
+        icon: 'chart',
+        title: 'Data Completeness Report',
+        wide: true,
+        scrollable: true,
         html:`<div style="margin-bottom:.75rem;text-align:center;"><span style="font-size:2rem;font-weight:800;color:${overall>=80?'var(--success)':overall>=60?'#d69e2e':'var(--danger)'};">${overall}%</span><span style="font-size:.82rem;color:var(--slate);display:block;">overall · ${total} students</span></div>
-        <div style="max-height:340px;overflow:auto;border:1px solid var(--border);border-radius:8px;"><table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;"><thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;"><th style="padding:.4rem .75rem;text-align:left;font-size:.72rem;">Field</th><th style="padding:.4rem .75rem;font-size:.72rem;">Fill Rate</th><th style="padding:.4rem .75rem;font-size:.72rem;">%</th><th style="padding:.4rem .75rem;font-size:.72rem;">Count</th><th style="padding:.4rem .75rem;font-size:.72rem;">Missing</th></tr></thead><tbody>${rows}</tbody></table></div>
-        <button onclick="window._exportCompletenessXLSX()" style="margin-top:.75rem;padding:.42rem 1rem;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">📊 Export Excel</button>`,
-        width:660,confirmButtonColor:'var(--navy-lt)',confirmButtonText:'Close',
+        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;"><thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;"><th style="padding:.4rem .75rem;text-align:left;font-size:.72rem;">Field</th><th style="padding:.4rem .75rem;font-size:.72rem;">Fill Rate</th><th style="padding:.4rem .75rem;font-size:.72rem;">%</th><th style="padding:.4rem .75rem;font-size:.72rem;">Count</th><th style="padding:.4rem .75rem;font-size:.72rem;">Missing</th></tr></thead><tbody>${rows}</tbody></table>
+        <div style="text-align:center;margin-top:.75rem;"><button onclick="window._exportCompletenessXLSX()" style="padding:.42rem 1rem;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">📊 Export Excel</button></div>`,
+        confirmButtonText: 'Close',
     });
 });
 window._showMissingField=(field)=>{
     const data=window._studentsData||[];
     const missing=data.filter(s=>!s[field]||String(s[field]).trim()==='');
     const list=missing.slice(0,25).map(s=>`<li style="font-size:.82rem;padding:.2rem 0;">${s['Official Student Name']||s['Assessment No']||s.id} <span style="color:var(--slate-lt);">${s.Grade||''}</span></li>`).join('');
-    Swal.fire({title:`Missing: ${field}`,html:`<ul style="text-align:left;max-height:300px;overflow:auto;padding-left:1.25rem;">${list}${missing.length>25?`<li>…and ${missing.length-25} more</li>`:''}</ul>`,confirmButtonColor:'var(--navy-lt)'});
+    openModal({icon:'info',title:`Missing: ${field}`,scrollable:true,html:`<ul style="text-align:left;padding-left:1.25rem;">${list}${missing.length>25?`<li>…and ${missing.length-25} more</li>`:''}</ul>`,confirmButtonText:'Close'});
 };
 window._exportCompletenessXLSX=()=>{
     const data=window._studentsData||[]; const total=data.length;
@@ -2062,14 +2260,15 @@ $('bulk-batch-field-btn')?.addEventListener('click', async () => {
     const data=window._studentsData||[];
     const allKeys=new Set(); data.forEach(s=>Object.keys(s).forEach(k=>{if(k!=='id'&&!k.startsWith('_'))allKeys.add(k);}));
     const opts=[...allKeys].map(h=>`<option value="${h}">${h}</option>`).join('');
-    const result=await Swal.fire({
+    const result=await openModal({
+        icon: 'edit',
         title:`Batch Update — ${sel.size} students`,
         html:`<div style="display:flex;flex-direction:column;gap:.75rem;text-align:left;">
             <div><label style="font-size:.72rem;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.25rem;">Field</label><select id="bf-sel" style="width:100%;padding:.5rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;">${opts}</select></div>
             <div><label style="font-size:.72rem;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:.25rem;">New Value</label><input id="bf-val" type="text" placeholder="Value for all selected" style="width:100%;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:'DM Sans',sans-serif;"></div>
         </div>`,
-        showCancelButton:true,confirmButtonText:`Update ${sel.size} Students`,confirmButtonColor:'var(--navy-lt)',
-        preConfirm:()=>({field:$('bf-sel')?.value, value:$('bf-val')?.value.trim()}),
+        showCancelButton:true, confirmButtonText:`Update ${sel.size} Students`, confirmButtonColor:'primary',
+        preConfirm:()=>({field:document.getElementById('bf-sel')?.value, value:document.getElementById('bf-val')?.value.trim()}),
     });
     if(!result.isConfirmed) return;
     const{field,value}=result.value;
