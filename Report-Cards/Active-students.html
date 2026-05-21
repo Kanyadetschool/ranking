@@ -1116,6 +1116,60 @@
         </div>
     </div>
 
+    <!-- ══ HISTORY PANEL ════════════════════════════════ -->
+    <div id="history-overlay" style="position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.45);
+        display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;
+        transition:opacity .25s ease;">
+        <div id="history-drawer" style="width:min(520px,100%);max-height:88vh;background:var(--surface);
+            border-radius:20px;box-shadow:0 24px 80px rgba(13,31,53,.35);display:flex;flex-direction:column;
+            transform:scale(.9) translateY(24px);
+            transition:transform .3s cubic-bezier(.34,1.56,.64,1),opacity .3s ease;
+            overflow:hidden;border:1px solid var(--border);">
+            <!-- Header -->
+            <div style="background:var(--navy);padding:1.1rem 1.4rem;display:flex;align-items:center;
+                gap:.85rem;flex-shrink:0;">
+                <img id="hist-avatar" src="./student_images/default.jpg" alt=""
+                    style="width:46px;height:46px;border-radius:50%;object-fit:cover;
+                    border:2px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);"
+                    onerror="this.src='./student_images/default.jpg'">
+                <div style="flex:1;min-width:0;">
+                    <div id="hist-name" style="color:#fff;font-weight:700;font-family:'Playfair Display',serif;
+                        font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                    <div id="hist-sub" style="color:rgba(255,255,255,.5);font-size:.72rem;margin-top:.1rem;"></div>
+                </div>
+                <button id="hist-edit-btn" style="display:inline-flex;align-items:center;gap:.35rem;
+                    padding:.4rem .85rem;border-radius:7px;border:none;background:var(--gold);
+                    color:var(--navy);font-size:.78rem;font-weight:700;cursor:pointer;
+                    font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
+                    </svg>
+                    Edit
+                </button>
+                <button id="hist-pdf-btn" style="display:inline-flex;align-items:center;gap:.35rem;
+                    padding:.4rem .85rem;border-radius:7px;border:none;background:rgba(255,255,255,.15);
+                    color:#fff;font-size:.78rem;font-weight:600;cursor:pointer;
+                    font-family:'DM Sans',sans-serif;white-space:nowrap;flex-shrink:0;margin-left:.35rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                    </svg>
+                    PDF
+                </button>
+                <button id="hist-close-btn" style="width:30px;height:30px;border-radius:50%;
+                    background:rgba(255,255,255,.12);border:none;color:#fff;cursor:pointer;
+                    display:flex;align-items:center;justify-content:center;margin-left:.35rem;flex-shrink:0;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <!-- Fields grid -->
+            <div id="hist-body" style="flex:1;overflow-y:auto;padding:1.1rem 1.4rem;
+                display:grid;grid-template-columns:1fr 1fr;gap:.65rem .9rem;align-content:start;">
+            </div>
+        </div>
+    </div>
+
     <!-- External scripts -->
     <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
     <script src="https://kanyadet-school-admin.web.app/js/6GoogleAuthmain.js"></script>
@@ -2310,6 +2364,84 @@ gradeFilterSelect.addEventListener('change', () => {
             } catch(e) { badge.textContent = '— students'; }
         };
 
+        // ══ HISTORY PANEL ═══════════════════════════════════════
+        let _histCurrentStudent = null;
+
+        const openHistoryPanel = (student) => {
+            _histCurrentStudent = student;
+            const overlay = document.getElementById('history-overlay');
+            const drawer  = document.getElementById('history-drawer');
+            const name    = student['Official Student Name'] || student['Assessment No'] || '—';
+            const grade   = student['Grade'] || '';
+            const cls     = student['Class'] || student['studentClass'] || '';
+
+            document.getElementById('hist-name').textContent = name;
+            document.getElementById('hist-sub').textContent =
+                [grade && `Grade ${grade}`, cls && `Class of ${cls}`].filter(Boolean).join(' · ') || 'Student Record';
+
+            const avatar = document.getElementById('hist-avatar');
+            const enc = student['Official Student Name'] ? encodeURIComponent(student['Official Student Name']) : '';
+            avatar.src = enc ? `./student_images/${enc}.jpg` : './student_images/default.jpg';
+
+            // PDF button
+            document.getElementById('hist-pdf-btn').onclick = () =>
+                openLocalPDF(student['Assessment No'], student['Official Student Name'] || '');
+
+            // Edit button — opens the edit drawer
+            document.getElementById('hist-edit-btn').onclick = () => {
+                closeHistoryPanel();
+                if (student.id) window.editStudent(student.id);
+            };
+
+            // Build field grid — skip internal/display-only fields
+            const skip = new Set(['id', '_actions', 'Image', 'deletedAt', 'deletedBy']);
+            const body = document.getElementById('hist-body');
+            const entries = Object.entries(student).filter(([k]) => !skip.has(k));
+
+            body.innerHTML = entries.map(([k, v]) => {
+                const display = (v !== undefined && v !== null && v !== '')
+                    ? String(v)
+                    : '<span style="color:var(--slate-lt);font-style:italic">—</span>';
+
+                // Colour numeric scores
+                let valueStyle = 'font-size:.88rem;color:var(--text);font-weight:500;word-break:break-word;';
+                const num = parseFloat(v);
+                if (!isNaN(num) && String(v).trim() !== '') {
+                    if      (num >= 75) valueStyle += 'color:#276749;font-weight:700;';
+                    else if (num >= 58) valueStyle += 'color:#2b6cb0;font-weight:700;';
+                    else if (num >= 41) valueStyle += 'color:#d69e2e;font-weight:700;';
+                    else                valueStyle += 'color:#e53e3e;font-weight:700;';
+                }
+
+                return `<div style="display:flex;flex-direction:column;gap:.2rem;
+                    background:var(--surface2);border-radius:8px;padding:.5rem .7rem;
+                    border:1px solid var(--border);">
+                    <span style="font-size:.67rem;font-weight:700;color:var(--slate);
+                        text-transform:uppercase;letter-spacing:.06em;">${k}</span>
+                    <span style="${valueStyle}">${display}</span>
+                </div>`;
+            }).join('');
+
+            overlay.style.pointerEvents = 'auto';
+            overlay.style.opacity = '1';
+            drawer.style.transform = 'scale(1) translateY(0)';
+        };
+
+        const closeHistoryPanel = () => {
+            const overlay = document.getElementById('history-overlay');
+            const drawer  = document.getElementById('history-drawer');
+            overlay.style.opacity = '0';
+            overlay.style.pointerEvents = 'none';
+            drawer.style.transform = 'scale(.9) translateY(24px)';
+            _histCurrentStudent = null;
+        };
+
+        document.getElementById('hist-close-btn').addEventListener('click', closeHistoryPanel);
+        document.getElementById('history-overlay').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('history-overlay')) closeHistoryPanel();
+        });
+        // ════════════════════════════════════════════════════════
+
         const renderStudents = (students, activeFilter = null) => {
             currentFilteredStudents = students;
             updateAnalyticsDashboard(students, activeFilter);
@@ -2368,12 +2500,11 @@ gradeFilterSelect.addEventListener('change', () => {
                 clipboardCopyRowRange: 'selected',
                 clipboardCopyStyled: false,
 
-                // Row click → PDF
+                // Row single-click → history panel
                 rowClick: (e, row) => {
                     if (e.target.closest('.action-wrap')) return;
                     if (e.target.tagName === 'IMG') return;
-                    const d = row.getData();
-                    openLocalPDF(d['Assessment No'], d['Official Student Name'] || '');
+                    openHistoryPanel(row.getData());
                 },
 
                 dataFiltered: updateCountBadge,
