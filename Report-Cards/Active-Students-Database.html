@@ -257,7 +257,7 @@
         #bulk-action-toolbar.visible { transform: translateY(0); }
 
         /* LOADER */
-        #loader { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 500; background: rgba(255,255,255,.5); backdrop-filter: blur(40px); }
+        /* loader removed */
 
         /* PDF modal student image */
         .modal-student-image { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border); }
@@ -297,15 +297,15 @@
         /* ── SPOTLIGHT ── */
         #spotlight-overlay { display:flex !important; }
         #spotlight-overlay.hidden { display:none !important; }
-    </style>
-        #main_container { display: none !important; }
+
+        /* ══ AUTH STATE ══ */
         body.user-logged-in  #sign-in-section { display: none !important; }
         body.user-logged-out #data-section    { display: none !important; }
         body.user-logged-out #sign-in-section { display: flex !important; }
         .hidden { display: none !important; }
     </style>
 </head>
-<body>
+<body class="user-logged-out">
 
 <!-- Bulk Action Toolbar -->
 <div id="bulk-action-toolbar">
@@ -333,14 +333,6 @@
     </div>
 </div>
 
-<!-- Loader -->
-<div id="loader" class="hidden">
-    <div style="position:relative;width:56px;height:56px;">
-        <div style="position:absolute;inset:0;border-radius:50%;border:4px solid var(--border);"></div>
-        <div style="position:absolute;inset:0;border-radius:50%;border:4px solid transparent;border-top-color:var(--navy-lt);animation:spin .8s linear infinite;"></div>
-    </div>
-</div>
-<style>@keyframes spin{to{transform:rotate(360deg)}}</style>
 
 <!-- Navigation modal (Toggle.js placeholder) -->
 <div id="linkModal" class="modal-backdrop hidden" style="z-index:1100;">
@@ -752,7 +744,6 @@ const modal = document.getElementById('message-modal');
 const modalText = document.getElementById('modal-text');
 const closeModalBtn = document.getElementById('close-modal-btn');
 const userIdDisplay = document.getElementById('user-id-display');
-const loader = document.getElementById('loader');
 const signInSection = document.getElementById('sign-in-section');
 const dataSection = document.getElementById('data-section');
 const signInGoogleBtn = document.getElementById('sign-in-google-btn');
@@ -840,7 +831,6 @@ onAuthStateChanged(auth, async (user) => {
         document.body.classList.add('user-logged-in');
         document.body.classList.remove('user-logged-out');
         signInSection.classList.add('hidden');           // belt-and-suspenders
-        const _mc = document.getElementById('main_container'); if (_mc) _mc.style.display = 'none';
         signOutBtn.classList.remove('hidden');
         dataSection.classList.remove('hidden');
         printAllBtn.classList.remove('hidden');
@@ -848,7 +838,7 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('completeness-btn').classList.remove('hidden');
         window._currentUserEmail = user.email || user.displayName || 'unknown';
 
-        loader.classList.remove('hidden');
+        
         fetchStudents();   // loader hidden inside onValue callback after first render
 
     } else {
@@ -859,10 +849,9 @@ onAuthStateChanged(auth, async (user) => {
         document.body.classList.add('user-logged-out');
         document.body.classList.remove('user-logged-in');
         signInSection.classList.remove('hidden');        // belt-and-suspenders
-        const _mc2 = document.getElementById('main_container'); if (_mc2) _mc2.style.display = 'none';
         signOutBtn.classList.add('hidden');
         dataSection.classList.add('hidden');
-        loader.classList.add('hidden');
+        
 
         studentsData = [];
         if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
@@ -902,10 +891,10 @@ const fetchStudents = () => {
         window._fbSDK          = { ref, set, get, update, remove };
         updateGradeFilter();
         renderStudents(studentsData);
-        loader.classList.add('hidden');
+        
     }, (error) => {
         showModal(`Error fetching data: ${error.message}`);
-        loader.classList.add('hidden');
+        
     });
 };
 
