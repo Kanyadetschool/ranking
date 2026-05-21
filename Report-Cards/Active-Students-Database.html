@@ -187,6 +187,8 @@
         .btn-edit:hover { background: var(--navy-lt); box-shadow: 0 4px 12px rgba(30,64,128,.3); transform: translateY(-1px); }
         .btn-del { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 6px; border: none; background: var(--danger-lt); color: var(--danger); cursor: pointer; transition: all .15s; }
         .btn-del:hover { background: var(--danger); color: #fff; }
+        /* prevent frozen Actions column from clipping buttons */
+        #tabulator-table .tabulator-cell[tabulator-field="_actions"] { overflow: visible !important; padding: .4rem .6rem !important; }
 
         /* STUDENT IMAGE in table */
         .student-img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; border: 2px solid var(--border); display: block; }
@@ -1230,7 +1232,7 @@ const renderStudents = (students) => {
             cellClick: (e, cell) => { cell.getRow().toggleSelect(); },
         },
         {
-            title: 'Actions', field: '_actions', frozen: true, headerSort: false, resizable: false, width: 150,
+            title: 'Actions', field: '_actions', frozen: true, headerSort: false, resizable: false, width: 168,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
                 return `<div class="action-wrap">
@@ -1324,9 +1326,11 @@ const renderStudents = (students) => {
             if (e.target.closest('.action-wrap') || e.target.tagName === 'INPUT') return;
             if (e.target.tagName === 'IMG' && e.target.closest('[tabulator-field="_img"]')) return;
             const d = row.getData();
-            // Open profile modal (Feature 3) if available, else PDF
-            if (window._viewProfile) window._viewProfile(d.id);
-            else openLocalPDF(d['Assessment No'], d['Official Student Name'] || '');
+            // Use setTimeout so any pending module registration finishes first
+            setTimeout(() => {
+                if (window._viewProfile) window._viewProfile(d.id);
+                else openLocalPDF(d['Assessment No'], d['Official Student Name'] || '');
+            }, 0);
         },
         dataFiltered: updateCountBadge,
         dataSorted: updateCountBadge,
@@ -1794,7 +1798,7 @@ promoteCancelBtn.addEventListener('click', () => promoteModal.classList.add('hid
 promoteModal.addEventListener('click', e => { if (e.target === promoteModal) promoteModal.classList.add('hidden'); });
 
 // ── PROMOTE ALL — each grade → next grade automatically ──
-document.getElementById('promote-all-btn').addEventListener('click', () => {
+document.getElementById('promote-all-btn').addEventListener('click', async () => {
     if (!studentsData.length) { showModal('No students to promote.'); return; }
 
     // Build grade map: detect numeric part and increment
@@ -1837,7 +1841,7 @@ document.getElementById('promote-all-btn').addEventListener('click', () => {
 
     const totalStudents = studentsData.length;
 
-    openModal({
+    const result = await openModal({
         icon: 'promote',
         title: 'Promote All Grades',
         wide: true,
@@ -1879,39 +1883,38 @@ document.getElementById('promote-all-btn').addEventListener('click', () => {
             }
             return mapping;
         }
-    }).then(async result => {
-        if (!result.isConfirmed || !result.value) return;
-        const mapping = result.value;
-
-        openModal({ loading: true, text: 'Updating all student records…' });
-
-        try {
-            const email = auth.currentUser?.email || 'unknown';
-            const ts = new Date().toISOString();
-            await Promise.all(studentsData.map(async s => {
-                const newGrade = mapping[s.Grade];
-                if (!newGrade || newGrade === s.Grade) return;
-                const sRef = ref(db, `artifacts/${sanitizedAppId}/students/${s.id}`);
-                return update(sRef, {
-                    Grade:       newGrade,
-                    _prevGrade:  s.Grade,
-                    _promotedAt: ts,
-                    _promotedBy: email,
-                });
-            }));
-
-            // Build summary for toast
-            const summaryLines = Object.entries(mapping)
-                .map(([from, to]) => `${from} → ${to}`)
-                .join(', ');
-
-            closeModal();
-            showToast('All Grades Promoted! ' + summaryLines, 'success', 5000);
-        } catch(e) {
-            closeModal();
-            openModal({ icon: 'danger', title: 'Error', text: e.message });
-        }
     });
+
+    if (!result.isConfirmed || !result.value) return;
+    const mapping = result.value;
+
+    openModal({ loading: true, text: 'Updating all student records…' });
+
+    try {
+        const email = auth.currentUser?.email || 'unknown';
+        const ts = new Date().toISOString();
+        await Promise.all(studentsData.map(async s => {
+            const newGrade = mapping[s.Grade];
+            if (!newGrade || newGrade === s.Grade) return;
+            const sRef = ref(db, `artifacts/${sanitizedAppId}/students/${s.id}`);
+            return update(sRef, {
+                Grade:       newGrade,
+                _prevGrade:  s.Grade,
+                _promotedAt: ts,
+                _promotedBy: email,
+            });
+        }));
+
+        const summaryLines = Object.entries(mapping)
+            .map(([from, to]) => `${from} → ${to}`)
+            .join(', ');
+
+        closeModal();
+        showToast('All Grades Promoted! ' + summaryLines, 'success', 5000);
+    } catch(e) {
+        closeModal();
+        openModal({ icon: 'danger', title: 'Error', text: e.message });
+    }
 });
 
 // Promote entire selected grade
