@@ -948,13 +948,15 @@ const updateAnalytics = (students) => {
     });
 
     const barHTML = (label, dist, color) => {
-        if (!dist || Object.keys(dist).length === 0) return '';
         const total = Object.values(dist).reduce((a, b) => a + b, 0);
-        return `<div class="dist-card"><h3>${label}</h3>${Object.entries(dist).sort((a,b)=>b[1]-a[1]).map(([k,v]) => `
-            <div class="dist-bar-row">
-                <div class="dist-bar-label"><span>${k}</span><span>${v}</span></div>
-                <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${total>0?v/total*100:0}%;background:${color};"></div></div>
-            </div>`).join('')}</div>`;
+        const rows = Object.keys(dist).length > 0
+            ? Object.entries(dist).sort((a,b)=>b[1]-a[1]).map(([k,v]) => `
+                <div class="dist-bar-row">
+                    <div class="dist-bar-label"><span>${k}</span><span>${v}</span></div>
+                    <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${total>0?v/total*100:0}%;background:${color};"></div></div>
+                </div>`).join('')
+            : `<p style="font-size:.78rem;color:var(--slate-lt);text-align:center;padding:.5rem 0;">No data</p>`;
+        return `<div class="dist-card"><h3>${label}</h3>${rows}</div>`;
     };
 
     const gradeDist = {};
@@ -1241,9 +1243,23 @@ drawerSaveBtn.addEventListener('click', async () => {
 
 // ── DELETE ROW ────────────────────────────────────────
 window._delRow = async (id) => {
+    const student = studentsData.find(s => s.id === id);
+    const studentName = student?.['Official Student Name'] || student?.['Assessment No'] || 'this student';
     const result = await Swal.fire({
-        icon: 'warning', title: 'Delete Student?', text: 'This cannot be undone.',
-        showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Delete'
+        icon: 'warning',
+        title: 'Delete Student?',
+        html: `<p style="font-size:.88rem;color:var(--text2);margin-bottom:.75rem;">
+            <strong>${studentName}</strong> will be <strong>permanently removed</strong> from Active Students.
+        </p>
+        <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:.85rem;text-align:left;font-size:.82rem;color:#7f1d1d;">
+            <strong>📦 A backup copy is saved to:</strong><br>
+            <code style="font-size:.78rem;background:rgba(0,0,0,.07);padding:.15rem .4rem;border-radius:4px;">Deletedstudents / ${sanitizedAppId} / artifacts</code><br>
+            <span style="color:#991b1b;margin-top:.4rem;display:block;">The record can be recovered from Firebase by an admin if needed.</span>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: 'Yes, Delete',
+        cancelButtonText: 'Cancel',
     });
     if (!result.isConfirmed) return;
     try {
@@ -1258,7 +1274,17 @@ window._delRow = async (id) => {
         if (tabulatorTable) tabulatorTable.deleteRow(id);
         updateGradeFilter();
         updateKPI(currentFilteredStudents.filter(s => s.id !== id));
-        showModal('Student deleted and archived.');
+        Swal.fire({
+            icon: 'success',
+            title: 'Student Deleted',
+            html: `<p style="font-size:.85rem;color:var(--text2);">
+                <strong>${studentName}</strong> has been removed from Active Students.<br><br>
+                A backup was saved to <code style="font-size:.78rem;background:var(--surface3);padding:.15rem .4rem;border-radius:4px;">Deletedstudents/${sanitizedAppId}/artifacts</code> in Firebase and can be restored by an admin if needed.
+            </p>`,
+            confirmButtonColor: 'var(--navy-lt)',
+            timer: 5000,
+            timerProgressBar: true,
+        });
     } catch (e) { showModal(`Error: ${e.message}`); }
 };
 
@@ -1266,9 +1292,22 @@ window._delRow = async (id) => {
 deleteGradeBtn.addEventListener('click', async () => {
     const grade = gradeFilterSelect.value;
     if (!grade) { showModal('Please select a grade first.'); return; }
+    const count = studentsData.filter(s => s.Grade === grade).length;
     const result = await Swal.fire({
-        icon: 'warning', title: `Delete all in ${grade}?`, text: 'All students in this grade will be archived.',
-        showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Delete Grade'
+        icon: 'warning',
+        title: `Delete all of ${grade}?`,
+        html: `<p style="font-size:.88rem;color:var(--text2);margin-bottom:.75rem;">
+            <strong>${count} student${count !== 1 ? 's' : ''}</strong> will be <strong>permanently removed</strong> from Active Students.
+        </p>
+        <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:.85rem;text-align:left;font-size:.82rem;color:#7f1d1d;">
+            <strong>📦 Backup copies are saved to:</strong><br>
+            <code style="font-size:.78rem;background:rgba(0,0,0,.07);padding:.15rem .4rem;border-radius:4px;">Deletedstudents / ${sanitizedAppId} / artifacts</code><br>
+            <span style="color:#991b1b;margin-top:.4rem;display:block;">Records can be recovered from Firebase by an admin if needed.</span>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: `Delete ${grade}`,
+        cancelButtonText: 'Cancel',
     });
     if (!result.isConfirmed) return;
     const toDelete = studentsData.filter(s => s.Grade === grade);
@@ -1283,7 +1322,17 @@ deleteGradeBtn.addEventListener('click', async () => {
     gradeFilterSelect.value = '';
     renderStudents(studentsData);
     updateGradeFilter();
-    showModal(`All students in ${grade} deleted and archived.`);
+    Swal.fire({
+        icon: 'success',
+        title: `${grade} Deleted`,
+        html: `<p style="font-size:.85rem;color:var(--text2);">
+            <strong>${count} student${count !== 1 ? 's' : ''}</strong> removed from Active Students.<br><br>
+            Backup copies saved to <code style="font-size:.78rem;background:var(--surface3);padding:.15rem .4rem;border-radius:4px;">Deletedstudents/${sanitizedAppId}/artifacts</code> in Firebase and can be restored by an admin if needed.
+        </p>`,
+        confirmButtonColor: 'var(--navy-lt)',
+        timer: 6000,
+        timerProgressBar: true,
+    });
 });
 
 // ── MANUAL ADD ────────────────────────────────────────
@@ -1472,10 +1521,22 @@ syncBulkBtns();
 
 document.getElementById('bulk-delete-btn').addEventListener('click', async () => {
     if (selectedStudents.size === 0) { showModal('Select students first.'); return; }
+    const count = selectedStudents.size;
     const result = await Swal.fire({
-        icon: 'warning', title: `Delete ${selectedStudents.size} students?`,
-        text: 'They will be archived in Deletedstudents.',
-        showCancelButton: true, confirmButtonColor: '#dc2626', confirmButtonText: 'Delete All'
+        icon: 'warning',
+        title: `Delete ${count} student${count !== 1 ? 's' : ''}?`,
+        html: `<p style="font-size:.88rem;color:var(--text2);margin-bottom:.75rem;">
+            <strong>${count} selected student${count !== 1 ? 's' : ''}</strong> will be <strong>permanently removed</strong> from Active Students.
+        </p>
+        <div style="background:#fef2f2;border:1.5px solid #fca5a5;border-radius:8px;padding:.85rem;text-align:left;font-size:.82rem;color:#7f1d1d;">
+            <strong>📦 Backup copies are saved to:</strong><br>
+            <code style="font-size:.78rem;background:rgba(0,0,0,.07);padding:.15rem .4rem;border-radius:4px;">Deletedstudents / ${sanitizedAppId} / artifacts</code><br>
+            <span style="color:#991b1b;margin-top:.4rem;display:block;">Records can be recovered from Firebase by an admin if needed.</span>
+        </div>`,
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        confirmButtonText: `Delete ${count} Student${count !== 1 ? 's' : ''}`,
+        cancelButtonText: 'Cancel',
     });
     if (!result.isConfirmed) return;
     const email = auth.currentUser?.email || 'unknown';
@@ -1492,7 +1553,17 @@ document.getElementById('bulk-delete-btn').addEventListener('click', async () =>
     syncBulkBtns();
     updateGradeFilter();
     renderStudents(studentsData);
-    Swal.fire({ icon: 'success', title: 'Deleted', text: 'Selected students deleted and archived.', timer: 2500, timerProgressBar: true, showConfirmButton: false });
+    Swal.fire({
+        icon: 'success',
+        title: 'Students Deleted',
+        html: `<p style="font-size:.85rem;color:var(--text2);">
+            <strong>${count} student${count !== 1 ? 's' : ''}</strong> removed from Active Students.<br><br>
+            Backup copies saved to <code style="font-size:.78rem;background:var(--surface3);padding:.15rem .4rem;border-radius:4px;">Deletedstudents/${sanitizedAppId}/artifacts</code> in Firebase and can be restored by an admin if needed.
+        </p>`,
+        confirmButtonColor: 'var(--navy-lt)',
+        timer: 5000,
+        timerProgressBar: true,
+    });
 });
 
 // ── PROMOTE LOGIC ─────────────────────────────────────
