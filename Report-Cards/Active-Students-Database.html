@@ -57,7 +57,7 @@
             --shadow-lg:0 12px 40px rgba(13,31,53,.16);
         }
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); -webkit-font-smoothing: antialiased; min-height: 100vh; }
+        body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); -webkit-font-smoothing: antialiased; min-height: 100vh; overflow-x: hidden; }
 
         /* TOPBAR */
         .topbar { background: var(--navy); padding: 0 1.75rem; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,.06); box-shadow: 0 1px 0 rgba(255,255,255,.04), var(--shadow-lg); }
@@ -132,6 +132,12 @@
 
         /* LAYOUT */
         .page-wrap { max-width: 1480px; margin: 0 auto; padding: 1.75rem 1.5rem 3rem; }
+        @media (max-width: 768px) {
+            .page-wrap { padding: 1rem 0.5rem 3rem; }
+            .card.table-card { margin-left: -0.5rem; margin-right: -0.5rem; border-radius: 0; width: calc(100% + 1rem); }
+            .card.table-card > .toolbar { border-radius: 0; flex-wrap: wrap; }
+            .card.table-card > .tab-toolbar { flex-wrap: wrap; }
+        }
 
         /* SIGN-IN */
         #sign-in-section { min-height: 70vh; display: flex !important; align-items: center; justify-content: center; }
@@ -141,11 +147,13 @@
         .signin-card .btn { width: 100%; justify-content: center; padding: .8rem 1.5rem; font-size: .92rem; border-radius: 10px; margin-bottom: .6rem; }
 
         /* CARDS */
-        .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: visible; }
-        /* Keep rounded corners on card children without clipping the table scroll */
-        .card > .toolbar, .card > .tab-toolbar { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
-        /* Tabulator wrapper gets its own overflow scroll instead of being clipped by card */
-        #tabulator-table { overflow: hidden; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
+        .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
+        /* Student records table card: restore overflow so Tabulator can scroll horizontally */
+        .card.table-card { overflow: visible; }
+        .card.table-card > .toolbar { border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; }
+        .card.table-card > #tabulator-table { border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow: hidden; }
+        /* Force Tabulator inner scroll to work on mobile */
+        #tabulator-table .tabulator-tableholder { overflow-x: auto !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
         .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--surface); }
         .card-title { font-size: .92rem; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: .55rem; }
         .card-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--navy); color: #fff; flex-shrink: 0; }
@@ -615,7 +623,7 @@
         <section id="stats-section"></section>
 
         <!-- STUDENT RECORDS TABLE -->
-        <div class="card">
+        <div class="card table-card">
             <!-- Main Toolbar -->
             <div class="toolbar">
                 <div class="toolbar-title">Student Records</div>
