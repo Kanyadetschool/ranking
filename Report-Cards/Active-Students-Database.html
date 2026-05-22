@@ -201,12 +201,31 @@
         #tabulator-table .tabulator-row:hover { background: #e8effa !important; }
         #tabulator-table .tabulator-row.tabulator-selected { background: var(--gold-dim) !important; }
         #tabulator-table .tabulator-row.tabulator-selected:hover { background: #fef3c7 !important; }
-        /* Checkbox column cells */
+        /* Checkbox column cells — fully centered */
         #tabulator-table .tabulator-cell[tabulator-field="_sel"],
-        #tabulator-table .tabulator-col[tabulator-field="_sel"] { text-align: center !important; padding: 0 !important; }
+        #tabulator-table .tabulator-col[tabulator-field="_sel"] {
+            text-align: center !important;
+            padding: 0 !important;
+            display: table-cell !important;
+            vertical-align: middle !important;
+        }
+        #tabulator-table .tabulator-cell[tabulator-field="_sel"] .tabulator-cell-value,
+        #tabulator-table .tabulator-col[tabulator-field="_sel"] .tabulator-col-title {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
         #tabulator-table .tabulator-cell[tabulator-field="_sel"] input[type="checkbox"],
         #tabulator-table .tabulator-col[tabulator-field="_sel"] input[type="checkbox"] {
-            width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer; display: block; margin: auto;
+            width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer;
+            display: block; margin: 0 auto; flex-shrink: 0;
+        }
+        #tabulator-table .tabulator-row .tabulator-cell[tabulator-field="_sel"] {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
         }
         #tabulator-table .tabulator-cell { padding: .6rem .9rem !important; color: var(--text2) !important; font-size: .82rem !important; border-right: none !important; }
         #tabulator-table .tabulator-frozen { background: inherit !important; }
@@ -2387,16 +2406,104 @@ async function loadHistPanel(studentId) {
     }
 }
 
-histPanelBtn?.addEventListener('click', () => toggleHistPanel());
+histPanelBtn?.addEventListener('click', () => openHistoryModal());
 histPanelClose?.addEventListener('click', () => toggleHistPanel(false));
 $('mobile-hist-btn')?.addEventListener('click', () => {
     $('nav-mobile-drawer')?.classList.remove('open');
-    toggleHistPanel(true);
+    openHistoryModal();
 });
+
+async function openHistoryModal() {
+    // Show loading state immediately
+    openModal({ loading: true, text: 'Loading change history…' });
+
+    const fbGet = window._fbSDK?.get;
+    const fbRef = window._fbSDK?.ref;
+    const fbDb  = window._fbDb;
+
+    if (!fbGet || !fbRef || !fbDb) {
+        closeModal();
+        openModal({ icon:'info', title:'Change History', html:'<p style="text-align:center;color:var(--slate);">Firebase not ready yet.</p>', confirmButtonText:'Close' });
+        return;
+    }
+
+    try {
+        const appIdSan = (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id').replace(/\./g,'_');
+        const snap = await fbGet(fbRef(fbDb, `artifacts/${appIdSan}/AuditLog`));
+
+        closeModal();
+
+        if (!snap.exists()) {
+            openModal({ icon:'history', title:'Change History', html:'<p style="text-align:center;padding:1.5rem;color:var(--slate-lt);">No change history found yet.</p>', confirmButtonText:'Close' });
+            return;
+        }
+
+        const allEntries = [];
+        snap.forEach(studentSnap => {
+            const sid = studentSnap.key;
+            studentSnap.forEach(entrySnap => {
+                const e = entrySnap.val();
+                allEntries.push({ ...e, _sid: sid });
+            });
+        });
+        allEntries.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+        const recent = allEntries.slice(0, 80);
+
+        if (!recent.length) {
+            openModal({ icon:'history', title:'Change History', html:'<p style="text-align:center;padding:1.5rem;color:var(--slate-lt);">No changes recorded yet.</p>', confirmButtonText:'Close' });
+            return;
+        }
+
+        const data = window._studentsData || [];
+        const rows = recent.map(e => {
+            const s = data.find(x => x.id === e._sid);
+            const name = s?.['Official Student Name'] || e._sid;
+            const time = e.changedAt ? new Date(e.changedAt).toLocaleString('en-GB',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+            const oldDisplay = e.oldVal||'—';
+            const newDisplay = e.newVal||'—';
+            return `<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="closeModal();setTimeout(()=>window._viewProfile&&window._viewProfile('${e._sid}'),120);">
+                <td style="padding:.45rem .7rem;font-size:.79rem;font-weight:600;color:var(--navy);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${name}">${name}</td>
+                <td style="padding:.45rem .7rem;font-size:.76rem;color:var(--info);font-weight:600;white-space:nowrap;">${e.field||'?'}</td>
+                <td style="padding:.45rem .7rem;font-size:.76rem;"><span style="color:var(--danger);text-decoration:line-through;max-width:90px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${oldDisplay}">${oldDisplay}</span></td>
+                <td style="padding:.45rem .7rem;font-size:.76rem;"><span style="color:var(--success);max-width:90px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${newDisplay}">${newDisplay}</span></td>
+                <td style="padding:.45rem .7rem;font-size:.71rem;color:var(--slate-lt);white-space:nowrap;">${time}</td>
+                <td style="padding:.45rem .7rem;font-size:.71rem;color:var(--slate-lt);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${e.changedBy||'?'}">${e.changedBy||'?'}</td>
+            </tr>`;
+        }).join('');
+
+        openModal({
+            icon: 'history',
+            title: 'Change History',
+            wide: true,
+            scrollable: true,
+            html: `<div style="margin-bottom:.6rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.35rem;">
+                <span style="font-size:.81rem;color:var(--slate);">Showing ${recent.length} most recent changes · click any row to view student</span>
+                <span style="font-size:.74rem;color:var(--slate-lt);">${allEntries.length} total entries</span>
+            </div>
+            <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:400px;overflow-y:auto;">
+                <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
+                    <thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;z-index:1;">
+                        <th style="padding:.4rem .7rem;text-align:left;font-size:.71rem;">Student</th>
+                        <th style="padding:.4rem .7rem;text-align:left;font-size:.71rem;">Field</th>
+                        <th style="padding:.4rem .7rem;text-align:left;font-size:.71rem;">Old Value</th>
+                        <th style="padding:.4rem .7rem;text-align:left;font-size:.71rem;">New Value</th>
+                        <th style="padding:.4rem .7rem;text-align:left;font-size:.71rem;">Time</th>
+                        <th style="padding:.4rem .7rem;text-align:left;font-size:.71rem;">Changed By</th>
+                    </tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`,
+            confirmButtonText: 'Close',
+        });
+    } catch(err) {
+        closeModal();
+        openModal({ icon:'danger', title:'History Error', text: err.message, confirmButtonText:'Close' });
+    }
+}
 
 // Reload history panel when a student record is saved or profile viewed
 const _origViewProfile = window._viewProfile;
-window._loadHistPanel = loadHistPanel;
+window._loadHistPanel = () => {}; // History now uses modal on demand — no persistent panel to refresh
 
 // ── HAMBURGER / MOBILE NAV ────────────────────────────
 const hamburger = $('nav-hamburger');
@@ -2631,8 +2738,100 @@ $('completeness-btn')?.addEventListener('click', () => {
 window._showMissingField=(field)=>{
     const data=window._studentsData||[];
     const missing=data.filter(s=>!s[field]||String(s[field]).trim()==='');
-    const list=missing.slice(0,25).map(s=>`<li style="font-size:.82rem;padding:.2rem 0;">${s['Official Student Name']||s['Assessment No']||s.id} <span style="color:var(--slate-lt);">${s.Grade||''}</span></li>`).join('');
-    openModal({icon:'info',title:`Missing: ${field}`,scrollable:true,html:`<ul style="text-align:left;padding-left:1.25rem;">${list}${missing.length>25?`<li>…and ${missing.length-25} more</li>`:''}</ul>`,confirmButtonText:'Close'});
+    const shown=missing.slice(0,30);
+    const rows=shown.map(s=>{
+        const name=s['Official Student Name']||s['Assessment No']||s.id;
+        const grade=s.Grade||'';
+        return`<tr data-id="${s.id}" style="border-bottom:1px solid var(--border);">
+            <td style="padding:.4rem .65rem;font-size:.81rem;font-weight:600;color:var(--navy);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis;" title="${name}">${name}</td>
+            <td style="padding:.4rem .65rem;font-size:.76rem;color:var(--slate);">${grade}</td>
+            <td style="padding:.3rem .5rem;min-width:160px;">
+                <div style="display:flex;align-items:center;gap:.35rem;">
+                    <input type="text" data-id="${s.id}" data-field="${field}" placeholder="Enter ${field}…"
+                        style="flex:1;padding:.28rem .55rem;border:1.5px solid var(--border);border-radius:6px;font-size:.79rem;font-family:'DM Sans',sans-serif;color:var(--text);outline:none;transition:border-color .15s;"
+                        onfocus="this.style.borderColor='var(--navy-lt)'" onblur="this.style.borderColor='var(--border)'"
+                        onkeydown="if(event.key==='Enter')this.nextElementSibling.click()">
+                    <button onclick="window._inlineSaveMissing(this)" data-id="${s.id}" data-field="${field}"
+                        style="flex-shrink:0;padding:.28rem .6rem;background:var(--navy);color:#fff;border:none;border-radius:6px;font-size:.75rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s;"
+                        onmouseover="this.style.background='var(--navy-lt)'" onmouseout="this.style.background='var(--navy)'">Save</button>
+                </div>
+                <div data-status="${s.id}" style="font-size:.7rem;margin-top:.15rem;min-height:.8rem;"></div>
+            </td>
+        </tr>`;
+    }).join('');
+    openModal({
+        icon:'chart',
+        title:`Pending: ${field}`,
+        wide:true,
+        scrollable:true,
+        html:`<div style="margin-bottom:.65rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.4rem;">
+            <span style="font-size:.83rem;color:var(--slate);">${missing.length} student${missing.length!==1?'s':''} missing <strong>${field}</strong>. Edit inline and hit <kbd style="font-size:.7rem;padding:.1rem .3rem;border:1px solid var(--border);border-radius:3px;background:var(--surface2);">Save</kbd> or <kbd style="font-size:.7rem;padding:.1rem .3rem;border:1px solid var(--border);border-radius:3px;background:var(--surface2);">Enter</kbd>.</span>
+            ${missing.length>30?`<span style="font-size:.74rem;color:var(--slate-lt);">Showing first 30 of ${missing.length}</span>`:''}
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;max-height:360px;overflow-y:auto;">
+            <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
+                <thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;z-index:1;">
+                    <th style="padding:.4rem .65rem;text-align:left;font-size:.71rem;font-weight:600;">Student</th>
+                    <th style="padding:.4rem .65rem;text-align:left;font-size:.71rem;font-weight:600;">Grade</th>
+                    <th style="padding:.4rem .65rem;text-align:left;font-size:.71rem;font-weight:600;">Set ${field}</th>
+                </tr></thead>
+                <tbody id="missing-field-tbody">${rows}</tbody>
+            </table>
+        </div>`,
+        confirmButtonText:'Done',
+    });
+};
+
+window._inlineSaveMissing=async(btn)=>{
+    const id=btn.dataset.id;
+    const field=btn.dataset.field;
+    const row=btn.closest('tr[data-id]');
+    const input=row?.querySelector('input[data-id]');
+    const statusEl=row?.querySelector('[data-status]');
+    if(!input||!field||!id) return;
+    const val=input.value.trim();
+    if(!val){
+        input.style.borderColor='var(--danger)';
+        input.focus();
+        if(statusEl){statusEl.textContent='Value required';statusEl.style.color='var(--danger)';}
+        return;
+    }
+    btn.disabled=true; btn.textContent='…';
+    try{
+        const fbUpdate=window._fbSDK?.update;
+        const fbRef=window._fbSDK?.ref;
+        const fbSet=window._fbSDK?.set;
+        const fbDb=window._fbDb;
+        const appId=(typeof __app_id!=='undefined'?__app_id:'default-app-id').replace(/\./g,'_');
+        if(fbUpdate&&fbRef&&fbDb){
+            await fbUpdate(fbRef(fbDb,`artifacts/${appId}/students/${id}`),{[field]:val});
+            // Audit log
+            const email=window._currentUserEmail||'unknown';
+            const ts=Date.now();
+            if(fbSet) fbSet(fbRef(fbDb,`artifacts/${appId}/AuditLog/${id}/${ts}`),{
+                field,oldVal:'',newVal:val,changedBy:email,changedAt:new Date().toISOString()
+            }).catch(()=>{});
+        }
+        // Update local cache
+        const sd=window._studentsData||[];
+        const idx=sd.findIndex(s=>s.id===id);
+        if(idx!==-1){sd[idx][field]=val;window._studentsData=sd;}
+        // Update table row
+        if(window._tabulatorTable){try{const tr=window._tabulatorTable.getRow(id);if(tr)tr.update({[field]:val});}catch{}}
+        // Update UI feedback
+        input.style.borderColor='var(--success)';
+        btn.style.background='var(--success)'; btn.textContent='✓';
+        if(statusEl){statusEl.textContent='Saved';statusEl.style.color='var(--success)';}
+        // Fade the row out
+        setTimeout(()=>{
+            row.style.transition='opacity .4s';
+            row.style.opacity='0.35';
+        },600);
+    }catch(err){
+        input.style.borderColor='var(--danger)';
+        btn.disabled=false; btn.textContent='Retry';
+        if(statusEl){statusEl.textContent='Error: '+err.message;statusEl.style.color='var(--danger)';}
+    }
 };
 window._exportCompletenessXLSX=()=>{
     const data=window._studentsData||[]; const total=data.length;
