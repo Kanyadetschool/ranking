@@ -1,4 +1,4 @@
-
+<!-- deletes sect class and saves in deleted students -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -141,7 +141,11 @@
         .signin-card .btn { width: 100%; justify-content: center; padding: .8rem 1.5rem; font-size: .92rem; border-radius: 10px; margin-bottom: .6rem; }
 
         /* CARDS */
-        .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
+        .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: visible; }
+        /* Keep rounded corners on card children without clipping the table scroll */
+        .card > .toolbar, .card > .tab-toolbar { border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+        /* Tabulator wrapper gets its own overflow scroll instead of being clipped by card */
+        #tabulator-table { overflow: hidden; border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
         .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--surface); }
         .card-title { font-size: .92rem; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: .55rem; }
         .card-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--navy); color: #fff; flex-shrink: 0; }
@@ -1506,6 +1510,18 @@ const renderStudents = (students) => {
                 if (!isConfirmed || newVal === oldVal) return;
                 try {
                     await update(ref(db, `artifacts/${sanitizedAppId}/students/${id}`), { [field]: newVal });
+                    // Audit log — inline cell edit
+                    try {
+                        const email = auth.currentUser?.email || 'unknown';
+                        const ts = Date.now();
+                        await set(ref(db, `artifacts/${sanitizedAppId}/AuditLog/${id}/${ts}`), {
+                            field,
+                            oldVal: oldVal === '-' ? '' : oldVal,
+                            newVal: String(newVal),
+                            changedBy: email,
+                            changedAt: new Date().toISOString()
+                        });
+                    } catch(_) {}
                     const idx = studentsData.findIndex(s => s.id === id);
                     if (idx !== -1) { studentsData[idx][field] = newVal; window._studentsData = studentsData; }
                     cell.getRow().update({ [field]: newVal });
@@ -1716,7 +1732,7 @@ drawerSaveBtn.addEventListener('click', async () => {
         if (changedFields.length) {
             try {
                 await Promise.all(changedFields.map((field, i) =>
-                    set(ref(db, `artifacts/${sanitizedAppId}/auditLog/${drawerCurrentId}/${ts + i}`), {
+                    set(ref(db, `artifacts/${sanitizedAppId}/AuditLog/${drawerCurrentId}/${ts + i}`), {
                         field,
                         oldVal: String(oldStudent[field]||''),
                         newVal: String(updatedData[field]||''),
@@ -2126,6 +2142,14 @@ document.getElementById('promote-all-btn').addEventListener('click', async () =>
             const newGrade = mapping[s.Grade];
             if (!newGrade || newGrade === s.Grade) return;
             const sRef = ref(db, `artifacts/${sanitizedAppId}/students/${s.id}`);
+            // Audit log entry for grade promotion
+            set(ref(db, `artifacts/${sanitizedAppId}/AuditLog/${s.id}/${Date.now()}_promote`), {
+                field: 'Grade',
+                oldVal: s.Grade || '',
+                newVal: newGrade,
+                changedBy: email,
+                changedAt: ts
+            }).catch(()=>{});
             return update(sRef, {
                 Grade:       newGrade,
                 _prevGrade:  s.Grade,
@@ -2184,10 +2208,20 @@ promoteConfirmBtn.addEventListener('click', async () => {
             const snap = await get(sRef);
             if (!snap.exists()) return;
             const curr = snap.val();
+            const oldGrade = curr.Grade || '';
+            const ts = new Date().toISOString();
+            // Audit log
+            set(ref(db, `artifacts/${sanitizedAppId}/AuditLog/${id}/${Date.now()}_promote`), {
+                field: 'Grade',
+                oldVal: oldGrade,
+                newVal: toGrade,
+                changedBy: email,
+                changedAt: ts
+            }).catch(()=>{});
             return update(sRef, {
                 Grade:          toGrade,
-                _prevGrade:     curr.Grade || '',
-                _promotedAt:    new Date().toISOString(),
+                _prevGrade:     oldGrade,
+                _promotedAt:    ts,
                 _promotedBy:    email,
             });
         }));
@@ -2275,7 +2309,7 @@ async function loadHistPanel(studentId) {
 
     try {
         const appIdSan = (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id').replace(/\./g,'_');
-        const snap = await fbGet(fbRef(fbDb, `artifacts/${appIdSan}/auditLog`));
+        const snap = await fbGet(fbRef(fbDb, `artifacts/${appIdSan}/AuditLog`));
 
         if (!snap.exists()) {
             histPanelBody.innerHTML = '<div class="hist-panel-empty">No change history found.</div>';
@@ -2469,7 +2503,7 @@ window._viewAuditLog = async (id) => {
     if (!fbGet || !fbRef || !fbDb) { showMsg('Firebase not ready yet.'); return; }
     const appId = (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id').replace(/\./g,'_');
     try {
-        const snap = await fbGet(fbRef(fbDb, `artifacts/${appId}/auditLog/${id}`));
+        const snap = await fbGet(fbRef(fbDb, `artifacts/${appId}/AuditLog/${id}`));
         if (!snap.exists()) { showMsg('No change history for this student.'); return; }
         const entries = Object.entries(snap.val()).sort((a,b) => b[0]-a[0]).slice(0,50);
         const rows = entries.map(([,e]) => `<tr>
@@ -2612,6 +2646,17 @@ $('bulk-batch-field-btn')?.addEventListener('click', async () => {
     const appId=(typeof __app_id!=='undefined'?__app_id:'default-app-id').replace(/\./g,'_');
     await Promise.all([...sel].map(id=>{
         if(!fbDb||!fbRef||!fbSet) return;
+        const student=window._studentsData?.find(s=>s.id===id)||{};
+        const oldVal=String(student[field]||'');
+        const ts=Date.now()+Math.random(); // slight offset to avoid key collision
+        // Write to AuditLog
+        set(fbRef(fbDb,`artifacts/${appId}/AuditLog/${id}/${Math.floor(ts)}`),{
+            field,
+            oldVal,
+            newVal: value,
+            changedBy: email,
+            changedAt: new Date().toISOString()
+        }).catch(()=>{});
         return fbSet(fbRef(fbDb,`artifacts/${appId}/students/${id}`),{[field]:value});
     }));
     showMsg(`${field} updated for ${sel.size} students.`);
