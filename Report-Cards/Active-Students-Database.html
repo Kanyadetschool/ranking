@@ -141,7 +141,7 @@
         .signin-card .btn { width: 100%; justify-content: center; padding: .8rem 1.5rem; font-size: .92rem; border-radius: 10px; margin-bottom: .6rem; }
 
         /* CARDS */
-        .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
+        .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: visible; }
         .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--surface); }
         .card-title { font-size: .92rem; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: .55rem; }
         .card-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--navy); color: #fff; flex-shrink: 0; }
@@ -163,14 +163,16 @@
 
         /* TOOLBAR */
         .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; padding: .875rem 1.25rem; background: var(--surface); border-bottom: 1px solid var(--border); }
-        .toolbar-title { font-weight: 700; font-size: .92rem; color: var(--navy); }
+        .toolbar-title { font-weight: 700; font-size: .92rem; color: var(--navy); white-space: nowrap; }
         .toolbar-label { font-size: .75rem; font-weight: 600; color: var(--slate); white-space: nowrap; }
+        .toolbar-btn-group { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; margin-left: auto; }
         .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 300px; }
         .search-wrap svg { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--slate-lt); pointer-events: none; }
         #search-input { padding-left: 2.1rem; }
 
         /* TAB TOOLBAR */
-        .tab-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; padding: .6rem 1.25rem; background: var(--surface2); border-bottom: 1px solid var(--border); }
+        .tab-toolbar { display: flex; flex-wrap: nowrap; align-items: center; gap: .4rem; padding: .6rem 1.25rem; background: var(--surface2); border-bottom: 1px solid var(--border); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+        .tab-toolbar::-webkit-scrollbar { display: none; }
         .tab-toolbar-btn { display: inline-flex; align-items: center; gap: .35rem; padding: .32rem .75rem; border-radius: 6px; font-size: .75rem; font-weight: 600; font-family: 'DM Sans', sans-serif; background: var(--surface); border: 1.5px solid var(--border); color: var(--text2); cursor: pointer; transition: all .15s; white-space: nowrap; }
         .tab-toolbar-btn:hover { background: var(--surface3); border-color: var(--border2); }
         .tab-toolbar-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
@@ -242,9 +244,9 @@
         @media (max-width: 900px) { .two-col-grid { grid-template-columns: 1fr; } }
 
         /* MODAL BACKDROP */
-        .modal-backdrop { position: fixed; inset: 0; background: rgba(13,31,53,.55); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; overflow-y: auto; }
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(13,31,53,.55); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
         .modal-backdrop.hidden { display: none; }
-        .modal-box { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 2rem; width: 100%; max-width: 460px; border: 1px solid var(--border); max-height: calc(100vh - 2rem); overflow-y: auto; }
+        .modal-box { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 2rem; width: 100%; max-width: 460px; border: 1px solid var(--border); }
         .modal-box-wide { max-width: 860px; }
         .modal-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 800; color: var(--navy); margin-bottom: 1.25rem; text-align: center; }
         .export-fmt-btn { display: inline-flex; align-items: center; gap: .4rem; padding: .65rem 1.4rem; border-radius: 8px; font-size: .88rem; font-weight: 700; border: 2px solid var(--border); background: var(--surface); color: var(--text2); cursor: pointer; transition: all .15s; font-family: 'DM Sans', sans-serif; }
@@ -318,7 +320,10 @@
             .drawer-grid { grid-template-columns: 1fr; }
             #edit-drawer { width: 100%; border-radius: 14px; }
             .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-            .tab-toolbar { gap: .3rem; }
+            .toolbar { padding: .65rem .875rem; gap: .5rem; }
+            .toolbar-btn-group { margin-left: 0; width: 100%; }
+            .search-wrap { min-width: 0; flex: 1 1 140px; }
+            .tab-toolbar { padding: .5rem .875rem; }
         }
 
         /* ── DARK MODE ── */
@@ -633,7 +638,7 @@
                         <option value="500">500</option>
                     </select>
                 </div>
-                <div style="margin-left:auto;display:flex;align-items:center;gap:.4rem;">
+                <div class="toolbar-btn-group">
                     <button id="completeness-btn" class="btn btn-outline btn-sm hidden" title="Data completeness report">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
                         Completeness
@@ -798,7 +803,7 @@
             <strong>⚠ What this does:</strong> Updates the <em>Grade</em> field for <span id="promote-count-label" style="font-weight:700;color:var(--navy-lt);">all selected</span> learners to the new grade. The original grade is logged in each record's history.
         </div>
 
-        <div style="display:flex;gap:.75rem;position:sticky;bottom:0;background:var(--surface);padding-top:.75rem;margin-top:auto;">
+        <div style="display:flex;gap:.75rem;">
             <button id="promote-confirm-btn" class="btn btn-gold" style="flex:1;justify-content:center;padding:.7rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
                 Promote Now
