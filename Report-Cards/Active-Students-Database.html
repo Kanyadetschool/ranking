@@ -61,13 +61,55 @@
 
         /* TOPBAR */
         .topbar { background: var(--navy); padding: 0 1.75rem; height: 64px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid rgba(255,255,255,.06); box-shadow: 0 1px 0 rgba(255,255,255,.04), var(--shadow-lg); }
-        .topbar-brand { display: flex; align-items: center; gap: .875rem; }
-        .topbar-logo { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 0 6px rgba(240,165,0,.5)); }
+        .topbar-brand { display: flex; align-items: center; gap: .875rem; min-width: 0; }
+        .topbar-logo { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 0 6px rgba(240,165,0,.5)); flex-shrink: 0; }
         .topbar-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 800; color: #fff; line-height: 1.1; }
         .topbar-sub { font-size: .65rem; color: rgba(255,255,255,.4); font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
         .topbar-right { display: flex; align-items: center; gap: .75rem; }
         #user-id-display { font-size: .82rem; color: rgba(255,255,255,.7); font-weight: 500; display: flex; align-items: center; gap: .5rem; }
         #user-id-display img { width: 32px !important; height: 32px !important; border-radius: 50% !important; border: 2px solid var(--gold); display: inline-block; }
+
+        /* Hamburger */
+        #nav-hamburger { display: none; width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15); color: #fff; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
+        /* Mobile nav drawer */
+        #nav-mobile-drawer { display: none; position: fixed; inset: 0; z-index: 500; }
+        #nav-mobile-drawer .nav-drawer-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.45); }
+        #nav-mobile-drawer .nav-drawer-panel { position: absolute; top: 0; right: 0; bottom: 0; width: 260px; background: var(--navy); padding: 1.5rem 1.25rem; display: flex; flex-direction: column; gap: .5rem; transform: translateX(100%); transition: transform .25s ease; }
+        #nav-mobile-drawer.open { display: block; }
+        #nav-mobile-drawer.open .nav-drawer-panel { transform: translateX(0); }
+        .nav-drawer-item { display: flex; align-items: center; gap: .65rem; padding: .65rem .85rem; border-radius: 8px; color: rgba(255,255,255,.85); font-size: .88rem; font-weight: 500; border: none; background: transparent; width: 100%; text-align: left; cursor: pointer; transition: background .15s; }
+        .nav-drawer-item:hover { background: rgba(255,255,255,.1); }
+        .nav-drawer-sep { height: 1px; background: rgba(255,255,255,.1); margin: .35rem 0; }
+
+        @media (max-width: 768px) {
+            .topbar { padding: 0 1rem; }
+            .topbar-sub { display: none; }
+            .topbar-right { gap: .4rem; }
+            #nav-hamburger { display: flex; }
+            /* hide desktop nav items on mobile */
+            .topbar-right .btn-ghost.nav-hide-mobile,
+            .topbar-right #sign-out-btn,
+            .topbar-right #dark-mode-btn,
+            #user-id-display .nav-name-text { display: none !important; }
+        }
+
+        /* ── HISTORY PANEL ────────────────────────────────────────────────── */
+        #hist-panel { position: fixed; top: 64px; right: 0; bottom: 0; width: 320px; background: var(--surface); border-left: 1px solid var(--border); box-shadow: -4px 0 24px rgba(13,31,53,.1); z-index: 200; display: flex; flex-direction: column; transform: translateX(100%); transition: transform .28s cubic-bezier(.4,0,.2,1); }
+        #hist-panel.open { transform: translateX(0); }
+        #hist-panel-header { padding: 1rem 1.1rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; background: var(--navy); }
+        #hist-panel-header h3 { font-family: 'Playfair Display',serif; font-size: .95rem; font-weight: 800; color: #fff; }
+        #hist-panel-close { width: 28px; height: 28px; border-radius: 6px; background: rgba(255,255,255,.12); border: none; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        #hist-panel-body { flex: 1; overflow-y: auto; padding: .75rem; }
+        #hist-panel-body::-webkit-scrollbar { width: 5px; }
+        #hist-panel-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+        .hist-entry { padding: .65rem .8rem; border-radius: 8px; border: 1px solid var(--border); margin-bottom: .5rem; cursor: pointer; transition: background .15s; }
+        .hist-entry:hover { background: var(--surface2); }
+        .hist-entry-name { font-weight: 700; font-size: .83rem; color: var(--navy); }
+        .hist-entry-field { font-size: .76rem; color: var(--info); font-weight: 600; margin-top: .15rem; }
+        .hist-entry-vals { font-size: .75rem; color: var(--slate); margin-top: .1rem; }
+        .hist-entry-time { font-size: .7rem; color: var(--slate-lt); margin-top: .2rem; }
+        #hist-panel-empty { text-align: center; padding: 2rem 1rem; color: var(--slate-lt); font-size: .84rem; }
+        .hist-btn-active { background: var(--gold) !important; color: var(--navy) !important; }
 
         /* BUTTONS */
         button { cursor: pointer !important; }
@@ -189,6 +231,8 @@
         .btn-del:hover { background: var(--danger); color: #fff; }
         /* prevent frozen Actions column from clipping buttons */
         #tabulator-table .tabulator-cell[tabulator-field="_actions"] { overflow: visible !important; padding: .4rem .6rem !important; }
+        /* spotlight hover */
+        .spotlight-result:hover, .spotlight-result.sp-hover { background: var(--surface2); }
 
         /* STUDENT IMAGE in table */
         .student-img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; border: 2px solid var(--border); display: block; }
@@ -403,21 +447,67 @@
         </div>
     </div>
     <div class="topbar-right">
-        <span id="user-id-display"></span>
+        <span id="user-id-display"><span class="nav-name-text"></span></span>
+        <!-- History icon -->
+        <button id="hist-panel-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Change History Panel">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            History
+        </button>
         <button id="sign-out-btn" class="btn btn-ghost hidden">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
             Sign Out
         </button>
-        <button id="dark-mode-btn" class="btn btn-ghost btn-sm" title="Toggle dark mode">
+        <button id="dark-mode-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Toggle dark mode">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
             Dark
         </button>
-        <button onclick="document.getElementById('spotlight-overlay').classList.remove('hidden');document.getElementById('spotlight-input').focus();" class="btn btn-ghost btn-sm" title="Spotlight search (Ctrl+K)">
+        <button onclick="document.getElementById('spotlight-overlay').classList.remove('hidden');document.getElementById('spotlight-input').focus();" class="btn btn-ghost btn-sm nav-hide-mobile" title="Spotlight search (Ctrl+K)">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <kbd style="font-size:.65rem;opacity:.7;">⌘K</kbd>
         </button>
+        <!-- Hamburger (mobile only) -->
+        <button id="nav-hamburger" aria-label="Menu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
     </div>
 </header>
+
+<!-- Mobile nav drawer -->
+<div id="nav-mobile-drawer">
+    <div class="nav-drawer-backdrop" id="nav-drawer-backdrop"></div>
+    <div class="nav-drawer-panel">
+        <button class="nav-drawer-item" onclick="document.getElementById('spotlight-overlay').classList.remove('hidden');document.getElementById('spotlight-input').focus();document.getElementById('nav-mobile-drawer').classList.remove('open');">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            Search (⌘K)
+        </button>
+        <button class="nav-drawer-item" id="mobile-hist-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Change History
+        </button>
+        <button class="nav-drawer-item" id="mobile-dark-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            Toggle Dark Mode
+        </button>
+        <div class="nav-drawer-sep"></div>
+        <button class="nav-drawer-item" id="mobile-sign-out-btn" style="color:rgba(255,100,100,.9)">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
+            Sign Out
+        </button>
+    </div>
+</div>
+
+<!-- History slide panel -->
+<div id="hist-panel">
+    <div id="hist-panel-header">
+        <h3>📋 Change History</h3>
+        <button id="hist-panel-close">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+    </div>
+    <div id="hist-panel-body">
+        <div id="hist-panel-empty">No history loaded yet.<br>Open a student profile to see their changes here.</div>
+    </div>
+</div>
 
 <!-- PAGE WRAP -->
 <div class="page-wrap">
@@ -783,6 +873,17 @@
 
     window.closeModal = closeEl;
 
+    // Spotlight close helper (used by backdrop click and result items)
+    window.closeSpotlight = function() {
+        const o = document.getElementById('spotlight-overlay');
+        if (o) { o.classList.add('hidden'); const inp = document.getElementById('spotlight-input'); if(inp) inp.value=''; }
+    };
+    // Backdrop click closes spotlight
+    document.addEventListener('click', function(e) {
+        const o = document.getElementById('spotlight-overlay');
+        if (o && !o.classList.contains('hidden') && e.target === o) window.closeSpotlight();
+    });
+
     // Swal compat shim — used for Swal.close() calls inside inline onclick=""
     window.Swal = {
         close: closeEl,
@@ -1030,14 +1131,15 @@ auth = getAuth(app);
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         userId = user.uid;
-        userIdDisplay.innerHTML = ''; // clear any previous avatar + name
+        userIdDisplay.innerHTML = '<span class="nav-name-text"></span>'; // reset
 
         // Build display name from email the same way Results does
         const email = user.email || '';
         let username = email.split('@')[0].replace(/[^a-zA-Z]/g, '');
         let spacedName = username.replace(/([a-z])([A-Z])/g, '$1 $2');
         spacedName = spacedName.replace(/\b\w/g, c => c.toUpperCase());
-        userIdDisplay.textContent = spacedName || user.displayName || email;
+        const nameSpan = userIdDisplay.querySelector('.nav-name-text');
+        if (nameSpan) nameSpan.textContent = spacedName || user.displayName || email;
 
         if (user.photoURL) {
             const img = document.createElement('img');
@@ -1084,10 +1186,134 @@ signInGoogleBtn.addEventListener('click', async () => {
     const provider = new GoogleAuthProvider();
     try { await signInWithPopup(auth, provider); } catch(e) { showModal('Sign-in failed: ' + e.message); }
 });
+
+// ── PASSKEY / WEBAUTHN SIGN-IN ────────────────────────────────────────
+// Uses the WebAuthn API (navigator.credentials) to create or authenticate
+// with a device passkey (fingerprint, Face ID, Windows Hello, etc).
+// After WebAuthn verifies the device, we sign into Firebase with a stored
+// Google credential, or guide the user to link their passkey to their account.
+
+const PASSKEY_STORE_KEY = 'ksd_passkey_uid';
+
 signInFingerprintBtn.addEventListener('click', async () => {
-    const provider = new GoogleAuthProvider();
-    try { await signInWithPopup(auth, provider); } catch(e) { showModal('Sign-in failed: ' + e.message); }
+    if (!window.PublicKeyCredential) {
+        showModal('Passkeys are not supported on this browser/device. Please use Google Sign-In instead.');
+        return;
+    }
+
+    const btn = signInFingerprintBtn;
+    const origHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="animation:um-spin .7s linear infinite"><circle cx="12" cy="12" r="10"/></svg> Verifying…`;
+
+    try {
+        const storedCredId = localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
+
+        if (storedCredId) {
+            // ── AUTHENTICATE with existing passkey ──────────────────────
+            const challenge = new Uint8Array(32);
+            crypto.getRandomValues(challenge);
+
+            const assertion = await navigator.credentials.get({
+                publicKey: {
+                    challenge,
+                    timeout: 60000,
+                    userVerification: 'preferred',
+                    allowCredentials: [{
+                        type: 'public-key',
+                        id: _base64ToBuffer(storedCredId),
+                    }],
+                    rpId: location.hostname === 'localhost' ? 'localhost' : location.hostname,
+                }
+            });
+
+            if (assertion) {
+                // Passkey auth succeeded — sign in with Google (stored credential)
+                // In production you'd verify the assertion server-side and mint a Firebase custom token.
+                // Here we trigger Google sign-in as the account link step.
+                showModal('Passkey verified! Completing sign-in…');
+                await new Promise(r => setTimeout(r, 800));
+                const provider = new GoogleAuthProvider();
+                await signInWithPopup(auth, provider);
+            }
+        } else {
+            // ── REGISTER a new passkey ──────────────────────────────────
+            // We need a user context — prompt with a mini sign-in first so we can store the passkey
+            const confirmed = await openModal({
+                icon: 'info',
+                title: 'Set Up Passkey',
+                text: 'First, sign in with Google to link your account. Then your fingerprint/Face ID will be saved for future logins.',
+                showCancelButton: true,
+                confirmButtonText: 'Continue with Google',
+                confirmButtonColor: 'primary',
+            });
+            if (!confirmed.isConfirmed) { btn.disabled = false; btn.innerHTML = origHTML; return; }
+
+            const provider = new GoogleAuthProvider();
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            // Now register the passkey
+            const challenge = new Uint8Array(32);
+            crypto.getRandomValues(challenge);
+            const userIdBytes = new TextEncoder().encode(user.uid.slice(0, 64));
+
+            const credential = await navigator.credentials.create({
+                publicKey: {
+                    challenge,
+                    rp: {
+                        name: 'Kanyadet School Admin',
+                        id: location.hostname === 'localhost' ? 'localhost' : location.hostname,
+                    },
+                    user: {
+                        id: userIdBytes,
+                        name: user.email || user.uid,
+                        displayName: user.displayName || user.email || 'School Admin',
+                    },
+                    pubKeyCredParams: [
+                        { type: 'public-key', alg: -7  }, // ES256
+                        { type: 'public-key', alg: -257 }, // RS256
+                    ],
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform',
+                        userVerification: 'preferred',
+                        residentKey: 'preferred',
+                    },
+                    timeout: 60000,
+                    attestation: 'none',
+                }
+            });
+
+            if (credential) {
+                const credId = _bufferToBase64(credential.rawId);
+                localStorage.setItem(PASSKEY_STORE_KEY + '_credId', credId);
+                localStorage.setItem(PASSKEY_STORE_KEY + '_uid', user.uid);
+                showToast('Passkey registered! Next time just tap the fingerprint button.', 'success', 4000);
+            }
+        }
+    } catch (e) {
+        if (e.name === 'NotAllowedError') {
+            showModal('Passkey cancelled or timed out. Try again or use Google Sign-In.');
+        } else if (e.name === 'InvalidStateError') {
+            showModal('A passkey already exists for this device. Try signing in instead of registering.');
+        } else {
+            showModal('Passkey error: ' + e.message);
+        }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = origHTML;
+    }
 });
+
+function _bufferToBase64(buffer) {
+    return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+}
+function _base64ToBuffer(base64) {
+    const bin = atob(base64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes.buffer;
+}
 signOutBtn.addEventListener('click', async () => {
     await signOut(auth);
     // onAuthStateChanged fires automatically and resets body classes / UI
@@ -1985,11 +2211,11 @@ promoteConfirmBtn.addEventListener('click', async () => {
 
 <!-- Spotlight overlay (Feature 13) -->
 <div id="spotlight-overlay" class="hidden" style="position:fixed;inset:0;background:rgba(13,31,53,.6);backdrop-filter:blur(6px);z-index:2000;display:flex;align-items:flex-start;justify-content:center;padding-top:10vh;">
-    <div style="background:var(--surface);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);width:100%;max-width:520px;overflow:hidden;border:1px solid var(--border);">
+    <div id="spotlight-box" style="background:var(--surface);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);width:100%;max-width:520px;overflow:hidden;border:1px solid var(--border);">
         <div style="display:flex;align-items:center;padding:.75rem 1rem;border-bottom:1px solid var(--border);gap:.75rem;">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             <input id="spotlight-input" type="text" placeholder="Search any student…" style="flex:1;border:none;outline:none;font-size:.95rem;font-family:'DM Sans',sans-serif;color:var(--text);background:transparent;">
-            <kbd style="font-size:.7rem;padding:.2rem .4rem;border:1px solid var(--border);border-radius:4px;color:var(--slate);background:var(--surface2);">Esc</kbd>
+            <kbd onclick="window.closeSpotlight()" style="font-size:.7rem;padding:.2rem .4rem;border:1px solid var(--border);border-radius:4px;color:var(--slate);background:var(--surface2);cursor:pointer;">Esc</kbd>
         </div>
         <div id="spotlight-results" style="max-height:380px;overflow-y:auto;"></div>
         <div style="padding:.5rem 1rem;border-top:1px solid var(--border);display:flex;gap:1rem;font-size:.72rem;color:var(--slate-lt);">
@@ -2014,6 +2240,106 @@ const { initializeApp, getDatabase, ref, set, get, update, remove, onValue } =
 // ── UTILS ─────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const showMsg = (msg) => { const m=$('message-modal'),t=$('modal-text'); if(m&&t){t.textContent=msg;m.classList.remove('hidden');setTimeout(()=>m.classList.add('hidden'),3000);} };
+
+// ── HISTORY PANEL ─────────────────────────────────────
+const histPanel = $('hist-panel');
+const histPanelBtn = $('hist-panel-btn');
+const histPanelClose = $('hist-panel-close');
+const histPanelBody = $('hist-panel-body');
+
+function toggleHistPanel(forceOpen) {
+    const isOpen = histPanel?.classList.contains('open');
+    const open = forceOpen !== undefined ? forceOpen : !isOpen;
+    histPanel?.classList.toggle('open', open);
+    histPanelBtn?.classList.toggle('hist-btn-active', open);
+    if (open) loadHistPanel();
+}
+
+async function loadHistPanel(studentId) {
+    if (!histPanel?.classList.contains('open')) return;
+    if (!histPanelBody) return;
+
+    const fbGet = window._fbSDK?.get;
+    const fbRef = window._fbSDK?.ref;
+    const fbDb  = window._fbDb;
+
+    if (!fbGet || !fbRef || !fbDb) {
+        histPanelBody.innerHTML = '<div id="hist-panel-empty">Firebase not ready yet.</div>';
+        return;
+    }
+
+    histPanelBody.innerHTML = '<div id="hist-panel-empty">Loading…</div>';
+
+    try {
+        const appIdSan = (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id').replace(/\./g,'_');
+        const snap = await fbGet(fbRef(fbDb, `artifacts/${appIdSan}/auditLog`));
+
+        if (!snap.exists()) {
+            histPanelBody.innerHTML = '<div id="hist-panel-empty">No change history found.</div>';
+            return;
+        }
+
+        const allEntries = [];
+        snap.forEach(studentSnap => {
+            const sid = studentSnap.key;
+            studentSnap.forEach(entrySnap => {
+                const e = entrySnap.val();
+                allEntries.push({ ...e, _sid: sid });
+            });
+        });
+
+        allEntries.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
+        const recent = allEntries.slice(0, 60);
+
+        if (!recent.length) {
+            histPanelBody.innerHTML = '<div id="hist-panel-empty">No changes recorded yet.</div>';
+            return;
+        }
+
+        const data = window._studentsData || [];
+        histPanelBody.innerHTML = recent.map(e => {
+            const s = data.find(x => x.id === e._sid);
+            const name = s?.['Official Student Name'] || e._sid;
+            const time = e.changedAt ? new Date(e.changedAt).toLocaleString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+            return `<div class="hist-entry" onclick="window._viewProfile&&window._viewProfile('${e._sid}')">
+                <div class="hist-entry-name">${name}</div>
+                <div class="hist-entry-field">✏ ${e.field||'?'}</div>
+                <div class="hist-entry-vals"><span style="color:var(--danger);text-decoration:line-through;">${e.oldVal||'—'}</span> → <span style="color:var(--success);">${e.newVal||'—'}</span></div>
+                <div class="hist-entry-time">🕐 ${time} · ${e.changedBy||'?'}</div>
+            </div>`;
+        }).join('');
+    } catch(err) {
+        histPanelBody.innerHTML = `<div id="hist-panel-empty">Error: ${err.message}</div>`;
+    }
+}
+
+histPanelBtn?.addEventListener('click', () => toggleHistPanel());
+histPanelClose?.addEventListener('click', () => toggleHistPanel(false));
+$('mobile-hist-btn')?.addEventListener('click', () => {
+    $('nav-mobile-drawer')?.classList.remove('open');
+    toggleHistPanel(true);
+});
+
+// Reload history panel when a student record is saved or profile viewed
+const _origViewProfile = window._viewProfile;
+window._loadHistPanel = loadHistPanel;
+
+// ── HAMBURGER / MOBILE NAV ────────────────────────────
+const hamburger = $('nav-hamburger');
+const mobileDrawer = $('nav-mobile-drawer');
+const mobileBackdrop = $('nav-drawer-backdrop');
+
+hamburger?.addEventListener('click', () => mobileDrawer?.classList.add('open'));
+mobileBackdrop?.addEventListener('click', () => mobileDrawer?.classList.remove('open'));
+
+$('mobile-dark-btn')?.addEventListener('click', () => {
+    mobileDrawer?.classList.remove('open');
+    $('dark-mode-btn')?.click();
+});
+$('mobile-sign-out-btn')?.addEventListener('click', () => {
+    mobileDrawer?.classList.remove('open');
+    $('sign-out-btn')?.click();
+});
 
 // ── 15. DARK MODE ─────────────────────────────────────
 const DARK_KEY = 'ksd_dark';
@@ -2083,7 +2409,7 @@ $('save-preset-btn')?.addEventListener('click', async () => {
 // ── 13. SPOTLIGHT Ctrl+K ──────────────────────────────
 document.addEventListener('keydown', e => {
     if ((e.ctrlKey||e.metaKey)&&e.key==='k') { e.preventDefault(); const o=$('spotlight-overlay'); o?.classList.toggle('hidden'); if(!o?.classList.contains('hidden')) $('spotlight-input')?.focus(); }
-    if (e.key==='Escape') { $('spotlight-overlay')?.classList.add('hidden'); $('tab-col-menu')?.remove(); }
+    if (e.key==='Escape') { window.closeSpotlight(); $('tab-col-menu')?.remove(); }
 });
 const spotInput=$('spotlight-input');
 if(spotInput){
@@ -2094,9 +2420,10 @@ if(spotInput){
         if(!term){res.innerHTML='';return;}
         const hits=data.filter(s=>Object.values(s).some(v=>String(v).toLowerCase().includes(term))).slice(0,8);
         res.innerHTML=hits.length
-            ?hits.map(s=>`<div onclick="$('spotlight-overlay').classList.add('hidden');window._viewProfile('${s.id}')" style="padding:.65rem 1rem;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.75rem;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+            ?hits.map((s,i)=>`<div class="spotlight-result" data-id="${s.id}" data-idx="${i}" onclick="window.closeSpotlight();setTimeout(()=>window._viewProfile&&window._viewProfile('${s.id}'),50);" style="padding:.65rem 1rem;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:.75rem;" onmouseover="this.classList.add('sp-hover')" onmouseout="this.classList.remove('sp-hover')">
                 <img src="./student_images/${encodeURIComponent(s['Official Student Name']||'')}.jpg" onerror="this.src='./student_images/default.jpg'" style="width:34px;height:34px;border-radius:6px;object-fit:cover;flex-shrink:0;">
-                <div style="text-align:left;"><div style="font-weight:600;font-size:.85rem;color:var(--navy);">${s['Official Student Name']||'—'}</div><div style="font-size:.74rem;color:var(--slate);">${s.Grade||''} · ${s['Assessment No']||''}</div></div>
+                <div style="text-align:left;flex:1;min-width:0;"><div style="font-weight:600;font-size:.85rem;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${s['Official Student Name']||'—'}</div><div style="font-size:.74rem;color:var(--slate);">${s.Grade||''} · ${s['Assessment No']||''}</div></div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--slate-lt)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </div>`).join('')
             :'<div style="padding:1.25rem;text-align:center;color:var(--slate-lt);font-size:.84rem;">No results found</div>';
     });
