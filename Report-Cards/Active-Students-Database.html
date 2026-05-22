@@ -1175,6 +1175,31 @@ onAuthStateChanged(auth, async (user) => {
         
         fetchStudents();   // loader hidden inside onValue callback after first render
 
+        // ── ONE-TIME MIGRATION: move auditLog → AuditLog ──────────────────
+        // Runs silently; safe to re-run (skips if already migrated)
+        (async () => {
+            try {
+                const oldSnap = await get(ref(db, `artifacts/${sanitizedAppId}/auditLog`));
+                if (!oldSnap.exists()) return; // nothing to migrate
+                const newSnap = await get(ref(db, `artifacts/${sanitizedAppId}/AuditLog`));
+                const writes = [];
+                oldSnap.forEach(studentSnap => {
+                    const sid = studentSnap.key;
+                    studentSnap.forEach(entrySnap => {
+                        const alreadyExists = newSnap.exists() && newSnap.child(sid).child(entrySnap.key).exists();
+                        if (!alreadyExists) {
+                            writes.push(set(ref(db, `artifacts/${sanitizedAppId}/AuditLog/${sid}/${entrySnap.key}`), entrySnap.val()));
+                        }
+                    });
+                });
+                await Promise.all(writes);
+                await remove(ref(db, `artifacts/${sanitizedAppId}/auditLog`));
+                console.log(`[KSD] Migrated ${writes.length} audit entries: auditLog → AuditLog`);
+            } catch(e) {
+                console.warn('[KSD] AuditLog migration skipped:', e.message);
+            }
+        })();
+
     } else {
         userId = null;
         userIdDisplay.textContent = '';
@@ -1533,6 +1558,7 @@ const renderStudents = (students) => {
                     const idx = studentsData.findIndex(s => s.id === id);
                     if (idx !== -1) { studentsData[idx][field] = newVal; window._studentsData = studentsData; }
                     cell.getRow().update({ [field]: newVal });
+                    if (typeof window._loadHistPanel === 'function') window._loadHistPanel();
                     showModal(`${field} updated.`);
                 } catch(err) { showModal('Error: ' + err.message); }
             },
@@ -1754,6 +1780,9 @@ drawerSaveBtn.addEventListener('click', async () => {
         if (idx !== -1) { studentsData[idx] = { id: drawerCurrentId, ...updatedData }; window._studentsData = studentsData; }
         closeDrawer();
         showModal('Student record updated successfully!');
+        // Refresh history panel if it's open
+        if (typeof loadHistPanel === 'function') loadHistPanel();
+        else if (typeof window._loadHistPanel === 'function') window._loadHistPanel();
         if (tabulatorTable) {
             const trow = tabulatorTable.getRow(drawerCurrentId);
             if (trow) trow.update({ ...updatedData, _actions: '', _img: '' });
@@ -2513,7 +2542,7 @@ window._viewAuditLog = async (id) => {
     try {
         const snap = await fbGet(fbRef(fbDb, `artifacts/${appId}/AuditLog/${id}`));
         if (!snap.exists()) { showMsg('No change history for this student.'); return; }
-        const entries = Object.entries(snap.val()).sort((a,b) => b[0]-a[0]).slice(0,50);
+        const entries = Object.entries(snap.val()).sort((a,b) => b[0].localeCompare(a[0])).slice(0,50);
         const rows = entries.map(([,e]) => `<tr>
             <td style="padding:.35rem .6rem;font-size:.74rem;color:var(--slate);white-space:nowrap;">${new Date(e.changedAt).toLocaleString()}</td>
             <td style="padding:.35rem .6rem;font-weight:600;font-size:.78rem;">${e.field}</td>
