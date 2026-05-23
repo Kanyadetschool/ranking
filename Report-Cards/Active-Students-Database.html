@@ -308,9 +308,9 @@
         /* ── USER TOUR ── */
         #tour-overlay { position:fixed; inset:0; z-index:30000; pointer-events:none; }
         #tour-overlay.active { pointer-events:all; }
-        #tour-backdrop { position:absolute; inset:0; background:rgba(13,31,53,.72); }
-        #tour-spotlight { position:absolute; border-radius:10px; box-shadow:0 0 0 9999px rgba(13,31,53,.72); transition:all .35s cubic-bezier(.4,0,.2,1); pointer-events:none; z-index:1; }
-        #tour-card { position:absolute; background:var(--surface); border-radius:14px; box-shadow:0 16px 56px rgba(13,31,53,.45); border:1px solid var(--border); width:300px; padding:1.25rem 1.4rem 1rem; z-index:2; transition:all .35s cubic-bezier(.4,0,.2,1); }
+        #tour-backdrop { position:absolute; inset:0; background:transparent; } /* backdrop is transparent — spotlight shadow creates the dimming */
+        #tour-spotlight { position:fixed; border-radius:10px; box-shadow:0 0 0 9999px rgba(13,31,53,.72); transition:top .35s cubic-bezier(.4,0,.2,1),left .35s cubic-bezier(.4,0,.2,1),width .35s cubic-bezier(.4,0,.2,1),height .35s cubic-bezier(.4,0,.2,1); pointer-events:none; z-index:1; }
+        #tour-card { position:fixed; background:var(--surface); border-radius:14px; box-shadow:0 16px 56px rgba(13,31,53,.45); border:1px solid var(--border); width:310px; padding:1.25rem 1.4rem 1rem; z-index:2; transition:top .35s cubic-bezier(.4,0,.2,1),left .35s cubic-bezier(.4,0,.2,1); }
         #tour-card::before { content:''; position:absolute; width:12px; height:12px; background:var(--surface); border:1px solid var(--border); transform:rotate(45deg); }
         #tour-card.arrow-top::before    { top:-7px; left:24px; border-right:none; border-bottom:none; }
         #tour-card.arrow-bottom::before { bottom:-7px; left:24px; border-left:none; border-top:none; }
@@ -2100,89 +2100,153 @@ document.addEventListener('keydown', e => {
         return document.querySelector(selector);
     }
 
-    function _rect(el) {
-        const r = el.getBoundingClientRect();
-        return { top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width, height: r.height };
-    }
-
+    // Position spotlight + card AFTER the page has scrolled to the target.
+    // Uses fixed-viewport coordinates so the card is always visible on screen.
     function _positionCard(targetEl, placement, arrow) {
-        const PAD = 12;
-        const tr = _rect(targetEl);
-        const cw = 300, ch = card.offsetHeight || 200;
-        const vw = window.innerWidth, vh = window.innerHeight;
+        const PAD = 14;
+        const CARD_W = 310;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
 
-        // spotlight
-        spotlight.style.top    = (tr.top  - PAD) + 'px';
-        spotlight.style.left   = (tr.left - PAD) + 'px';
-        spotlight.style.width  = (tr.width  + PAD*2) + 'px';
-        spotlight.style.height = (tr.height + PAD*2) + 'px';
+        // getBoundingClientRect gives viewport-relative coords (already scrolled)
+        const r  = targetEl.getBoundingClientRect();
+        const sTop  = r.top  - PAD;
+        const sLeft = r.left - PAD;
+        const sW    = r.width  + PAD * 2;
+        const sH    = r.height + PAD * 2;
 
-        card.className = arrow || 'arrow-top';
+        // Spotlight — use fixed positioning via inline style
+        spotlight.style.cssText = `
+            position:fixed;
+            top:${sTop}px; left:${sLeft}px;
+            width:${sW}px; height:${sH}px;
+            border-radius:10px;
+            box-shadow: 0 0 0 9999px rgba(13,31,53,.72);
+            transition:all .35s cubic-bezier(.4,0,.2,1);
+            pointer-events:none;
+            z-index:1;
+        `;
+
+        // Pick card side: prefer below, fall back to above if not enough room
+        const CARD_H_EST = card.offsetHeight || 220;
+        const spaceBelow = vh - (r.bottom + PAD + 10);
+        const spaceAbove = r.top - PAD - 10;
+        let useBelow = placement === 'below' ? spaceBelow >= CARD_H_EST || spaceBelow >= spaceAbove : false;
+        if (placement === 'above') useBelow = false;
+        if (placement !== 'below' && placement !== 'above') useBelow = true; // default
+
         let ct, cl;
-        if (placement === 'below') {
-            ct = tr.top + tr.height + PAD + 10;
-            cl = tr.left;
-        } else if (placement === 'above') {
-            ct = tr.top - ch - PAD - 10;
-            cl = tr.left;
-        } else if (placement === 'right') {
-            ct = tr.top;
-            cl = tr.left + tr.width + PAD + 10;
+        if (placement === 'right') {
+            ct = Math.max(8, Math.min(r.top, vh - CARD_H_EST - 8));
+            cl = r.right + PAD + 10;
+        } else if (placement === 'left') {
+            ct = Math.max(8, Math.min(r.top, vh - CARD_H_EST - 8));
+            cl = r.left - CARD_W - PAD - 10;
+        } else if (!useBelow || spaceBelow < 60) {
+            // above
+            ct = r.top - CARD_H_EST - PAD - 10;
+            cl = r.left;
+            card.className = (arrow || '').replace('arrow-top','arrow-bottom') || 'arrow-bottom';
         } else {
-            ct = tr.top;
-            cl = tr.left - cw - PAD - 10;
+            // below
+            ct = r.bottom + PAD + 10;
+            cl = r.left;
+            card.className = arrow || 'arrow-top';
         }
-        // clamp to viewport
-        cl = Math.max(8, Math.min(cl, vw - cw - 8));
-        ct = Math.max(8, Math.min(ct, window.scrollY + vh - ch - 8));
-        card.style.top  = ct + 'px';
-        card.style.left = cl + 'px';
+
+        // Clamp horizontally so card never goes off screen
+        cl = Math.max(8, Math.min(cl, vw - CARD_W - 8));
+        // Clamp vertically (fixed coords)
+        ct = Math.max(8, Math.min(ct, vh - CARD_H_EST - 8));
+
+        // Use fixed positioning for the card too — always visible regardless of scroll
+        card.style.cssText = `
+            position:fixed;
+            top:${ct}px; left:${cl}px;
+            width:${CARD_W}px;
+            z-index:2;
+        `;
     }
 
-    function _renderStep(idx) {
-        const step = TOUR_STEPS[idx];
+    // Scroll the page so the target is centred vertically, then position.
+    // Returns a Promise that resolves once scrolling & positioning are done.
+    function _scrollThenPosition(targetEl, placement, arrow) {
+        return new Promise(resolve => {
+            const r = targetEl.getBoundingClientRect();
+            const vh = window.innerHeight;
+            const alreadyVisible = r.top >= 80 && r.bottom <= vh - 80;
+
+            if (alreadyVisible) {
+                _positionCard(targetEl, placement, arrow);
+                resolve();
+                return;
+            }
+
+            // Scroll so element is centred in viewport
+            const scrollTarget = window.scrollY + r.top - vh / 2 + r.height / 2;
+            window.scrollTo({ top: Math.max(0, scrollTarget), behavior: 'smooth' });
+
+            // Wait for scroll to finish (scroll event goes quiet)
+            let scrollTimer;
+            const onScroll = () => {
+                clearTimeout(scrollTimer);
+                scrollTimer = setTimeout(() => {
+                    window.removeEventListener('scroll', onScroll);
+                    // Re-measure after scroll settles
+                    _positionCard(targetEl, placement, arrow);
+                    resolve();
+                }, 80);
+            };
+            window.addEventListener('scroll', onScroll, { passive: true });
+            // Safety fallback: if scroll never fires (already at position), resolve after 400ms
+            scrollTimer = setTimeout(() => {
+                window.removeEventListener('scroll', onScroll);
+                _positionCard(targetEl, placement, arrow);
+                resolve();
+            }, 500);
+        });
+    }
+
+    async function _renderStep(idx) {
+        const step  = TOUR_STEPS[idx];
         const total = TOUR_STEPS.length;
-        stepLbl.textContent = `Step ${idx+1} of ${total}`;
+        stepLbl.textContent = `Step ${idx + 1} of ${total}`;
         titleEl.innerHTML   = step.title;
         bodyEl.innerHTML    = step.body;
 
-        // dots
-        dotsEl.innerHTML = TOUR_STEPS.map((_,i) =>
+        dotsEl.innerHTML = TOUR_STEPS.map((_, i) =>
             `<span class="tour-dot ${i < idx ? 'done' : i === idx ? 'active' : ''}"></span>`
         ).join('');
 
         prevBtn.style.display = idx === 0 ? 'none' : '';
         nextBtn.textContent   = step.isLast ? '🎉 Finish' : 'Next →';
 
-        // find target
         const targetEl = _getEl(step.target);
         if (!targetEl) {
+            // Centred card with no spotlight for missing elements
             spotlight.style.cssText = 'display:none';
-            card.style.top  = '50%';
-            card.style.left = '50%';
-            card.style.transform = 'translate(-50%,-50%)';
-            card.className  = '';
+            card.style.cssText = `
+                position:fixed;
+                top:50%; left:50%;
+                transform:translate(-50%,-50%);
+                width:310px; z-index:2;
+            `;
+            card.className = '';
             return;
         }
         card.style.transform = '';
-        if (step.scrollTo) {
-            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            setTimeout(() => _positionCard(targetEl, step.placement, step.arrow), 350);
-        } else {
-            _positionCard(targetEl, step.placement, step.arrow);
-        }
+        await _scrollThenPosition(targetEl, step.placement, step.arrow);
     }
 
     window._tourStart = () => {
-        _step  = 0;
+        _step   = 0;
         _active = true;
         overlay.classList.add('active');
-        // small delay to let layout settle
         setTimeout(() => _renderStep(0), 80);
     };
 
     window._tourNext = () => {
-        if (_step >= TOUR_STEPS.length - 1) { window._tourSkip(); return; }
+        if (_step >= TOUR_STEPS.length - 1) { window._tourSkip(true); return; }
         _step++;
         _renderStep(_step);
     };
@@ -2193,23 +2257,39 @@ document.addEventListener('keydown', e => {
         _renderStep(_step);
     };
 
-    window._tourSkip = () => {
+    window._tourSkip = (finished) => {
         _active = false;
         overlay.classList.remove('active');
         spotlight.style.cssText = '';
-        // save dismissal
         try { localStorage.setItem('kanyadet_tour_done', '1'); } catch(e) {}
+
+        // After skipping show a subtle "Restart tour" toast
+        if (!finished) {
+            setTimeout(() => {
+                showToast
+                    ? showToast('Tour skipped — click the ▶ Tour button anytime to restart', 'info', 6000)
+                    : showMsg('Tour skipped — click the ▶ Tour button in the navbar anytime to restart.');
+            }, 300);
+        }
     };
+
+    // Re-position on window resize
+    window.addEventListener('resize', () => {
+        if (!_active) return;
+        const step = TOUR_STEPS[_step];
+        const el   = _getEl(step?.target);
+        if (el) _positionCard(el, step.placement, step.arrow);
+    });
 
     // Keyboard nav inside tour
     document.addEventListener('keydown', e => {
         if (!_active) return;
         if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); window._tourNext(); }
-        else if (e.key === 'ArrowLeft') { e.preventDefault(); window._tourPrev(); }
-        else if (e.key === 'Escape') { e.preventDefault(); window._tourSkip(); }
+        else if (e.key === 'ArrowLeft')  { e.preventDefault(); window._tourPrev(); }
+        else if (e.key === 'Escape')     { e.preventDefault(); window._tourSkip(); }
     });
 
-    // Auto-start tour on first visit (after data loads)
+    // Auto-start on first visit
     window._tourAutoStart = () => {
         try {
             if (!localStorage.getItem('kanyadet_tour_done')) {
