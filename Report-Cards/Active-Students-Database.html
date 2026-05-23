@@ -305,6 +305,51 @@
         .drawer-cancel-btn { padding: .7rem 1.25rem; background: transparent; color: var(--slate); border: 1.5px solid var(--border); border-radius: 9px; font-size: .88rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .15s; }
         .drawer-cancel-btn:hover { border-color: var(--danger); color: var(--danger); }
 
+        /* ── SHORTCUT KBD BADGES ON BUTTONS ── */
+        .btn-kbd, .tab-kbd { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:3px; font-size:.6rem; font-weight:800; padding:.05rem .3rem; margin-left:.3rem; letter-spacing:.03em; vertical-align:middle; line-height:1.4; pointer-events:none; }
+        .btn-outline .btn-kbd, .tab-toolbar-btn .tab-kbd { background:rgba(13,31,53,.1); border-color:rgba(13,31,53,.2); color:var(--navy); }
+        .btn-danger .btn-kbd { background:rgba(255,255,255,.2); border-color:rgba(255,255,255,.3); color:#fff; }
+        /* Shortcut reference panel */
+        #shortcut-panel { position:fixed; inset:0; z-index:20000; display:flex; align-items:center; justify-content:center; background:rgba(13,31,53,.55); backdrop-filter:blur(6px); opacity:0; pointer-events:none; transition:opacity .2s; }
+        #shortcut-panel.visible { opacity:1; pointer-events:all; }
+        #shortcut-box { background:var(--surface); border-radius:18px; box-shadow:0 24px 64px rgba(13,31,53,.4); border:1px solid var(--border); width:min(680px,95vw); max-height:85vh; overflow:hidden; display:flex; flex-direction:column; transform:scale(.96); transition:transform .22s; }
+        #shortcut-panel.visible #shortcut-box { transform:scale(1); }
+        #shortcut-box-header { padding:1rem 1.5rem; background:var(--navy); color:#fff; display:flex; align-items:center; justify-content:space-between; flex-shrink:0; }
+        #shortcut-box-header h2 { font-size:1rem; font-weight:800; margin:0; display:flex; align-items:center; gap:.5rem; }
+        #shortcut-box-body { padding:1.25rem 1.5rem; overflow-y:auto; flex:1; }
+        .sc-section { margin-bottom:1.25rem; }
+        .sc-section-title { font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--slate); margin-bottom:.6rem; border-bottom:1px solid var(--border); padding-bottom:.3rem; }
+        .sc-grid { display:grid; grid-template-columns:1fr 1fr; gap:.4rem .75rem; }
+        .sc-row { display:flex; align-items:center; gap:.6rem; padding:.3rem .5rem; border-radius:6px; transition:background .12s; }
+        .sc-row:hover { background:var(--surface2); }
+        .sc-keys { display:flex; gap:.2rem; flex-shrink:0; min-width:110px; justify-content:flex-end; }
+        kbd.sc-key { background:var(--surface3); border:1.5px solid var(--border); border-bottom-width:3px; border-radius:5px; font-family:'DM Mono',monospace; font-size:.72rem; font-weight:700; color:var(--navy); padding:.15rem .45rem; white-space:nowrap; display:inline-block; }
+        kbd.sc-key.gold { background:var(--gold); border-color:var(--gold-lt); border-bottom-color:#92700a; color:var(--navy); }
+        .sc-label { font-size:.8rem; color:var(--text); }
+        .sc-hint { font-size:.68rem; color:var(--slate-lt); margin-top:.05rem; }
+        /* ? button in nav */
+        #shortcut-help-btn { background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.2); border-radius:7px; color:#fff; font-size:.78rem; font-weight:700; padding:.3rem .65rem; cursor:pointer; transition:background .15s; display:flex; align-items:center; gap:.3rem; }
+        #shortcut-help-btn:hover { background:rgba(255,255,255,.2); }
+
+        /* ── KEYBOARD QUEUE HUD ── */
+        #queue-hud { position: fixed; bottom: 1.25rem; left: 50%; transform: translateX(-50%) translateY(120%); z-index: 10000; background: var(--navy); color: #fff; border-radius: 14px; box-shadow: 0 8px 40px rgba(13,31,53,.45); padding: .75rem 1.25rem; display: flex; align-items: center; gap: 1rem; min-width: 380px; max-width: 520px; border: 1px solid rgba(255,255,255,.1); transition: transform .3s cubic-bezier(.34,1.56,.64,1); pointer-events: none; }
+        #queue-hud.visible { transform: translateX(-50%) translateY(0); pointer-events: all; }
+        #queue-hud-progress { flex: 1; min-width: 0; }
+        #queue-hud-label { font-size: .72rem; font-weight: 700; color: rgba(255,255,255,.5); text-transform: uppercase; letter-spacing: .07em; margin-bottom: .2rem; }
+        #queue-hud-name { font-size: .92rem; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #queue-hud-bar-wrap { height: 4px; background: rgba(255,255,255,.15); border-radius: 2px; margin-top: .4rem; overflow: hidden; }
+        #queue-hud-bar { height: 4px; background: var(--gold); border-radius: 2px; transition: width .35s ease; }
+        #queue-hud-keys { display: flex; gap: .4rem; align-items: center; flex-shrink: 0; }
+        .hud-kbd { display: inline-flex; align-items: center; gap: .25rem; padding: .25rem .5rem; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.2); border-radius: 5px; font-size: .7rem; font-weight: 700; cursor: pointer; transition: background .15s; white-space: nowrap; }
+        .hud-kbd:hover { background: rgba(255,255,255,.22); }
+        .hud-kbd.gold { background: var(--gold); color: var(--navy); border-color: var(--gold-lt); }
+        .hud-kbd.gold:hover { background: var(--gold-lt); }
+        .hud-kbd.danger { background: rgba(220,38,38,.3); border-color: rgba(220,38,38,.5); }
+        /* Drawer in queue mode */
+        #edit-drawer-overlay.queue-mode #edit-drawer { border: 2px solid var(--gold); }
+        #queue-drawer-banner { display: none; align-items: center; justify-content: space-between; padding: .45rem 1.5rem; background: var(--gold); color: var(--navy); font-size: .78rem; font-weight: 700; }
+        #edit-drawer-overlay.queue-mode #queue-drawer-banner { display: flex; }
+
         /* KPI CARDS */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .85rem; margin-bottom: 1.25rem; }
         .kpi-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 1rem 1.15rem; box-shadow: var(--shadow-sm); }
@@ -465,7 +510,7 @@
 <!-- TOPBAR -->
 <header class="topbar">
     <div class="topbar-brand">
-        <img src="../imgs/logo.png" alt="Logo" class="topbar-logo" onerror="this.style.display='none'">
+        <img src="../images/logo.png" alt="Logo" class="topbar-logo" onerror="this.style.display='none'">
         <div>
             <div class="topbar-title">Kanyadet School</div>
             <div class="topbar-sub">Active Students Database</div>
@@ -473,12 +518,11 @@
     </div>
     <div class="topbar-right">
         <span id="user-id-display"><span class="nav-name-text"></span></span>
-
-
-<a href="./All-Deleted-Students-Database.html" target="_blank" rel="noopener" class="auth-qlink auth-qlink-1" style="display: inline-block; background: linear-gradient(135deg, #e52d27 0%, #b31010 100%); color: #ffffff; padding: 6px 18px; text-decoration: none; border-radius: 8px; font-family: system-ui, -apple-system, sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0.5px; box-shadow: 0 4px 15px rgba(179, 16, 16, 0.3); border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.2s ease;">
-  <div class="auth-qlink-dot"></div>📄 Deleted<span class="auth-qlink-arrow" style="margin-left: 6px;">→</span>
-</a>
         <!-- History icon -->
+        <button id="shortcut-help-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Keyboard shortcuts (?)" onclick="window._toggleShortcutPanel()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            ?
+        </button>
         <button id="hist-panel-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Change History Panel">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             History
@@ -679,27 +723,27 @@
                 <div style="margin-left:auto;display:flex;align-items:center;gap:.4rem;">
                     <button id="completeness-btn" class="btn btn-outline btn-sm hidden" title="Data completeness report">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Completeness
+                        Completeness <span class="btn-kbd">Alt+C</span>
                     </button>
                     <button id="promote-all-btn" class="btn btn-gold btn-sm hidden" title="Promote all students in selected grade to next grade">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                        Promote All
+                        Promote All <span class="btn-kbd">Alt+P</span>
                     </button>
                     <button id="print-all-btn" class="btn btn-outline btn-sm hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        Export All
+                        Export All <span class="btn-kbd">Alt+E</span>
                     </button>
                     <button id="print-grade-btn" class="btn btn-outline btn-sm hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        Export Grade
+                        Export Grade <span class="btn-kbd">Alt+G</span>
                     </button>
                     <button id="delete-grade-btn" class="btn btn-danger btn-sm hidden" title="Delete selected grade">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z" clip-rule="evenodd"/></svg>
-                        Delete Grade
+                        Delete Grade <span class="btn-kbd">Alt+D</span>
                     </button>
                     <button id="promote-grade-btn" class="btn btn-gold btn-sm hidden" title="Promote all students in selected grade to next grade">
                         <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                        Promote Grade
+                        Promote Grade <span class="btn-kbd">Alt+↑</span>
                     </button>
                 </div>
             </div>
@@ -708,23 +752,23 @@
             <div class="tab-toolbar" id="tab-toolbar">
                 <button class="tab-toolbar-btn" id="tab-toggle-filters" title="Toggle per-column search filters">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L13 13.414V19a1 1 0 01-.553.894l-4 2A1 1 0 017 21v-7.586L3.293 6.707A1 1 0 013 6V4z"/></svg>
-                    Col Filters
+                    Col Filters <span class="tab-kbd">F</span>
                 </button>
                 <button class="tab-toolbar-btn" id="tab-toggle-group" title="Group by Grade">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                    Group by Grade
+                    Group by Grade <span class="tab-kbd">G</span>
                 </button>
                 <button class="tab-toolbar-btn" id="tab-toggle-cols" title="Show/hide columns">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
-                    Columns
+                    Columns <span class="tab-kbd">C</span>
                 </button>
                 <button class="tab-toolbar-btn" id="tab-freeze-cols" title="Freeze Name column">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M5.5 8.5l6.5 3.5-6.5 3.5M18.5 8.5L12 12l6.5 3.5"/></svg>
-                    Freeze Name
+                    Freeze Name <span class="tab-kbd">Z</span>
                 </button>
                 <button class="tab-toolbar-btn" id="tab-fit-cols" title="Auto-fit columns">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
-                    Fit Cols
+                    Fit Cols <span class="tab-kbd">W</span>
                 </button>
                 <button class="tab-toolbar-btn" id="tab-missing-filter" title="Show only students with missing key fields">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
@@ -732,7 +776,7 @@
                 </button>
                 <button class="tab-toolbar-btn" id="tab-clear-filters" title="Clear all filters">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                    Clear Filters
+                    Clear Filters <span class="tab-kbd">Esc</span>
                 </button>
                 <span class="tab-count-badge" id="tab-count-badge">0 students</span>
             </div>
@@ -742,6 +786,73 @@
 
     </main>
 </div><!-- /page-wrap -->
+
+<!-- ══ SHORTCUT REFERENCE PANEL ══ -->
+<div id="shortcut-panel" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
+    <div id="shortcut-box">
+        <div id="shortcut-box-header">
+            <h2>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                Keyboard Shortcuts
+            </h2>
+            <button onclick="window._toggleShortcutPanel(false)" style="background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.2);border-radius:7px;color:#fff;padding:.3rem .65rem;cursor:pointer;font-size:.8rem;font-weight:700;">✕ Close</button>
+        </div>
+        <div id="shortcut-box-body">
+
+            <div class="sc-section">
+                <div class="sc-section-title">🔍 Navigation & Search</div>
+                <div class="sc-grid">
+                    <div class="sc-row"><span class="sc-label">Focus search bar</span><div class="sc-keys"><kbd class="sc-key">/</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Clear all filters</span><div class="sc-keys"><kbd class="sc-key">Esc</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Toggle column filters</span><div class="sc-keys"><kbd class="sc-key">F</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Group by grade</span><div class="sc-keys"><kbd class="sc-key">G</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Show/hide columns</span><div class="sc-keys"><kbd class="sc-key">C</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Freeze name column</span><div class="sc-keys"><kbd class="sc-key">Z</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Auto-fit columns</span><div class="sc-keys"><kbd class="sc-key">W</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Filter missing fields</span><div class="sc-keys"><kbd class="sc-key">M</kbd></div></div>
+                </div>
+            </div>
+
+            <div class="sc-section">
+                <div class="sc-section-title">📋 Data Actions</div>
+                <div class="sc-grid">
+                    <div class="sc-row"><span class="sc-label">Completeness report</span><div class="sc-keys"><kbd class="sc-key">Alt</kbd><kbd class="sc-key">C</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Promote all grades</span><div class="sc-keys"><kbd class="sc-key">Alt</kbd><kbd class="sc-key">P</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Export all students</span><div class="sc-keys"><kbd class="sc-key">Alt</kbd><kbd class="sc-key">E</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Export current grade</span><div class="sc-keys"><kbd class="sc-key">Alt</kbd><kbd class="sc-key">G</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Delete grade</span><div class="sc-keys"><kbd class="sc-key">Alt</kbd><kbd class="sc-key">D</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Promote current grade</span><div class="sc-keys"><kbd class="sc-key">Alt</kbd><kbd class="sc-key">↑</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Open history panel</span><div class="sc-keys"><kbd class="sc-key">H</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Show this help panel</span><div class="sc-keys"><kbd class="sc-key">?</kbd></div></div>
+                </div>
+            </div>
+
+            <div class="sc-section">
+                <div class="sc-section-title">✏ Edit Drawer</div>
+                <div class="sc-grid">
+                    <div class="sc-row"><span class="sc-label">Save changes</span><div class="sc-keys"><kbd class="sc-key gold">Ctrl</kbd><kbd class="sc-key gold">S</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Close drawer</span><div class="sc-keys"><kbd class="sc-key">Esc</kbd></div></div>
+                </div>
+            </div>
+
+            <div class="sc-section">
+                <div class="sc-section-title">▶ Missing Fields Queue</div>
+                <div class="sc-grid">
+                    <div class="sc-row"><span class="sc-label">Start missing-fields queue</span><div class="sc-keys"><kbd class="sc-key gold">Ctrl</kbd><kbd class="sc-key gold">Q</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Save & advance to next</span><div class="sc-keys"><kbd class="sc-key gold">Ctrl</kbd><kbd class="sc-key gold">↵</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Skip to next student</span><div class="sc-keys"><kbd class="sc-key">→</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Go back to previous</span><div class="sc-keys"><kbd class="sc-key">←</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Exit queue</span><div class="sc-keys"><kbd class="sc-key">Esc</kbd></div></div>
+                </div>
+            </div>
+
+            <div style="text-align:center;margin-top:.5rem;padding:.75rem;background:var(--surface2);border-radius:10px;font-size:.76rem;color:var(--slate);">
+                💡 Toolbar shortcuts (F, G, C, Z, W, M) only fire when no input is focused.<br>
+                Alt shortcuts work anytime. Press <kbd style="background:var(--surface3);border:1px solid var(--border);border-radius:3px;padding:.05rem .3rem;font-size:.72rem;">?</kbd> to toggle this panel.
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- ══ MODALS ══ -->
 
@@ -864,6 +975,21 @@
 <!-- Toast container -->
 <div id="uni-toast"></div>
 
+<!-- ── KEYBOARD QUEUE HUD ── -->
+<div id="queue-hud">
+    <div id="queue-hud-progress">
+        <div id="queue-hud-label">Queue — <span id="queue-hud-pos">1</span> of <span id="queue-hud-total">0</span></div>
+        <div id="queue-hud-name">Loading…</div>
+        <div id="queue-hud-bar-wrap"><div id="queue-hud-bar" style="width:0%"></div></div>
+    </div>
+    <div id="queue-hud-keys">
+        <button class="hud-kbd danger" id="hud-btn-exit" title="Exit queue (Esc)">✕ Exit</button>
+        <button class="hud-kbd" id="hud-btn-prev" title="Previous (←)">← Prev</button>
+        <button class="hud-kbd" id="hud-btn-skip" title="Skip, next (→)">Skip →</button>
+        <button class="hud-kbd gold" id="hud-btn-save" title="Save & next (Ctrl+Enter)">✓ Save & Next</button>
+    </div>
+</div>
+
 <!-- EDIT MODAL -->
 <div id="edit-drawer-overlay">
     <div id="edit-drawer">
@@ -878,6 +1004,13 @@
             <button class="drawer-close" id="drawer-close-btn">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
+        </div>
+        <div id="queue-drawer-banner">
+            <span id="queue-banner-text">Queue mode active</span>
+            <div style="display:flex;gap:.5rem;">
+                <kbd style="background:rgba(0,0,0,.15);border-radius:4px;padding:.1rem .4rem;font-size:.7rem;">→ Skip</kbd>
+                <kbd style="background:rgba(0,0,0,.15);border-radius:4px;padding:.1rem .4rem;font-size:.7rem;">Ctrl+Enter Save & Next</kbd>
+            </div>
         </div>
         <div class="drawer-body" id="drawer-body"></div>
         <div class="drawer-footer">
@@ -1792,17 +1925,148 @@ document.getElementById('tab-clear-filters').addEventListener('click', () => {
 document.getElementById('tab-missing-filter').addEventListener('click', function() {
     missingFilterActive = !missingFilterActive;
     this.classList.toggle('missing-filter-active', missingFilterActive);
+    const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`;
     if (missingFilterActive) {
-        // Update button label with count
         const count = studentsData.filter(s =>
             CRITICAL_ROW_FIELDS.some(f => !s[f] || String(s[f]).trim() === '')
         ).length;
-        this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> Missing (${count})`;
+        this.innerHTML = `${svgIcon} Missing (${count})`;
+        // Show queue launch toast
+        if (count > 0 && typeof showToast === 'function') {
+            showToast(`${count} students need updates — press the ▶ button in the HUD or use Ctrl+Q to start queue`, 'info', 4000);
+        }
     } else {
-        this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> Missing Fields`;
+        this.innerHTML = `${svgIcon} Missing Fields`;
     }
     applyFilters();
 });
+
+// Ctrl+Q hotkey → launch missing-fields queue directly
+document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'q') {
+        e.preventDefault();
+        if (typeof window._startMissingQueue === 'function') window._startMissingQueue();
+    }
+});
+
+// ════════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUT ENGINE
+// ════════════════════════════════════════════════════════════
+(function() {
+    // ── Shortcut reference panel ──────────────────────────
+    let _scOpen = false;
+    window._toggleShortcutPanel = (force) => {
+        const panel = document.getElementById('shortcut-panel');
+        if (!panel) return;
+        _scOpen = force !== undefined ? !!force : !_scOpen;
+        panel.classList.toggle('visible', _scOpen);
+        if (_scOpen) {
+            // close on backdrop click
+            panel.onclick = (e) => { if (e.target === panel) window._toggleShortcutPanel(false); };
+        }
+    };
+
+    // ── Ctrl+S → save drawer ──────────────────────────────
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+            const overlay = document.getElementById('edit-drawer-overlay');
+            if (overlay?.classList.contains('open')) {
+                e.preventDefault();
+                document.getElementById('drawer-save-btn')?.click();
+            }
+        }
+    });
+
+    // ── Global single-key shortcuts ───────────────────────
+    // Only fire when no input/textarea/select is focused, and no modal/drawer open
+    document.addEventListener('keydown', e => {
+        if (e.ctrlKey || e.metaKey || e.altKey || e.shiftKey) return;
+        const tag = document.activeElement?.tagName;
+        if (['INPUT','TEXTAREA','SELECT'].includes(tag)) return;
+        // check no modal open
+        const drawerOpen = document.getElementById('edit-drawer-overlay')?.classList.contains('open');
+        const modalOpen  = document.getElementById('uni-modal')?.classList.contains('visible') ||
+                           document.getElementById('shortcut-panel')?.classList.contains('visible');
+        if (modalOpen) {
+            if (e.key === 'Escape') window._toggleShortcutPanel(false);
+            return;
+        }
+
+        switch(e.key) {
+            case '/':
+                e.preventDefault();
+                document.getElementById('search-input')?.focus();
+                break;
+            case 'Escape':
+                if (drawerOpen) break; // let drawer handle it
+                document.getElementById('tab-clear-filters')?.click();
+                break;
+            case 'f': case 'F':
+                e.preventDefault();
+                document.getElementById('tab-toggle-filters')?.click();
+                break;
+            case 'g': case 'G':
+                e.preventDefault();
+                document.getElementById('tab-toggle-group')?.click();
+                break;
+            case 'c': case 'C':
+                e.preventDefault();
+                document.getElementById('tab-toggle-cols')?.click();
+                break;
+            case 'z': case 'Z':
+                e.preventDefault();
+                document.getElementById('tab-freeze-cols')?.click();
+                break;
+            case 'w': case 'W':
+                e.preventDefault();
+                document.getElementById('tab-fit-cols')?.click();
+                break;
+            case 'm': case 'M':
+                e.preventDefault();
+                document.getElementById('tab-missing-filter')?.click();
+                break;
+            case 'h': case 'H':
+                e.preventDefault();
+                document.getElementById('hist-panel-btn')?.click();
+                break;
+            case '?':
+                e.preventDefault();
+                window._toggleShortcutPanel();
+                break;
+        }
+    });
+
+    // ── Alt+key shortcuts for action buttons ─────────────
+    document.addEventListener('keydown', e => {
+        if (!e.altKey || e.ctrlKey || e.metaKey) return;
+        switch(e.key) {
+            case 'c': case 'C':
+                e.preventDefault();
+                document.getElementById('completeness-btn')?.click();
+                break;
+            case 'p': case 'P':
+                e.preventDefault();
+                document.getElementById('promote-all-btn')?.click();
+                break;
+            case 'e': case 'E':
+                e.preventDefault();
+                document.getElementById('print-all-btn')?.click();
+                break;
+            case 'g': case 'G':
+                e.preventDefault();
+                document.getElementById('print-grade-btn')?.click();
+                break;
+            case 'd': case 'D':
+                e.preventDefault();
+                document.getElementById('delete-grade-btn')?.click();
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                document.getElementById('promote-grade-btn')?.click();
+                break;
+        }
+    });
+})();
 
 // ── PER-PAGE SELECT ───────────────────────────────────
 studentsPerPageSelect.addEventListener('change', (e) => {
@@ -2847,8 +3111,9 @@ window._openCompletenessReport = () => {
                     <span style="font-size:.75rem;color:var(--slate);display:block;margin-top:.15rem;">Missing one or more key fields: ${CRITICAL_FIELDS.join(', ')}</span>
                 </div>
                 <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
-                    <button onclick="window._startPendingUpdateQueue()" style="padding:.35rem .85rem;background:var(--gold);color:var(--navy);border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
-                        ✏ Update All Pending
+                    <button onclick="window._startPendingUpdateQueue()" style="padding:.35rem .85rem;background:var(--gold);color:var(--navy);border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:.35rem;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polygon points="5,3 19,12 5,21" fill="currentColor" stroke="none"/></svg>
+                        Start Queue
                     </button>
                     <button onclick="window._viewPendingStudents()" style="padding:.35rem .85rem;background:var(--surface);color:var(--navy);border:1.5px solid var(--gold);border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
                         👁 View List
@@ -2912,57 +3177,172 @@ window._viewPendingStudents = () => {
 };
 
 // ── Start sequential pending update queue ─────────────
-window._startPendingUpdateQueue = () => {
-    const data=window._studentsData||[];
-    const pending=data.filter(s=>CRITICAL_FIELDS.some(f=>!s[f]||String(s[f]).trim()===''));
-    if(!pending.length){showMsg('No pending students to update!');return;}
-    window.closeModal();
-    let idx=0;
-    const openNext=()=>{
-        if(idx>=pending.length){showMsg(`✅ Done! Reviewed all ${pending.length} pending students.`);return;}
-        const s=pending[idx];
-        // Listen for drawer close to advance to next
-        const origClose=window._afterDrawerClose;
-        window._afterDrawerClose=()=>{
-            window._afterDrawerClose=origClose;
-            idx++;
-            if(idx<pending.length){
-                setTimeout(()=>{
-                    openNext();
-                },350);
-            } else {
-                showMsg(`✅ Done! Reviewed all ${pending.length} pending students.`);
-            }
-        };
-        window._editRow(s.id);
-    };
-    // Show a count banner
-    showMsg(`📋 Opening ${pending.length} students with missing key fields. Edit & save each, or close to skip.`);
-    setTimeout(openNext, 1200);
-};
+// ════════════════════════════════════════════════════════════
+// KEYBOARD QUEUE ENGINE
+// ════════════════════════════════════════════════════════════
+(function() {
+    let _queue = [];       // array of student objects
+    let _qIdx  = 0;        // current position
+    let _qActive = false;
+    let _qSaveNext = false; // flag: save was triggered by queue, advance after
 
-// ── Update queue for a specific missing field ─────────
-window._updateMissingQueue = (field) => {
-    const data=window._studentsData||[];
-    const missing=data.filter(s=>!s[field]||String(s[field]).trim()==='');
-    if(!missing.length){showMsg('No missing students for this field!');return;}
-    window.closeModal();
-    let idx=0;
-    const openNext=()=>{
-        if(idx>=missing.length){showMsg(`✅ Done updating "${field}" for all ${missing.length} students.`);return;}
-        const s=missing[idx];
-        const origClose=window._afterDrawerClose;
-        window._afterDrawerClose=()=>{
-            window._afterDrawerClose=origClose;
-            idx++;
-            if(idx<missing.length) setTimeout(openNext,350);
-            else showMsg(`✅ Done! Updated "${field}" for ${missing.length} students.`);
-        };
+    const hud       = document.getElementById('queue-hud');
+    const hudPos    = document.getElementById('queue-hud-pos');
+    const hudTotal  = document.getElementById('queue-hud-total');
+    const hudName   = document.getElementById('queue-hud-name');
+    const hudBar    = document.getElementById('queue-hud-bar');
+    const hudBtnSave = document.getElementById('hud-btn-save');
+    const hudBtnSkip = document.getElementById('hud-btn-skip');
+    const hudBtnPrev = document.getElementById('hud-btn-prev');
+    const hudBtnExit = document.getElementById('hud-btn-exit');
+    const editOverlay = document.getElementById('edit-drawer-overlay');
+    const bannerText  = document.getElementById('queue-banner-text');
+
+    function _hudUpdate() {
+        if (!_qActive || !_queue.length) return;
+        const s = _queue[_qIdx];
+        const name = s['Official Student Name'] || s['Assessment No'] || s.id;
+        const pct = ((_qIdx + 1) / _queue.length) * 100;
+        if (hudPos)   hudPos.textContent   = _qIdx + 1;
+        if (hudTotal) hudTotal.textContent = _queue.length;
+        if (hudName)  hudName.textContent  = name;
+        if (hudBar)   hudBar.style.width   = pct + '%';
+        if (bannerText) bannerText.textContent = `${_qIdx + 1} / ${_queue.length} — ${name}`;
+        if (hudBtnPrev) hudBtnPrev.style.opacity = _qIdx === 0 ? '.35' : '1';
+    }
+
+    function _qOpen(idx) {
+        if (!_queue.length) return;
+        _qIdx = Math.max(0, Math.min(idx, _queue.length - 1));
+        const s = _queue[_qIdx];
+        _hudUpdate();
         window._editRow(s.id);
+    }
+
+    function _qStart(students) {
+        if (!students || !students.length) {
+            showToast('No students in queue.', 'info'); return;
+        }
+        _queue = students;
+        _qIdx  = 0;
+        _qActive = true;
+        hud?.classList.add('visible');
+        editOverlay?.classList.add('queue-mode');
+        _qOpen(0);
+    }
+
+    function _qExit(silent) {
+        _qActive = false;
+        _queue   = [];
+        hud?.classList.remove('visible');
+        editOverlay?.classList.remove('queue-mode');
+        // close drawer if open
+        const overlay = document.getElementById('edit-drawer-overlay');
+        if (overlay?.classList.contains('open')) {
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        if (!silent) showToast('Queue finished.', 'success');
+    }
+
+    function _qNext() {
+        if (_qIdx >= _queue.length - 1) { _qExit(false); return; }
+        _qOpen(_qIdx + 1);
+    }
+    function _qPrev() {
+        if (_qIdx <= 0) return;
+        _qOpen(_qIdx - 1);
+    }
+    function _qSkip() { _qNext(); }
+
+    // HUD buttons
+    hudBtnSave?.addEventListener('click', () => {
+        // trigger drawer save then advance
+        const saveBtn = document.getElementById('drawer-save-btn');
+        if (saveBtn && !saveBtn.classList.contains('saving')) {
+            _qSaveNext = true;
+            saveBtn.click();
+        }
+    });
+    hudBtnSkip?.addEventListener('click', _qSkip);
+    hudBtnPrev?.addEventListener('click', _qPrev);
+    hudBtnExit?.addEventListener('click', () => _qExit(true));
+
+    // Keyboard shortcuts (only when queue active and drawer open)
+    document.addEventListener('keydown', e => {
+        if (!_qActive) return;
+        const overlay = document.getElementById('edit-drawer-overlay');
+        if (!overlay?.classList.contains('open')) return;
+        const active = document.activeElement;
+        // Ctrl+Enter → save & next
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            hudBtnSave?.click();
+        }
+        // → arrow → skip
+        else if (e.key === 'ArrowRight' && !['INPUT','TEXTAREA','SELECT'].includes(active?.tagName)) {
+            e.preventDefault(); _qSkip();
+        }
+        // ← arrow → prev
+        else if (e.key === 'ArrowLeft' && !['INPUT','TEXTAREA','SELECT'].includes(active?.tagName)) {
+            e.preventDefault(); _qPrev();
+        }
+        // Esc → exit (the drawer close handles via closeDrawer)
+    });
+
+    // Hook into drawer close to advance queue (Skip = close without save)
+    const _origClose = window._afterDrawerClose;
+    // We intercept the drawers closeDrawer by patching it after boot
+    // We use a MutationObserver to detect drawer closing
+    const drawerOverlay = document.getElementById('edit-drawer-overlay');
+    if (drawerOverlay) {
+        const obs = new MutationObserver(() => {
+            if (!_qActive) return;
+            const isOpen = drawerOverlay.classList.contains('open');
+            if (!isOpen) {
+                // drawer just closed — if _qSaveNext it was a save (handled below), else it was a skip/cancel
+                if (_qSaveNext) {
+                    _qSaveNext = false;
+                    // advance after short delay so save finishes
+                    setTimeout(_qNext, 400);
+                }
+                // If closed without save (skip/cancel), queue stays at same student
+                // We don't auto-advance on plain close so user can decide via HUD
+            }
+        });
+        obs.observe(drawerOverlay, { attributes: true, attributeFilter: ['class'] });
+    }
+
+    // Expose public API
+    window._queueStart = _qStart;
+    window._queueExit  = _qExit;
+
+    window._startPendingUpdateQueue = () => {
+        const data = window._studentsData || [];
+        const critFields = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
+        const pending = data.filter(s => critFields.some(f => !s[f] || String(s[f]).trim() === ''));
+        if (!pending.length) { showToast('No pending students — all key fields are filled!', 'success'); return; }
+        window.closeModal && window.closeModal();
+        setTimeout(() => _qStart(pending), 150);
     };
-    showMsg(`📋 Opening ${missing.length} students missing "${field}". Edit & save each.`);
-    setTimeout(openNext, 1200);
-};
+
+    window._updateMissingQueue = (field) => {
+        const data = window._studentsData || [];
+        const missing = data.filter(s => !s[field] || String(s[field]).trim() === '');
+        if (!missing.length) { showToast(`No students missing "${field}"!`, 'success'); return; }
+        window.closeModal && window.closeModal();
+        setTimeout(() => _qStart(missing), 150);
+    };
+
+    // Also expose so tab-missing-filter button can launch queue directly
+    window._startMissingQueue = () => {
+        const data = window._studentsData || [];
+        const critFields = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
+        const pending = data.filter(s => critFields.some(f => !s[f] || String(s[f]).trim() === ''));
+        if (!pending.length) { showToast('All key fields complete!', 'success'); return; }
+        _qStart(pending);
+    };
+})();
 
 window._showMissingField=(field)=>{
     const data=window._studentsData||[];
