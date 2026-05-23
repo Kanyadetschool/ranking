@@ -305,6 +305,35 @@
         .drawer-cancel-btn { padding: .7rem 1.25rem; background: transparent; color: var(--slate); border: 1.5px solid var(--border); border-radius: 9px; font-size: .88rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all .15s; }
         .drawer-cancel-btn:hover { border-color: var(--danger); color: var(--danger); }
 
+        /* ── USER TOUR ── */
+        #tour-overlay { position:fixed; inset:0; z-index:30000; pointer-events:none; }
+        #tour-overlay.active { pointer-events:all; }
+        #tour-backdrop { position:absolute; inset:0; background:rgba(13,31,53,.72); }
+        #tour-spotlight { position:absolute; border-radius:10px; box-shadow:0 0 0 9999px rgba(13,31,53,.72); transition:all .35s cubic-bezier(.4,0,.2,1); pointer-events:none; z-index:1; }
+        #tour-card { position:absolute; background:var(--surface); border-radius:14px; box-shadow:0 16px 56px rgba(13,31,53,.45); border:1px solid var(--border); width:300px; padding:1.25rem 1.4rem 1rem; z-index:2; transition:all .35s cubic-bezier(.4,0,.2,1); }
+        #tour-card::before { content:''; position:absolute; width:12px; height:12px; background:var(--surface); border:1px solid var(--border); transform:rotate(45deg); }
+        #tour-card.arrow-top::before    { top:-7px; left:24px; border-right:none; border-bottom:none; }
+        #tour-card.arrow-bottom::before { bottom:-7px; left:24px; border-left:none; border-top:none; }
+        #tour-card.arrow-left::before   { left:-7px; top:24px; border-right:none; border-top:none; }
+        #tour-card.arrow-right::before  { right:-7px; top:24px; border-left:none; border-bottom:none; }
+        #tour-step-label { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.08em; color:var(--gold); margin-bottom:.35rem; }
+        #tour-title { font-size:.95rem; font-weight:800; color:var(--navy); margin-bottom:.45rem; line-height:1.3; }
+        #tour-body { font-size:.8rem; color:var(--text2); line-height:1.55; margin-bottom:1rem; }
+        #tour-body kbd { background:var(--surface3); border:1.5px solid var(--border); border-radius:4px; font-size:.72rem; font-weight:700; padding:.1rem .35rem; color:var(--navy); }
+        #tour-footer { display:flex; align-items:center; gap:.5rem; }
+        #tour-dots { display:flex; gap:.3rem; flex:1; }
+        .tour-dot { width:7px; height:7px; border-radius:50%; background:var(--border); transition:background .2s; }
+        .tour-dot.active { background:var(--gold); }
+        .tour-dot.done   { background:var(--navy); }
+        #tour-skip { background:none; border:none; color:var(--slate-lt); font-size:.75rem; cursor:pointer; padding:.2rem .4rem; }
+        #tour-skip:hover { color:var(--danger); }
+        #tour-prev { padding:.42rem .9rem; background:var(--surface2); border:1.5px solid var(--border); border-radius:8px; font-size:.78rem; font-weight:600; color:var(--navy); cursor:pointer; font-family:'DM Sans',sans-serif; }
+        #tour-next { padding:.42rem 1.1rem; background:var(--navy); border:none; border-radius:8px; font-size:.78rem; font-weight:700; color:#fff; cursor:pointer; font-family:'DM Sans',sans-serif; }
+        #tour-next:hover { background:var(--navy-lt); }
+        /* Tour launch button */
+        #tour-launch-btn { display:inline-flex; align-items:center; gap:.3rem; padding:.28rem .7rem; background:var(--gold); color:var(--navy); border:none; border-radius:6px; font-size:.72rem; font-weight:800; cursor:pointer; font-family:'DM Sans',sans-serif; transition:background .15s; }
+        #tour-launch-btn:hover { background:var(--gold-lt); }
+
         /* ── SHORTCUT KBD BADGES ON BUTTONS ── */
         .btn-kbd, .tab-kbd { display:inline-block; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); border-radius:3px; font-size:.6rem; font-weight:800; padding:.05rem .3rem; margin-left:.3rem; letter-spacing:.03em; vertical-align:middle; line-height:1.4; pointer-events:none; }
         .btn-outline .btn-kbd, .tab-toolbar-btn .tab-kbd { background:rgba(13,31,53,.1); border-color:rgba(13,31,53,.2); color:var(--navy); }
@@ -519,6 +548,10 @@
     <div class="topbar-right">
         <span id="user-id-display"><span class="nav-name-text"></span></span>
         <!-- History icon -->
+        <button id="tour-launch-btn" class="nav-hide-mobile" title="Start guided tour" onclick="window._tourStart()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Tour
+        </button>
         <button id="shortcut-help-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Keyboard shortcuts (?)" onclick="window._toggleShortcutPanel()">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             ?
@@ -787,6 +820,23 @@
 
     </main>
 </div><!-- /page-wrap -->
+
+<!-- ══ USER TOUR ══ -->
+<div id="tour-overlay" role="dialog" aria-label="Product tour">
+    <div id="tour-backdrop" onclick="window._tourSkip()"></div>
+    <div id="tour-spotlight"></div>
+    <div id="tour-card">
+        <div id="tour-step-label">Step 1 of 10</div>
+        <div id="tour-title">Welcome</div>
+        <div id="tour-body">Tour content</div>
+        <div id="tour-footer">
+            <div id="tour-dots"></div>
+            <button id="tour-skip" onclick="window._tourSkip()">Skip tour</button>
+            <button id="tour-prev" onclick="window._tourPrev()">← Back</button>
+            <button id="tour-next" onclick="window._tourNext()">Next →</button>
+        </div>
+    </div>
+</div>
 
 <!-- ══ SHORTCUT REFERENCE PANEL ══ -->
 <div id="shortcut-panel" role="dialog" aria-modal="true" aria-label="Keyboard shortcuts">
@@ -1775,10 +1825,11 @@ const renderStudents = (students) => {
         const row = { id: s.id, _actions: '', _img: '' };
         headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
         // Completeness across ALL known fields
-        const filled = globalHeaders.filter(h => s[h] !== undefined && s[h] !== null && String(s[h]).trim() !== '').length;
+        const _mv = window.isMissingVal || ((v)=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
+        const filled = globalHeaders.filter(h => !_mv(s[h])).length;
         row._compl = globalHeaders.length > 0 ? (filled / globalHeaders.length) * 100 : 100;
         // Missing critical fields for dot indicators + row highlight
-        row._missingFields = criticalForRow.filter(f => !s[f] || String(s[f]).trim() === '');
+        row._missingFields = criticalForRow.filter(f => (window.isMissingVal||((v)=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase())))(s[f]));
         return row;
     });
 
@@ -1827,6 +1878,7 @@ const renderStudents = (students) => {
     tabulatorTable.on('tableBuilt', () => {
         updateCountBadge();
         window._tabulatorTable   = tabulatorTable;
+        if (typeof window._tourAutoStart === 'function') window._tourAutoStart();
         window._selectedStudents = selectedStudents;
         // Wire the select-all checkbox in the merged Actions header
         setTimeout(() => {
@@ -1929,9 +1981,8 @@ document.getElementById('tab-missing-filter').addEventListener('click', function
     this.classList.toggle('missing-filter-active', missingFilterActive);
     const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`;
     if (missingFilterActive) {
-        const count = studentsData.filter(s =>
-            CRITICAL_ROW_FIELDS.some(f => !s[f] || String(s[f]).trim() === '')
-        ).length;
+        const _mv2=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a'].includes(String(v).trim().toLowerCase()));
+        const count = studentsData.filter(s => CRITICAL_ROW_FIELDS.some(f => _mv2(s[f]))).length;
         this.innerHTML = `${svgIcon} Missing (${count})`;
         // Show queue launch toast
         if (count > 0 && typeof showToast === 'function') {
@@ -1962,6 +2013,210 @@ document.addEventListener('keydown', e => {
     updateRowVisibility();
     const obs = new MutationObserver(updateRowVisibility);
     row.querySelectorAll('button').forEach(b => obs.observe(b, { attributes: true, attributeFilter: ['class'] }));
+})();
+
+// ════════════════════════════════════════════════════════════
+// USER TOUR ENGINE
+// ════════════════════════════════════════════════════════════
+(function() {
+    const TOUR_STEPS = [
+        {
+            target: '.topbar-left',
+            title: '👋 Welcome to Kanyadet School',
+            body: 'This is the <strong>Active Students Database</strong> — your central hub for managing all student records. Let\'s take a quick tour of the key features.',
+            arrow: 'arrow-top', placement: 'below',
+        },
+        {
+            target: '#search-input',
+            title: '🔍 Search Students',
+            body: 'Type any name, assessment number, UPI, or any field to instantly filter students. Press <kbd>/</kbd> from anywhere to jump here.',
+            arrow: 'arrow-top', placement: 'below',
+        },
+        {
+            target: '#grade-filter-select',
+            title: '🏫 Filter by Grade',
+            body: 'Select a grade to view only that class. Action buttons like Promote, Export, and Delete Grade will appear automatically once a grade is selected.',
+            arrow: 'arrow-top', placement: 'below',
+        },
+        {
+            target: '#action-btns-row',
+            title: '⚡ Action Buttons',
+            body: 'These contextual buttons appear based on your grade selection. <strong>Completeness</strong> — check data quality. <strong>Promote All</strong> — advance all students. <strong>Export</strong> — download grade data. Each has an <kbd>Alt</kbd> shortcut.',
+            arrow: 'arrow-top', placement: 'below',
+        },
+        {
+            target: '#tab-toolbar',
+            title: '🔧 Table Toolbar',
+            body: '<strong>Col Filters</strong> <kbd>F</kbd> — per-column search. <strong>Group by Grade</strong> <kbd>G</kbd>. <strong>Columns</strong> <kbd>C</kbd> — show/hide fields. <strong>Missing Fields</strong> <kbd>M</kbd> — instantly filter to students needing data entry.',
+            arrow: 'arrow-top', placement: 'below',
+        },
+        {
+            target: '#tab-missing-filter',
+            title: '🔴 Missing Fields Filter',
+            body: 'One click shows only students with empty, <strong>---</strong>, <strong>NA</strong>, or <strong>N/A</strong> values in key fields. Use <kbd>Ctrl+Q</kbd> to then launch the keyboard queue and fill them all in rapid succession.',
+            arrow: 'arrow-top', placement: 'below',
+        },
+        {
+            target: '#tabulator-table',
+            title: '📋 Student Table',
+            body: 'The <strong>% Done</strong> column shows each student\'s data completeness — sort it ascending to see the most incomplete records first. Red dots indicate which key fields are missing. Click <strong>Edit</strong> to open the edit drawer.',
+            arrow: 'arrow-top', placement: 'below',
+            scrollTo: true,
+        },
+        {
+            target: '#completeness-btn',
+            title: '📊 Data Completeness Report',
+            body: 'Opens a full report showing fill rates for every field. The <strong>Pending Updates</strong> panel at the top lists students with missing key fields — launch the update queue directly from here.',
+            arrow: 'arrow-top', placement: 'below',
+        },
+        {
+            target: '#hist-panel-btn',
+            title: '📋 Change History',
+            body: 'Every edit is logged automatically. Press <kbd>H</kbd> or click History to open the panel. Search across all changes by student name, field, old value, or new value.',
+            arrow: 'arrow-top', placement: 'below',
+        },
+        {
+            target: '#shortcut-help-btn',
+            title: '⌨ Keyboard Shortcuts',
+            body: 'Click <strong>?</strong> anytime (or press <kbd>?</kbd>) to see the full shortcut reference. Power users can navigate the entire app without touching a mouse.',
+            arrow: 'arrow-top', placement: 'below',
+            isLast: true,
+        },
+    ];
+
+    let _step = 0;
+    let _active = false;
+    const overlay  = document.getElementById('tour-overlay');
+    const spotlight= document.getElementById('tour-spotlight');
+    const card     = document.getElementById('tour-card');
+    const stepLbl  = document.getElementById('tour-step-label');
+    const titleEl  = document.getElementById('tour-title');
+    const bodyEl   = document.getElementById('tour-body');
+    const dotsEl   = document.getElementById('tour-dots');
+    const prevBtn  = document.getElementById('tour-prev');
+    const nextBtn  = document.getElementById('tour-next');
+
+    function _getEl(selector) {
+        return document.querySelector(selector);
+    }
+
+    function _rect(el) {
+        const r = el.getBoundingClientRect();
+        return { top: r.top + window.scrollY, left: r.left + window.scrollX, width: r.width, height: r.height };
+    }
+
+    function _positionCard(targetEl, placement, arrow) {
+        const PAD = 12;
+        const tr = _rect(targetEl);
+        const cw = 300, ch = card.offsetHeight || 200;
+        const vw = window.innerWidth, vh = window.innerHeight;
+
+        // spotlight
+        spotlight.style.top    = (tr.top  - PAD) + 'px';
+        spotlight.style.left   = (tr.left - PAD) + 'px';
+        spotlight.style.width  = (tr.width  + PAD*2) + 'px';
+        spotlight.style.height = (tr.height + PAD*2) + 'px';
+
+        card.className = arrow || 'arrow-top';
+        let ct, cl;
+        if (placement === 'below') {
+            ct = tr.top + tr.height + PAD + 10;
+            cl = tr.left;
+        } else if (placement === 'above') {
+            ct = tr.top - ch - PAD - 10;
+            cl = tr.left;
+        } else if (placement === 'right') {
+            ct = tr.top;
+            cl = tr.left + tr.width + PAD + 10;
+        } else {
+            ct = tr.top;
+            cl = tr.left - cw - PAD - 10;
+        }
+        // clamp to viewport
+        cl = Math.max(8, Math.min(cl, vw - cw - 8));
+        ct = Math.max(8, Math.min(ct, window.scrollY + vh - ch - 8));
+        card.style.top  = ct + 'px';
+        card.style.left = cl + 'px';
+    }
+
+    function _renderStep(idx) {
+        const step = TOUR_STEPS[idx];
+        const total = TOUR_STEPS.length;
+        stepLbl.textContent = `Step ${idx+1} of ${total}`;
+        titleEl.innerHTML   = step.title;
+        bodyEl.innerHTML    = step.body;
+
+        // dots
+        dotsEl.innerHTML = TOUR_STEPS.map((_,i) =>
+            `<span class="tour-dot ${i < idx ? 'done' : i === idx ? 'active' : ''}"></span>`
+        ).join('');
+
+        prevBtn.style.display = idx === 0 ? 'none' : '';
+        nextBtn.textContent   = step.isLast ? '🎉 Finish' : 'Next →';
+
+        // find target
+        const targetEl = _getEl(step.target);
+        if (!targetEl) {
+            spotlight.style.cssText = 'display:none';
+            card.style.top  = '50%';
+            card.style.left = '50%';
+            card.style.transform = 'translate(-50%,-50%)';
+            card.className  = '';
+            return;
+        }
+        card.style.transform = '';
+        if (step.scrollTo) {
+            targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setTimeout(() => _positionCard(targetEl, step.placement, step.arrow), 350);
+        } else {
+            _positionCard(targetEl, step.placement, step.arrow);
+        }
+    }
+
+    window._tourStart = () => {
+        _step  = 0;
+        _active = true;
+        overlay.classList.add('active');
+        // small delay to let layout settle
+        setTimeout(() => _renderStep(0), 80);
+    };
+
+    window._tourNext = () => {
+        if (_step >= TOUR_STEPS.length - 1) { window._tourSkip(); return; }
+        _step++;
+        _renderStep(_step);
+    };
+
+    window._tourPrev = () => {
+        if (_step <= 0) return;
+        _step--;
+        _renderStep(_step);
+    };
+
+    window._tourSkip = () => {
+        _active = false;
+        overlay.classList.remove('active');
+        spotlight.style.cssText = '';
+        // save dismissal
+        try { localStorage.setItem('kanyadet_tour_done', '1'); } catch(e) {}
+    };
+
+    // Keyboard nav inside tour
+    document.addEventListener('keydown', e => {
+        if (!_active) return;
+        if (e.key === 'ArrowRight' || e.key === 'Enter') { e.preventDefault(); window._tourNext(); }
+        else if (e.key === 'ArrowLeft') { e.preventDefault(); window._tourPrev(); }
+        else if (e.key === 'Escape') { e.preventDefault(); window._tourSkip(); }
+    });
+
+    // Auto-start tour on first visit (after data loads)
+    window._tourAutoStart = () => {
+        try {
+            if (!localStorage.getItem('kanyadet_tour_done')) {
+                setTimeout(window._tourStart, 1800);
+            }
+        } catch(e) {}
+    };
 })();
 
 // ════════════════════════════════════════════════════════════
@@ -2101,9 +2356,7 @@ const applyFilters = () => {
     let filtered = studentsData;
     if (grade) filtered = filtered.filter(s => s.Grade === grade);
     if (term) filtered = filtered.filter(s => Object.values(s).some(v => String(v).toLowerCase().includes(term)));
-    if (missingFilterActive) filtered = filtered.filter(s =>
-        CRITICAL_ROW_FIELDS.some(f => !s[f] || String(s[f]).trim() === '')
-    );
+    if (missingFilterActive) { const _mv=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase())); filtered = filtered.filter(s => CRITICAL_ROW_FIELDS.some(f => _mv(s[f]))); }
     renderStudents(filtered);
 };
 searchInput.addEventListener('input', applyFilters);
@@ -2146,7 +2399,7 @@ window._editRow = (id) => {
     drawerBody.innerHTML = `<div class="drawer-grid">${orderedFields.map(fieldKey => {
         const raw = student[fieldKey];
         const val = raw !== undefined && raw !== null ? raw : '';
-        const isMissing = String(val).trim() === '';
+        const isMissing = (window.isMissingVal||((v)=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase())))(val);
         const isReq = fieldKey === 'Assessment No';
         const isCritical = criticalFields.includes(fieldKey);
         const inputStyle = isReq
@@ -3086,24 +3339,34 @@ window._copyRow = (id) => {
 // Core fields considered critical for "pending update" detection
 const CRITICAL_FIELDS = ['Official Student Name', 'UPI', 'Gender', 'Grade', 'Assessment No'];
 
+// Central "is this value empty/placeholder?" test used everywhere
+window.isMissingVal = function isMissingVal(v) {
+    if (v === undefined || v === null) return true;
+    const s = String(v).trim();
+    if (s === '') return true;
+    // Common placeholder symbols
+    const BLANKS = new Set(['---', '--', '-', 'na', 'n/a', 'none', 'null', 'undefined', '0', 'unknown', '?', '']);
+    return BLANKS.has(s.toLowerCase());
+};
+
 window._openCompletenessReport = () => {
     const data=window._studentsData||[];
     if(!data.length){showMsg('No data loaded.');return;}
     const total=data.length;
     const allKeys=new Set(); data.forEach(s=>Object.keys(s).forEach(k=>{if(k!=='id'&&!k.startsWith('_'))allKeys.add(k);}));
     const headers=[...allKeys];
+    const _mvC=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
     const stats=headers.map(h=>{
-        const filled=data.filter(s=>s[h]!==undefined&&s[h]!==null&&String(s[h]).trim()!=='').length;
+        const filled=data.filter(s=>!_mvC(s[h])).length;
         const pct=Math.round(filled/total*100);
-        const missing=data.filter(s=>!s[h]||String(s[h]).trim()==='');
+        const missing=data.filter(s=>_mvC(s[h]));
         const isCritical=CRITICAL_FIELDS.includes(h);
         return{field:h,filled,pct,missing,isCritical};
     }).sort((a,b)=>a.pct-b.pct);
 
     // ── Pending Updates: students missing at least one critical field ──
-    const pendingStudents = data.filter(s =>
-        CRITICAL_FIELDS.some(f => !s[f] || String(s[f]).trim() === '')
-    );
+    const _mvP=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
+    const pendingStudents = data.filter(s => CRITICAL_FIELDS.some(f => _mvP(s[f])));
 
     const rows=stats.map(f=>{
         const color=f.pct>=90?'var(--success)':f.pct>=60?'#d69e2e':'var(--danger)';
@@ -3339,7 +3602,8 @@ window._viewPendingStudents = () => {
     window._startPendingUpdateQueue = () => {
         const data = window._studentsData || [];
         const critFields = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
-        const pending = data.filter(s => critFields.some(f => !s[f] || String(s[f]).trim() === ''));
+        const _mvQ=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
+        const pending = data.filter(s => critFields.some(f => _mvQ(s[f])));
         if (!pending.length) { showToast('No pending students — all key fields are filled!', 'success'); return; }
         window.closeModal && window.closeModal();
         setTimeout(() => _qStart(pending), 150);
@@ -3347,7 +3611,8 @@ window._viewPendingStudents = () => {
 
     window._updateMissingQueue = (field) => {
         const data = window._studentsData || [];
-        const missing = data.filter(s => !s[field] || String(s[field]).trim() === '');
+        const _mvM=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
+        const missing = data.filter(s => _mvM(s[field]));
         if (!missing.length) { showToast(`No students missing "${field}"!`, 'success'); return; }
         window.closeModal && window.closeModal();
         setTimeout(() => _qStart(missing), 150);
@@ -3357,7 +3622,8 @@ window._viewPendingStudents = () => {
     window._startMissingQueue = () => {
         const data = window._studentsData || [];
         const critFields = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
-        const pending = data.filter(s => critFields.some(f => !s[f] || String(s[f]).trim() === ''));
+        const _mvQ=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
+        const pending = data.filter(s => critFields.some(f => _mvQ(s[f])));
         if (!pending.length) { showToast('All key fields complete!', 'success'); return; }
         _qStart(pending);
     };
