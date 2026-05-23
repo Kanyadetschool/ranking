@@ -109,6 +109,8 @@
         .hist-entry-vals { font-size: .75rem; color: var(--slate); margin-top: .1rem; }
         .hist-entry-time { font-size: .7rem; color: var(--slate-lt); margin-top: .2rem; }
         #hist-panel-empty, .hist-panel-empty { text-align: center; padding: 2rem 1rem; color: var(--slate-lt); font-size: .84rem; }
+        #hist-search-input:focus { border-color: var(--navy-lt); }
+        .hist-entry mark { background: rgba(240,165,0,.35); color: var(--navy); border-radius: 2px; padding: 0 1px; font-style: normal; }
         .hist-btn-active { background: var(--gold) !important; color: var(--navy) !important; }
 
         /* BUTTONS */
@@ -363,7 +365,7 @@
         /* ══ UNIVERSAL MODAL ══ */
         #uni-modal { position:fixed;inset:0;background:rgba(13,31,53,.58);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:9000;padding:1rem;opacity:0;pointer-events:none;transition:opacity .2s ease; }
         #uni-modal.open { opacity:1;pointer-events:all; }
-        #uni-modal .um-box { background:var(--surface);border-radius:18px;box-shadow:0 24px 64px rgba(13,31,53,.32);width:100%;max-width:480px;border:1px solid var(--border);transform:scale(.96) translateY(8px);transition:transform .22s ease;overflow:hidden;display:flex;flex-direction:column; }
+        #uni-modal .um-box { background:var(--surface);border-radius:18px;box-shadow:0 24px 64px rgba(13,31,53,.32);width:100%;max-width:480px;max-height:90vh;border:1px solid var(--border);transform:scale(.96) translateY(8px);transition:transform .22s ease;overflow:hidden;display:flex;flex-direction:column; }
         #uni-modal.open .um-box { transform:scale(1) translateY(0); }
         #uni-modal .um-box.um-wide { max-width:680px; }
         #uni-modal .um-icon-ring { width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;flex-shrink:0; }
@@ -375,7 +377,7 @@
         #uni-modal .um-header { padding:1.75rem 1.75rem 0;text-align:center; }
         #uni-modal .um-title { font-family:'Playfair Display',serif;font-size:1.12rem;font-weight:800;color:var(--navy);margin-bottom:.35rem; }
         #uni-modal .um-subtitle { font-size:.83rem;color:var(--slate);line-height:1.5; }
-        #uni-modal .um-body { padding:1rem 1.75rem;flex:1;min-height:0; }
+        #uni-modal .um-body { padding:1rem 1.75rem;flex:1;min-height:0;overflow-y:auto; }
         #uni-modal .um-scroll { max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:10px; }
         #uni-modal .um-scroll::-webkit-scrollbar { width:6px; }
         #uni-modal .um-scroll::-webkit-scrollbar-track { background:var(--surface2); }
@@ -511,9 +513,22 @@
 <div id="hist-panel">
     <div id="hist-panel-header">
         <h3>📋 Change History</h3>
-        <button id="hist-panel-close">
-            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
+        <div style="display:flex;align-items:center;gap:.5rem;">
+            <span id="hist-count-badge" style="display:none;background:rgba(255,255,255,.15);color:rgba(255,255,255,.8);font-size:.68rem;font-weight:700;padding:.15rem .5rem;border-radius:12px;"></span>
+            <button id="hist-panel-close">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
+    </div>
+    <div id="hist-search-wrap" style="padding:.6rem .75rem;border-bottom:1px solid var(--border);background:var(--surface2);display:none;">
+        <div style="position:relative;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="position:absolute;left:.6rem;top:50%;transform:translateY(-50%);color:var(--slate-lt);pointer-events:none;"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input id="hist-search-input" type="text" placeholder="Search by student, field, value…"
+                style="width:100%;padding:.42rem .75rem .42rem 2rem;border:1.5px solid var(--border);border-radius:7px;font-size:.8rem;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s;">
+            <button id="hist-search-clear" style="display:none;position:absolute;right:.5rem;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--slate-lt);padding:0;line-height:1;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+        </div>
     </div>
     <div id="hist-panel-body">
         <div id="hist-panel-empty">No history loaded yet.<br>Open a student profile to see their changes here.</div>
@@ -1752,19 +1767,34 @@ window._editRow = (id) => {
     drawerStudentLabel.textContent = name || student['Assessment No'] || id;
     drawerAvatar.src = name ? `./student_images/${encodeURIComponent(name)}.jpg` : './student_images/default.jpg';
 
-    const fields = Object.entries(student).filter(([k]) => k !== 'id');
+    // Build full schema from ALL students so fields missing on THIS student still appear
+    const allKeys = new Set();
+    (window._studentsData || studentsData).forEach(s =>
+        Object.keys(s).forEach(k => { if (k !== 'id' && !k.startsWith('_')) allKeys.add(k); })
+    );
     const priorityFields = ['Assessment No', 'Official Student Name', 'Grade', 'Class', 'Gender', 'UPI'];
-    const orderedFields = [
-        ...priorityFields.filter(k => fields.find(([fk]) => fk === k)),
-        ...fields.filter(([k]) => !priorityFields.includes(k)).map(([k]) => k)
-    ];
+    const otherFields = [...allKeys].filter(k => !priorityFields.includes(k)).sort();
+    const orderedFields = [...priorityFields.filter(k => allKeys.has(k)), ...otherFields];
+    const criticalFields = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
 
     drawerBody.innerHTML = `<div class="drawer-grid">${orderedFields.map(fieldKey => {
-        const val = student[fieldKey] !== undefined ? student[fieldKey] : '';
+        const raw = student[fieldKey];
+        const val = raw !== undefined && raw !== null ? raw : '';
+        const isMissing = String(val).trim() === '';
         const isReq = fieldKey === 'Assessment No';
-        return `<div class="drawer-field ${['Assessment No','Official Student Name','Grade'].includes(fieldKey) ? '' : ''}">
-            <label>${fieldKey}${isReq ? ' *' : ''}</label>
-            <input type="text" data-field="${fieldKey}" value="${String(val).replace(/"/g,'&quot;')}" class="${isReq ? 'required-field' : ''}">
+        const isCritical = criticalFields.includes(fieldKey);
+        const inputStyle = isReq
+            ? 'border-color:var(--gold);'
+            : (isMissing && isCritical ? 'border-color:var(--danger);background:#fff8f8;' : '');
+        const missingBadge = isMissing && isCritical
+            ? ' <span style="color:var(--danger);font-size:.62rem;font-weight:800;letter-spacing:.04em;vertical-align:middle;">MISSING</span>'
+            : '';
+        return `<div class="drawer-field">
+            <label>${fieldKey}${isReq ? ' *' : ''}${missingBadge}</label>
+            <input type="text" data-field="${fieldKey}" value="${String(val).replace(/"/g,'&quot;')}"
+                placeholder="${isMissing ? 'Enter ' + fieldKey + '…' : ''}"
+                style="${inputStyle}"
+                class="${isReq ? 'required-field' : ''}">
         </div>`;
     }).join('')}</div>`;
     openDrawer();
@@ -2355,6 +2385,63 @@ function toggleHistPanel(forceOpen) {
     if (open) loadHistPanel();
 }
 
+// Cached entries for search filtering
+let _histAllEntries = [];
+
+function _renderHistEntries(entries, term) {
+    const data = window._studentsData || [];
+    const esc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const hl = (text, q) => {
+        if (!q) return esc(text);
+        const re = new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
+        return esc(text).replace(re, '<mark>$1</mark>');
+    };
+    if (!entries.length) {
+        histPanelBody.innerHTML = term
+            ? `<div class="hist-panel-empty">No results for "<strong>${esc(term)}</strong>"</div>`
+            : '<div class="hist-panel-empty">No changes recorded yet.</div>';
+        return;
+    }
+    histPanelBody.innerHTML = entries.map(e => {
+        const s = data.find(x => x.id === e._sid);
+        const name = s?.['Official Student Name'] || e._sid;
+        const time = e.changedAt ? new Date(e.changedAt).toLocaleString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+        return `<div class="hist-entry" onclick="window._viewProfile&&window._viewProfile('${e._sid}')">
+            <div class="hist-entry-name">${hl(name, term)}</div>
+            <div class="hist-entry-field">✏ ${hl(e.field||'?', term)}</div>
+            <div class="hist-entry-vals">
+                <span style="color:var(--danger);text-decoration:line-through;">${hl(e.oldVal||'—', term)}</span>
+                → <span style="color:var(--success);">${hl(e.newVal||'—', term)}</span>
+            </div>
+            <div class="hist-entry-time">🕐 ${time} · ${hl(e.changedBy||'?', term)}</div>
+        </div>`;
+    }).join('');
+}
+
+function _applyHistSearch() {
+    const term = ($('hist-search-input')?.value || '').trim().toLowerCase();
+    const badge = $('hist-count-badge');
+    const clearBtn = $('hist-search-clear');
+    if (clearBtn) clearBtn.style.display = term ? 'block' : 'none';
+    const filtered = term
+        ? _histAllEntries.filter(e => {
+            const data = window._studentsData || [];
+            const s = data.find(x => x.id === e._sid);
+            const name = (s?.['Official Student Name'] || e._sid || '').toLowerCase();
+            return name.includes(term)
+                || (e.field||'').toLowerCase().includes(term)
+                || (e.oldVal||'').toLowerCase().includes(term)
+                || (e.newVal||'').toLowerCase().includes(term)
+                || (e.changedBy||'').toLowerCase().includes(term);
+          })
+        : _histAllEntries;
+    if (badge) {
+        badge.style.display = 'inline';
+        badge.textContent = term ? `${filtered.length} / ${_histAllEntries.length}` : `${_histAllEntries.length}`;
+    }
+    _renderHistEntries(filtered, term);
+}
+
 async function loadHistPanel(studentId) {
     if (!histPanel?.classList.contains('open')) return;
     if (!histPanelBody) return;
@@ -2376,6 +2463,7 @@ async function loadHistPanel(studentId) {
 
         if (!snap.exists()) {
             histPanelBody.innerHTML = '<div class="hist-panel-empty">No change history found.</div>';
+            $('hist-search-wrap').style.display = 'none';
             return;
         }
 
@@ -2389,29 +2477,36 @@ async function loadHistPanel(studentId) {
         });
 
         allEntries.sort((a, b) => new Date(b.changedAt) - new Date(a.changedAt));
-        const recent = allEntries.slice(0, 60);
+        _histAllEntries = allEntries.slice(0, 200); // cache up to 200
 
-        if (!recent.length) {
+        if (!_histAllEntries.length) {
             histPanelBody.innerHTML = '<div class="hist-panel-empty">No changes recorded yet.</div>';
+            $('hist-search-wrap').style.display = 'none';
             return;
         }
 
-        const data = window._studentsData || [];
-        histPanelBody.innerHTML = recent.map(e => {
-            const s = data.find(x => x.id === e._sid);
-            const name = s?.['Official Student Name'] || e._sid;
-            const time = e.changedAt ? new Date(e.changedAt).toLocaleString('en-GB', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-            return `<div class="hist-entry" onclick="window._viewProfile&&window._viewProfile('${e._sid}')">
-                <div class="hist-entry-name">${name}</div>
-                <div class="hist-entry-field">✏ ${e.field||'?'}</div>
-                <div class="hist-entry-vals"><span style="color:var(--danger);text-decoration:line-through;">${e.oldVal||'—'}</span> → <span style="color:var(--success);">${e.newVal||'—'}</span></div>
-                <div class="hist-entry-time">🕐 ${time} · ${e.changedBy||'?'}</div>
-            </div>`;
-        }).join('');
+        // Show search bar
+        const searchWrap = $('hist-search-wrap');
+        if (searchWrap) searchWrap.style.display = 'block';
+
+        // Preserve existing search term across reloads
+        const term = ($('hist-search-input')?.value || '').trim().toLowerCase();
+        _applyHistSearch();
+
     } catch(err) {
         histPanelBody.innerHTML = `<div class="hist-panel-empty">Error: ${err.message}</div>`;
     }
 }
+
+// Wire search input
+$('hist-search-input')?.addEventListener('input', _applyHistSearch);
+$('hist-search-input')?.addEventListener('focus', function() { this.style.borderColor='var(--navy-lt)'; });
+$('hist-search-input')?.addEventListener('blur', function() { this.style.borderColor='var(--border)'; });
+$('hist-search-clear')?.addEventListener('click', () => {
+    const inp = $('hist-search-input');
+    if (inp) { inp.value = ''; inp.focus(); }
+    _applyHistSearch();
+});
 
 histPanelBtn?.addEventListener('click', () => toggleHistPanel());
 histPanelClose?.addEventListener('click', () => toggleHistPanel(false));
