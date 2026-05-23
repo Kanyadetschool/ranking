@@ -523,17 +523,17 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             ?
         </button>
-        <button id="hist-panel-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Change History Panel">
+        <button id="hist-panel-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Change History Panel (H)">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            History
+            History <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">H</kbd>
         </button>
         <button id="sign-out-btn" class="btn btn-ghost hidden">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
             Sign Out
         </button>
-        <button id="dark-mode-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Toggle dark mode">
+        <button id="dark-mode-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Toggle dark mode (D)">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
-            Dark
+            Dark <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">D</kbd>
         </button>
         <button onclick="document.getElementById('spotlight-overlay').classList.remove('hidden');document.getElementById('spotlight-input').focus();" class="btn btn-ghost btn-sm nav-hide-mobile" title="Spotlight search (Ctrl+K)">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -699,17 +699,17 @@
 
         <!-- STUDENT RECORDS TABLE -->
         <div class="card table-card">
-            <!-- Main Toolbar -->
-            <div class="toolbar">
-                <div class="toolbar-title">Student Records</div>
-                <div class="search-wrap">
+            <!-- Main Toolbar: Search + Grade + Rows -->
+            <div class="toolbar" style="flex-wrap:wrap;row-gap:.5rem;">
+                <div class="toolbar-title" style="flex-shrink:0;">Student Records</div>
+                <div class="search-wrap" style="flex:1;min-width:160px;max-width:340px;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input id="search-input" type="text" placeholder="Search students…" onfocus="this.select()">
                 </div>
-                <select id="grade-filter-select" style="width:auto;padding:.45rem .75rem;min-width:120px;">
+                <select id="grade-filter-select" style="width:auto;padding:.45rem .75rem;min-width:120px;flex-shrink:0;">
                     <option value="">All Grades</option>
                 </select>
-                <div style="display:flex;align-items:center;gap:.4rem;">
+                <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0;">
                     <span class="toolbar-label">Rows:</span>
                     <select id="students-per-page" style="width:auto;padding:.42rem .65rem;">
                         <option value="10">10</option>
@@ -720,32 +720,33 @@
                         <option value="500">500</option>
                     </select>
                 </div>
-                <div style="margin-left:auto;display:flex;align-items:center;gap:.4rem;">
-                    <button id="completeness-btn" class="btn btn-outline btn-sm hidden" title="Data completeness report">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                        Completeness <span class="btn-kbd">Alt+C</span>
-                    </button>
-                    <button id="promote-all-btn" class="btn btn-gold btn-sm hidden" title="Promote all students in selected grade to next grade">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                        Promote All <span class="btn-kbd">Alt+P</span>
-                    </button>
-                    <button id="print-all-btn" class="btn btn-outline btn-sm hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        Export All <span class="btn-kbd">Alt+E</span>
-                    </button>
-                    <button id="print-grade-btn" class="btn btn-outline btn-sm hidden">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
-                        Export Grade <span class="btn-kbd">Alt+G</span>
-                    </button>
-                    <button id="delete-grade-btn" class="btn btn-danger btn-sm hidden" title="Delete selected grade">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z" clip-rule="evenodd"/></svg>
-                        Delete Grade <span class="btn-kbd">Alt+D</span>
-                    </button>
-                    <button id="promote-grade-btn" class="btn btn-gold btn-sm hidden" title="Promote all students in selected grade to next grade">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-                        Promote Grade <span class="btn-kbd">Alt+↑</span>
-                    </button>
-                </div>
+            </div>
+            <!-- Action Buttons Row — wraps cleanly, no overflow -->
+            <div id="action-btns-row" style="display:flex;flex-wrap:wrap;align-items:center;gap:.45rem;padding:.65rem 1.25rem;background:var(--surface);border-bottom:1px solid var(--border);">
+                <button id="completeness-btn" class="btn btn-outline btn-sm hidden" title="Data completeness report (Alt+C)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                    Completeness <span class="btn-kbd">Alt+C</span>
+                </button>
+                <button id="promote-all-btn" class="btn btn-gold btn-sm hidden" title="Promote all students (Alt+P)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    Promote All <span class="btn-kbd">Alt+P</span>
+                </button>
+                <button id="print-all-btn" class="btn btn-outline btn-sm hidden" title="Export all students (Alt+E)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Export All <span class="btn-kbd">Alt+E</span>
+                </button>
+                <button id="print-grade-btn" class="btn btn-outline btn-sm hidden" title="Export current grade (Alt+G)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                    Export Grade <span class="btn-kbd">Alt+G</span>
+                </button>
+                <button id="delete-grade-btn" class="btn btn-danger btn-sm hidden" title="Delete selected grade (Alt+D)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z" clip-rule="evenodd"/></svg>
+                    Delete Grade <span class="btn-kbd">Alt+D</span>
+                </button>
+                <button id="promote-grade-btn" class="btn btn-gold btn-sm hidden" title="Promote current grade (Alt+↑)">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+                    Promote Grade <span class="btn-kbd">Alt+↑</span>
+                </button>
             </div>
 
             <!-- Tabulator Toolbar -->
@@ -823,6 +824,7 @@
                     <div class="sc-row"><span class="sc-label">Delete grade</span><div class="sc-keys"><kbd class="sc-key">Alt</kbd><kbd class="sc-key">D</kbd></div></div>
                     <div class="sc-row"><span class="sc-label">Promote current grade</span><div class="sc-keys"><kbd class="sc-key">Alt</kbd><kbd class="sc-key">↑</kbd></div></div>
                     <div class="sc-row"><span class="sc-label">Open history panel</span><div class="sc-keys"><kbd class="sc-key">H</kbd></div></div>
+                    <div class="sc-row"><span class="sc-label">Toggle dark mode</span><div class="sc-keys"><kbd class="sc-key">D</kbd></div></div>
                     <div class="sc-row"><span class="sc-label">Show this help panel</span><div class="sc-keys"><kbd class="sc-key">?</kbd></div></div>
                 </div>
             </div>
@@ -1949,6 +1951,19 @@ document.addEventListener('keydown', e => {
     }
 });
 
+// Hide action-btns-row when all its buttons are hidden
+(function() {
+    const row = document.getElementById('action-btns-row');
+    if (!row) return;
+    const updateRowVisibility = () => {
+        const anyVisible = [...row.querySelectorAll('button')].some(b => !b.classList.contains('hidden'));
+        row.style.display = anyVisible ? 'flex' : 'none';
+    };
+    updateRowVisibility();
+    const obs = new MutationObserver(updateRowVisibility);
+    row.querySelectorAll('button').forEach(b => obs.observe(b, { attributes: true, attributeFilter: ['class'] }));
+})();
+
 // ════════════════════════════════════════════════════════════
 // KEYBOARD SHORTCUT ENGINE
 // ════════════════════════════════════════════════════════════
@@ -2028,6 +2043,10 @@ document.addEventListener('keydown', e => {
             case 'h': case 'H':
                 e.preventDefault();
                 document.getElementById('hist-panel-btn')?.click();
+                break;
+            case 'd': case 'D':
+                e.preventDefault();
+                document.getElementById('dark-mode-btn')?.click();
                 break;
             case '?':
                 e.preventDefault();
