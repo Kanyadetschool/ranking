@@ -189,6 +189,18 @@
         .tab-toolbar-btn:hover { background: var(--surface3); border-color: var(--border2); }
         .tab-toolbar-btn.active { background: var(--navy); color: #fff; border-color: var(--navy); }
         .tab-count-badge { margin-left: auto; font-size: .75rem; font-weight: 700; color: var(--slate); background: var(--surface3); border: 1px solid var(--border); border-radius: 20px; padding: .2rem .75rem; }
+        .tab-toolbar-btn.missing-filter-active { background: var(--danger) !important; color: #fff !important; border-color: var(--danger) !important; }
+        .tab-toolbar-btn.missing-filter-active:hover { background: #b91c1c !important; }
+        /* Completeness cell */
+        .compl-cell { display: inline-flex; align-items: center; gap: .45rem; }
+        .compl-bar { width: 44px; height: 6px; border-radius: 3px; background: var(--surface3); overflow: hidden; flex-shrink: 0; }
+        .compl-bar-fill { height: 6px; border-radius: 3px; transition: width .3s; }
+        .compl-pct { font-size: .75rem; font-weight: 700; min-width: 28px; }
+        .compl-dots { display: flex; gap: 2px; flex-wrap: wrap; max-width: 80px; }
+        .compl-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--danger); flex-shrink: 0; cursor: default; }
+        /* Row highlight for students with missing critical fields */
+        #tabulator-table .tabulator-row.row-has-missing { border-left: 3px solid var(--danger) !important; }
+        #tabulator-table .tabulator-row.row-has-missing .tabulator-cell:first-child { padding-left: calc(.6rem - 3px) !important; }
 
         /* TABULATOR THEME */
         #tabulator-table { border: none !important; font-family: 'DM Sans', sans-serif !important; background: transparent !important; }
@@ -709,6 +721,10 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
                     Fit Cols
                 </button>
+                <button class="tab-toolbar-btn" id="tab-missing-filter" title="Show only students with missing key fields">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    Missing Fields
+                </button>
                 <button class="tab-toolbar-btn" id="tab-clear-filters" title="Clear all filters">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                     Clear Filters
@@ -1068,6 +1084,7 @@ let studentsData = [];
 let studentsPerPage = 10;
 let tabulatorTable = null;
 let currentFilteredStudents = [];
+let missingFilterActive = false;
 let colFiltersVisible = false;
 let groupingEnabled = false;
 let nameColFrozen = false;
@@ -1535,6 +1552,32 @@ const renderStudents = (students) => {
                 return `<img src="${name ? `./student_images/${name}.jpg` : './student_images/default.jpg'}" class="student-img" onerror="this.src='./student_images/default.jpg'">`;
             }
         },
+        {
+            // ── Completeness % column ──
+            title: '<span title="Data completeness per student">% Done</span>',
+            field: '_compl', frozen: false, headerSort: true, resizable: false, width: 110,
+            headerFilter: false, hozAlign: 'left',
+            sorter: (a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0),
+            formatter: (cell) => {
+                const val = parseFloat(cell.getValue()) || 0;
+                const missing = cell.getRow().getData()._missingFields || [];
+                const color = val >= 90 ? 'var(--success)' : val >= 60 ? '#d69e2e' : 'var(--danger)';
+                const dots = missing.map(f =>
+                    `<span class="compl-dot" title="Missing: ${f}"></span>`
+                ).join('');
+                return `<div class="compl-cell">
+                    <div class="compl-bar"><div class="compl-bar-fill" style="width:${val}%;background:${color};"></div></div>
+                    <span class="compl-pct" style="color:${color};">${Math.round(val)}%</span>
+                    ${missing.length ? `<div class="compl-dots" title="Missing: ${missing.join(', ')}">${dots}</div>` : ''}
+                </div>`;
+            },
+            rowFormatter: (row) => {
+                // highlight entire row if missing critical fields
+                const missing = row.getData()._missingFields || [];
+                if (missing.length) row.getElement().classList.add('row-has-missing');
+                else row.getElement().classList.remove('row-has-missing');
+            },
+        },
         ...headers.map(h => ({
             title: h,
             field: h,
@@ -1580,9 +1623,22 @@ const renderStudents = (students) => {
         }))
     ];
 
+    // Compute completeness per student using the full global schema
+    const globalKeys = new Set();
+    (window._studentsData || studentsData).forEach(st =>
+        Object.keys(st).forEach(k => { if (k !== 'id' && !k.startsWith('_')) globalKeys.add(k); })
+    );
+    const globalHeaders = [...globalKeys];
+    const criticalForRow = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
+
     const rowData = students.map(s => {
         const row = { id: s.id, _actions: '', _img: '' };
         headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
+        // Completeness across ALL known fields
+        const filled = globalHeaders.filter(h => s[h] !== undefined && s[h] !== null && String(s[h]).trim() !== '').length;
+        row._compl = globalHeaders.length > 0 ? (filled / globalHeaders.length) * 100 : 100;
+        // Missing critical fields for dot indicators + row highlight
+        row._missingFields = criticalForRow.filter(f => !s[f] || String(s[f]).trim() === '');
         return row;
     });
 
@@ -1722,7 +1778,25 @@ document.getElementById('tab-clear-filters').addEventListener('click', () => {
     if (tabulatorTable) { tabulatorTable.clearFilter(true); tabulatorTable.clearSort(); setTimeout(updateCountBadge, 30); }
     searchInput.value = '';
     gradeFilterSelect.value = '';
+    missingFilterActive = false;
+    const missingBtn = document.getElementById('tab-missing-filter');
+    if (missingBtn) missingBtn.classList.remove('missing-filter-active');
     renderStudents(studentsData);
+});
+
+document.getElementById('tab-missing-filter').addEventListener('click', function() {
+    missingFilterActive = !missingFilterActive;
+    this.classList.toggle('missing-filter-active', missingFilterActive);
+    if (missingFilterActive) {
+        // Update button label with count
+        const count = studentsData.filter(s =>
+            CRITICAL_ROW_FIELDS.some(f => !s[f] || String(s[f]).trim() === '')
+        ).length;
+        this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> Missing (${count})`;
+    } else {
+        this.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg> Missing Fields`;
+    }
+    applyFilters();
 });
 
 // ── PER-PAGE SELECT ───────────────────────────────────
@@ -1732,12 +1806,16 @@ studentsPerPageSelect.addEventListener('change', (e) => {
 });
 
 // ── SEARCH & GRADE FILTER ─────────────────────────────
+const CRITICAL_ROW_FIELDS = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
 const applyFilters = () => {
     const grade = gradeFilterSelect.value;
     const term = searchInput.value.toLowerCase();
     let filtered = studentsData;
     if (grade) filtered = filtered.filter(s => s.Grade === grade);
     if (term) filtered = filtered.filter(s => Object.values(s).some(v => String(v).toLowerCase().includes(term)));
+    if (missingFilterActive) filtered = filtered.filter(s =>
+        CRITICAL_ROW_FIELDS.some(f => !s[f] || String(s[f]).trim() === '')
+    );
     renderStudents(filtered);
 };
 searchInput.addEventListener('input', applyFilters);
