@@ -201,13 +201,12 @@
         #tabulator-table .tabulator-row:hover { background: #e8effa !important; }
         #tabulator-table .tabulator-row.tabulator-selected { background: var(--gold-dim) !important; }
         #tabulator-table .tabulator-row.tabulator-selected:hover { background: #fef3c7 !important; }
-        /* Checkbox column cells */
-        #tabulator-table .tabulator-cell[tabulator-field="_sel"],
-        #tabulator-table .tabulator-col[tabulator-field="_sel"] { text-align: center !important; padding: 0 !important; }
-        #tabulator-table .tabulator-cell[tabulator-field="_sel"] input[type="checkbox"],
-        #tabulator-table .tabulator-col[tabulator-field="_sel"] input[type="checkbox"] {
-            width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer; display: block; margin: auto;
+        /* Checkbox inline in actions column */
+        .action-row-check {
+            width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer;
+            flex-shrink: 0; margin: 0; display: block;
         }
+        #tab-select-all-chk { width: 15px; height: 15px; accent-color: var(--gold); cursor: pointer; vertical-align: middle; }
         #tabulator-table .tabulator-cell { padding: .6rem .9rem !important; color: var(--text2) !important; font-size: .82rem !important; border-right: none !important; }
         #tabulator-table .tabulator-frozen { background: inherit !important; }
         #tabulator-table .tabulator-frozen.tabulator-frozen-left { border-right: 2px solid var(--border2) !important; }
@@ -1485,20 +1484,17 @@ const renderStudents = (students) => {
 
     const columns = [
         {
-            // ── Checkbox selection column ──
-            title: '<input type="checkbox" id="tab-select-all-chk" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" title="Select / deselect all visible rows">',
-            field: '_sel', frozen: true, headerSort: false, resizable: false,
-            width: 40, hozAlign: 'center', headerHozAlign: 'center',
+            // ── Actions + inline checkbox column ──
+            title: '<span style="display:inline-flex;align-items:center;gap:.5rem;"><input type="checkbox" id="tab-select-all-chk" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" title="Select / deselect all visible rows"> Actions</span>',
+            field: '_actions', frozen: true, headerSort: false, resizable: false, width: 200,
             headerFilter: false,
-            formatter: 'rowSelection',
-            titleFormatter: 'rowSelection',
-            cellClick: (e, cell) => { cell.getRow().toggleSelect(); },
-        },
-        {
-            title: 'Actions', field: '_actions', frozen: true, headerSort: false, resizable: false, width: 168,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
-                return `<div class="action-wrap">
+                const row = cell.getRow();
+                const isSelected = row.isSelected ? row.isSelected() : false;
+                return `<div class="action-wrap" style="display:flex;align-items:center;gap:.35rem;">
+                    <input type="checkbox" class="action-row-check" ${isSelected ? 'checked' : ''} title="Select row"
+                        onclick="(function(e){e.stopPropagation();var r=window._tabulatorTable&&window._tabulatorTable.getRow('${d.id}');if(r)r.toggleSelect();e.target.checked=r&&r.isSelected?r.isSelected():e.target.checked;})(event)">
                     <button class="btn-edit" onclick="window._editRow('${d.id}')">
                         <svg xmlns='http://www.w3.org/2000/svg' width='11' height='11' fill='none' viewBox='0 0 24 24' stroke='currentColor' stroke-width='2.5'><path stroke-linecap='round' stroke-linejoin='round' d='M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z'/></svg>
                         Edit
@@ -1510,7 +1506,11 @@ const renderStudents = (students) => {
                         <svg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 20 20' fill='currentColor'><path fill-rule='evenodd' d='M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9z' clip-rule='evenodd'/></svg>
                     </button>
                 </div>`;
-            }
+            },
+            cellClick: (e, cell) => {
+                // Only toggle if click is not on a button or the checkbox itself
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.classList.contains('action-row-check')) return;
+            },
         },
         {
             title: 'Photo', field: '_img', headerSort: false, resizable: false, width: 60, headerFilter: false,
@@ -1615,18 +1615,44 @@ const renderStudents = (students) => {
 
     tabulatorTable.on('tableBuilt', () => {
         updateCountBadge();
-        // Expose for feature modules
         window._tabulatorTable   = tabulatorTable;
         window._selectedStudents = selectedStudents;
+        // Wire the select-all checkbox in the merged Actions header
+        setTimeout(() => {
+            const allChk = document.getElementById('tab-select-all-chk');
+            if (allChk) {
+                allChk.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (allChk.checked) {
+                        tabulatorTable.selectRow(tabulatorTable.getRows('active'));
+                    } else {
+                        tabulatorTable.deselectRow();
+                    }
+                });
+            }
+        }, 120);
         // Wire selection listener HERE, after table is built
         tabulatorTable.on('rowSelectionChanged', (data, rows) => {
             selectedStudents = new Set(rows.map(r => r.getData().id));
             window._selectedStudents = selectedStudents;
             const count = selectedStudents.size;
             selectedCountEl.textContent = `${count} selected`;
-            // Auto-show/hide bulk toolbar
             bulkActionToolbar.classList.toggle('visible', count > 0);
             syncBulkBtns();
+            // Sync the select-all header checkbox
+            const allChk = document.getElementById('tab-select-all-chk');
+            if (allChk) {
+                const visibleRows = tabulatorTable.getRows('active');
+                allChk.checked = visibleRows.length > 0 && rows.length >= visibleRows.length;
+                allChk.indeterminate = rows.length > 0 && rows.length < visibleRows.length;
+            }
+            // Sync individual row checkboxes
+            tabulatorTable.getRows().forEach(row => {
+                const cell = row.getCell('_actions');
+                if (!cell) return;
+                const chk = cell.getElement() && cell.getElement().querySelector('.action-row-check');
+                if (chk) chk.checked = row.isSelected();
+            });
         });
     });
 };
@@ -1713,7 +1739,7 @@ const drawerAvatar = document.getElementById('drawer-avatar');
 let drawerCurrentId = null;
 
 const openDrawer = () => { editDrawer.classList.add('open'); document.body.style.overflow = 'hidden'; };
-const closeDrawer = () => { editDrawer.classList.remove('open'); document.body.style.overflow = ''; drawerCurrentId = null; };
+const closeDrawer = () => { editDrawer.classList.remove('open'); document.body.style.overflow = ''; drawerCurrentId = null; if (typeof window._afterDrawerClose === 'function') { const fn = window._afterDrawerClose; window._afterDrawerClose = null; setTimeout(fn, 50); } };
 drawerCloseBtn.addEventListener('click', closeDrawer);
 drawerCancelBtn.addEventListener('click', closeDrawer);
 editDrawer.addEventListener('click', (e) => { if (e.target === editDrawer) closeDrawer(); });
@@ -2596,7 +2622,10 @@ window._copyRow = (id) => {
 };
 
 // ── 20. COMPLETENESS REPORT ───────────────────────────
-$('completeness-btn')?.addEventListener('click', () => {
+// Core fields considered critical for "pending update" detection
+const CRITICAL_FIELDS = ['Official Student Name', 'UPI', 'Gender', 'Grade', 'Assessment No'];
+
+window._openCompletenessReport = () => {
     const data=window._studentsData||[];
     if(!data.length){showMsg('No data loaded.');return;}
     const total=data.length;
@@ -2606,33 +2635,168 @@ $('completeness-btn')?.addEventListener('click', () => {
         const filled=data.filter(s=>s[h]!==undefined&&s[h]!==null&&String(s[h]).trim()!=='').length;
         const pct=Math.round(filled/total*100);
         const missing=data.filter(s=>!s[h]||String(s[h]).trim()==='');
-        return{field:h,filled,pct,missing};
+        const isCritical=CRITICAL_FIELDS.includes(h);
+        return{field:h,filled,pct,missing,isCritical};
     }).sort((a,b)=>a.pct-b.pct);
+
+    // ── Pending Updates: students missing at least one critical field ──
+    const pendingStudents = data.filter(s =>
+        CRITICAL_FIELDS.some(f => !s[f] || String(s[f]).trim() === '')
+    );
+
     const rows=stats.map(f=>{
         const color=f.pct>=90?'var(--success)':f.pct>=60?'#d69e2e':'var(--danger)';
-        return`<tr><td style="padding:.45rem .75rem;font-size:.82rem;font-weight:600;">${f.field}</td>
+        const badge=f.isCritical?`<span style="background:var(--gold);color:var(--navy);font-size:.62rem;font-weight:800;padding:.1rem .35rem;border-radius:4px;vertical-align:middle;margin-left:.3rem;">KEY</span>`:'';
+        return`<tr style="${f.isCritical?'background:rgba(240,165,0,.06);':''}">
+        <td style="padding:.45rem .75rem;font-size:.82rem;font-weight:600;">${f.field}${badge}</td>
         <td style="padding:.45rem .75rem;"><div style="background:var(--surface3);border-radius:4px;height:7px;overflow:hidden;width:100px;"><div style="width:${f.pct}%;height:7px;background:${color};border-radius:4px;"></div></div></td>
         <td style="padding:.45rem .75rem;font-size:.82rem;font-weight:700;color:${color};">${f.pct}%</td>
         <td style="padding:.45rem .75rem;font-size:.78rem;color:var(--slate);">${f.filled}/${total}</td>
-        <td style="padding:.45rem .6rem;">${f.missing.length?`<button onclick="window._showMissingField('${f.field}')" style="font-size:.72rem;padding:.2rem .55rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;color:var(--navy);">View ${f.missing.length}</button>`:'<span style="color:var(--success);font-size:.72rem;">✓</span>'}</td></tr>`;
+        <td style="padding:.45rem .6rem;display:flex;gap:.3rem;align-items:center;">${f.missing.length
+            ?`<button onclick="window._showMissingField('${f.field}')" style="font-size:.72rem;padding:.2rem .55rem;border:1px solid var(--border);border-radius:5px;background:var(--surface);cursor:pointer;color:var(--navy);">👁 ${f.missing.length}</button>
+              <button onclick="window._updateMissingQueue('${f.field}')" style="font-size:.72rem;padding:.2rem .55rem;border:1px solid var(--gold);border-radius:5px;background:var(--gold-dim);cursor:pointer;color:var(--navy);font-weight:700;">✏ Update</button>`
+            :'<span style="color:var(--success);font-size:.72rem;">✓</span>'
+        }</td></tr>`;
     }).join('');
     const overall=Math.round(stats.reduce((a,f)=>a+f.pct,0)/stats.length)||0;
+
+    // Pending panel HTML
+    const pendingHTML = pendingStudents.length > 0
+        ? `<div style="background:#fffbeb;border:1.5px solid var(--gold);border-radius:10px;padding:.85rem 1rem;margin-bottom:1rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+                <div>
+                    <span style="font-weight:800;font-size:.88rem;color:var(--navy);">⚠ ${pendingStudents.length} Student${pendingStudents.length!==1?'s':''} Need Updates</span>
+                    <span style="font-size:.75rem;color:var(--slate);display:block;margin-top:.15rem;">Missing one or more key fields: ${CRITICAL_FIELDS.join(', ')}</span>
+                </div>
+                <div style="display:flex;gap:.4rem;flex-wrap:wrap;">
+                    <button onclick="window._startPendingUpdateQueue()" style="padding:.35rem .85rem;background:var(--gold);color:var(--navy);border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;">
+                        ✏ Update All Pending
+                    </button>
+                    <button onclick="window._viewPendingStudents()" style="padding:.35rem .85rem;background:var(--surface);color:var(--navy);border:1.5px solid var(--gold);border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">
+                        👁 View List
+                    </button>
+                </div>
+            </div>
+            <div style="margin-top:.65rem;display:flex;flex-wrap:wrap;gap:.3rem;" id="pending-chips">
+                ${pendingStudents.slice(0,8).map(s=>`<span onclick="window._editRow('${s.id}');window.closeModal();" style="background:var(--surface);border:1px solid var(--gold);border-radius:20px;padding:.2rem .65rem;font-size:.74rem;font-weight:600;cursor:pointer;color:var(--navy);transition:all .15s;" title="Click to edit">${s['Official Student Name']||s['Assessment No']||s.id} <span style="color:var(--slate-lt);">${s.Grade||''}</span></span>`).join('')}
+                ${pendingStudents.length>8?`<span style="font-size:.74rem;color:var(--slate);padding:.2rem .5rem;">+${pendingStudents.length-8} more</span>`:''}
+            </div>
+        </div>`
+        : `<div style="background:#f0fdf4;border:1.5px solid var(--success);border-radius:10px;padding:.75rem 1rem;margin-bottom:1rem;font-size:.85rem;color:var(--success);font-weight:700;">✅ All students have complete key fields — no pending updates!</div>`;
+
     openModal({
         icon: 'chart',
         title: 'Data Completeness Report',
         wide: true,
         scrollable: true,
-        html:`<div style="margin-bottom:.75rem;text-align:center;"><span style="font-size:2rem;font-weight:800;color:${overall>=80?'var(--success)':overall>=60?'#d69e2e':'var(--danger)'};">${overall}%</span><span style="font-size:.82rem;color:var(--slate);display:block;">overall · ${total} students</span></div>
-        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;"><thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;"><th style="padding:.4rem .75rem;text-align:left;font-size:.72rem;">Field</th><th style="padding:.4rem .75rem;font-size:.72rem;">Fill Rate</th><th style="padding:.4rem .75rem;font-size:.72rem;">%</th><th style="padding:.4rem .75rem;font-size:.72rem;">Count</th><th style="padding:.4rem .75rem;font-size:.72rem;">Missing</th></tr></thead><tbody>${rows}</tbody></table>
+        html:`${pendingHTML}
+        <div style="margin-bottom:.75rem;text-align:center;"><span style="font-size:2rem;font-weight:800;color:${overall>=80?'var(--success)':overall>=60?'#d69e2e':'var(--danger)'};">${overall}%</span><span style="font-size:.82rem;color:var(--slate);display:block;">overall completeness · ${total} students</span></div>
+        <table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;"><thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;">
+            <th style="padding:.4rem .75rem;text-align:left;font-size:.72rem;">Field</th>
+            <th style="padding:.4rem .75rem;font-size:.72rem;">Fill Rate</th>
+            <th style="padding:.4rem .75rem;font-size:.72rem;">%</th>
+            <th style="padding:.4rem .75rem;font-size:.72rem;">Count</th>
+            <th style="padding:.4rem .75rem;font-size:.72rem;">Actions</th>
+        </tr></thead><tbody>${rows}</tbody></table>
         <div style="text-align:center;margin-top:.75rem;"><button onclick="window._exportCompletenessXLSX()" style="padding:.42rem 1rem;background:var(--navy);color:#fff;border:none;border-radius:7px;font-size:.8rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">📊 Export Excel</button></div>`,
         confirmButtonText: 'Close',
     });
-});
+};
+
+$('completeness-btn')?.addEventListener('click', () => window._openCompletenessReport());
+
+// ── View pending students list ────────────────────────
+window._viewPendingStudents = () => {
+    const data=window._studentsData||[];
+    const pending=data.filter(s=>CRITICAL_FIELDS.some(f=>!s[f]||String(s[f]).trim()===''));
+    if(!pending.length){showMsg('No pending students!');return;}
+    const rows=pending.map(s=>{
+        const missing=CRITICAL_FIELDS.filter(f=>!s[f]||String(s[f]).trim()==='');
+        return`<tr>
+            <td style="padding:.4rem .6rem;font-size:.82rem;font-weight:600;">${s['Official Student Name']||s['Assessment No']||s.id}</td>
+            <td style="padding:.4rem .6rem;font-size:.78rem;color:var(--slate);">${s.Grade||'—'}</td>
+            <td style="padding:.4rem .6rem;">${missing.map(f=>`<span style="background:var(--danger-lt);color:var(--danger);font-size:.7rem;padding:.1rem .4rem;border-radius:4px;margin:.1rem;">${f}</span>`).join('')}</td>
+            <td style="padding:.4rem .6rem;"><button onclick="window._editRow('${s.id}');window.closeModal();" style="font-size:.72rem;padding:.25rem .6rem;background:var(--navy);color:#fff;border:none;border-radius:5px;cursor:pointer;">✏ Edit</button></td>
+        </tr>`;
+    }).join('');
+    openModal({
+        icon:'warning',title:`Pending Updates — ${pending.length} Students`,wide:true,scrollable:true,
+        html:`<table style="width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;">
+            <thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;">
+                <th style="padding:.4rem .6rem;text-align:left;font-size:.72rem;">Student</th>
+                <th style="padding:.4rem .6rem;font-size:.72rem;">Grade</th>
+                <th style="padding:.4rem .6rem;font-size:.72rem;">Missing Fields</th>
+                <th style="padding:.4rem .6rem;font-size:.72rem;">Action</th>
+            </tr></thead><tbody>${rows}</tbody>
+        </table>`,
+        confirmButtonText:'Close',
+    });
+};
+
+// ── Start sequential pending update queue ─────────────
+window._startPendingUpdateQueue = () => {
+    const data=window._studentsData||[];
+    const pending=data.filter(s=>CRITICAL_FIELDS.some(f=>!s[f]||String(s[f]).trim()===''));
+    if(!pending.length){showMsg('No pending students to update!');return;}
+    window.closeModal();
+    let idx=0;
+    const openNext=()=>{
+        if(idx>=pending.length){showMsg(`✅ Done! Reviewed all ${pending.length} pending students.`);return;}
+        const s=pending[idx];
+        // Listen for drawer close to advance to next
+        const origClose=window._afterDrawerClose;
+        window._afterDrawerClose=()=>{
+            window._afterDrawerClose=origClose;
+            idx++;
+            if(idx<pending.length){
+                setTimeout(()=>{
+                    openNext();
+                },350);
+            } else {
+                showMsg(`✅ Done! Reviewed all ${pending.length} pending students.`);
+            }
+        };
+        window._editRow(s.id);
+    };
+    // Show a count banner
+    showMsg(`📋 Opening ${pending.length} students with missing key fields. Edit & save each, or close to skip.`);
+    setTimeout(openNext, 1200);
+};
+
+// ── Update queue for a specific missing field ─────────
+window._updateMissingQueue = (field) => {
+    const data=window._studentsData||[];
+    const missing=data.filter(s=>!s[field]||String(s[field]).trim()==='');
+    if(!missing.length){showMsg('No missing students for this field!');return;}
+    window.closeModal();
+    let idx=0;
+    const openNext=()=>{
+        if(idx>=missing.length){showMsg(`✅ Done updating "${field}" for all ${missing.length} students.`);return;}
+        const s=missing[idx];
+        const origClose=window._afterDrawerClose;
+        window._afterDrawerClose=()=>{
+            window._afterDrawerClose=origClose;
+            idx++;
+            if(idx<missing.length) setTimeout(openNext,350);
+            else showMsg(`✅ Done! Updated "${field}" for ${missing.length} students.`);
+        };
+        window._editRow(s.id);
+    };
+    showMsg(`📋 Opening ${missing.length} students missing "${field}". Edit & save each.`);
+    setTimeout(openNext, 1200);
+};
+
 window._showMissingField=(field)=>{
     const data=window._studentsData||[];
     const missing=data.filter(s=>!s[field]||String(s[field]).trim()==='');
-    const list=missing.slice(0,25).map(s=>`<li style="font-size:.82rem;padding:.2rem 0;">${s['Official Student Name']||s['Assessment No']||s.id} <span style="color:var(--slate-lt);">${s.Grade||''}</span></li>`).join('');
-    openModal({icon:'info',title:`Missing: ${field}`,scrollable:true,html:`<ul style="text-align:left;padding-left:1.25rem;">${list}${missing.length>25?`<li>…and ${missing.length-25} more</li>`:''}</ul>`,confirmButtonText:'Close'});
+    const list=missing.slice(0,25).map(s=>`<li style="font-size:.82rem;padding:.25rem 0;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);">
+        <span>${s['Official Student Name']||s['Assessment No']||s.id} <span style="color:var(--slate-lt);">${s.Grade||''}</span></span>
+        <button onclick="window._editRow('${s.id}');window.closeModal();" style="font-size:.7rem;padding:.2rem .5rem;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;">Edit</button>
+    </li>`).join('');
+    openModal({icon:'info',title:`Missing: ${field} (${missing.length})`,scrollable:true,
+        html:`<ul style="text-align:left;list-style:none;padding:0;">${list}${missing.length>25?`<li style="font-size:.78rem;color:var(--slate);padding:.4rem 0;">…and ${missing.length-25} more</li>`:''}</ul>
+        <div style="text-align:center;margin-top:.75rem;"><button onclick="window._updateMissingQueue('${field}')" style="padding:.4rem 1rem;background:var(--gold);color:var(--navy);border:none;border-radius:7px;font-size:.8rem;font-weight:700;cursor:pointer;">✏ Update All Missing ${field}</button></div>`,
+        confirmButtonText:'Close'});
 };
 window._exportCompletenessXLSX=()=>{
     const data=window._studentsData||[]; const total=data.length;
