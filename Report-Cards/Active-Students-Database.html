@@ -540,7 +540,7 @@
 <!-- TOPBAR -->
 <header class="topbar">
     <div class="topbar-brand">
-        <img src="../imgs/logo.png" alt="Logo" class="topbar-logo" onerror="this.style.display='none'">
+        <img src="../imgs/gslogo.png" alt="Logo" class="topbar-logo" onerror="this.style.display='none'">
         <div>
             <div class="topbar-title">Kanyadet School</div>
             <div class="topbar-sub">Active Students Database</div>
@@ -3834,6 +3834,11 @@ const _watchTable=setInterval(()=>{
 },400);
 
 console.log('[KSD] 20 features loaded ✓');
+
+// Auto-launch tour on page load
+setTimeout(() => {
+    if (typeof window._tourStart === 'function') window._tourStart();
+}, 800);
 </script>
 </body>
 </html>
