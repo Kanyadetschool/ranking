@@ -306,11 +306,12 @@
         .drawer-cancel-btn:hover { border-color: var(--danger); color: var(--danger); }
 
         /* ── USER TOUR ── */
-        #tour-overlay { position:fixed; inset:0; z-index:30000; pointer-events:none; }
-        #tour-overlay.active { pointer-events:all; }
-        #tour-backdrop { position:absolute; inset:0; background:transparent; } /* backdrop is transparent — spotlight shadow creates the dimming */
+        #tour-overlay { position:fixed; inset:0; z-index:30000; pointer-events:none; display:none; }
+        #tour-overlay.active { display:block; }
+        /* Overlay itself never blocks clicks — children opt-in individually */
+        #tour-backdrop { position:fixed; inset:0; background:transparent; pointer-events:all; cursor:default; }
         #tour-spotlight { position:fixed; border-radius:10px; box-shadow:0 0 0 9999px rgba(13,31,53,.72); transition:top .35s cubic-bezier(.4,0,.2,1),left .35s cubic-bezier(.4,0,.2,1),width .35s cubic-bezier(.4,0,.2,1),height .35s cubic-bezier(.4,0,.2,1); pointer-events:none; z-index:1; }
-        #tour-card { position:fixed; background:var(--surface); border-radius:14px; box-shadow:0 16px 56px rgba(13,31,53,.45); border:1px solid var(--border); width:310px; padding:1.25rem 1.4rem 1rem; z-index:2; transition:top .35s cubic-bezier(.4,0,.2,1),left .35s cubic-bezier(.4,0,.2,1); }
+        #tour-card { position:fixed; background:var(--surface); border-radius:14px; box-shadow:0 16px 56px rgba(13,31,53,.45); border:1px solid var(--border); width:310px; padding:1.25rem 1.4rem 1rem; z-index:2; pointer-events:all; transition:top .35s cubic-bezier(.4,0,.2,1),left .35s cubic-bezier(.4,0,.2,1); }
         #tour-card::before { content:''; position:absolute; width:12px; height:12px; background:var(--surface); border:1px solid var(--border); transform:rotate(45deg); }
         #tour-card.arrow-top::before    { top:-7px; left:24px; border-right:none; border-bottom:none; }
         #tour-card.arrow-bottom::before { bottom:-7px; left:24px; border-left:none; border-top:none; }
@@ -2289,14 +2290,8 @@ document.addEventListener('keydown', e => {
         else if (e.key === 'Escape')     { e.preventDefault(); window._tourSkip(); }
     });
 
-    // Auto-start on first visit
-    window._tourAutoStart = () => {
-        try {
-            if (!localStorage.getItem('kanyadet_tour_done')) {
-                setTimeout(window._tourStart, 1800);
-            }
-        } catch(e) {}
-    };
+    // Auto-start disabled — tour only launches when user clicks the Tour button
+    window._tourAutoStart = () => { /* no-op: manual launch only */ };
 })();
 
 // ════════════════════════════════════════════════════════════
