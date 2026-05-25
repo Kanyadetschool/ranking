@@ -1628,26 +1628,6 @@ const updateGradeFilter = () => {
     }
 };
 
-// ── AGE CALCULATOR ────────────────────────────────────
-// Parses DOB in DD.MM.YY format and returns current age in years
-const calcAge = (dob) => {
-    if (!dob || typeof dob !== 'string') return '';
-    const parts = dob.trim().split('.');
-    if (parts.length !== 3) return '';
-    const [dd, mm, yy] = parts.map(p => parseInt(p, 10));
-    if (isNaN(dd) || isNaN(mm) || isNaN(yy)) return '';
-    // Interpret 2-digit year: 00-29 → 2000s, 30-99 → 1900s
-    const fullYear = yy <= 29 ? 2000 + yy : 1900 + yy;
-    const dob_date = new Date(fullYear, mm - 1, dd);
-    if (isNaN(dob_date.getTime())) return '';
-    const today = new Date();
-    let age = today.getFullYear() - dob_date.getFullYear();
-    const m = today.getMonth() - dob_date.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < dob_date.getDate())) age--;
-    if (age < 0) return 'Not yet born';
-    return age < 120 ? age : '';
-};
-
 // ── ORDERED HEADERS ───────────────────────────────────
 const getOrderedHeaders = (students) => {
     const allKeys = new Set();
@@ -1796,18 +1776,29 @@ const renderStudents = (students) => {
                 else row.getElement().classList.remove('row-has-missing');
             },
         },
-        ...headers.flatMap(h => {
-            const col = {
-                title: h,
-                field: h,
-                frozen: nameColFrozen && h === 'Official Student Name',
-                headerFilter: colFiltersVisible ? 'input' : false,
-                headerFilterPlaceholder: `Filter ${h}…`,
-                headerSort: true,
-                minWidth: 100,
-                formatter: (cell) => cell.getValue() || '-',
-                tooltip: true,
-                cellDblClick: async (e, cell) => {
+        {
+            // ── Age column (computed from DOB: DD.MM.YY) ──
+            title: '<span title="Calculated from DOB field (DD.MM.YY)">Age</span>',
+            field: '_age', frozen: false, headerSort: true, resizable: true, width: 70,
+            headerFilter: false, hozAlign: 'center',
+            sorter: (a, b) => (a === null ? -1 : a) - (b === null ? -1 : b),
+            formatter: (cell) => {
+                const v = cell.getValue();
+                if (v === null || v === undefined || v === '') return '<span style="color:var(--slate-lt);font-size:.78rem;">—</span>';
+                return `<span style="font-weight:600;color:var(--navy);">${v}</span>`;
+            },
+        },
+        ...headers.map(h => ({
+            title: h,
+            field: h,
+            frozen: nameColFrozen && h === 'Official Student Name',
+            headerFilter: colFiltersVisible ? 'input' : false,
+            headerFilterPlaceholder: `Filter ${h}…`,
+            headerSort: true,
+            minWidth: 100,
+            formatter: (cell) => cell.getValue() || '-',
+            tooltip: true,
+            cellDblClick: async (e, cell) => {
                 // Feature 5: inline cell editing
                 const field = cell.getColumn().getField();
                 const id = cell.getRow().getData().id;
@@ -1838,34 +1829,8 @@ const renderStudents = (students) => {
                     if (typeof window._loadHistPanel === 'function') window._loadHistPanel();
                     showModal(`${field} updated.`);
                 } catch(err) { showModal('Error: ' + err.message); }
-            };
-            // After the DOB column, inject a computed Age column
-            if (h === 'DOB') {
-                return [col, {
-                    title: 'Age',
-                    field: '_age',
-                    headerSort: true,
-                    resizable: false,
-                    width: 110,
-                    headerFilter: false,
-                    hozAlign: 'center',
-                    headerHozAlign: 'center',
-                    formatter: (cell) => {
-                        const v = cell.getValue();
-                        if (v === 'Not yet born') return `<span style="font-size:.72rem;font-weight:600;color:var(--danger);white-space:nowrap;">Not yet born</span>`;
-                        return v !== '' && v !== undefined && v !== null
-                            ? `<span style="font-weight:600;color:var(--navy-lt);">${v}</span>`
-                            : '<span style="color:var(--slate-lt);">—</span>';
-                    },
-                    sorter: 'number',
-                    tooltip: (e, cell) => {
-                        const row = cell.getRow().getData();
-                        return row['DOB'] ? `DOB: ${row['DOB']}` : '';
-                    },
-                }];
-            }
-            return [col];
-        })
+            },
+        }))
     ];
 
     // Compute completeness per student using the full global schema
@@ -1876,10 +1841,28 @@ const renderStudents = (students) => {
     const globalHeaders = [...globalKeys];
     const criticalForRow = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
 
+    // ── Age calculation helper (DOB format: DD.MM.YY) ──
+    const calcAge = (dobStr) => {
+        if (!dobStr || typeof dobStr !== 'string') return null;
+        const parts = dobStr.trim().split('.');
+        if (parts.length !== 3) return null;
+        const [dd, mm, yy] = parts.map(Number);
+        if (isNaN(dd) || isNaN(mm) || isNaN(yy)) return null;
+        // YY: assume 00-39 → 2000s, 40-99 → 1900s
+        const fullYear = yy <= 39 ? 2000 + yy : 1900 + yy;
+        const dob = new Date(fullYear, mm - 1, dd);
+        if (isNaN(dob.getTime())) return null;
+        const today = new Date();
+        let age = today.getFullYear() - dob.getFullYear();
+        const mDiff = today.getMonth() - dob.getMonth();
+        if (mDiff < 0 || (mDiff === 0 && today.getDate() < dob.getDate())) age--;
+        return age >= 0 && age < 120 ? age : null;
+    };
+
     const rowData = students.map(s => {
         const row = { id: s.id, _actions: '', _img: '' };
         headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
-        // Computed age from DOB (DD.MM.YY)
+        // Computed age from DOB field
         row._age = calcAge(s['DOB']);
         // Completeness across ALL known fields
         const _mv = window.isMissingVal || ((v)=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
