@@ -1779,12 +1779,12 @@ const renderStudents = (students) => {
         {
             // ── Age column (computed from DOB: DD.MM.YY) ──
             title: '<span title="Calculated from DOB field (DD.MM.YY)">Age</span>',
-            field: '_age', frozen: false, headerSort: true, resizable: true, width: 70,
+            field: '_age', frozen: false, headerSort: true, resizable: true, width: 130,
             headerFilter: false, hozAlign: 'center',
             sorter: (a, b) => (a === null ? -1 : a) - (b === null ? -1 : b),
             formatter: (cell) => {
-                const v = cell.getValue();
-                if (v === null || v === undefined || v === '') return '<span style="color:var(--slate-lt);font-size:.78rem;">—</span>';
+                const v = cell.getRow().getData()._ageDisplay;
+                if (!v) return '<span style="color:var(--slate-lt);font-size:.78rem;">—</span>';
                 return `<span style="font-weight:600;color:var(--navy);">${v}</span>`;
             },
         },
@@ -1853,17 +1853,21 @@ const renderStudents = (students) => {
         const dob = new Date(fullYear, mm - 1, dd);
         if (isNaN(dob.getTime())) return null;
         const today = new Date();
-        let age = today.getFullYear() - dob.getFullYear();
-        const mDiff = today.getMonth() - dob.getMonth();
-        if (mDiff < 0 || (mDiff === 0 && today.getDate() < dob.getDate())) age--;
-        return age >= 0 && age < 120 ? age : null;
+        let years = today.getFullYear() - dob.getFullYear();
+        let months = today.getMonth() - dob.getMonth();
+        if (today.getDate() < dob.getDate()) months--;
+        if (months < 0) { years--; months += 12; }
+        if (years < 0 || years >= 120) return null;
+        return { years, months };
     };
 
     const rowData = students.map(s => {
         const row = { id: s.id, _actions: '', _img: '' };
         headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
         // Computed age from DOB field
-        row._age = calcAge(s['DOB']);
+        const ageObj = calcAge(s['DOB']);
+        row._age = ageObj ? ageObj.years + (ageObj.months / 12) : null; // decimal for sorting
+        row._ageDisplay = ageObj ? `${ageObj.years} yr${ageObj.years !== 1 ? 's' : ''}, ${ageObj.months} mth${ageObj.months !== 1 ? 's' : ''}` : null;
         // Completeness across ALL known fields
         const _mv = window.isMissingVal || ((v)=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
         const filled = globalHeaders.filter(h => !_mv(s[h])).length;
