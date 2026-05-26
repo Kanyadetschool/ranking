@@ -398,15 +398,27 @@
         .dist-bar-fill { height: 7px; border-radius: 4px; transition: width .4s ease; }
 
         /* BULK SELECT TOOLBAR */
-        #bulk-action-toolbar { position: fixed; top: 0; left: 0; right: 0; background: var(--gold); color: var(--navy); padding: 0 1.5rem; height: 56px; display: flex; align-items: center; justify-content: space-between; gap: 1rem; z-index: 200; transform: translateY(-100%); transition: transform .25s cubic-bezier(.34,1.3,.64,1); box-shadow: 0 4px 24px rgba(240,165,0,.45); border-bottom: 2px solid var(--gold-lt); }
-        #bulk-action-toolbar.visible { transform: translateY(0); }
-        #bulk-action-toolbar #close-bulk-mode { background: rgba(13,31,53,.15); border-color: rgba(13,31,53,.25); color: var(--navy); }
-        #bulk-action-toolbar #close-bulk-mode:hover { background: rgba(13,31,53,.25); }
-        #bulk-action-toolbar #selected-count { color: var(--navy); }
-        #bulk-action-toolbar .btn-ghost { background: rgba(13,31,53,.12); color: var(--navy); border-color: rgba(13,31,53,.2); }
-        #bulk-action-toolbar .btn-ghost:hover { background: rgba(13,31,53,.22); }
-        #bulk-action-toolbar .btn-gold { background: var(--navy); color: #fff; }
-        #bulk-action-toolbar .btn-gold:hover { background: var(--navy-mid); }
+        #bulk-action-toolbar {
+            position: fixed;
+            top: 64px;           /* sits just below the topbar */
+            left: 0; right: 0;
+            background: var(--gold);
+            color: var(--navy);
+            padding: 0 1.5rem;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            z-index: 99;         /* below topbar (z-index:100) so topbar stays on top */
+            transform: translateY(-130%);   /* hidden above — slides down into view */
+            transition: transform .28s cubic-bezier(.34,1.25,.64,1);
+            box-shadow: 0 4px 20px rgba(240,165,0,.4);
+            border-bottom: 2px solid var(--gold-lt);
+        }
+        #bulk-action-toolbar.visible {
+            transform: translateY(0);
+        }
 
         /* LOADER */
         /* loader removed */
