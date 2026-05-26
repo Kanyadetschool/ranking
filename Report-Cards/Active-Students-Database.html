@@ -733,34 +733,29 @@
     <!-- SIGN-IN SECTION — visible by default; hidden after login via body.user-logged-in CSS -->
     <div id="sign-in-section">
 
-        <!-- ── LOCK SCREEN (returning user: passkey registered) ── -->
-        <div class="signin-card" id="lock-screen-card" style="display:none;">
-            <div id="lock-avatar-ring" style="width:72px;height:72px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;border:3px solid var(--gold);position:relative;overflow:hidden;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+        <!-- ── LOCK SCREEN (returning users: passkeys registered) ── -->
+        <div class="signin-card" id="lock-screen-card" style="display:none;max-width:420px;">
+            <div style="margin-bottom:1.1rem;">
+                <div style="font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:800;color:var(--navy);margin-bottom:.2rem;">Welcome Back</div>
+                <div style="font-size:.78rem;color:var(--slate);font-weight:500;">Tap your account to unlock with biometrics</div>
             </div>
-            <h2 id="lock-screen-name" style="font-size:1.2rem;">Welcome Back</h2>
-            <p id="lock-screen-email" style="font-size:.8rem;color:var(--slate-lt);margin-bottom:1.5rem;"></p>
 
-            <!-- Big fingerprint tap button -->
-            <button id="sign-in-fingerprint-btn" style="
-                width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;
-                gap:.6rem;padding:1.4rem;border-radius:16px;border:2px solid var(--border2);
-                background:var(--surface2);cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;
-                margin-bottom:1rem;
-            " onmouseover="this.style.borderColor='var(--navy-lt)';this.style.background='var(--cream)'"
-               onmouseout="this.style.borderColor='var(--border2)';this.style.background='var(--surface2)'">
-                <div id="fp-icon-ring" style="width:64px;height:64px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;transition:transform .15s;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/>
-                    </svg>
-                </div>
-                <span id="fp-btn-label" style="font-size:.9rem;font-weight:700;color:var(--navy);">Touch to Unlock</span>
-                <span style="font-size:.72rem;color:var(--slate-lt);font-weight:500;">Fingerprint · Face ID · Screen PIN</span>
-            </button>
+            <!-- Account list — rendered by JS -->
+            <div id="account-list" style="display:flex;flex-direction:column;gap:.55rem;margin-bottom:1rem;width:100%;"></div>
 
-            <!-- Fallback: switch account -->
-            <button id="switch-account-btn" style="background:none;border:none;color:var(--slate);font-size:.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:underline;padding:.25rem;">
-                Use a different account
+            <!-- Hidden fingerprint button still needed for the tap handler -->
+            <button id="sign-in-fingerprint-btn" style="display:none;"></button>
+
+            <!-- Add another account -->
+            <button id="add-account-btn" style="
+                width:100%;display:flex;align-items:center;justify-content:center;gap:.55rem;
+                padding:.7rem 1rem;border-radius:10px;border:1.5px dashed var(--border2);
+                background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;
+                font-size:.83rem;font-weight:600;color:var(--slate);transition:all .18s;
+            " onmouseover="this.style.borderColor='var(--navy-lt)';this.style.color='var(--navy-lt)'"
+               onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--slate)'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+                Add another account
             </button>
         </div>
 
@@ -1510,87 +1505,165 @@ function _dismissSplash(cb) {
     setTimeout(() => { _splashEl.classList.add('hidden'); cb && cb(); }, delay);
 }
 
-const PASSKEY_STORE_KEY = 'ksd_passkey_uid';
-window._PASSKEY_STORE_KEY = PASSKEY_STORE_KEY; // expose for outer scripts
+// ── MULTI-ACCOUNT PASSKEY STORE ──────────────────────
+// Storage: localStorage['ksd_passkeys'] = JSON map of { email: { credId, uid } }
+//          localStorage['ksd_last_email'] = email of last signed-in user
+const PASSKEY_STORE_KEY = 'ksd_passkey_uid'; // kept for compat
+window._PASSKEY_STORE_KEY = PASSKEY_STORE_KEY;
+
+const PK = {
+    _key: 'ksd_passkeys',
+    _lastKey: 'ksd_last_email',
+    all() { try { return JSON.parse(localStorage.getItem(this._key) || '{}'); } catch { return {}; } },
+    get(email) { return this.all()[email] || null; },
+    set(email, credId, uid) {
+        const map = this.all();
+        map[email] = { credId, uid };
+        localStorage.setItem(this._key, JSON.stringify(map));
+        localStorage.setItem(this._lastKey, email);
+    },
+    remove(email) {
+        const map = this.all();
+        delete map[email];
+        localStorage.setItem(this._key, JSON.stringify(map));
+        if (localStorage.getItem(this._lastKey) === email) {
+            const remaining = Object.keys(map);
+            localStorage.setItem(this._lastKey, remaining[0] || '');
+        }
+    },
+    lastEmail() { return localStorage.getItem(this._lastKey) || ''; },
+    setLast(email) { localStorage.setItem(this._lastKey, email); },
+    count() { return Object.keys(this.all()).length; },
+    hasAny() { return this.count() > 0; },
+    // Migrate old single-account storage if present
+    migrate() {
+        const old = localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
+        if (old) {
+            const email = localStorage.getItem(PASSKEY_STORE_KEY + '_email') || '';
+            const uid   = localStorage.getItem(PASSKEY_STORE_KEY + '_uid')   || '';
+            if (email) this.set(email, old, uid);
+            localStorage.removeItem(PASSKEY_STORE_KEY + '_credId');
+            localStorage.removeItem(PASSKEY_STORE_KEY + '_email');
+            localStorage.removeItem(PASSKEY_STORE_KEY + '_uid');
+        }
+    }
+};
+PK.migrate(); // run once on load
+
+// ── RENDER ACCOUNT LIST on lock screen ───────────────
+function _renderAccountList(activeEmail) {
+    const list = document.getElementById('account-list');
+    if (!list) return;
+    const accounts = PK.all();
+    const emails = Object.keys(accounts);
+    list.innerHTML = '';
+    emails.forEach(email => {
+        const isActive = email === (activeEmail || PK.lastEmail());
+        const name = email.split('@')[0].replace(/[^a-zA-Z]/g,'')
+            .replace(/([a-z])([A-Z])/g,'$1 $2').replace(/\b\w/g,c=>c.toUpperCase()) || email;
+        const initials = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+        const btn = document.createElement('button');
+        btn.dataset.email = email;
+        btn.style.cssText = `width:100%;display:flex;align-items:center;gap:.85rem;padding:.75rem 1rem;border-radius:12px;border:2px solid ${isActive ? 'var(--navy-lt)' : 'var(--border)'};background:${isActive ? 'rgba(30,64,128,.05)' : 'var(--surface2)'};cursor:pointer;transition:all .18s;font-family:'DM Sans',sans-serif;text-align:left;`;
+        btn.innerHTML = `
+            <div style="width:42px;height:42px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:.85rem;font-weight:800;color:var(--gold);letter-spacing:.03em;">${initials}</div>
+            <div style="flex:1;min-width:0;">
+                <div style="font-size:.88rem;font-weight:700;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+                <div style="font-size:.72rem;color:var(--slate-lt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${email}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="${isActive ? 'var(--gold)' : 'var(--slate-lt)'}" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg>
+            </div>`;
+        btn.addEventListener('click', () => _unlockAccount(email));
+        // Long-press to remove account
+        let pressTimer;
+        btn.addEventListener('pointerdown', () => { pressTimer = setTimeout(async () => {
+            const ok = await openModal({ icon:'warning', title:'Remove Account?', text:`Remove ${name} from this device? Their biometric will be cleared.`, showCancelButton:true, confirmButtonText:'Remove', confirmButtonColor:'danger' });
+            if (ok.isConfirmed) { PK.remove(email); _showSignInUI(); }
+        }, 700); });
+        btn.addEventListener('pointerup', () => clearTimeout(pressTimer));
+        btn.addEventListener('pointerleave', () => clearTimeout(pressTimer));
+        list.appendChild(btn);
+    });
+}
 
 // ── SHOW CORRECT SIGN-IN CARD ──────────────────────────
-// Depending on whether a passkey is already registered, show the
-// biometric lock screen (returning user) or the Google sign-in card (new user).
-function _showSignInUI() {
-    const hasPasskey = !!localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
-    const lockCard   = document.getElementById('lock-screen-card');
-    const newCard    = document.getElementById('new-user-card');
-
-    if (hasPasskey) {
-        // Populate name/email on lock screen
-        const email = localStorage.getItem(PASSKEY_STORE_KEY + '_email') || '';
-        const name  = email.split('@')[0].replace(/[^a-zA-Z]/g,'').replace(/([a-z])([A-Z])/g,'$1 $2').replace(/\b\w/g,c=>c.toUpperCase()) || 'School Admin';
-        const nameEl  = document.getElementById('lock-screen-name');
-        const emailEl = document.getElementById('lock-screen-email');
-        if (nameEl)  nameEl.textContent  = name;
-        if (emailEl) emailEl.textContent = email;
+function _showSignInUI(activeEmail) {
+    const lockCard = document.getElementById('lock-screen-card');
+    const newCard  = document.getElementById('new-user-card');
+    if (PK.hasAny()) {
+        _renderAccountList(activeEmail);
         if (lockCard) lockCard.style.display = '';
         if (newCard)  newCard.style.display  = 'none';
     } else {
         if (lockCard) lockCard.style.display = 'none';
         if (newCard)  newCard.style.display  = '';
     }
-
     signInSection.classList.remove('hidden');
     document.body.classList.add('user-logged-out');
     document.body.classList.remove('user-logged-in');
 }
 
-// ── AUTO-TRIGGER BIOMETRIC on app open ────────────────
-// If the user has a passkey registered, fire the biometric prompt
-// automatically from the splash screen — no tap required.
+// ── UNLOCK A SPECIFIC ACCOUNT ─────────────────────────
 let _autoUnlockFired = false;
-async function _autoUnlockIfPossible() {
-    if (_autoUnlockFired) return;
-    const storedCredId = localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
-    if (!storedCredId || !window.PublicKeyCredential) return;
-
-    _autoUnlockFired = true;
+async function _unlockAccount(email) {
+    const entry = PK.get(email);
+    if (!entry) return;
+    const listEl = document.getElementById('account-list');
+    // Find the button and show scanning state
+    const btn = listEl?.querySelector(`[data-email="${email}"]`);
+    if (btn) {
+        btn.style.borderColor = 'var(--gold)';
+        btn.querySelector('svg').setAttribute('stroke','var(--gold)');
+        const nameDiv = btn.querySelectorAll('div > div')[0];
+        if (nameDiv) nameDiv.textContent = 'Scanning…';
+    }
     try {
         const challenge = new Uint8Array(32);
         crypto.getRandomValues(challenge);
-
         const assertion = await navigator.credentials.get({
             publicKey: {
-                challenge,
-                timeout: 60000,
-                userVerification: 'preferred',
-                allowCredentials: [{ type: 'public-key', id: _base64ToBuffer(storedCredId) }],
+                challenge, timeout: 60000, userVerification: 'preferred',
+                allowCredentials: [{ type: 'public-key', id: _base64ToBuffer(entry.credId) }],
                 rpId: location.hostname === 'localhost' ? 'localhost' : location.hostname,
             }
         });
-
         if (assertion) {
-            // Passkey verified — check if Firebase session is alive
+            PK.setLast(email);
+            // Check if this account's Firebase session is alive
             const existingUser = auth.currentUser;
-            if (existingUser) {
-                _softUnlock();
-                return;
-            }
-            // Wait for Firebase to restore persisted session
+            if (existingUser && existingUser.email === email) { _softUnlock(); return; }
+            // Wait for Firebase restore
+            if (btn) { const nd = btn.querySelectorAll('div > div')[0]; if(nd) nd.textContent = 'Opening…'; }
             const restored = await new Promise(resolve => {
                 let done = false;
-                const unsub = onAuthStateChanged(auth, u => {
-                    if (done) return; done = true; unsub(); resolve(u);
-                });
-                setTimeout(() => { if (!done) { done = true; unsub(); resolve(null); } }, 3000);
+                const unsub = onAuthStateChanged(auth, u => { if(done)return; done=true; unsub(); resolve(u); });
+                setTimeout(() => { if(!done){done=true;unsub();resolve(null);} }, 3000);
             });
-            if (restored) { _softUnlock(); return; }
-
-            // Session truly expired — re-auth silently with Google
+            if (restored && restored.email === email) { _softUnlock(); return; }
+            // Session expired — silent Google re-auth with login_hint
             const provider = new GoogleAuthProvider();
-            const hint = localStorage.getItem(PASSKEY_STORE_KEY + '_email') || '';
-            if (hint) provider.setCustomParameters({ login_hint: hint });
+            provider.setCustomParameters({ login_hint: email });
             await signInWithPopup(auth, provider);
-            // onAuthStateChanged will open the app
         }
-    } catch (e) {
-        // Biometric cancelled/failed — show the lock screen so user can try again
+    } catch(e) {
+        if (e.name === 'NotAllowedError') showModal('Biometric scan cancelled. Tap your account to try again.');
+        else showModal('Unlock failed: ' + e.message);
+        _renderAccountList(email); // restore button
+    }
+}
+
+// ── AUTO-TRIGGER BIOMETRIC on app open ────────────────
+// Fires the last-used account's biometric automatically on load.
+async function _autoUnlockIfPossible() {
+    if (_autoUnlockFired) return;
+    if (!PK.hasAny() || !window.PublicKeyCredential) return;
+    _autoUnlockFired = true;
+    const email = PK.lastEmail();
+    if (!email || !PK.get(email)) { _dismissSplash(() => _showSignInUI()); return; }
+    try {
+        await _unlockAccount(email);
+    } catch(e) {
         _dismissSplash(() => _showSignInUI());
     }
 }
@@ -1603,9 +1676,7 @@ onAuthStateChanged(auth, async (user) => {
         if (!user) {
             // No active session — decide what to show after splash
             _dismissSplash(() => {
-                const hasPasskey = !!localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
-                if (hasPasskey) {
-                    // Returning user: auto-fire biometric (splash already dismissed)
+                if (PK.hasAny()) {
                     _showSignInUI();
                     _autoUnlockIfPossible();
                 } else {
@@ -1615,9 +1686,8 @@ onAuthStateChanged(auth, async (user) => {
             });
             return;
         }
-        // User already signed in — but if passkey registered, require biometric first
-        const hasPasskey = !!localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
-        if (hasPasskey) {
+        // User already signed in — if any passkey registered, require biometric first
+        if (PK.hasAny()) {
             // Soft-lock: hide app, auto-fire biometric from splash
             _dismissSplash(() => {
                 _showSignInUI();
@@ -1651,18 +1721,18 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-signInGoogleBtn.addEventListener('click', async () => {
+signInGoogleBtn.addEventListener('click', () => _googleSignIn());
+document.getElementById('add-account-btn')?.addEventListener('click', () => _googleSignIn());
+
+async function _googleSignIn() {
     const provider = new GoogleAuthProvider();
     try {
         const result = await signInWithPopup(auth, provider);
         const user = result.user;
-        const alreadyHasPasskey = !!localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
+        const email = user.email || '';
+        const alreadyHasPasskey = !!PK.get(email);
 
-        // ── Force fingerprint registration for new users ──────────────────
-        // The app is now in a logged-in state from Google. Before letting them
-        // in, register a passkey so future opens require biometrics only.
         if (!alreadyHasPasskey && window.PublicKeyCredential) {
-            // Hide the app momentarily and show a forced setup modal
             dataSection.classList.add('hidden');
             document.body.classList.remove('user-logged-in');
             document.body.classList.add('user-logged-out');
@@ -1670,144 +1740,42 @@ signInGoogleBtn.addEventListener('click', async () => {
             await openModal({
                 icon: 'info',
                 title: '🔒 Set Up Biometric Login',
-                text: `Hi ${user.displayName || user.email?.split('@')[0] || 'there'}! For security, you must set up fingerprint or screen PIN to open the app next time. Your device will prompt you now.`,
+                text: `Hi ${user.displayName || email.split('@')[0] || 'there'}! Set up fingerprint or screen PIN so you can open the app instantly next time — no password needed.`,
                 showCancelButton: false,
                 confirmButtonText: 'Set Up Now',
                 confirmButtonColor: 'primary',
             });
 
-            // Register passkey
             try {
-                const fpBtn = document.getElementById('sign-in-fingerprint-btn');
-                if (fpBtn) fpBtn.innerHTML = `<div id="fp-icon-ring" style="width:64px;height:64px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4"/></svg></div><span id="fp-btn-label" style="font-size:.9rem;font-weight:700;color:var(--navy);">Scanning…</span><span style="font-size:.72rem;color:var(--slate-lt);font-weight:500;">Fingerprint · Face ID · Screen PIN</span>`;
-
                 const challenge = new Uint8Array(32);
                 crypto.getRandomValues(challenge);
                 const userIdBytes = new TextEncoder().encode(user.uid.slice(0, 64));
-
                 const credential = await navigator.credentials.create({
                     publicKey: {
                         challenge,
                         rp: { name: 'Kanyadet Pri & Junior School Admin', id: location.hostname === 'localhost' ? 'localhost' : location.hostname },
-                        user: { id: userIdBytes, name: user.email || user.uid, displayName: user.displayName || user.email || 'School Admin' },
+                        user: { id: userIdBytes, name: email || user.uid, displayName: user.displayName || email || 'School Admin' },
                         pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
                         authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'preferred', residentKey: 'preferred' },
-                        timeout: 60000,
-                        attestation: 'none',
+                        timeout: 60000, attestation: 'none',
                     }
                 });
-
                 if (credential) {
-                    localStorage.setItem(PASSKEY_STORE_KEY + '_credId', _bufferToBase64(credential.rawId));
-                    localStorage.setItem(PASSKEY_STORE_KEY + '_uid',    user.uid);
-                    localStorage.setItem(PASSKEY_STORE_KEY + '_email',  user.email || '');
-                    showToast('✓ Biometric login set up! You\'ll use it every time you open the app.', 'success', 5000);
+                    PK.set(email, _bufferToBase64(credential.rawId), user.uid);
+                    showToast('✓ Biometric login set up! Just tap your account next time.', 'success', 5000);
                 }
-            } catch (fpErr) {
-                // Biometric setup failed/cancelled — let them in anyway but warn
-                showToast('Biometric setup skipped. You can set it up later via the fingerprint button.', 'info', 5000);
+            } catch(fpErr) {
+                showToast('Biometric setup skipped.', 'info', 3000);
             }
-
-            // Now open the app (onAuthStateChanged already ran but was soft-blocked)
-            document.body.classList.add('user-logged-in');
-            document.body.classList.remove('user-logged-out');
-            signInSection.classList.add('hidden');
-            dataSection.classList.remove('hidden');
-            signOutBtn.classList.remove('hidden');
-            if (localStorage.getItem(PASSKEY_STORE_KEY + '_credId')) {
-                signOutBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Lock`;
-            }
+            _appAlreadyOpen = false;
+            _openApp(user);
         }
-        // If passkey already existed, onAuthStateChanged handles opening the app normally.
-    } catch(e) { showModal('Sign-in failed: ' + e.message); }
-});
+        // If passkey existed, onAuthStateChanged opens normally
+    } catch(e) { if (e.code !== 'auth/popup-closed-by-user') showModal('Sign-in failed: ' + e.message); }
+}
 
-// ── FINGERPRINT BUTTON (lock screen tap-to-unlock) ────
-// Fires when the user manually taps the big fingerprint button on the lock screen.
-// This is the same as _autoUnlockIfPossible but user-initiated.
-signInFingerprintBtn.addEventListener('click', async () => {
-    if (!window.PublicKeyCredential) {
-        showModal('Biometric unlock is not supported on this browser. Please use Google Sign-In.');
-        return;
-    }
-    const storedCredId = localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
-    if (!storedCredId) return; // shouldn't happen — button only shows when passkey exists
-
-    const labelEl = document.getElementById('fp-btn-label');
-    const ringEl  = document.getElementById('fp-icon-ring');
-    if (labelEl) labelEl.textContent = 'Scanning…';
-    if (ringEl)  ringEl.style.background = 'var(--navy-lt)';
-    signInFingerprintBtn.disabled = true;
-
-    try {
-        const challenge = new Uint8Array(32);
-        crypto.getRandomValues(challenge);
-
-        const assertion = await navigator.credentials.get({
-            publicKey: {
-                challenge,
-                timeout: 60000,
-                userVerification: 'preferred',
-                allowCredentials: [{ type: 'public-key', id: _base64ToBuffer(storedCredId) }],
-                rpId: location.hostname === 'localhost' ? 'localhost' : location.hostname,
-            }
-        });
-
-        if (assertion) {
-            const existingUser = auth.currentUser;
-            if (existingUser) { _softUnlock(); return; }
-
-            // Wait for Firebase session restore
-            if (labelEl) labelEl.textContent = 'Opening…';
-            const restored = await new Promise(resolve => {
-                let done = false;
-                const unsub = onAuthStateChanged(auth, u => { if (done) return; done = true; unsub(); resolve(u); });
-                setTimeout(() => { if (!done) { done = true; unsub(); resolve(null); } }, 3000);
-            });
-            if (restored) { _softUnlock(); return; }
-
-            // Session expired — re-auth with Google silently
-            const provider = new GoogleAuthProvider();
-            const hint = localStorage.getItem(PASSKEY_STORE_KEY + '_email') || '';
-            if (hint) provider.setCustomParameters({ login_hint: hint });
-            await signInWithPopup(auth, provider);
-        }
-    } catch (e) {
-        if (e.name === 'NotAllowedError') {
-            showModal('Biometric scan cancelled. Tap the button to try again.');
-        } else {
-            showModal('Unlock failed: ' + e.message);
-        }
-        if (labelEl) labelEl.textContent = 'Touch to Unlock';
-        if (ringEl)  ringEl.style.background = 'var(--navy)';
-    } finally {
-        signInFingerprintBtn.disabled = false;
-    }
-});
-
-// ── SWITCH ACCOUNT ────────────────────────────────────
-document.getElementById('switch-account-btn')?.addEventListener('click', async () => {
-    const confirmed = await openModal({
-        icon: 'warning',
-        title: 'Switch Account?',
-        text: 'This will remove the biometric registration from this device and sign you out.',
-        showCancelButton: true,
-        confirmButtonText: 'Yes, Switch Account',
-        confirmButtonColor: 'danger',
-    });
-    if (!confirmed.isConfirmed) return;
-    // Clear passkey so the new-user Google card is shown
-    localStorage.removeItem(PASSKEY_STORE_KEY + '_credId');
-    localStorage.removeItem(PASSKEY_STORE_KEY + '_uid');
-    localStorage.removeItem(PASSKEY_STORE_KEY + '_email');
-    // Reset all session flags so the next login goes through cleanly
-    const _flags = window._getAppFlags?.();
-    if (_flags) { _flags.appAlreadyOpen = false; _flags.firstAuthCheck = true; _flags.autoUnlockFired = false; }
-    // Destroy existing table so it rebuilds fresh for the new account
-    if (window._tabulatorTable) { try { window._tabulatorTable.destroy(); } catch(e){} window._tabulatorTable = null; }
-    await signOut(auth);
-    // onAuthStateChanged will fire → firstAuthCheck=true → _showSignInUI (Google card)
-});
+// ── FINGERPRINT BUTTON (hidden — account buttons in list handle unlock) ──
+// Kept in DOM for legacy references; actual unlock is via _unlockAccount().
 
 function _bufferToBase64(buffer) {
     return btoa(String.fromCharCode(...new Uint8Array(buffer)));
@@ -1819,15 +1787,10 @@ function _base64ToBuffer(base64) {
     return bytes.buffer;
 }
 signOutBtn.addEventListener('click', async () => {
-    const hasPasskey = !!localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
-    if (hasPasskey) {
-        // ── SOFT LOCK: keep Firebase session alive, just hide the UI ──
-        // This lets fingerprint unlock instantly without any popup.
-        _softLock();
+    if (PK.hasAny()) {
+        _softLock(); // biometric unlock will restore; no need to destroy session
     } else {
-        // No passkey registered — do a real sign-out
         await signOut(auth);
-        // onAuthStateChanged fires and resets the UI
     }
 });
 
@@ -1880,7 +1843,7 @@ function _openApp(user) {
     document.getElementById('completeness-btn').classList.remove('hidden');
     window._currentUserEmail = user.email || user.displayName || 'unknown';
 
-    if (localStorage.getItem(PASSKEY_STORE_KEY + '_credId')) {
+    if (PK.hasAny()) {
         signOutBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Lock`;
     }
 
@@ -3687,10 +3650,8 @@ $('mobile-sign-out-btn')?.addEventListener('click', () => {
 
 $('mobile-full-signout-btn')?.addEventListener('click', async () => {
     mobileDrawer?.classList.remove('open');
-    const _psk = window._PASSKEY_STORE_KEY || 'ksd_passkey_uid';
-    localStorage.removeItem(_psk + '_credId');
-    localStorage.removeItem(_psk + '_uid');
-    localStorage.removeItem(_psk + '_email');
+    // Mobile full sign-out: clear all passkeys from this device
+    try { localStorage.removeItem('ksd_passkeys'); localStorage.removeItem('ksd_last_email'); } catch(e){}
     window._appAlreadyOpen = false;
     if (window._tabulatorTable) { try { window._tabulatorTable.destroy(); } catch(e){} window._tabulatorTable = null; }
     if (window._fbSDK?.signOut) await window._fbSDK.signOut();
