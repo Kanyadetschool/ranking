@@ -647,6 +647,10 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
             Sign Out
         </button>
+        <button class="nav-drawer-item" id="mobile-full-signout-btn" style="color:rgba(255,80,80,.7);font-size:.78rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
+            Sign Out Completely (switch account)
+        </button>
     </div>
 </div>
 
@@ -1306,7 +1310,7 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase, ref, set, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -1415,6 +1419,8 @@ toggleUploadBtn.addEventListener('click', () => {
 const app = initializeApp(firebaseConfig);
 db = getDatabase(app);
 auth = getAuth(app);
+// Ensure session survives page reloads (default, but set explicitly for passkey flow)
+setPersistence(auth, browserLocalPersistence).catch(() => {});
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -1447,6 +1453,11 @@ onAuthStateChanged(auth, async (user) => {
         document.getElementById('promote-all-btn').classList.remove('hidden');
         document.getElementById('completeness-btn').classList.remove('hidden');
         window._currentUserEmail = user.email || user.displayName || 'unknown';
+
+        // If passkey registered, rename button to "Lock" so user knows fingerprint will unlock
+        if (localStorage.getItem(PASSKEY_STORE_KEY + '_credId')) {
+            signOutBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Lock`;
+        }
 
         
         fetchStudents();   // loader hidden inside onValue callback after first render
@@ -1541,32 +1552,79 @@ signInFingerprintBtn.addEventListener('click', async () => {
             });
 
             if (assertion) {
-                // Passkey auth succeeded — sign in with Google (stored credential)
-                // In production you'd verify the assertion server-side and mint a Firebase custom token.
-                // Here we trigger Google sign-in as the account link step.
-                showModal('Passkey verified! Completing sign-in…');
-                await new Promise(r => setTimeout(r, 800));
+                // ── Passkey verified ──────────────────────────────────────
+                // Case 1: soft-locked (user clicked Lock) — session still alive
+                const existingUser = auth.currentUser;
+                if (existingUser) {
+                    _softUnlock();
+                    btn.disabled = false;
+                    btn.innerHTML = origHTML;
+                    return;
+                }
+
+                // Case 2: page was reloaded — Firebase restores session asynchronously.
+                // Wait briefly for onAuthStateChanged to fire before giving up.
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="animation:um-spin .7s linear infinite"><circle cx="12" cy="12" r="10"/></svg> Opening…`;
+                const restored = await new Promise(resolve => {
+                    let done = false;
+                    const unsub = onAuthStateChanged(auth, user => {
+                        if (done) return;
+                        done = true;
+                        unsub();
+                        resolve(user);
+                    });
+                    // Timeout after 3s — session truly gone
+                    setTimeout(() => { if (!done) { done = true; unsub(); resolve(null); } }, 3000);
+                });
+
+                if (restored) {
+                    _softUnlock();
+                    btn.disabled = false;
+                    btn.innerHTML = origHTML;
+                    return;
+                }
+
+                // Case 3: session truly expired (browser cleared storage etc.)
+                // Only NOW fall back to Google — and pre-fill email so it's one tap.
+                const confirmed = await openModal({
+                    icon: 'info',
+                    title: 'Fingerprint Verified ✓',
+                    text: `Your session has fully expired. Tap below to sign back in as ${localStorage.getItem(PASSKEY_STORE_KEY + '_email') || 'your account'} — this only happens rarely.`,
+                    showCancelButton: true,
+                    confirmButtonText: 'Sign in with Google',
+                    confirmButtonColor: 'primary',
+                });
+                if (!confirmed.isConfirmed) { btn.disabled = false; btn.innerHTML = origHTML; return; }
                 const provider = new GoogleAuthProvider();
+                const hint = localStorage.getItem(PASSKEY_STORE_KEY + '_email') || '';
+                if (hint) provider.setCustomParameters({ login_hint: hint });
                 await signInWithPopup(auth, provider);
             }
+
         } else {
             // ── REGISTER a new passkey ──────────────────────────────────
-            // We need a user context — prompt with a mini sign-in first so we can store the passkey
-            const confirmed = await openModal({
-                icon: 'info',
-                title: 'Set Up Passkey',
-                text: 'First, sign in with Google to link your account. Then your fingerprint/Face ID will be saved for future logins.',
-                showCancelButton: true,
-                confirmButtonText: 'Continue with Google',
-                confirmButtonColor: 'primary',
-            });
-            if (!confirmed.isConfirmed) { btn.disabled = false; btn.innerHTML = origHTML; return; }
+            // First sign in with Google (or use existing session) then register the passkey.
+            let user = auth.currentUser;
 
-            const provider = new GoogleAuthProvider();
-            const result = await signInWithPopup(auth, provider);
-            const user = result.user;
+            if (!user) {
+                const confirmed = await openModal({
+                    icon: 'info',
+                    title: 'Set Up Fingerprint Login',
+                    text: 'Sign in with Google once to link your account. After that, just use your fingerprint every time.',
+                    showCancelButton: true,
+                    confirmButtonText: 'Continue with Google',
+                    confirmButtonColor: 'primary',
+                });
+                if (!confirmed.isConfirmed) { btn.disabled = false; btn.innerHTML = origHTML; return; }
 
-            // Now register the passkey
+                const provider = new GoogleAuthProvider();
+                const result = await signInWithPopup(auth, provider);
+                user = result.user;
+            }
+
+            // Register the passkey with the device biometrics
+            btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="animation:um-spin .7s linear infinite"><circle cx="12" cy="12" r="10"/></svg> Scan finger…`;
+
             const challenge = new Uint8Array(32);
             crypto.getRandomValues(challenge);
             const userIdBytes = new TextEncoder().encode(user.uid.slice(0, 64));
@@ -1600,15 +1658,17 @@ signInFingerprintBtn.addEventListener('click', async () => {
             if (credential) {
                 const credId = _bufferToBase64(credential.rawId);
                 localStorage.setItem(PASSKEY_STORE_KEY + '_credId', credId);
-                localStorage.setItem(PASSKEY_STORE_KEY + '_uid', user.uid);
-                showToast('Passkey registered! Next time just tap the fingerprint button.', 'success', 4000);
+                localStorage.setItem(PASSKEY_STORE_KEY + '_uid',    user.uid);
+                localStorage.setItem(PASSKEY_STORE_KEY + '_email',  user.email || '');
+                showToast('Fingerprint registered! From now on just tap the fingerprint button to sign in instantly.', 'success', 5000);
+                // User is already signed in from the Google step above — app opens normally.
             }
         }
     } catch (e) {
         if (e.name === 'NotAllowedError') {
-            showModal('Passkey cancelled or timed out. Try again or use Google Sign-In.');
+            showModal('Fingerprint scan cancelled or timed out. Try again or use Google Sign-In.');
         } else if (e.name === 'InvalidStateError') {
-            showModal('A passkey already exists for this device. Try signing in instead of registering.');
+            showModal('A passkey is already registered on this device. Tap the fingerprint button to sign in.');
         } else {
             showModal('Passkey error: ' + e.message);
         }
@@ -1628,9 +1688,46 @@ function _base64ToBuffer(base64) {
     return bytes.buffer;
 }
 signOutBtn.addEventListener('click', async () => {
-    await signOut(auth);
-    // onAuthStateChanged fires automatically and resets body classes / UI
+    const hasPasskey = !!localStorage.getItem(PASSKEY_STORE_KEY + '_credId');
+    if (hasPasskey) {
+        // ── SOFT LOCK: keep Firebase session alive, just hide the UI ──
+        // This lets fingerprint unlock instantly without any popup.
+        _softLock();
+    } else {
+        // No passkey registered — do a real sign-out
+        await signOut(auth);
+        // onAuthStateChanged fires and resets the UI
+    }
 });
+
+// ── SOFT LOCK / UNLOCK ────────────────────────────────
+// Hides the app behind the sign-in screen without destroying the Firebase session.
+// Fingerprint scan calls _softUnlock() to instantly reveal the app again.
+let _isLocked = false;
+
+function _softLock() {
+    _isLocked = true;
+    document.body.classList.add('user-logged-out');
+    document.body.classList.remove('user-logged-in');
+    signInSection.classList.remove('hidden');
+    dataSection.classList.add('hidden');
+    signOutBtn.classList.add('hidden');
+    // Show a "locked" hint on the fingerprint button
+    const fingerprintBtn = document.getElementById('sign-in-fingerprint-btn');
+    if (fingerprintBtn) {
+        fingerprintBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 11c0-1.104-.896-2-2-2s-2 .896-2 2v2H8v4h8v-4h-2v-2zm-2-7a7 7 0 00-7 7v2H2v8h20v-8h-1v-2a7 7 0 00-7-7z"/></svg> Unlock with Fingerprint`;
+    }
+}
+
+function _softUnlock() {
+    _isLocked = false;
+    document.body.classList.add('user-logged-in');
+    document.body.classList.remove('user-logged-out');
+    signInSection.classList.add('hidden');
+    dataSection.classList.remove('hidden');
+    signOutBtn.classList.remove('hidden');
+    showToast('Fingerprint verified — welcome back!', 'success', 3000);
+}
 
 // ── FETCH STUDENTS ────────────────────────────────────
 const fetchStudents = () => {
@@ -1647,7 +1744,7 @@ const fetchStudents = () => {
         window._tabulatorTable = tabulatorTable;
         window._selectedStudents = selectedStudents;
         window._fbDb           = db;
-        window._fbSDK          = { ref, set, get, update, remove };
+        window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
         updateGradeFilter();
         renderStudents(studentsData);
         
@@ -3388,6 +3485,12 @@ $('mobile-dark-btn')?.addEventListener('click', () => {
 $('mobile-sign-out-btn')?.addEventListener('click', () => {
     mobileDrawer?.classList.remove('open');
     $('sign-out-btn')?.click();
+});
+
+$('mobile-full-signout-btn')?.addEventListener('click', async () => {
+    mobileDrawer?.classList.remove('open');
+    // Full sign-out — clears Firebase session and passkey link
+    if (window._fbSDK?.signOut) await window._fbSDK.signOut();
 });
 
 // ── 15. DARK MODE ─────────────────────────────────────
