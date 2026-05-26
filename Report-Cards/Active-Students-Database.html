@@ -1626,68 +1626,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     if (user) {
-        userId = user.uid;
-        userIdDisplay.innerHTML = '<span class="nav-name-text"></span>'; // reset
-
-        // Build display name from email the same way Results does
-        const email = user.email || '';
-        let username = email.split('@')[0].replace(/[^a-zA-Z]/g, '');
-        let spacedName = username.replace(/([a-z])([A-Z])/g, '$1 $2');
-        spacedName = spacedName.replace(/\b\w/g, c => c.toUpperCase());
-        const nameSpan = userIdDisplay.querySelector('.nav-name-text');
-        if (nameSpan) nameSpan.textContent = spacedName || user.displayName || email;
-
-        if (user.photoURL) {
-            const img = document.createElement('img');
-            img.src = user.photoURL;
-            img.alt = 'User profile picture';
-            img.style.cssText = 'width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;flex-shrink:0;';
-            userIdDisplay.prepend(img);
-        }
-
-        // ── body-class approach (exact Results pattern) ──
-        document.body.classList.add('user-logged-in');
-        document.body.classList.remove('user-logged-out');
-        signInSection.classList.add('hidden');           // belt-and-suspenders
-        signOutBtn.classList.remove('hidden');
-        dataSection.classList.remove('hidden');
-        printAllBtn.classList.remove('hidden');
-        document.getElementById('promote-all-btn').classList.remove('hidden');
-        document.getElementById('completeness-btn').classList.remove('hidden');
-        window._currentUserEmail = user.email || user.displayName || 'unknown';
-
-        // If passkey registered, rename button to "Lock" so user knows fingerprint will unlock
-        if (localStorage.getItem(PASSKEY_STORE_KEY + '_credId')) {
-            signOutBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Lock`;
-        }
-
-        
-        fetchStudents();   // loader hidden inside onValue callback after first render
-
-        // ── ONE-TIME MIGRATION: move auditLog → AuditLog ──────────────────
-        // Runs silently; safe to re-run (skips if already migrated)
-        (async () => {
-            try {
-                const oldSnap = await get(ref(db, `artifacts/${sanitizedAppId}/auditLog`));
-                if (!oldSnap.exists()) return; // nothing to migrate
-                const newSnap = await get(ref(db, `artifacts/${sanitizedAppId}/AuditLog`));
-                const writes = [];
-                oldSnap.forEach(studentSnap => {
-                    const sid = studentSnap.key;
-                    studentSnap.forEach(entrySnap => {
-                        const alreadyExists = newSnap.exists() && newSnap.child(sid).child(entrySnap.key).exists();
-                        if (!alreadyExists) {
-                            writes.push(set(ref(db, `artifacts/${sanitizedAppId}/AuditLog/${sid}/${entrySnap.key}`), entrySnap.val()));
-                        }
-                    });
-                });
-                await Promise.all(writes);
-                await remove(ref(db, `artifacts/${sanitizedAppId}/auditLog`));
-                console.log(`[KSD] Migrated ${writes.length} audit entries: auditLog → AuditLog`);
-            } catch(e) {
-                console.warn('[KSD] AuditLog migration skipped:', e.message);
-            }
-        })();
+        _openApp(user);
 
     } else {
         userId = null;
@@ -1897,14 +1836,85 @@ function _softLock() {
     _autoUnlockIfPossible();
 }
 
-function _softUnlock() {
-    _isLocked = false;
+// ── _openApp: sets up UI + fetches data for an authenticated user ─────
+// Called from onAuthStateChanged (new login) AND from _softUnlock (biometric).
+// This is the single source of truth for "user is authenticated, open the app".
+let _appAlreadyOpen = false;
+function _openApp(user) {
+    userId = user.uid;
+
+    // Rebuild display name
+    userIdDisplay.innerHTML = '<span class="nav-name-text"></span>';
+    const email = user.email || '';
+    let username = email.split('@')[0].replace(/[^a-zA-Z]/g, '');
+    let spacedName = username.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, c => c.toUpperCase());
+    const nameSpan = userIdDisplay.querySelector('.nav-name-text');
+    if (nameSpan) nameSpan.textContent = spacedName || user.displayName || email;
+
+    if (user.photoURL) {
+        const img = document.createElement('img');
+        img.src = user.photoURL;
+        img.alt = 'User';
+        img.style.cssText = 'width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;flex-shrink:0;';
+        userIdDisplay.prepend(img);
+    }
+
+    // Show the app
     document.body.classList.add('user-logged-in');
     document.body.classList.remove('user-logged-out');
     signInSection.classList.add('hidden');
-    dataSection.classList.remove('hidden');
     signOutBtn.classList.remove('hidden');
-    showToast('Fingerprint verified — welcome back!', 'success', 3000);
+    dataSection.classList.remove('hidden');
+    printAllBtn.classList.remove('hidden');
+    document.getElementById('promote-all-btn').classList.remove('hidden');
+    document.getElementById('completeness-btn').classList.remove('hidden');
+    window._currentUserEmail = user.email || user.displayName || 'unknown';
+
+    if (localStorage.getItem(PASSKEY_STORE_KEY + '_credId')) {
+        signOutBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg> Lock`;
+    }
+
+    // Fetch students — guard against double-fetch when called multiple times
+    if (!_appAlreadyOpen) {
+        _appAlreadyOpen = true;
+        fetchStudents();
+
+        // ONE-TIME MIGRATION: move auditLog → AuditLog
+        (async () => {
+            try {
+                const oldSnap = await get(ref(db, `artifacts/${sanitizedAppId}/auditLog`));
+                if (!oldSnap.exists()) return;
+                const newSnap = await get(ref(db, `artifacts/${sanitizedAppId}/AuditLog`));
+                const writes = [];
+                oldSnap.forEach(studentSnap => {
+                    const sid = studentSnap.key;
+                    studentSnap.forEach(entrySnap => {
+                        const alreadyExists = newSnap.exists() && newSnap.child(sid).child(entrySnap.key).exists();
+                        if (!alreadyExists) writes.push(set(ref(db, `artifacts/${sanitizedAppId}/AuditLog/${sid}/${entrySnap.key}`), entrySnap.val()));
+                    });
+                });
+                await Promise.all(writes);
+                await remove(ref(db, `artifacts/${sanitizedAppId}/auditLog`));
+                console.log(`[KSD] Migrated ${writes.length} audit entries: auditLog → AuditLog`);
+            } catch(e) {
+                console.warn('[KSD] AuditLog migration skipped:', e.message);
+            }
+        })();
+    } else {
+        // Already fetched — just re-render with existing data (after lock/unlock)
+        if (window._studentsData) {
+            window._tabulatorTable?.replaceData(window._studentsData);
+        }
+    }
+}
+
+function _softUnlock() {
+    _isLocked = false;
+    const user = auth.currentUser;
+    if (user) {
+        _openApp(user);   // ← THIS was missing: render the table!
+        showToast('Fingerprint verified — welcome back!', 'success', 3000);
+    }
 }
 
 // ── FETCH STUDENTS ────────────────────────────────────
