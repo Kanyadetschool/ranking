@@ -7207,7 +7207,7 @@ async function dlStudentPDF(id){
   doc.setFont(undefined,'normal');doc.setFontSize(8.5);
   const info=[
     [`Name: ${rec['Official Student Name']||'N/A'}`,`Assessment No: ${rec['Assessment No']||'N/A'}`],
-    [`UPI: ${rec['UPI']||'N/A'}`,`Grade: ${rec['Grade']||'N/A'}`],
+    [`UPI: ${rec['UPI']||'N/A'}`,`${rec['Grade']||'N/A'}`],
     [`Gender: ${rec['Gender']||'N/A'}`,`Position: ${rec['Position']||'N/A'}`],
   ];
   let iy=58;info.forEach(([l,r])=>{doc.text(l,20,iy);doc.text(r,W/2,iy);iy+=7;});
@@ -9563,7 +9563,7 @@ async function generateStudentReportCard(student, includeWatermark = true) {
     doc.setFont(undefined, 'normal'); doc.setFontSize(9);
     const studentInfo = [
         [`Name: ${student['Official Student Name'] || 'N/A'}`, `Assessment No: ${student['Assessment No'] || 'N/A'}`],
-        [`UPI: ${student['UPI'] || 'N/A'}`, `Grade: ${student['Grade'] || 'N/A'}`],
+        [`UPI: ${student['UPI'] || 'N/A'}`, `${student['Grade'] || 'N/A'}`],
         [`Gender: ${student['Gender'] || 'N/A'}`, `Class: ${student['Class'] || 'N/A'}`]
     ];
     let infoY = yPos + 16;
@@ -10190,7 +10190,7 @@ function _drawCompactReportPage(doc, student, stats, studentImageData, logoRes, 
     doc.setFont(undefined, 'normal'); doc.setFontSize(9);
     const studentInfo = [
         [`Name: ${student['Official Student Name'] || 'N/A'}`, `Assessment No: ${student['Assessment No'] || 'N/A'}`],
-        [`UPI: ${student['UPI'] || 'N/A'}`, `Grade: ${student['Grade'] || 'N/A'}`],
+        [`UPI: ${student['UPI'] || 'N/A'}`, ` ${student['Grade'] || 'N/A'}`],
         [`Gender: ${student['Gender'] || 'N/A'}`, `Class: ${student['Class'] || 'N/A'}`]
     ];
     let infoY = yPos + 16;
