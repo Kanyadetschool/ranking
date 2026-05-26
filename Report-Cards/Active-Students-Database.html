@@ -850,9 +850,9 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/></svg>
                     Columns <span class="tab-kbd">C</span>
                 </button>
-                <button class="tab-toolbar-btn" id="tab-freeze-cols" title="Freeze Name column">
+                <button class="tab-toolbar-btn" id="tab-freeze-cols" title="Freeze any column (click to pick)">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M5.5 8.5l6.5 3.5-6.5 3.5M18.5 8.5L12 12l6.5 3.5"/></svg>
-                    Freeze Name <span class="tab-kbd">Z</span>
+                    Freeze Col <span class="tab-kbd">Z</span>
                 </button>
                 <button class="tab-toolbar-btn" id="tab-fit-cols" title="Auto-fit columns">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
@@ -1332,6 +1332,7 @@ let missingFilterActive = false;
 let colFiltersVisible = false;
 let groupingEnabled = false;
 let nameColFrozen = false;
+let frozenColumn = null; // field name of the currently frozen column (null = none)
 let selectedStudents = new Set();
 let bulkSelectMode = false;
 
@@ -1762,7 +1763,7 @@ const renderStudents = (students) => {
         {
             // ── Actions + inline checkbox column ──
             title: '<span style="display:inline-flex;align-items:center;gap:.5rem;"><input type="checkbox" id="tab-select-all-chk" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" title="Select / deselect all visible rows"> Actions</span>',
-            field: '_actions', frozen: true, headerSort: false, resizable: false, width: 200,
+            field: '_actions', frozen: frozenColumn === '_actions', headerSort: false, resizable: true, width: 200,
             headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
@@ -1789,7 +1790,7 @@ const renderStudents = (students) => {
             },
         },
         {
-            title: 'Photo', field: '_img', headerSort: false, resizable: false, width: 60, headerFilter: false,
+            title: 'Photo', field: '_img', frozen: frozenColumn === '_img', headerSort: false, resizable: true, width: 60, headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
                 const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
@@ -1799,7 +1800,7 @@ const renderStudents = (students) => {
         {
             // ── Completeness % column ──
             title: '<span title="Data completeness per student">% Done</span>',
-            field: '_compl', frozen: false, headerSort: true, resizable: false, width: 110,
+            field: '_compl', frozen: frozenColumn === '_compl', headerSort: true, resizable: true, width: 110,
             headerFilter: false, hozAlign: 'left',
             sorter: (a, b) => (parseFloat(a) || 0) - (parseFloat(b) || 0),
             formatter: (cell) => {
@@ -1825,7 +1826,7 @@ const renderStudents = (students) => {
         {
             // ── Age column (computed from DOB: DD.MM.YY) ──
             title: '<span title="Calculated from DOB field (DD.MM.YY)">Age</span>',
-            field: '_age', frozen: false, headerSort: true, resizable: true, width: 130,
+            field: '_age', frozen: frozenColumn === '_age', headerSort: true, resizable: true, width: 130,
             headerFilter: false, hozAlign: 'center',
             sorter: (a, b) => (a === null ? -1 : a) - (b === null ? -1 : b),
             formatter: (cell) => {
@@ -1837,7 +1838,7 @@ const renderStudents = (students) => {
         ...headers.map(h => ({
             title: h,
             field: h,
-            frozen: nameColFrozen && h === 'Official Student Name',
+            frozen: frozenColumn === h,
             headerFilter: colFiltersVisible ? 'input' : false,
             headerFilterPlaceholder: `Filter ${h}…`,
             headerSort: true,
@@ -2049,9 +2050,66 @@ document.getElementById('tab-toggle-cols').addEventListener('click', function ()
     }, 100);
 });
 document.getElementById('tab-freeze-cols').addEventListener('click', function () {
-    nameColFrozen = !nameColFrozen;
-    this.classList.toggle('active', nameColFrozen);
-    if (tabulatorTable) renderStudents(currentFilteredStudents);
+    if (!tabulatorTable) return;
+    const existing = document.getElementById('tab-freeze-menu');
+    if (existing) { existing.remove(); return; }
+
+    const menu = document.createElement('div');
+    menu.id = 'tab-freeze-menu';
+    const rect = this.getBoundingClientRect();
+    menu.style.cssText = `position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.18);padding:.4rem 0;min-width:220px;max-height:400px;overflow-y:auto;top:${rect.bottom + 6}px;left:${rect.left}px;`;
+
+    // "Unfreeze" option at top
+    const unfreezeItem = document.createElement('div');
+    unfreezeItem.style.cssText = `display:flex;align-items:center;gap:.6rem;padding:.42rem 1rem;cursor:pointer;font-size:.82rem;font-family:'DM Sans',sans-serif;color:${frozenColumn === null ? 'var(--navy)' : 'var(--slate)'};font-weight:${frozenColumn === null ? '700' : '400'};border-bottom:1px solid var(--border);margin-bottom:.3rem;`;
+    unfreezeItem.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg> No freeze${frozenColumn === null ? ' ✓' : ''}`;
+    unfreezeItem.addEventListener('click', () => {
+        frozenColumn = null;
+        nameColFrozen = false;
+        document.getElementById('tab-freeze-cols').classList.remove('active');
+        renderStudents(currentFilteredStudents);
+        menu.remove();
+    });
+    menu.appendChild(unfreezeItem);
+
+    // All columns
+    const allCols = [
+        { field: '_actions', title: 'Actions' },
+        { field: '_img',     title: 'Photo' },
+        { field: '_compl',   title: '% Done' },
+        { field: '_age',     title: 'Age' },
+        ...tabulatorTable.getColumns()
+            .filter(c => c.getField() && !['_actions','_img','_compl','_age'].includes(c.getField()))
+            .map(c => ({ field: c.getField(), title: c.getDefinition().title || c.getField() }))
+    ];
+
+    allCols.forEach(({ field, title }) => {
+        const isFrozen = frozenColumn === field;
+        const item = document.createElement('div');
+        item.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:.38rem 1rem;cursor:pointer;font-size:.82rem;font-family:'DM Sans',sans-serif;color:var(--text2);background:${isFrozen ? 'var(--surface2)' : 'transparent'};transition:background .12s;`;
+        // Strip HTML tags from title for display
+        const cleanTitle = title.replace(/<[^>]*>/g, '');
+        item.innerHTML = `<span style="font-weight:${isFrozen ? '700' : '400'};color:${isFrozen ? 'var(--navy)' : 'var(--text2)'}">${cleanTitle}</span>${isFrozen ? '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18M5.5 8.5l6.5 3.5-6.5 3.5M18.5 8.5L12 12l6.5 3.5"/></svg>' : ''}`;
+        item.addEventListener('mouseenter', () => { if (!isFrozen) item.style.background = 'var(--surface2)'; });
+        item.addEventListener('mouseleave', () => { if (!isFrozen) item.style.background = 'transparent'; });
+        item.addEventListener('click', () => {
+            frozenColumn = isFrozen ? null : field; // toggle off if already frozen
+            nameColFrozen = frozenColumn === 'Official Student Name';
+            document.getElementById('tab-freeze-cols').classList.toggle('active', frozenColumn !== null);
+            renderStudents(currentFilteredStudents);
+            menu.remove();
+        });
+        menu.appendChild(item);
+    });
+
+    document.body.appendChild(menu);
+    setTimeout(() => {
+        document.addEventListener('click', function h(e) {
+            if (!menu.contains(e.target) && e.target !== document.getElementById('tab-freeze-cols')) {
+                menu.remove(); document.removeEventListener('click', h);
+            }
+        });
+    }, 100);
 });
 document.getElementById('tab-fit-cols').addEventListener('click', () => {
     if (tabulatorTable) tabulatorTable.redraw(true);
