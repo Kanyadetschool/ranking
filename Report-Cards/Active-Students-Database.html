@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Active Students — Kanyadet School</title>
+    <title>Active Students — Kanyadet Pri & Junior School</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
@@ -584,7 +584,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="var(--navy)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/></svg>
         </div>
     </div>
-    <div class="splash-title">Kanyadet School</div>
+    <div class="splash-title">Kanyadet Pri & Junior School</div>
     <div class="splash-sub">Active Students Database</div>
     <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
 </div>
@@ -635,7 +635,7 @@
     <div class="topbar-brand">
         <img src="./imgs/logo.png" alt="Logo" class="topbar-logo" onerror="this.style.display='none'">
         <div>
-            <div class="topbar-title">Kanyadet School</div>
+            <div class="topbar-title">Kanyadet Pri & Junior School</div>
             <div class="topbar-sub">Active Students Database</div>
         </div>
     </div>
@@ -769,7 +769,7 @@
             <div style="width:60px;height:60px;border-radius:50%;background:var(--navy);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
             </div>
-            <h2>Kanyadet School</h2>
+            <h2>Kanyadet Pri & Junior School</h2>
             <p>Sign in to access student records and management tools</p>
             <button id="sign-in-google-btn" class="btn btn-primary" style="width:100%;justify-content:center;padding:.85rem;font-size:.95rem;border-radius:10px;margin-bottom:.75rem;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.36-8.16 2.36-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
@@ -1511,6 +1511,7 @@ function _dismissSplash(cb) {
 }
 
 const PASSKEY_STORE_KEY = 'ksd_passkey_uid';
+window._PASSKEY_STORE_KEY = PASSKEY_STORE_KEY; // expose for outer scripts
 
 // ── SHOW CORRECT SIGN-IN CARD ──────────────────────────
 // Depending on whether a passkey is already registered, show the
@@ -1687,7 +1688,7 @@ signInGoogleBtn.addEventListener('click', async () => {
                 const credential = await navigator.credentials.create({
                     publicKey: {
                         challenge,
-                        rp: { name: 'Kanyadet School Admin', id: location.hostname === 'localhost' ? 'localhost' : location.hostname },
+                        rp: { name: 'Kanyadet Pri & Junior School Admin', id: location.hostname === 'localhost' ? 'localhost' : location.hostname },
                         user: { id: userIdBytes, name: user.email || user.uid, displayName: user.displayName || user.email || 'School Admin' },
                         pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
                         authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'preferred', residentKey: 'preferred' },
@@ -1795,11 +1796,17 @@ document.getElementById('switch-account-btn')?.addEventListener('click', async (
         confirmButtonColor: 'danger',
     });
     if (!confirmed.isConfirmed) return;
+    // Clear passkey so the new-user Google card is shown
     localStorage.removeItem(PASSKEY_STORE_KEY + '_credId');
     localStorage.removeItem(PASSKEY_STORE_KEY + '_uid');
     localStorage.removeItem(PASSKEY_STORE_KEY + '_email');
+    // Reset all session flags so the next login goes through cleanly
+    const _flags = window._getAppFlags?.();
+    if (_flags) { _flags.appAlreadyOpen = false; _flags.firstAuthCheck = true; _flags.autoUnlockFired = false; }
+    // Destroy existing table so it rebuilds fresh for the new account
+    if (window._tabulatorTable) { try { window._tabulatorTable.destroy(); } catch(e){} window._tabulatorTable = null; }
     await signOut(auth);
-    _showSignInUI(); // will show the Google card now
+    // onAuthStateChanged will fire → firstAuthCheck=true → _showSignInUI (Google card)
 });
 
 function _bufferToBase64(buffer) {
@@ -1842,7 +1849,7 @@ function _softLock() {
 // ── _openApp: sets up UI + fetches data for an authenticated user ─────
 // Called from onAuthStateChanged (new login) AND from _softUnlock (biometric).
 // This is the single source of truth for "user is authenticated, open the app".
-let _appAlreadyOpen = false;
+let _appAlreadyOpen = false; window._getAppFlags = () => ({get appAlreadyOpen(){return _appAlreadyOpen;}, set appAlreadyOpen(v){_appAlreadyOpen=v;}, get firstAuthCheck(){return _firstAuthCheck;}, set firstAuthCheck(v){_firstAuthCheck=v;}, get autoUnlockFired(){return _autoUnlockFired;}, set autoUnlockFired(v){_autoUnlockFired=v;}});
 function _openApp(user) {
     userId = user.uid;
 
@@ -2458,7 +2465,7 @@ document.addEventListener('keydown', e => {
     const TOUR_STEPS = [
         {
             target: '.topbar-left',
-            title: '👋 Welcome to Kanyadet School',
+            title: '👋 Welcome to Kanyadet Pri & Junior School',
             body: 'This is the <strong>Active Students Database</strong> — your central hub for managing all student records. Let\'s take a quick tour of the key features.',
             arrow: 'arrow-top', placement: 'below',
         },
@@ -3680,7 +3687,12 @@ $('mobile-sign-out-btn')?.addEventListener('click', () => {
 
 $('mobile-full-signout-btn')?.addEventListener('click', async () => {
     mobileDrawer?.classList.remove('open');
-    // Full sign-out — clears Firebase session and passkey link
+    const _psk = window._PASSKEY_STORE_KEY || 'ksd_passkey_uid';
+    localStorage.removeItem(_psk + '_credId');
+    localStorage.removeItem(_psk + '_uid');
+    localStorage.removeItem(_psk + '_email');
+    window._appAlreadyOpen = false;
+    if (window._tabulatorTable) { try { window._tabulatorTable.destroy(); } catch(e){} window._tabulatorTable = null; }
     if (window._fbSDK?.signOut) await window._fbSDK.signOut();
 });
 
@@ -3850,7 +3862,7 @@ window._printCard = (id) => {
     if(!win) return;
     win.document.write(`<!DOCTYPE html><html><head><title>Student Card — ${name}</title><style>*{box-sizing:border-box;margin:0;padding:0;}body{font-family:'Segoe UI',sans-serif;padding:24px;color:#0f172a;background:#f8fafc;}.card{background:#fff;border:2px solid #0d1f35;border-radius:14px;padding:24px;max-width:540px;margin:auto;box-shadow:0 4px 24px rgba(0,0,0,.1);}.header{background:#0d1f35;color:#fff;padding:16px 20px;border-radius:10px;display:flex;align-items:center;gap:16px;margin-bottom:18px;}.header img{width:60px;height:60px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,.25);flex-shrink:0;}.header h1{font-size:16px;font-weight:700;margin-bottom:3px;}.header p{font-size:11px;opacity:.7;}table{width:100%;border-collapse:collapse;}tr:nth-child(even){background:#f6f8fb;}td{border-bottom:1px solid #e2e8f0;}.footer{margin-top:18px;text-align:center;font-size:9px;color:#94a3b8;padding-top:10px;border-top:1px solid #e2e8f0;}.print-btn{display:block;margin:16px auto 0;padding:8px 24px;background:#0d1f35;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;}@media print{.print-btn{display:none;}}</style></head><body>
     <div class="card"><div class="header"><img src="../student_images/${enc}.jpg" onerror="this.src='../student_images/default.jpg'"><div><h1>${name}</h1><p>${s.Grade||''} ${s['Class']?'· Class of '+s['Class']:''} ${s.Gender?'· '+s.Gender:''}</p></div></div>
-    <table>${rows}</table><div class="footer">Kanyadet School · Printed ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}</div></div>
+    <table>${rows}</table><div class="footer">Kanyadet Pri & Junior School · Printed ${new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'long',year:'numeric'})}</div></div>
     <button class="print-btn" onclick="window.print()">🖨 Print Card</button></body></html>`);
     win.document.close();
 };
