@@ -541,7 +541,9 @@
         /* ── SPLASH SCREEN (MySafaricom-style) ──────────────────────────── */
         #splash-screen {
             position: fixed; inset: 0; z-index: 9999;
-            background: var(--navy);
+            background: rgba(255,255,255,.35);
+            backdrop-filter: blur(18px) saturate(1.4);
+            -webkit-backdrop-filter: blur(18px) saturate(1.4);
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 1.25rem;
             transition: opacity .5s ease, visibility .5s ease;
@@ -549,23 +551,24 @@
         #splash-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .splash-logo-ring {
             width: 90px; height: 90px; border-radius: 50%;
-            background: rgba(255,255,255,.08);
-            border: 2px solid rgba(240,165,0,.3);
+            background: rgba(13,31,53,.12);
+            border: 2px solid rgba(240,165,0,.5);
             display: flex; align-items: center; justify-content: center;
             animation: splash-pulse 1.8s ease-in-out infinite;
+            box-shadow: 0 8px 32px rgba(13,31,53,.15);
         }
         @keyframes splash-pulse {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(240,165,0,.3); }
-            50%       { box-shadow: 0 0 0 18px rgba(240,165,0,0); }
+            0%, 100% { box-shadow: 0 8px 32px rgba(13,31,53,.15), 0 0 0 0 rgba(240,165,0,.4); }
+            50%       { box-shadow: 0 8px 32px rgba(13,31,53,.15), 0 0 0 18px rgba(240,165,0,0); }
         }
-        .splash-logo-img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 0 10px rgba(240,165,0,.6)); }
+        .splash-logo-img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(13,31,53,.3)); }
         .splash-logo-fallback {
             width: 56px; height: 56px; border-radius: 50%;
             background: var(--gold); display: flex; align-items: center; justify-content: center;
         }
-        .splash-title { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 800; color: #fff; letter-spacing: .01em; }
-        .splash-sub { font-size: .75rem; color: rgba(255,255,255,.4); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; margin-top: -.5rem; }
-        .splash-bar-wrap { width: 120px; height: 3px; background: rgba(255,255,255,.12); border-radius: 2px; overflow: hidden; margin-top: .5rem; }
+        .splash-title { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 800; color: var(--navy); letter-spacing: .01em; text-shadow: 0 1px 4px rgba(255,255,255,.6); }
+        .splash-sub { font-size: .75rem; color: var(--slate); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; margin-top: -.5rem; }
+        .splash-bar-wrap { width: 120px; height: 3px; background: rgba(13,31,53,.12); border-radius: 2px; overflow: hidden; margin-top: .5rem; }
         .splash-bar { height: 100%; background: var(--gold); border-radius: 2px; animation: splash-bar 1.6s ease-in-out infinite; }
         @keyframes splash-bar { 0%{width:0;margin-left:0} 50%{width:100%;margin-left:0} 100%{width:0;margin-left:100%} }
     </style>
