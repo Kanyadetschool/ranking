@@ -459,8 +459,6 @@
         }
 
         /* ── DARK MODE ── */
-        .pdf-badge { display:inline-flex;align-items:center;gap:.2rem;font-size:.65rem;font-weight:700;background:rgba(240,165,0,.13);color:var(--gold);border:1px solid rgba(240,165,0,.35);border-radius:4px;padding:.05rem .3rem;margin-left:.3rem;vertical-align:middle;cursor:pointer;white-space:nowrap; }
-        .pdf-badge:hover { background:rgba(240,165,0,.25); }
         @keyframes profile-in { from { opacity:0; transform:translateY(-8px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
         .topbar { position:relative; }  /* needed for profile-menu absolute positioning */
         #user-id-display img { border-radius:50%; width:32px; height:32px; border:2px solid var(--gold); object-fit:cover; cursor:pointer; }
@@ -1509,49 +1507,14 @@ closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
 closePrintModalBtn.addEventListener('click', () => printModal.classList.add('hidden'));
 closePdfModalBtn.addEventListener('click', () => { pdfModalBackdrop.classList.add('hidden'); pdfIframe.src = ''; });
 export const openLocalPDF = (assessmentNo, studentName) => {
-    // Use student's official name as the PDF filename (fallback to assessmentNo)
-    const pdfName = (studentName || assessmentNo || '').trim();
-    if (!pdfName) return;
+    if (!assessmentNo) return;
     pdfModalStudentName.textContent = studentName || assessmentNo;
     pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
-    const base = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/`;
-    const localUrl = `${base}${encodeURIComponent(pdfName)}.pdf`;
+    const localUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(studentName || assessmentNo)}.pdf`;
     pdfIframe.src = `https://docs.google.com/viewer?url=${encodeURIComponent(localUrl)}&embedded=true`;
     pdfModalBackdrop.classList.remove('hidden');
 };
 window.openLocalPDF = openLocalPDF;
-
-// ── PDF AVAILABILITY CACHE ────────────────────────────
-// Checks which students have a birth-certificate PDF in ./student_pdfs/.
-// Uses fetch HEAD (no download) and caches results for the session.
-window._pdfCache = {};   // { studentName: true|false }
-window._pdfCacheReady = false;
-
-async function _checkPDFExists(studentName) {
-    if (!studentName) return false;
-    if (window._pdfCache.hasOwnProperty(studentName)) return window._pdfCache[studentName];
-    const base = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/`;
-    try {
-        const res = await fetch(`${base}${encodeURIComponent(studentName)}.pdf`, { method: 'HEAD' });
-        window._pdfCache[studentName] = res.ok;
-        return res.ok;
-    } catch { window._pdfCache[studentName] = false; return false; }
-}
-
-// Bulk-check all students and store names-with-PDF in window._studentsWithPDF Set
-window._studentsWithPDF = new Set();
-window._refreshPDFCache = async (students) => {
-    window._studentsWithPDF = new Set();
-    await Promise.all((students || []).map(async s => {
-        const name = s['Official Student Name'];
-        if (name && await _checkPDFExists(name)) window._studentsWithPDF.add(name);
-    }));
-    window._pdfCacheReady = true;
-    // Re-render KPI so PDF card updates with real count
-    if (typeof updateKPI === 'function' && window._lastKPIStudents) updateKPI(window._lastKPIStudents);
-    // Refresh table rows so PDF badges appear
-    if (window._tabulatorTable) { try { window._tabulatorTable.refreshFilter(); } catch(e){} }
-};
 
 // ── TOGGLE UPLOAD SECTION ─────────────────────────────
 const toggleUploadBtn = document.getElementById('toggle-upload-btn');
@@ -1960,12 +1923,6 @@ function _openApp(user) {
     if (!_appAlreadyOpen) {
         _appAlreadyOpen = true;
         fetchStudents();
-    // After a short delay (data loaded), check which students have PDFs
-    setTimeout(() => {
-        if (window._refreshPDFCache && studentsData.length) {
-            window._refreshPDFCache(studentsData);
-        }
-    }, 2000);
 
         // ONE-TIME MIGRATION: move auditLog → AuditLog
         (async () => {
@@ -2058,77 +2015,21 @@ const getOrderedHeaders = (students) => {
 };
 
 // ── KPI CARDS ─────────────────────────────────────────
-// Each card is clickable and shows a drilldown list of relevant students.
-window._lastKPIStudents = [];
-
-function _showStatDrilldown(title, students, emptyMsg) {
-    if (!students || students.length === 0) {
-        openModal({ icon:'info', title, text: emptyMsg || 'No students in this category.' }); return;
-    }
-    const rows = students.map(s => {
-        const name = s['Official Student Name'] || '—';
-        const grade = s.Grade || '—';
-        const assessNo = s['Assessment No'] || '—';
-        const hasPDF = window._studentsWithPDF?.has(s['Official Student Name']);
-        return `<tr style="border-bottom:1px solid var(--border);cursor:pointer;" onclick="window._viewProfile&&window._viewProfile('${s.id}')" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
-            <td style="padding:.5rem .6rem;font-weight:600;color:var(--navy);font-size:.82rem;">${name}</td>
-            <td style="padding:.5rem .4rem;font-size:.78rem;color:var(--slate);">${assessNo}</td>
-            <td style="padding:.5rem .4rem;font-size:.78rem;color:var(--slate);">${grade}</td>
-            <td style="padding:.5rem .4rem;text-align:center;">${hasPDF ? '<span title="Has PDF" style="font-size:.9rem;">📄</span>' : ''}</td>
-        </tr>`;
-    }).join('');
-    const content = `<div style="max-height:60vh;overflow-y:auto;border-radius:8px;border:1px solid var(--border);">
-        <table style="width:100%;border-collapse:collapse;">
-            <thead><tr style="background:var(--navy);color:#fff;position:sticky;top:0;">
-                <th style="padding:.5rem .6rem;text-align:left;font-size:.75rem;font-weight:700;">Name</th>
-                <th style="padding:.5rem .4rem;text-align:left;font-size:.75rem;font-weight:700;">Assess. No</th>
-                <th style="padding:.5rem .4rem;text-align:left;font-size:.75rem;font-weight:700;">Grade</th>
-                <th style="padding:.5rem .4rem;text-align:center;font-size:.75rem;font-weight:700;">PDF</th>
-            </tr></thead>
-            <tbody>${rows}</tbody>
-        </table></div>`;
-    openModal({ icon:'info', title: `${title} (${students.length})`, html: content, confirmButtonText:'Close' });
-}
-
-const _kpiCard = (label, value, sub, color, onclick) =>
-    `<div class="kpi-card" onclick="${onclick}" style="cursor:pointer;transition:box-shadow .15s,transform .15s;" onmouseover="this.style.boxShadow='0 4px 18px rgba(13,31,53,.18)';this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='';this.style.transform=''">
-        <div class="kpi-label">${label}</div>
-        <div class="kpi-value" style="color:${color||'var(--navy)'};">${value}</div>
-        <div class="kpi-sub">${sub} <span style="font-size:.65rem;opacity:.5;margin-left:.2rem;">▶ click for details</span></div>
-    </div>`;
-
 const updateKPI = (students) => {
-    window._lastKPIStudents = students;
-    const total    = students.length;
-    const grades   = new Set(students.map(s => s.Grade).filter(Boolean)).size;
-    const maleList = students.filter(s => (s.Gender||'').toLowerCase()==='male');
-    const femList  = students.filter(s => (s.Gender||'').toLowerCase()==='female');
-    const compList = students.filter(s => s['Official Student Name'] && s.Grade);
-    const pdfList  = students.filter(s => window._studentsWithPDF?.has(s['Official Student Name']));
-    const completePct = total > 0 ? Math.round(compList.length/total*100) : 0;
-    const pdfPct   = total > 0 ? Math.round(pdfList.length/total*100) : 0;
-
-    // Escape for inline onclick
-    const esc = s => s.replace(/'/g, "\'");
-
-    kpiGrid.innerHTML =
-        _kpiCard('Total Students', total, 'in database', 'var(--navy)',
-            `window._showStatDrilldown('All Students', window._lastKPIStudents)`) +
-        _kpiCard('Grades', grades, 'unique grades', 'var(--navy-lt)',
-            `window._showStatDrilldown('All Grades', window._lastKPIStudents)`) +
-        _kpiCard('Male', maleList.length, `${total>0?Math.round(maleList.length/total*100):0}% of total`, '#3b82f6',
-            `window._showStatDrilldown('Male Students', window._lastKPIStudents.filter(s=>(s.Gender||'').toLowerCase()==='male'))`) +
-        _kpiCard('Female', femList.length, `${total>0?Math.round(femList.length/total*100):0}% of total`, '#a855f7',
-            `window._showStatDrilldown('Female Students', window._lastKPIStudents.filter(s=>(s.Gender||'').toLowerCase()==='female'))`) +
-        _kpiCard('Data Completeness', completePct+'%', `${compList.length} complete records`, completePct>=80?'var(--success)':'var(--warning)',
-            `window._showStatDrilldown('Complete Records', window._lastKPIStudents.filter(s=>s['Official Student Name']&&s.Grade))`) +
-        _kpiCard('Birth Cert. PDFs', pdfList.length,
-            window._pdfCacheReady ? `${pdfPct}% have certificate` : 'checking…',
-            'var(--gold)',
-            `window._showStatDrilldown('Students with Birth Certificate PDF', window._lastKPIStudents.filter(s=>window._studentsWithPDF?.has(s['Official Student Name'])), 'No PDFs found in ./student_pdfs/ folder.')`);
-
+    const total = students.length;
+    const grades = new Set(students.map(s => s.Grade).filter(Boolean)).size;
+    const male = students.filter(s => (s.Gender || '').toLowerCase() === 'male').length;
+    const female = students.filter(s => (s.Gender || '').toLowerCase() === 'female').length;
+    const complete = students.filter(s => s['Official Student Name'] && s.Grade).length;
+    const completePct = total > 0 ? Math.round(complete / total * 100) : 0;
+    kpiGrid.innerHTML = `
+        <div class="kpi-card"><div class="kpi-label">Total Students</div><div class="kpi-value">${total}</div><div class="kpi-sub">in database</div></div>
+        <div class="kpi-card"><div class="kpi-label">Grades</div><div class="kpi-value">${grades}</div><div class="kpi-sub">unique grades</div></div>
+        <div class="kpi-card"><div class="kpi-label">Male</div><div class="kpi-value">${male}</div><div class="kpi-sub">${total > 0 ? Math.round(male/total*100) : 0}% of total</div></div>
+        <div class="kpi-card"><div class="kpi-label">Female</div><div class="kpi-value">${female}</div><div class="kpi-sub">${total > 0 ? Math.round(female/total*100) : 0}% of total</div></div>
+        <div class="kpi-card"><div class="kpi-label">Data Completeness</div><div class="kpi-value">${completePct}%</div><div class="kpi-sub">${complete} complete records</div></div>
+    `;
     kpiGrid.style.display = 'grid';
-    window._showStatDrilldown = _showStatDrilldown;
 };
 
 // ── ANALYTICS ─────────────────────────────────────────
@@ -2187,15 +2088,6 @@ const renderStudents = (students) => {
 
     const headers = getOrderedHeaders(students);
     const priorityFirst = ['Grade', 'Assessment No', 'Official Student Name'];
-    // PDF badge formatter for the Official Student Name column
-    const pdfBadgeFormatter = (cell) => {
-        const name = cell.getValue() || '';
-        const hasPDF = window._studentsWithPDF?.has(name);
-        const badge = hasPDF
-            ? `<span class="pdf-badge" title="Has birth certificate PDF" onclick="event.stopPropagation();window.openLocalPDF('','${name.replace(/'/g,"\'")}')">📄 PDF</span>`
-            : '';
-        return `<span>${name}</span>${badge}`;
-    };
 
     const columns = [
         {
@@ -2281,7 +2173,7 @@ const renderStudents = (students) => {
             headerFilterPlaceholder: `Filter ${h}…`,
             headerSort: true,
             minWidth: 100,
-            formatter: h === 'Official Student Name' ? pdfBadgeFormatter : (cell) => cell.getValue() || '-',
+            formatter: (cell) => cell.getValue() || '-',
             tooltip: true,
             cellDblClick: async (e, cell) => {
                 // Feature 5: inline cell editing
@@ -2985,7 +2877,7 @@ document.addEventListener('keydown', e => {
                 break;
             case 's': case 'S':
                 e.preventDefault();
-                { const o = document.getElementById('spotlight-overlay'); const inp = document.getElementById('spotlight-input'); if (o && inp) { o.classList.remove('hidden'); inp.value = ''; setTimeout(() => inp.focus(), 0); } }
+                { const o = document.getElementById('spotlight-overlay'); const inp = document.getElementById('spotlight-input'); if (o && inp) { o.classList.remove('hidden'); inp.focus(); } }
                 break;
             case '?':
                 e.preventDefault();
@@ -3934,7 +3826,7 @@ $('save-preset-btn')?.addEventListener('click', async () => {
 
 // ── 13. SPOTLIGHT S key ──────────────────────────────
 document.addEventListener('keydown', e => {
-    // S key handled in global shortcut switch above
+    if (!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key==='s') { e.preventDefault(); const o=$('spotlight-overlay'); o?.classList.toggle('hidden'); if(!o?.classList.contains('hidden')) $('spotlight-input')?.focus(); }
     if (e.key==='Escape') { window.closeSpotlight(); $('tab-col-menu')?.remove(); }
 });
 const spotInput=$('spotlight-input');
