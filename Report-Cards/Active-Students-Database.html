@@ -268,7 +268,7 @@
 
         /* MODAL BACKDROP */
         .modal-backdrop { position: fixed; inset: 0; background: rgba(13,31,53,.55); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 1rem; }
-        .modal-backdrop.hidden { display: none; }
+        .modal-backdrop.hidden { display: none !important; }
         .modal-box { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); padding: 2rem; width: 100%; max-width: 460px; border: 1px solid var(--border); }
         .modal-box-wide { max-width: 860px; }
         .modal-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 800; color: var(--navy); margin-bottom: 1.25rem; text-align: center; }
@@ -3588,7 +3588,7 @@ promoteConfirmBtn.addEventListener('click', async () => {
 <!-- ═══ 20 FEATURES BLOCK ═══════════════════════════════════════════════ -->
 
 <!-- Spotlight overlay (Feature 13) -->
-<div id="spotlight-overlay" class="hidden" style="position:fixed;inset:0;background:rgba(13,31,53,.6);backdrop-filter:blur(6px);z-index:2000;display:flex;align-items:flex-start;justify-content:center;padding-top:10vh;">
+<div id="spotlight-overlay" class="hidden" style="position:fixed;inset:0;background:rgba(13,31,53,.6);backdrop-filter:blur(6px);z-index:2000;align-items:flex-start;justify-content:center;padding-top:10vh;">
     <div id="spotlight-box" style="background:var(--surface);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);width:100%;max-width:520px;overflow:hidden;border:1px solid var(--border);">
         <div style="display:flex;align-items:center;padding:.75rem 1rem;border-bottom:1px solid var(--border);gap:.75rem;">
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -4465,18 +4465,37 @@ setTimeout(() => {
         renderList(filtered);
     };
 
-    window._openPdfSearchPanel = function() {
-        _cachedStudents = getStudents().slice().sort((a,b)=>{
+    window._openPdfSearchPanel = async function() {
+        panel.style.display = 'flex';
+        overlay.style.display = 'block';
+        requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
+        if (searchInput) searchInput.value = '';
+
+        // Show loading state
+        listEl.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--slate);font-size:.83rem;">Checking PDFs…</div>';
+        countEl.textContent = '';
+
+        const all = getStudents().slice().sort((a,b)=>{
             const na = (a['Official Student Name']||'').toLowerCase();
             const nb = (b['Official Student Name']||'').toLowerCase();
             return na < nb ? -1 : na > nb ? 1 : 0;
         });
+
+        const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
+
+        // Check each student's PDF exists via HEAD request
+        const checks = await Promise.all(all.map(s => {
+            const name = s['Official Student Name'] || '';
+            if (!name) return Promise.resolve(false);
+            const url = base + encodeURIComponent(name) + '.pdf';
+            return fetch(url, { method: 'HEAD' })
+                .then(r => r.ok)
+                .catch(() => false);
+        }));
+
+        _cachedStudents = all.filter((_, i) => checks[i]);
         renderList(_cachedStudents);
-        panel.style.display = 'flex';
-        overlay.style.display = 'block';
-        requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
-        setTimeout(() => searchInput.focus(), 280);
-        if (searchInput) searchInput.value = '';
+        setTimeout(() => searchInput.focus(), 50);
     };
 
     window._closePdfSearchPanel = function() {
