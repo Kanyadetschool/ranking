@@ -701,9 +701,9 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
             Dark <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">D</kbd>
         </button>
-        <button onclick="document.getElementById('spotlight-overlay').classList.remove('hidden');document.getElementById('spotlight-input').focus();" class="btn btn-ghost btn-sm nav-hide-mobile" title="Spotlight search (Alt+K)">
+        <button onclick="document.getElementById('spotlight-overlay').classList.remove('hidden');document.getElementById('spotlight-input').focus();" class="btn btn-ghost btn-sm nav-hide-mobile" title="Universal Search (S)">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <kbd style="font-size:.65rem;opacity:.7;">Alt+K</kbd>
+            <kbd style="font-size:.65rem;opacity:.7;">S</kbd>
         </button>
         <!-- Hamburger (mobile only) -->
         <button id="nav-hamburger" aria-label="Menu">
@@ -718,7 +718,7 @@
     <div class="nav-drawer-panel">
         <button class="nav-drawer-item" onclick="document.getElementById('spotlight-overlay').classList.remove('hidden');document.getElementById('spotlight-input').focus();document.getElementById('nav-mobile-drawer').classList.remove('open');">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            Search (Alt+K)
+            Search (S)
         </button>
         <button class="nav-drawer-item" id="mobile-hist-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -2801,15 +2801,8 @@ document.addEventListener('keydown', e => {
         }
     };
 
-    // ── Alt+K → open spotlight search ───────────────────────
-    document.addEventListener('keydown', e => {
-        if (e.altKey && !e.ctrlKey && !e.metaKey && e.key === 'k') {
-            e.preventDefault();
-            const o = document.getElementById('spotlight-overlay');
-            const inp = document.getElementById('spotlight-input');
-            if (o && inp) { o.classList.remove('hidden'); inp.focus(); }
-        }
-    });
+    // ── S → open spotlight search ────────────────────────
+    // (handled in global single-key block below; no extra listener needed)
 
     // ── Ctrl+S → save drawer ──────────────────────────────
     document.addEventListener('keydown', e => {
@@ -2881,6 +2874,10 @@ document.addEventListener('keydown', e => {
             case 't': case 'T':
                 e.preventDefault();
                 window._tourStart?.();
+                break;
+            case 's': case 'S':
+                e.preventDefault();
+                { const o = document.getElementById('spotlight-overlay'); const inp = document.getElementById('spotlight-input'); if (o && inp) { o.classList.remove('hidden'); inp.focus(); } }
                 break;
             case '?':
                 e.preventDefault();
@@ -3827,9 +3824,9 @@ $('save-preset-btn')?.addEventListener('click', async () => {
     renderPresets(); showMsg(`Preset "${name}" saved.`);
 });
 
-// ── 13. SPOTLIGHT Alt+K ──────────────────────────────
+// ── 13. SPOTLIGHT S key ──────────────────────────────
 document.addEventListener('keydown', e => {
-    if (e.altKey&&!e.ctrlKey&&!e.metaKey&&e.key==='k') { e.preventDefault(); const o=$('spotlight-overlay'); o?.classList.toggle('hidden'); if(!o?.classList.contains('hidden')) $('spotlight-input')?.focus(); }
+    if (!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key==='s') { e.preventDefault(); const o=$('spotlight-overlay'); o?.classList.toggle('hidden'); if(!o?.classList.contains('hidden')) $('spotlight-input')?.focus(); }
     if (e.key==='Escape') { window.closeSpotlight(); $('tab-col-menu')?.remove(); }
 });
 const spotInput=$('spotlight-input');
