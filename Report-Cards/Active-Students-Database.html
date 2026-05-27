@@ -697,7 +697,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
             Sign Out
         </button>
-        <button id="pdf-nav-btn" class="btn btn-ghost btn-sm" title="Browse Student PDFs" onclick="window._openPdfSearchPanel()">
+        <button id="pdf-nav-btn" class="btn btn-ghost btn-sm" title="Browse Student PDFs (P)" onclick="window._openPdfSearchPanel()">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
             <span style="margin-left:.25rem;font-size:.75rem;font-weight:600;">PDFs</span>
         </button>
@@ -2913,6 +2913,10 @@ document.addEventListener('keydown', e => {
                 e.preventDefault();
                 { const o = document.getElementById('spotlight-overlay'); const inp = document.getElementById('spotlight-input'); if (o && inp) { o.classList.remove('hidden'); inp.focus(); } }
                 break;
+            case 'p': case 'P':
+                e.preventDefault();
+                window._openPdfSearchPanel?.();
+                break;
             case '?':
                 e.preventDefault();
                 window._toggleShortcutPanel();
@@ -4425,33 +4429,58 @@ setTimeout(() => {
         return window._studentsData || [];
     }
 
+    // Store student data keyed by index for event delegation
+    let _renderData = [];
+
     function renderList(students) {
+        _renderData = students;
         countEl.textContent = students.length + ' student' + (students.length !== 1 ? 's' : '');
         if (!students.length) {
             listEl.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--slate);font-size:.83rem;">No students found</div>';
             return;
         }
-        listEl.innerHTML = students.map(s => {
+        listEl.innerHTML = students.map((s, i) => {
             const name = s['Official Student Name'] || s['name'] || '—';
-            const assessNo = s['Assessment No'] || s.id || '';
             const grade = s['Grade'] || s['Class'] || s['grade'] || s['class'] || '';
             const initials = name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-            return `<div onclick="window._closePdfSearchPanel();setTimeout(()=>window.openLocalPDF(${JSON.stringify(assessNo)},${JSON.stringify(name)}),200);"
-                style="display:flex;align-items:center;gap:.7rem;padding:.55rem .6rem;border-radius:8px;cursor:pointer;transition:background .13s;margin-bottom:.2rem;border:1px solid transparent;"
-                onmouseover="this.style.background='var(--surface2)';this.style.borderColor='var(--border)';"
-                onmouseout="this.style.background='';this.style.borderColor='transparent';">
+            return `<div class="pdf-list-item" data-idx="${i}"
+                style="display:flex;align-items:center;gap:.7rem;padding:.55rem .6rem;border-radius:8px;cursor:pointer;transition:background .13s;margin-bottom:.2rem;border:1px solid transparent;">
                 <div style="width:36px;height:36px;border-radius:50%;background:var(--gold-dim);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:var(--navy);flex-shrink:0;overflow:hidden;">
-                    <img src="./student_images/${encodeURIComponent(name)}.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.parentElement.querySelector('.pdf-initials').style.display='flex';">
-                    <span class="pdf-initials" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">${initials}</span>
+                    <img src="./student_images/${encodeURIComponent(name)}.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">${initials}</span>
                 </div>
                 <div style="min-width:0;flex:1;">
                     <div style="font-weight:600;font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-                    <div style="font-size:.7rem;color:var(--slate);">${grade ? 'Grade ' + grade + (assessNo ? ' · ' : '') : ''}${assessNo}</div>
+                    <div style="font-size:.7rem;color:var(--slate);">${grade ? 'Grade ' + grade : ''}</div>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.5" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             </div>`;
         }).join('');
     }
+
+
+    // Event delegation — handles clicks on all .pdf-list-item rows
+    listEl.addEventListener('click', e => {
+        const item = e.target.closest('.pdf-list-item');
+        if (!item) return;
+        const idx = parseInt(item.dataset.idx, 10);
+        const s = _renderData[idx];
+        if (!s) return;
+        const name = s['Official Student Name'] || s['name'] || '';
+        const assessNo = s['Assessment No'] || s.id || '';
+        window._closePdfSearchPanel();
+        setTimeout(() => window.openLocalPDF(assessNo, name), 200);
+    });
+
+    // Hover styling via event delegation
+    listEl.addEventListener('mouseover', e => {
+        const item = e.target.closest('.pdf-list-item');
+        if (item) { item.style.background = 'var(--surface2)'; item.style.borderColor = 'var(--border)'; }
+    });
+    listEl.addEventListener('mouseout', e => {
+        const item = e.target.closest('.pdf-list-item');
+        if (item) { item.style.background = ''; item.style.borderColor = 'transparent'; }
+    });
 
     window._filterPdfList = function(q) {
         const term = q.trim().toLowerCase();
