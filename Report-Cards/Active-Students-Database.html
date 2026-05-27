@@ -459,6 +459,11 @@
         }
 
         /* ── DARK MODE ── */
+        @keyframes profile-in { from { opacity:0; transform:translateY(-8px) scale(.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+        .topbar { position:relative; }  /* needed for profile-menu absolute positioning */
+        #user-id-display img { border-radius:50%; width:32px; height:32px; border:2px solid var(--gold); object-fit:cover; cursor:pointer; }
+        #user-id-display .avatar-initials { width:32px; height:32px; border-radius:50%; background:var(--gold); color:var(--navy); font-weight:800; font-size:.8rem; display:flex; align-items:center; justify-content:center; cursor:pointer; border:2px solid rgba(255,255,255,.3); }
+
         [data-theme="dark"] {
             --navy: #0a1628; --navy-mid: #0d1f35; --navy-lt: #1e4080;
             --surface: #1a2740; --surface2: #152035; --surface3: #0f1a2e;
@@ -640,7 +645,41 @@
         </div>
     </div>
     <div class="topbar-right">
-        <span id="user-id-display"><span class="nav-name-text"></span></span>
+        <span id="user-id-display" title="View profile" style="cursor:pointer;position:relative;" onclick="window._toggleProfileMenu()">
+            <span class="nav-name-text" style="display:none;"></span>
+        </span>
+        <!-- Profile dropdown -->
+        <div id="profile-menu" style="
+            display:none;position:absolute;top:56px;right:12px;z-index:9000;
+            background:var(--surface);border:1px solid var(--border);border-radius:14px;
+            box-shadow:0 16px 48px rgba(13,31,53,.22);min-width:240px;overflow:hidden;
+            animation:profile-in .18s ease;
+        ">
+            <div id="profile-menu-header" style="padding:1rem 1.1rem .75rem;border-bottom:1px solid var(--border);background:var(--navy);">
+                <div id="profile-menu-avatar" style="width:46px;height:46px;border-radius:50%;background:var(--gold);display:flex;align-items:center;justify-content:center;margin-bottom:.6rem;font-weight:800;font-size:1.1rem;color:var(--navy);overflow:hidden;"></div>
+                <div id="profile-menu-name" style="font-weight:700;font-size:.95rem;color:#fff;"></div>
+                <div id="profile-menu-email" style="font-size:.75rem;color:rgba(255,255,255,.5);margin-top:.1rem;word-break:break-all;"></div>
+            </div>
+            <div style="padding:.5rem;">
+                <button onclick="document.getElementById('dark-mode-btn')?.click();window._toggleProfileMenu(false);" style="width:100%;display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-radius:8px;border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:600;color:var(--text);transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+                    Toggle Dark Mode <kbd style="margin-left:auto;font-size:.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:.05rem .3rem;">D</kbd>
+                </button>
+                <button onclick="window._tourStart?.();window._toggleProfileMenu(false);" style="width:100%;display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-radius:8px;border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:600;color:var(--text);transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Start Tour <kbd style="margin-left:auto;font-size:.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:.05rem .3rem;">T</kbd>
+                </button>
+                <button onclick="window._toggleShortcutPanel?.();window._toggleProfileMenu(false);" style="width:100%;display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-radius:8px;border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:600;color:var(--text);transition:background .15s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Keyboard Shortcuts <kbd style="margin-left:auto;font-size:.65rem;background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:.05rem .3rem;">?</kbd>
+                </button>
+                <hr style="margin:.4rem 0;border:none;border-top:1px solid var(--border);">
+                <button id="profile-menu-lock-btn" onclick="document.getElementById('sign-out-btn')?.click();window._toggleProfileMenu(false);" style="width:100%;display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-radius:8px;border:none;background:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:600;color:var(--danger);transition:background .15s;" onmouseover="this.style.background='rgba(239,68,68,.08)'" onmouseout="this.style.background='none'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                    Lock App
+                </button>
+            </div>
+        </div>
         <!-- History icon -->
         <button id="tour-launch-btn" class="nav-hide-mobile" title="Start guided tour" onclick="window._tourStart()">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -1471,7 +1510,8 @@ export const openLocalPDF = (assessmentNo, studentName) => {
     if (!assessmentNo) return;
     pdfModalStudentName.textContent = studentName || assessmentNo;
     pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
-    pdfIframe.src = `./student_pdfs/${encodeURIComponent(assessmentNo)}.pdf`;
+    const localUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(assessmentNo)}.pdf`;
+    pdfIframe.src = `https://docs.google.com/viewer?url=${encodeURIComponent(localUrl)}&embedded=true`;
     pdfModalBackdrop.classList.remove('hidden');
 };
 window.openLocalPDF = openLocalPDF;
@@ -1816,20 +1856,52 @@ let _appAlreadyOpen = false; window._getAppFlags = () => ({get appAlreadyOpen(){
 function _openApp(user) {
     userId = user.uid;
 
-    // Rebuild display name
-    userIdDisplay.innerHTML = '<span class="nav-name-text"></span>';
+    // ── Topbar: show avatar only, full details in profile dropdown ──
     const email = user.email || '';
     let username = email.split('@')[0].replace(/[^a-zA-Z]/g, '');
-    let spacedName = username.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, c => c.toUpperCase());
-    const nameSpan = userIdDisplay.querySelector('.nav-name-text');
-    if (nameSpan) nameSpan.textContent = spacedName || user.displayName || email;
+    let spacedName = username.replace(/([a-z])([A-Z])/g, '$1 $2').replace(/\b\w/g, c => c.toUpperCase()) || user.displayName || email;
+    const initials = spacedName.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase() || '?';
 
+    // Topbar: just the avatar (photo or initials circle)
+    userIdDisplay.innerHTML = '';
     if (user.photoURL) {
         const img = document.createElement('img');
-        img.src = user.photoURL;
-        img.alt = 'User';
-        img.style.cssText = 'width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;flex-shrink:0;';
-        userIdDisplay.prepend(img);
+        img.src = user.photoURL; img.alt = spacedName;
+        img.title = spacedName + '\n' + email;
+        userIdDisplay.appendChild(img);
+    } else {
+        const av = document.createElement('div');
+        av.className = 'avatar-initials';
+        av.textContent = initials;
+        av.title = spacedName + '\n' + email;
+        userIdDisplay.appendChild(av);
+    }
+
+    // Profile dropdown header
+    const pmAvatar = document.getElementById('profile-menu-avatar');
+    const pmName   = document.getElementById('profile-menu-name');
+    const pmEmail  = document.getElementById('profile-menu-email');
+    const pmLock   = document.getElementById('profile-menu-lock-btn');
+    if (pmAvatar) {
+        pmAvatar.innerHTML = '';
+        if (user.photoURL) {
+            const img = document.createElement('img');
+            img.src = user.photoURL; img.alt = spacedName;
+            img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+            pmAvatar.appendChild(img);
+        } else {
+            pmAvatar.textContent = initials;
+        }
+    }
+    if (pmName)  pmName.textContent  = spacedName;
+    if (pmEmail) pmEmail.textContent = email;
+    if (pmLock) {
+        // Change label based on passkey presence
+        const lockLabel = PK.hasAny() ? 'Lock App' : 'Sign Out';
+        const lockIcon  = PK.hasAny()
+            ? '<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>'
+            : '<path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>';
+        pmLock.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">${lockIcon}</svg> ${lockLabel}`;
     }
 
     // Show the app
@@ -2729,6 +2801,16 @@ document.addEventListener('keydown', e => {
         }
     };
 
+    // ── Ctrl+K → open spotlight search ─────────────────────
+    document.addEventListener('keydown', e => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            const o = document.getElementById('spotlight-overlay');
+            const inp = document.getElementById('spotlight-input');
+            if (o && inp) { o.classList.remove('hidden'); inp.focus(); }
+        }
+    });
+
     // ── Ctrl+S → save drawer ──────────────────────────────
     document.addEventListener('keydown', e => {
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -2796,6 +2878,10 @@ document.addEventListener('keydown', e => {
                 e.preventDefault();
                 document.getElementById('dark-mode-btn')?.click();
                 break;
+            case 't': case 'T':
+                e.preventDefault();
+                window._tourStart?.();
+                break;
             case '?':
                 e.preventDefault();
                 window._toggleShortcutPanel();
@@ -2831,6 +2917,25 @@ document.addEventListener('keydown', e => {
                 e.preventDefault();
                 document.getElementById('promote-grade-btn')?.click();
                 break;
+        }
+    });
+})();
+
+// ── PROFILE MENU ──────────────────────────────────────
+(function() {
+    let _open = false;
+    window._toggleProfileMenu = (force) => {
+        _open = force !== undefined ? !!force : !_open;
+        const menu = document.getElementById('profile-menu');
+        if (menu) menu.style.display = _open ? 'block' : 'none';
+    };
+    // Close on outside click
+    document.addEventListener('click', e => {
+        if (!_open) return;
+        const menu = document.getElementById('profile-menu');
+        const avatar = document.getElementById('user-id-display');
+        if (menu && avatar && !menu.contains(e.target) && !avatar.contains(e.target)) {
+            window._toggleProfileMenu(false);
         }
     });
 })();
