@@ -2985,7 +2985,7 @@ document.addEventListener('keydown', e => {
                 break;
             case 's': case 'S':
                 e.preventDefault();
-                { const o = document.getElementById('spotlight-overlay'); const inp = document.getElementById('spotlight-input'); if (o && inp) { o.classList.remove('hidden'); inp.focus(); } }
+                { const o = document.getElementById('spotlight-overlay'); const inp = document.getElementById('spotlight-input'); if (o && inp) { o.classList.remove('hidden'); inp.value = ''; setTimeout(() => inp.focus(), 0); } }
                 break;
             case '?':
                 e.preventDefault();
@@ -3934,7 +3934,7 @@ $('save-preset-btn')?.addEventListener('click', async () => {
 
 // ── 13. SPOTLIGHT S key ──────────────────────────────
 document.addEventListener('keydown', e => {
-    if (!e.ctrlKey&&!e.metaKey&&!e.altKey&&e.key==='s') { e.preventDefault(); const o=$('spotlight-overlay'); o?.classList.toggle('hidden'); if(!o?.classList.contains('hidden')) $('spotlight-input')?.focus(); }
+    // S key handled in global shortcut switch above
     if (e.key==='Escape') { window.closeSpotlight(); $('tab-col-menu')?.remove(); }
 });
 const spotInput=$('spotlight-input');
