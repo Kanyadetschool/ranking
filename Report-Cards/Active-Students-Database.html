@@ -1544,7 +1544,7 @@ export const openLocalPDF = (assessmentNo, studentName) => {
     const pdfName = studentName || assessmentNo;
     pdfModalStudentName.textContent = pdfName;
     pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
-    const localUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}.pdf`;
+    const localUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}.PDF`;
     pdfIframe.src = `https://docs.google.com/viewer?url=${encodeURIComponent(localUrl)}&embedded=true`;
     pdfModalBackdrop.classList.remove('hidden');
 };
