@@ -498,6 +498,8 @@
         #uni-modal.open .um-box { transform:scale(1) translateY(0); }
         #uni-modal .um-box.um-wide { max-width:680px; }
         #uni-modal .um-box.um-wide-xl { max-width:900px; }
+        #uni-modal .um-box.um-wide-xl .um-body { padding:.75rem 1rem; }
+        #uni-modal .um-box.um-wide-xl .um-footer { padding:.75rem 1rem 1rem; }
         #uni-modal .um-icon-ring { width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;flex-shrink:0; }
         #uni-modal .um-icon-ring.danger { background:var(--danger-lt);border:2px solid var(--danger); }
         #uni-modal .um-icon-ring.warning { background:#fffbeb;border:2px solid var(--gold); }
@@ -507,7 +509,7 @@
         #uni-modal .um-header { padding:1.75rem 1.75rem 0;text-align:center; }
         #uni-modal .um-title { font-family:'Playfair Display',serif;font-size:1.12rem;font-weight:800;color:var(--navy);margin-bottom:.35rem; }
         #uni-modal .um-subtitle { font-size:.83rem;color:var(--slate);line-height:1.5; }
-        #uni-modal .um-body { padding:1rem 1.75rem;flex:1;min-height:0;overflow-y:auto; }
+        #uni-modal .um-body { padding:1rem 1.75rem;flex:1;min-height:0;overflow-y:visible; }
         #uni-modal .um-scroll { max-height:360px;overflow-y:auto;border:1px solid var(--border);border-radius:10px; }
         #uni-modal .um-scroll::-webkit-scrollbar { width:6px; }
         #uni-modal .um-scroll::-webkit-scrollbar-track { background:var(--surface2); }
@@ -1568,27 +1570,103 @@ window.openLocalPDF = async function(assessmentNo, studentName) {
         return;
     }
 
-    // 4. Open PDF in universal modal using Google Docs viewer (works on most servers)
-    const iframeUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}&embedded=true`;
-    const imgSrc = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
+    // 4. Open PDF in universal modal with student image + rotate controls
+    const imgSrc = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : './student_images/default.jpg';
+    const studentData = (window._studentsData||[]).find(s =>
+        (s['Official Student Name']||s['name']||'') === (studentName||displayName)
+    ) || {};
+    const grade = studentData['Grade'] || studentData['Class'] || '';
 
-    const headerHtml = `<div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.75rem;">
-        <img src="${imgSrc}" onerror="this.style.display='none'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:2px solid var(--border);">
-        <div>
-            <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--navy);">${displayName}</div>
-            <div style="font-size:.75rem;color:var(--slate);">Birth Certificate / Document</div>
+    // We use PDF.js canvas rendering so we can rotate locally
+    const viewerHtml = `
+    <div style="display:flex;flex-direction:column;gap:.75rem;">
+
+      <!-- Student header -->
+      <div style="display:flex;align-items:center;gap:.9rem;padding:.65rem .85rem;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+        <img id="pdfv-student-img" src="${imgSrc}" onerror="this.src='./student_images/default.jpg'"
+          style="width:52px;height:52px;object-fit:cover;border-radius:10px;border:2px solid var(--gold);flex-shrink:0;">
+        <div style="min-width:0;flex:1;">
+          <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:800;color:var(--navy);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${displayName}</div>
+          <div style="font-size:.75rem;color:var(--slate);">${grade ? 'Grade ' + grade + ' · ' : ''}Birth Certificate / Document</div>
         </div>
-    </div>
-    <iframe src="${iframeUrl}" style="width:100%;height:68vh;border-radius:8px;border:1px solid var(--border);"></iframe>`;
+        <!-- Rotate controls -->
+        <div style="display:flex;align-items:center;gap:.4rem;flex-shrink:0;">
+          <button id="pdfv-rot-ccw" title="Rotate left" onclick="window._pdfRotate(-90)"
+            style="width:32px;height:32px;border-radius:7px;border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;"
+            onmouseover="this.style.background='var(--navy)';this.style.borderColor='var(--navy)';this.querySelector('svg').style.stroke='#fff'"
+            onmouseout="this.style.background='var(--surface)';this.style.borderColor='var(--border2)';this.querySelector('svg').style.stroke='var(--navy)'">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          </button>
+          <span id="pdfv-rot-label" style="font-size:.72rem;font-weight:700;color:var(--slate);min-width:28px;text-align:center;">0°</span>
+          <button id="pdfv-rot-cw" title="Rotate right" onclick="window._pdfRotate(90)"
+            style="width:32px;height:32px;border-radius:7px;border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;"
+            onmouseover="this.style.background='var(--navy)';this.style.borderColor='var(--navy)';this.querySelector('svg').style.stroke='#fff'"
+            onmouseout="this.style.background='var(--surface)';this.style.borderColor='var(--border2)';this.querySelector('svg').style.stroke='var(--navy)'">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--navy)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+          </button>
+          <button id="pdfv-rot-reset" title="Reset rotation" onclick="window._pdfRotate(0, true)"
+            style="width:32px;height:32px;border-radius:7px;border:1.5px solid var(--border2);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:700;color:var(--slate);transition:all .15s;"
+            onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface)'">↺</button>
+        </div>
+      </div>
+
+      <!-- PDF iframe wrapper — rotation applied here -->
+      <div id="pdfv-wrap" style="width:100%;height:70vh;overflow:hidden;border-radius:8px;border:1px solid var(--border);background:#f0f0f0;display:flex;align-items:center;justify-content:center;position:relative;">
+        <iframe id="pdfv-iframe" src="https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}&embedded=true"
+          style="width:100%;height:100%;border:none;border-radius:8px;transform-origin:center center;transition:transform .3s ease;"
+          allowfullscreen></iframe>
+        <div id="pdfv-spinner" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(240,240,240,.9);border-radius:8px;gap:.75rem;">
+          <div style="width:36px;height:36px;border:3px solid var(--border2);border-top-color:var(--navy-lt);border-radius:50%;animation:um-spin .7s linear infinite;"></div>
+          <div style="font-size:.8rem;color:var(--slate);">Loading PDF…</div>
+        </div>
+      </div>
+
+    </div>`;
+
+    // Rotation state
+    let _pdfDeg = 0;
+    window._pdfRotate = function(delta, reset) {
+        if (reset) _pdfDeg = 0;
+        else _pdfDeg = (_pdfDeg + delta + 360) % 360;
+
+        const iframe = document.getElementById('pdfv-iframe');
+        const wrap   = document.getElementById('pdfv-wrap');
+        const label  = document.getElementById('pdfv-rot-label');
+        if (!iframe) return;
+
+        // For 90/270, swap effective dimensions so it fits
+        const sideways = _pdfDeg === 90 || _pdfDeg === 270;
+        const wrapW = wrap ? wrap.offsetWidth  : 800;
+        const wrapH = wrap ? wrap.offsetHeight : 600;
+        const scale = sideways ? Math.min(wrapH / wrapW, wrapW / wrapH) : 1;
+
+        iframe.style.transform = `rotate(${_pdfDeg}deg) scale(${scale})`;
+        if (label) label.textContent = _pdfDeg + '°';
+    };
+
+    // Hide spinner once iframe loads
+    setTimeout(() => {
+        const ifr = document.getElementById('pdfv-iframe');
+        const spn = document.getElementById('pdfv-spinner');
+        if (ifr && spn) {
+            ifr.addEventListener('load', () => { spn.style.display = 'none'; }, { once: true });
+            // Fallback: hide after 8s regardless
+            setTimeout(() => { if (spn) spn.style.display = 'none'; }, 8000);
+        }
+    }, 300);
 
     await openModal({
         icon: null,
         title: null,
-        html: headerHtml,
+        html: viewerHtml,
         confirmButtonText: 'Close',
         wideXl: true,
         noFooter: false,
     });
+
+    // Cleanup
+    delete window._pdfRotate;
+    _pdfDeg = 0;
 };
 
 // Alias kept for backward-compat
@@ -4461,43 +4539,43 @@ setTimeout(() => {
 
 // ── PDF SEARCH PANEL — opens as universal modal ───────────────────────────────
 (function() {
-    let _allStudents = [];   // all students sorted alphabetically
-    let _filtered   = [];   // currently filtered list
-    let _modalOpen  = false;
-
-    function norm(s) { return (s||'').toLowerCase().replace(/[''.,\-]/g,'').replace(/\s+/g,' ').trim(); }
+    let _allStudents = [];   // all students with a found PDF
+    let _filtered    = [];   // currently displayed subset
+    let _modalOpen   = false;
 
     async function tryHead(url) {
         try { const r = await fetch(url,{method:'HEAD'}); return r.ok; } catch { return false; }
     }
 
-    // Build the inner HTML that lives inside the modal body
-    function buildModalHtml(loading) {
-        return `
-        <div style="margin-bottom:.75rem;position:relative;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2" style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
-            <input id="pdf-modal-search" type="text" placeholder="Search by name or class…"
-                style="width:100%;padding:.55rem .85rem .55rem 2.2rem;border:1.5px solid var(--border);border-radius:9px;font-size:.87rem;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;"
-                oninput="window._filterPdfList(this.value)"
-                onfocus="this.style.borderColor='var(--navy-lt)';this.style.boxShadow='0 0 0 3px rgba(30,64,128,.1)'"
-                onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
-        </div>
-        <div id="pdf-modal-count" style="font-size:.72rem;color:var(--slate);margin-bottom:.5rem;text-align:right;min-height:1em;">
-            ${loading ? 'Checking PDFs…' : ''}
-        </div>
-        <div id="pdf-modal-list" style="max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;"></div>`;
+    // All case/spacing variants to try when exact match fails
+    function nameVariants(name) {
+        const t = name.trim();
+        return [
+            t,
+            t.toUpperCase(),
+            t.toLowerCase(),
+            t.replace(/\b\w/g, c => c.toUpperCase()),           // Title Case
+            t.replace(/\s+/g, ''),                              // NoSpaces
+            t.replace(/\s+/g, '_'),                             // Under_score
+            t.replace(/\s+/g, '-'),                             // Hy-phen
+            t.normalize('NFD').replace(/[\u0300-\u036f]/g,''),  // strip accents
+        ].filter((v,i,a) => v !== name && a.indexOf(v) === i);  // unique, exclude exact
     }
 
+    // ── render ──────────────────────────────────────────────────────────────
     function renderList(students) {
         _filtered = students;
         const countEl = document.getElementById('pdf-modal-count');
         const listEl  = document.getElementById('pdf-modal-list');
         if (!listEl) return;
 
-        const mismatches = students.filter(s=>s._pdfNameMismatch).length;
+        const mismatches = students.filter(s => s._pdfNameMismatch).length;
         if (countEl) {
-            countEl.innerHTML = `${students.length} student${students.length!==1?'s':''}` +
-                (mismatches ? ` &nbsp;·&nbsp; <span style="color:#92400e;font-weight:700;">⚠ ${mismatches} name fix${mismatches>1?'es':''}</span>` : '');
+            countEl.innerHTML =
+                `<strong>${students.length}</strong> student${students.length !== 1 ? 's' : ''}` +
+                (mismatches
+                    ? ` &nbsp;·&nbsp; <span style="color:#92400e;font-weight:700;background:#fffbeb;padding:1px 6px;border-radius:4px;border:1px solid var(--gold);">⚠ ${mismatches} name mismatch${mismatches > 1 ? 'es' : ''}</span>`
+                    : '');
         }
 
         if (!students.length) {
@@ -4505,17 +4583,17 @@ setTimeout(() => {
             return;
         }
 
-        listEl.innerHTML = students.map((s,i) => {
-            const name    = s['Official Student Name'] || s['name'] || '—';
-            const grade   = s['Grade'] || s['Class'] || s['grade'] || s['class'] || '';
-            const badge   = s._pdfNameMismatch
-                ? `<span style="font-size:.63rem;background:#fffbeb;border:1px solid var(--gold);color:#92400e;border-radius:4px;padding:1px 4px;margin-left:.35rem;" title="Server file: ${s._pdfResolvedName}">⚠ fix</span>`
+        listEl.innerHTML = students.map((s, i) => {
+            const name  = s['Official Student Name'] || s['name'] || '—';
+            const grade = s['Grade'] || s['Class'] || s['grade'] || s['class'] || '';
+            const badge = s._pdfNameMismatch
+                ? `<span style="font-size:.62rem;background:#fffbeb;border:1px solid var(--gold);color:#92400e;border-radius:4px;padding:1px 5px;margin-left:.4rem;vertical-align:middle;" title="Server file: ${s._pdfResolvedName}">⚠ name fix</span>`
                 : '';
             return `<div class="pdf-modal-item" data-idx="${i}"
-                style="display:flex;align-items:center;gap:.75rem;padding:.6rem .85rem;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);">
+                style="display:flex;align-items:center;gap:.75rem;padding:.55rem .85rem;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);">
                 <img src="./student_images/${encodeURIComponent(name)}.jpg"
                     onerror="this.src='./student_images/default.jpg'"
-                    style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0;background:var(--surface2);">
+                    style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0;">
                 <div style="min-width:0;flex:1;">
                     <div style="font-weight:600;font-size:.84rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}${badge}</div>
                     <div style="font-size:.7rem;color:var(--slate);">${grade ? 'Grade ' + grade : ''}</div>
@@ -4524,90 +4602,121 @@ setTimeout(() => {
             </div>`;
         }).join('');
 
-        // Last item: remove bottom border
-        const items = listEl.querySelectorAll('.pdf-modal-item');
-        if (items.length) items[items.length-1].style.borderBottom = 'none';
+        // Remove last border
+        const last = listEl.querySelector('.pdf-modal-item:last-child');
+        if (last) last.style.borderBottom = 'none';
 
-        // Click handler
-        listEl.querySelectorAll('.pdf-modal-item').forEach(el => {
-            el.addEventListener('mouseenter', () => el.style.background='var(--surface2)');
-            el.addEventListener('mouseleave', () => el.style.background='');
-            el.addEventListener('click', () => {
-                const s = _filtered[parseInt(el.dataset.idx,10)];
-                if (!s) return;
-                window.closeModal?.();
-                _modalOpen = false;
-                setTimeout(() => {
-                    window.openLocalPDF(s['Assessment No']||s.id||'', s['Official Student Name']||s['name']||'');
-                }, 220);
-            });
-        });
+        // Hover + click via event delegation (one listener, always fresh)
+        listEl.onclick = e => {
+            const el = e.target.closest('.pdf-modal-item');
+            if (!el) return;
+            const s = _filtered[parseInt(el.dataset.idx, 10)];
+            if (!s) return;
+            window.closeModal?.();
+            _modalOpen = false;
+            setTimeout(() => window.openLocalPDF(s['Assessment No'] || s.id || '', s['Official Student Name'] || s['name'] || ''), 220);
+        };
+        listEl.onmouseover = e => { const el = e.target.closest('.pdf-modal-item'); if (el) el.style.background = 'var(--surface2)'; };
+        listEl.onmouseout  = e => { const el = e.target.closest('.pdf-modal-item'); if (el) el.style.background = ''; };
     }
 
-    // Live search — always works against _allStudents
-    window._filterPdfList = function(q) {
-        const term = q.trim().toLowerCase();
-        if (!term) { renderList(_allStudents); return; }
-        renderList(_allStudents.filter(s => {
-            const name  = (s['Official Student Name']||s['name']||'').toLowerCase();
-            const grade = (s['Grade']||s['Class']||s['grade']||s['class']||'').toLowerCase();
-            const no    = (s['Assessment No']||s.id||'').toLowerCase();
-            return name.includes(term)||grade.includes(term)||no.includes(term);
-        }));
+    // ── search — wired after the DOM node exists ─────────────────────────────
+    function wireSearch() {
+        const inp = document.getElementById('pdf-modal-search');
+        if (!inp) return;
+        inp.oninput = () => {
+            const term = inp.value.trim().toLowerCase();
+            if (!term) { renderList(_allStudents); return; }
+            renderList(_allStudents.filter(s => {
+                const name  = (s['Official Student Name'] || s['name'] || '').toLowerCase();
+                const grade = (s['Grade'] || s['Class'] || s['grade'] || s['class'] || '').toLowerCase();
+                const no    = (s['Assessment No'] || s.id || '').toLowerCase();
+                return name.includes(term) || grade.includes(term) || no.includes(term);
+            }));
+        };
+        inp.focus();
+    }
+
+    // kept for keyboard shortcut backward-compat
+    window._filterPdfList = q => {
+        const inp = document.getElementById('pdf-modal-search');
+        if (inp) { inp.value = q; inp.oninput?.(); }
     };
 
+    // ── open ─────────────────────────────────────────────────────────────────
     window._openPdfSearchPanel = async function() {
         if (_modalOpen) return;
         _modalOpen = true;
 
-        // Open modal immediately with loading state
+        const modalHtml = `
+            <div style="position:relative;margin-bottom:.65rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--slate-lt)" stroke-width="2" style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
+                <input id="pdf-modal-search" type="text" placeholder="Search by name or class…"
+                    style="width:100%;padding:.55rem .85rem .55rem 2.2rem;border:1.5px solid var(--border);border-radius:9px;font-size:.87rem;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;box-sizing:border-box;"
+                    onfocus="this.style.borderColor='var(--navy-lt)';this.style.boxShadow='0 0 0 3px rgba(30,64,128,.1)'"
+                    onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+            </div>
+            <div id="pdf-modal-count" style="font-size:.72rem;color:var(--slate);margin-bottom:.5rem;text-align:right;min-height:1.1em;">
+                Checking PDFs on server…
+            </div>
+            <div id="pdf-modal-list" style="height:380px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;">
+                <div style="text-align:center;padding:3rem 1rem;color:var(--slate-lt);font-size:.83rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" style="display:block;margin:0 auto .75rem;opacity:.4;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                    Scanning server for PDFs…
+                </div>
+            </div>`;
+
         openModal({
             icon: 'plain',
             title: 'Student PDFs',
-            html: buildModalHtml(true),
+            html: modalHtml,
             showCancelButton: false,
             confirmButtonText: 'Close',
             wide: true,
-            persistent: true,   // don't close on backdrop click while loading
         }).then(() => { _modalOpen = false; });
 
-        // Auto-focus search after modal animates in
-        setTimeout(() => { document.getElementById('pdf-modal-search')?.focus(); }, 250);
+        // Wire search immediately (before PDFs load so it's ready)
+        setTimeout(wireSearch, 200);
 
-        // Fetch & check PDFs in background
+        // ── Scan server ──────────────────────────────────────────────────────
         const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
-        const all  = (window._studentsData||[]).slice().sort((a,b)=>{
-            return (a['Official Student Name']||'').toLowerCase() < (b['Official Student Name']||'').toLowerCase() ? -1 : 1;
-        });
+        const all  = (window._studentsData || []).slice().sort((a, b) =>
+            (a['Official Student Name'] || '').toLowerCase() < (b['Official Student Name'] || '').toLowerCase() ? -1 : 1
+        );
 
-        const checks = await Promise.all(all.map(async s => {
-            const name = s['Official Student Name']||s['name']||'';
+        const results = await Promise.all(all.map(async s => {
+            const name = (s['Official Student Name'] || s['name'] || '').trim();
             if (!name) return false;
-            if (await tryHead(base+encodeURIComponent(name)+'.pdf')) return true;
-            const variants = [
-                name.trim(),
-                name.trim().replace(/\b\w/g,c=>c.toUpperCase()),
-                name.trim().toUpperCase(),
-                name.trim().toLowerCase(),
-            ];
-            for (const v of variants) {
-                if (v!==name && await tryHead(base+encodeURIComponent(v)+'.pdf')) {
-                    s._pdfNameMismatch=true; s._pdfResolvedName=v+'.pdf'; return true;
+
+            // 1. Exact match
+            if (await tryHead(base + encodeURIComponent(name) + '.pdf')) return true;
+
+            // 2. Try every variant
+            for (const v of nameVariants(name)) {
+                if (await tryHead(base + encodeURIComponent(v) + '.pdf')) {
+                    s._pdfNameMismatch  = true;
+                    s._pdfResolvedName  = v + '.pdf';
+                    return true;
                 }
             }
             return false;
         }));
 
-        _allStudents = all.filter((_,i)=>checks[i]);
+        _allStudents = all.filter((_, i) => results[i]);
 
-        // Restore search term if user already typed while loading
-        const currentTerm = document.getElementById('pdf-modal-search')?.value||'';
-        if (currentTerm) window._filterPdfList(currentTerm);
-        else renderList(_allStudents);
+        // Render — honour any search term the user typed while waiting
+        const inp = document.getElementById('pdf-modal-search');
+        const term = inp?.value.trim().toLowerCase() || '';
+        if (term) {
+            inp.oninput?.();   // re-fire search with current term
+        } else {
+            renderList(_allStudents);
+        }
+        // Re-wire search now that _allStudents is populated
+        wireSearch();
     };
 
-    // Close alias (for keyboard shortcut backward-compat)
-    window._closePdfSearchPanel = function() { window.closeModal?.(); _modalOpen=false; };
+    window._closePdfSearchPanel = function() { window.closeModal?.(); _modalOpen = false; };
 })();
 </script>
 </body>
