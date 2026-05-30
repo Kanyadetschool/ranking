@@ -1134,33 +1134,7 @@
 <!-- PDF Viewer Modal — now rendered via universal modal (openModal) -->
 
 <!-- PDF SEARCH PANEL -->
-<div id="pdf-search-panel" style="
-    position:fixed;top:64px;right:0;width:340px;height:calc(100vh - 64px);
-    background:var(--surface);border-left:1px solid var(--border);
-    box-shadow:-8px 0 32px rgba(13,31,53,.13);z-index:500;
-    display:flex;flex-direction:column;transform:translateX(100%);
-    transition:transform .25s cubic-bezier(.4,0,.2,1);
-    font-family:'DM Sans',sans-serif;visibility:hidden;
-">
-    <div style="padding:1rem 1.1rem .75rem;border-bottom:1px solid var(--border);background:var(--navy);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-        <div style="display:flex;align-items:center;gap:.6rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
-            <span style="font-weight:700;color:#fff;font-size:.95rem;">Student PDFs</span>
-        </div>
-        <button onclick="window._closePdfSearchPanel()" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-    </div>
-    <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;">
-        <div style="position:relative;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2" style="position:absolute;left:.6rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
-            <input id="pdf-search-input" type="text" placeholder="Search by name or class…" style="width:100%;padding:.5rem .75rem .5rem 2rem;border:1px solid var(--border2);border-radius:8px;font-size:.82rem;font-family:'DM Sans',sans-serif;background:var(--surface2);color:var(--text);outline:none;" oninput="window._filterPdfList(this.value)">
-        </div>
-        <div id="pdf-search-count" style="font-size:.72rem;color:var(--slate);margin-top:.4rem;text-align:right;"></div>
-    </div>
-    <div id="pdf-student-list" style="flex:1;overflow-y:auto;padding:.5rem .75rem;"></div>
-</div>
-<div id="pdf-panel-overlay" onclick="window._closePdfSearchPanel()" style="display:none;position:fixed;inset:0;z-index:499;background:rgba(0,0,0,.25);"></div>
+<!-- PDF search panel is now a universal modal — no drawer HTML needed -->
 
 <!-- PROMOTE MODAL -->
 <div id="promote-modal" class="modal-backdrop hidden">
@@ -4485,152 +4459,156 @@ setTimeout(() => {
 }, 800);
 
 
-// ── PDF SEARCH PANEL ──────────────────────────────────
+// ── PDF SEARCH PANEL — opens as universal modal ───────────────────────────────
 (function() {
-    const panel = document.getElementById('pdf-search-panel');
-    const overlay = document.getElementById('pdf-panel-overlay');
-    const listEl = document.getElementById('pdf-student-list');
-    const countEl = document.getElementById('pdf-search-count');
-    const searchInput = document.getElementById('pdf-search-input');
+    let _allStudents = [];   // all students sorted alphabetically
+    let _filtered   = [];   // currently filtered list
+    let _modalOpen  = false;
 
-    let _cachedStudents = [];
-    let _renderData = [];
-
-    function getStudents() { return window._studentsData || []; }
-
-    // Normalise for filename matching
     function norm(s) { return (s||'').toLowerCase().replace(/[''.,\-]/g,'').replace(/\s+/g,' ').trim(); }
 
+    async function tryHead(url) {
+        try { const r = await fetch(url,{method:'HEAD'}); return r.ok; } catch { return false; }
+    }
+
+    // Build the inner HTML that lives inside the modal body
+    function buildModalHtml(loading) {
+        return `
+        <div style="margin-bottom:.75rem;position:relative;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2" style="position:absolute;left:.7rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
+            <input id="pdf-modal-search" type="text" placeholder="Search by name or class…"
+                style="width:100%;padding:.55rem .85rem .55rem 2.2rem;border:1.5px solid var(--border);border-radius:9px;font-size:.87rem;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;"
+                oninput="window._filterPdfList(this.value)"
+                onfocus="this.style.borderColor='var(--navy-lt)';this.style.boxShadow='0 0 0 3px rgba(30,64,128,.1)'"
+                onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+        </div>
+        <div id="pdf-modal-count" style="font-size:.72rem;color:var(--slate);margin-bottom:.5rem;text-align:right;min-height:1em;">
+            ${loading ? 'Checking PDFs…' : ''}
+        </div>
+        <div id="pdf-modal-list" style="max-height:420px;overflow-y:auto;border:1px solid var(--border);border-radius:10px;"></div>`;
+    }
+
     function renderList(students) {
-        _renderData = students;
-        countEl.textContent = students.length + ' student' + (students.length !== 1 ? 's' : '');
+        _filtered = students;
+        const countEl = document.getElementById('pdf-modal-count');
+        const listEl  = document.getElementById('pdf-modal-list');
+        if (!listEl) return;
+
+        const mismatches = students.filter(s=>s._pdfNameMismatch).length;
+        if (countEl) {
+            countEl.innerHTML = `${students.length} student${students.length!==1?'s':''}` +
+                (mismatches ? ` &nbsp;·&nbsp; <span style="color:#92400e;font-weight:700;">⚠ ${mismatches} name fix${mismatches>1?'es':''}</span>` : '');
+        }
+
         if (!students.length) {
             listEl.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--slate);font-size:.83rem;">No students found</div>';
             return;
         }
-        listEl.innerHTML = students.map((s, i) => {
-            const name = s['Official Student Name'] || s['name'] || '—';
-            const grade = s['Grade'] || s['Class'] || s['grade'] || s['class'] || '';
-            const initials = name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-            const hasMismatch = s._pdfNameMismatch ? ' title="⚠ PDF filename may differ from student name"' : '';
-            const mismatchBadge = s._pdfNameMismatch
-                ? `<span style="font-size:.65rem;background:#fffbeb;border:1px solid var(--gold);color:#92400e;border-radius:4px;padding:1px 4px;margin-left:.3rem;" title="Filename: ${s._pdfResolvedName}">⚠ name fix</span>`
+
+        listEl.innerHTML = students.map((s,i) => {
+            const name    = s['Official Student Name'] || s['name'] || '—';
+            const grade   = s['Grade'] || s['Class'] || s['grade'] || s['class'] || '';
+            const badge   = s._pdfNameMismatch
+                ? `<span style="font-size:.63rem;background:#fffbeb;border:1px solid var(--gold);color:#92400e;border-radius:4px;padding:1px 4px;margin-left:.35rem;" title="Server file: ${s._pdfResolvedName}">⚠ fix</span>`
                 : '';
-            return `<div class="pdf-list-item" data-idx="${i}"${hasMismatch}
-                style="display:flex;align-items:center;gap:.7rem;padding:.55rem .6rem;border-radius:8px;cursor:pointer;transition:background .13s;margin-bottom:.2rem;border:1px solid transparent;">
-                <div style="width:36px;height:36px;border-radius:50%;background:var(--gold-dim);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:var(--navy);flex-shrink:0;overflow:hidden;">
-                    <img src="./student_images/${encodeURIComponent(name)}.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">${initials}</span>
-                </div>
+            return `<div class="pdf-modal-item" data-idx="${i}"
+                style="display:flex;align-items:center;gap:.75rem;padding:.6rem .85rem;cursor:pointer;transition:background .12s;border-bottom:1px solid var(--border);">
+                <img src="./student_images/${encodeURIComponent(name)}.jpg"
+                    onerror="this.src='./student_images/default.jpg'"
+                    style="width:38px;height:38px;border-radius:50%;object-fit:cover;border:2px solid var(--gold);flex-shrink:0;background:var(--surface2);">
                 <div style="min-width:0;flex:1;">
-                    <div style="font-weight:600;font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}${mismatchBadge}</div>
+                    <div style="font-weight:600;font-size:.84rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}${badge}</div>
                     <div style="font-size:.7rem;color:var(--slate);">${grade ? 'Grade ' + grade : ''}</div>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.5" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             </div>`;
         }).join('');
+
+        // Last item: remove bottom border
+        const items = listEl.querySelectorAll('.pdf-modal-item');
+        if (items.length) items[items.length-1].style.borderBottom = 'none';
+
+        // Click handler
+        listEl.querySelectorAll('.pdf-modal-item').forEach(el => {
+            el.addEventListener('mouseenter', () => el.style.background='var(--surface2)');
+            el.addEventListener('mouseleave', () => el.style.background='');
+            el.addEventListener('click', () => {
+                const s = _filtered[parseInt(el.dataset.idx,10)];
+                if (!s) return;
+                window.closeModal?.();
+                _modalOpen = false;
+                setTimeout(() => {
+                    window.openLocalPDF(s['Assessment No']||s.id||'', s['Official Student Name']||s['name']||'');
+                }, 220);
+            });
+        });
     }
 
-    listEl.addEventListener('click', e => {
-        const item = e.target.closest('.pdf-list-item');
-        if (!item) return;
-        const idx = parseInt(item.dataset.idx, 10);
-        const s = _renderData[idx];
-        if (!s) return;
-        const name = s['Official Student Name'] || s['name'] || '';
-        const assessNo = s['Assessment No'] || s.id || '';
-        window._closePdfSearchPanel();
-        setTimeout(() => window.openLocalPDF(assessNo, name), 200);
-    });
-
-    listEl.addEventListener('mouseover', e => {
-        const item = e.target.closest('.pdf-list-item');
-        if (item) { item.style.background = 'var(--surface2)'; item.style.borderColor = 'var(--border)'; }
-    });
-    listEl.addEventListener('mouseout', e => {
-        const item = e.target.closest('.pdf-list-item');
-        if (item) { item.style.background = ''; item.style.borderColor = 'transparent'; }
-    });
-
-    // Search always works against _cachedStudents (populated on panel open)
+    // Live search — always works against _allStudents
     window._filterPdfList = function(q) {
         const term = q.trim().toLowerCase();
-        if (!term) { renderList(_cachedStudents); return; }
-        const filtered = _cachedStudents.filter(s => {
-            const name = (s['Official Student Name'] || s['name'] || '').toLowerCase();
-            const grade = (s['Grade'] || s['Class'] || s['grade'] || s['class'] || '').toLowerCase();
-            const no = (s['Assessment No'] || s.id || '').toLowerCase();
-            return name.includes(term) || grade.includes(term) || no.includes(term);
-        });
-        renderList(filtered);
+        if (!term) { renderList(_allStudents); return; }
+        renderList(_allStudents.filter(s => {
+            const name  = (s['Official Student Name']||s['name']||'').toLowerCase();
+            const grade = (s['Grade']||s['Class']||s['grade']||s['class']||'').toLowerCase();
+            const no    = (s['Assessment No']||s.id||'').toLowerCase();
+            return name.includes(term)||grade.includes(term)||no.includes(term);
+        }));
     };
 
     window._openPdfSearchPanel = async function() {
-        // Show panel immediately (visibility:visible + slide in)
-        panel.style.visibility = 'visible';
-        overlay.style.display = 'block';
-        requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
-        if (searchInput) { searchInput.value = ''; searchInput.disabled = true; }
+        if (_modalOpen) return;
+        _modalOpen = true;
 
-        listEl.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--slate);font-size:.83rem;">Checking PDFs…</div>';
-        countEl.textContent = '';
+        // Open modal immediately with loading state
+        openModal({
+            icon: 'plain',
+            title: 'Student PDFs',
+            html: buildModalHtml(true),
+            showCancelButton: false,
+            confirmButtonText: 'Close',
+            wide: true,
+            persistent: true,   // don't close on backdrop click while loading
+        }).then(() => { _modalOpen = false; });
 
-        const all = getStudents().slice().sort((a,b)=>{
-            const na = (a['Official Student Name']||'').toLowerCase();
-            const nb = (b['Official Student Name']||'').toLowerCase();
-            return na < nb ? -1 : na > nb ? 1 : 0;
+        // Auto-focus search after modal animates in
+        setTimeout(() => { document.getElementById('pdf-modal-search')?.focus(); }, 250);
+
+        // Fetch & check PDFs in background
+        const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
+        const all  = (window._studentsData||[]).slice().sort((a,b)=>{
+            return (a['Official Student Name']||'').toLowerCase() < (b['Official Student Name']||'').toLowerCase() ? -1 : 1;
         });
 
-        const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
-
-        // Check PDFs — try exact name first, then normalised variants (name-mismatch fix)
-        async function tryHead(url) {
-            try { const r = await fetch(url, {method:'HEAD'}); return r.ok; } catch { return false; }
-        }
-
         const checks = await Promise.all(all.map(async s => {
-            const name = s['Official Student Name'] || s['name'] || '';
+            const name = s['Official Student Name']||s['name']||'';
             if (!name) return false;
-            // Exact match
-            if (await tryHead(base + encodeURIComponent(name) + '.pdf')) return true;
-            // Normalised variants
+            if (await tryHead(base+encodeURIComponent(name)+'.pdf')) return true;
             const variants = [
                 name.trim(),
-                name.trim().replace(/\b\w/g, c=>c.toUpperCase()),
+                name.trim().replace(/\b\w/g,c=>c.toUpperCase()),
                 name.trim().toUpperCase(),
                 name.trim().toLowerCase(),
             ];
             for (const v of variants) {
-                if (v !== name && await tryHead(base + encodeURIComponent(v) + '.pdf')) {
-                    s._pdfNameMismatch = true;
-                    s._pdfResolvedName = v + '.pdf';
-                    return true;
+                if (v!==name && await tryHead(base+encodeURIComponent(v)+'.pdf')) {
+                    s._pdfNameMismatch=true; s._pdfResolvedName=v+'.pdf'; return true;
                 }
             }
             return false;
         }));
 
-        _cachedStudents = all.filter((_, i) => checks[i]);
-        renderList(_cachedStudents);
-        if (searchInput) { searchInput.disabled = false; searchInput.focus(); }
+        _allStudents = all.filter((_,i)=>checks[i]);
 
-        // After rendering, show mismatch summary in the count area
-        const mismatches = _cachedStudents.filter(s => s._pdfNameMismatch);
-        if (mismatches.length) {
-            countEl.innerHTML = `${_cachedStudents.length} students &nbsp;·&nbsp; <span style="color:#92400e;font-weight:700;">⚠ ${mismatches.length} name mismatch${mismatches.length>1?'es':''}</span>`;
-        }
+        // Restore search term if user already typed while loading
+        const currentTerm = document.getElementById('pdf-modal-search')?.value||'';
+        if (currentTerm) window._filterPdfList(currentTerm);
+        else renderList(_allStudents);
     };
 
-    window._closePdfSearchPanel = function() {
-        panel.style.transform = 'translateX(100%)';
-        overlay.style.display = 'none';
-        setTimeout(() => { if(panel.style.transform==='translateX(100%)') panel.style.visibility = 'hidden'; }, 260);
-    };
-
-    document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && panel.style.visibility === 'visible') window._closePdfSearchPanel();
-    });
+    // Close alias (for keyboard shortcut backward-compat)
+    window._closePdfSearchPanel = function() { window.closeModal?.(); _modalOpen=false; };
 })();
 </script>
 </body>
-</html
+</html>
