@@ -1131,57 +1131,54 @@
 </div>
 
 <!-- PDF Viewer Modal -->
-<div id="pdf-modal-backdrop" class="modal-backdrop hidden" style="align-items:center;">
-    <div class="modal-box modal-box-wide" style="padding:1.5rem;display:flex;flex-direction:column;max-height:95vh;">
-        <!-- Header row -->
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;flex-shrink:0;">
-            <div style="display:flex;align-items:center;gap:1rem;">
-                <img id="pdf-modal-student-image" class="modal-student-image" src="" alt="Student Image" onerror="this.src='./student_images/default.jpg'">
-                <div>
-                    <div id="pdf-modal-student-name" style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--navy);"></div>
-                    <div style="font-size:.8rem;color:var(--slate);">Birth Certificate</div>
+<!-- PDF VIEWER MODAL — full-screen overlay -->
+<div id="pdf-modal-backdrop" class="modal-backdrop hidden" style="align-items:stretch;justify-content:stretch;padding:0;">
+    <div style="position:relative;width:100%;height:100%;display:flex;flex-direction:column;background:var(--surface);overflow:hidden;">
+
+        <!-- Header bar -->
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1.25rem;flex-shrink:0;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.08);">
+            <div style="display:flex;align-items:center;gap:.85rem;min-width:0;">
+                <img id="pdf-modal-student-image" class="modal-student-image" src="" alt="" onerror="this.src='./student_images/default.jpg'" style="width:40px;height:40px;border-radius:8px;border:2px solid rgba(255,255,255,.2);">
+                <div style="min-width:0;">
+                    <div id="pdf-modal-student-name" style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+                    <div style="font-size:.72rem;color:rgba(255,255,255,.5);">Birth Certificate</div>
                 </div>
             </div>
-            <button id="close-pdf-modal-btn" style="width:36px;height:36px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <button id="close-pdf-modal-btn" title="Close" style="width:36px;height:36px;flex-shrink:0;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
         </div>
 
-        <!-- Toolbar: page nav + rotation -->
-        <div id="pdf-toolbar" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.6rem;flex-shrink:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.4rem .75rem;">
-            <!-- Page navigation -->
+        <!-- Toolbar -->
+        <div id="pdf-toolbar" style="display:flex;align-items:center;gap:.45rem;flex-shrink:0;background:var(--surface2);border-bottom:1px solid var(--border);padding:.45rem 1rem;">
             <button id="pdf-prev-btn" title="Previous page" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             </button>
-            <span id="pdf-page-info" style="font-size:.8rem;font-weight:600;color:var(--navy);white-space:nowrap;min-width:70px;text-align:center;">— / —</span>
+            <span id="pdf-page-info" style="font-size:.8rem;font-weight:600;color:var(--navy);white-space:nowrap;min-width:60px;text-align:center;">— / —</span>
             <button id="pdf-next-btn" title="Next page" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </button>
-            <div style="width:1px;height:22px;background:var(--border);margin:0 .2rem;"></div>
-            <!-- Rotate CCW -->
-            <button id="pdf-rotate-ccw" title="Rotate 90° counter-clockwise" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <div style="width:1px;height:22px;background:var(--border);margin:0 .15rem;"></div>
+            <button id="pdf-rotate-ccw" title="Rotate counter-clockwise" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
                 <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg>
             </button>
-            <!-- Rotate CW -->
-            <button id="pdf-rotate-cw" title="Rotate 90° clockwise" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+            <button id="pdf-rotate-cw" title="Rotate clockwise" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
                 <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3"/></svg>
             </button>
-            <span id="pdf-rotation-badge" style="font-size:.72rem;font-weight:700;color:var(--slate);min-width:30px;">0°</span>
-            <div style="width:1px;height:22px;background:var(--border);margin:0 .2rem;"></div>
-            <!-- Download link -->
+            <span id="pdf-rotation-badge" style="font-size:.72rem;font-weight:700;color:var(--slate);min-width:28px;">0°</span>
+            <div style="width:1px;height:22px;background:var(--border);margin:0 .15rem;"></div>
             <a id="pdf-download-link" href="#" download style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;" title="Download PDF">
                 <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
             </a>
-            <!-- Loading spinner -->
-            <span id="pdf-loading-spinner" style="display:none;margin-left:.3rem;">
+            <span id="pdf-loading-spinner" style="display:none;margin-left:.4rem;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
             </span>
         </div>
 
-        <!-- Canvas viewport: scrollable, fills remaining space -->
-        <div id="pdf-content" style="flex:1;overflow:auto;background:#525659;border-radius:8px;display:flex;align-items:flex-start;justify-content:center;padding:.75rem;min-height:0;">
-            <canvas id="pdf-canvas" style="display:block;box-shadow:0 4px 24px rgba(0,0,0,.35);border-radius:4px;max-width:100%;max-height:100%;"></canvas>
-            <div id="pdf-error-msg" style="display:none;color:#fca5a5;font-size:.9rem;padding:2rem;text-align:center;"></div>
+        <!-- Canvas area — takes all remaining vertical space -->
+        <div id="pdf-content" style="flex:1;overflow:auto;background:#525659;display:flex;align-items:center;justify-content:center;padding:1rem;min-height:0;">
+            <canvas id="pdf-canvas" style="display:none;box-shadow:0 4px 32px rgba(0,0,0,.5);border-radius:3px;"></canvas>
+            <div id="pdf-error-msg" style="display:none;color:#fca5a5;font-size:.9rem;padding:2rem;text-align:center;max-width:400px;line-height:1.6;"></div>
         </div>
     </div>
 </div>
@@ -1562,31 +1559,32 @@ const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
 (function() {
     // Configure PDF.js worker
     if (window.pdfjsLib) {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+            'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
     }
 
-    const canvas      = document.getElementById('pdf-canvas');
-    const errorMsg    = document.getElementById('pdf-error-msg');
-    const viewport    = document.getElementById('pdf-content');
-    const pageInfo    = document.getElementById('pdf-page-info');
-    const spinner     = document.getElementById('pdf-loading-spinner');
-    const rotBadge    = document.getElementById('pdf-rotation-badge');
-    const dlLink      = document.getElementById('pdf-download-link');
+    const canvas   = document.getElementById('pdf-canvas');
+    const errorMsg = document.getElementById('pdf-error-msg');
+    const vp       = document.getElementById('pdf-content');   // scroll container
+    const pageInfo = document.getElementById('pdf-page-info');
+    const spinner  = document.getElementById('pdf-loading-spinner');
+    const rotBadge = document.getElementById('pdf-rotation-badge');
+    const dlLink   = document.getElementById('pdf-download-link');
 
     let _pdfDoc      = null;
     let _currentPage = 1;
-    let _rotation    = 0;   // 0 | 90 | 180 | 270
+    let _rotation    = 0;      // 0 | 90 | 180 | 270
     let _rendering   = false;
+    let _blobUrl     = null;   // keep a ref so we can revoke on close
 
-    // ── Compute the best scale so the page fits inside the viewport ──
-    function computeScale(pdfViewport) {
-        const padH = 24; // 2 × .75rem padding
-        const padV = 24;
-        const availW = viewport.clientWidth  - padH;
-        const availH = viewport.clientHeight - padV;
-        const scaleW = availW  / pdfViewport.width;
-        const scaleH = availH  / pdfViewport.height;
-        return Math.min(scaleW, scaleH, 2.5);   // cap at 2.5× for crisp render
+    // ── Scale: fit the page inside the visible canvas area ──────────
+    function computeScale(rawVp) {
+        const pad  = 32;   // 2 × 1rem padding
+        const availW = Math.max(vp.clientWidth  - pad, 100);
+        const availH = Math.max(vp.clientHeight - pad, 100);
+        const sw = availW  / rawVp.width;
+        const sh = availH  / rawVp.height;
+        return Math.min(sw, sh, 3);   // cap at 3× (crisp on retina)
     }
 
     async function renderPage(pageNum) {
@@ -1594,29 +1592,31 @@ const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
         _rendering = true;
         spinner.style.display = 'inline-flex';
         errorMsg.style.display = 'none';
-        canvas.style.display = 'none';
+        canvas.style.display   = 'none';
 
         try {
-            const page = await _pdfDoc.getPage(pageNum);
-            // Get a base viewport at scale=1 with the current rotation
+            const page  = await _pdfDoc.getPage(pageNum);
             const rawVp = page.getViewport({ scale: 1, rotation: _rotation });
             const scale = computeScale(rawVp);
             const finalVp = page.getViewport({ scale, rotation: _rotation });
 
-            canvas.width  = finalVp.width;
-            canvas.height = finalVp.height;
-            canvas.style.width  = finalVp.width  + 'px';
-            canvas.style.height = finalVp.height + 'px';
+            // Device pixel ratio for sharp rendering on HiDPI screens
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width  = Math.floor(finalVp.width  * dpr);
+            canvas.height = Math.floor(finalVp.height * dpr);
+            canvas.style.width  = Math.floor(finalVp.width)  + 'px';
+            canvas.style.height = Math.floor(finalVp.height) + 'px';
 
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            ctx.clearRect(0, 0, finalVp.width, finalVp.height);
 
             await page.render({ canvasContext: ctx, viewport: finalVp }).promise;
 
-            pageInfo.textContent = `${pageNum} / ${_pdfDoc.numPages}`;
-            canvas.style.display = 'block';
-        } catch(e) {
-            errorMsg.textContent = 'Error rendering page: ' + e.message;
+            pageInfo.textContent   = `${pageNum} / ${_pdfDoc.numPages}`;
+            canvas.style.display   = 'block';
+        } catch (e) {
+            errorMsg.textContent   = 'Render error: ' + (e.message || e);
             errorMsg.style.display = 'block';
         } finally {
             spinner.style.display = 'none';
@@ -1625,69 +1625,89 @@ const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
     }
 
     async function loadPDF(url) {
+        // Reset state
         _rotation    = 0;
         _currentPage = 1;
         _pdfDoc      = null;
-        rotBadge.textContent = '0°';
-        pageInfo.textContent = '— / —';
-        canvas.style.display = 'none';
+        rotBadge.textContent   = '0°';
+        pageInfo.textContent   = '— / —';
+        canvas.style.display   = 'none';
         errorMsg.style.display = 'none';
-        spinner.style.display = 'inline-flex';
+        spinner.style.display  = 'inline-flex';
 
-        dlLink.href = url;
-        dlLink.download = url.split('/').pop();
+        // Revoke previous blob to free memory
+        if (_blobUrl) { URL.revokeObjectURL(_blobUrl); _blobUrl = null; }
+
+        dlLink.href     = url;
+        dlLink.download = decodeURIComponent(url.split('/').pop());
 
         try {
-            if (!window.pdfjsLib) throw new Error('PDF.js not loaded');
-            const loadTask = pdfjsLib.getDocument({ url, withCredentials: false });
+            if (!window.pdfjsLib) throw new Error('PDF.js library not loaded');
+
+            // Fetch as blob first — avoids CORS issues on GitHub Pages
+            const resp = await fetch(url, { cache: 'force-cache' });
+            if (!resp.ok) throw new Error(`HTTP ${resp.status} — file not found`);
+            const blob  = await resp.blob();
+            _blobUrl    = URL.createObjectURL(blob);
+
+            // Also update download link to use blob so it always works
+            dlLink.href = _blobUrl;
+
+            const loadTask = pdfjsLib.getDocument({ url: _blobUrl });
             _pdfDoc = await loadTask.promise;
-            await renderPage(1);
-        } catch(e) {
-            spinner.style.display = 'none';
-            errorMsg.textContent = 'Could not load PDF. ' + (e.message || '');
+
+            // Wait one frame so the container has its final dimensions
+            requestAnimationFrame(() => renderPage(1));
+        } catch (e) {
+            spinner.style.display  = 'none';
+            errorMsg.innerHTML     = `<strong>Could not load PDF</strong><br>${e.message || e}<br><br>
+                <a href="${url}" target="_blank" style="color:var(--gold);text-decoration:underline;">Try opening directly ↗</a>`;
             errorMsg.style.display = 'block';
         }
     }
 
-    // Re-render on container resize (handles window resize while modal open)
+    // Re-render when the container is resized (window resize, orientation change)
     let _resizeTimer;
-    const ro = new ResizeObserver(() => {
+    new ResizeObserver(() => {
         clearTimeout(_resizeTimer);
         _resizeTimer = setTimeout(() => {
             if (_pdfDoc && !_rendering) renderPage(_currentPage);
-        }, 120);
-    });
-    ro.observe(viewport);
+        }, 150);
+    }).observe(vp);
 
-    // Button: previous page
+    // Page navigation
     document.getElementById('pdf-prev-btn').addEventListener('click', () => {
         if (!_pdfDoc || _currentPage <= 1) return;
-        _currentPage--;
-        renderPage(_currentPage);
+        _currentPage--; renderPage(_currentPage);
     });
-
-    // Button: next page
     document.getElementById('pdf-next-btn').addEventListener('click', () => {
         if (!_pdfDoc || _currentPage >= _pdfDoc.numPages) return;
-        _currentPage++;
-        renderPage(_currentPage);
+        _currentPage++; renderPage(_currentPage);
     });
 
-    // Button: rotate counter-clockwise
+    // Rotation — recalculate scale on every rotation
     document.getElementById('pdf-rotate-ccw').addEventListener('click', () => {
         _rotation = (_rotation + 270) % 360;
         rotBadge.textContent = _rotation + '°';
         if (_pdfDoc) renderPage(_currentPage);
     });
-
-    // Button: rotate clockwise
     document.getElementById('pdf-rotate-cw').addEventListener('click', () => {
         _rotation = (_rotation + 90) % 360;
         rotBadge.textContent = _rotation + '°';
         if (_pdfDoc) renderPage(_currentPage);
     });
 
-    // Expose loader so openLocalPDF can call it
+    // Cleanup blob on modal close
+    document.getElementById('close-pdf-modal-btn').addEventListener('click', () => {
+        pdfModalBackdrop.classList.add('hidden');
+        if (_blobUrl) { URL.revokeObjectURL(_blobUrl); _blobUrl = null; }
+        _pdfDoc = null;
+        canvas.style.display   = 'none';
+        errorMsg.style.display = 'none';
+        pageInfo.textContent   = '— / —';
+        rotBadge.textContent   = '0°';
+    });
+
     window._pdfViewerLoad = loadPDF;
 })();
 const studentsPerPageSelect = document.getElementById('students-per-page');
@@ -1705,16 +1725,17 @@ const showModal = (message) => {
 
 closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
 closePrintModalBtn.addEventListener('click', () => printModal.classList.add('hidden'));
-closePdfModalBtn.addEventListener('click', () => { pdfModalBackdrop.classList.add('hidden'); });
+// close-pdf-modal-btn listener is handled inside the PDF viewer IIFE above
 export const openLocalPDF = (assessmentNo, studentName) => {
     if (!studentName && !assessmentNo) return;
     const pdfName = studentName || assessmentNo;
     pdfModalStudentName.textContent = pdfName;
     pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
     const localUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}.pdf`;
+    // Show modal FIRST so the container has real dimensions, then load
     pdfModalBackdrop.classList.remove('hidden');
-    // Load via the PDF.js canvas viewer (supports rotation + auto-fit)
-    requestAnimationFrame(() => window._pdfViewerLoad(localUrl));
+    // Two rAF to ensure layout is committed before measuring
+    requestAnimationFrame(() => requestAnimationFrame(() => window._pdfViewerLoad(localUrl)));
 };
 window.openLocalPDF = openLocalPDF;
 
