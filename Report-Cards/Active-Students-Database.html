@@ -697,11 +697,7 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/></svg>
             Sign Out
         </button>
-        <button id="pdf-nav-btn" class="btn btn-ghost btn-sm" title="Browse Student PDFs (P)" onclick="window._openPdfSearchPanel()">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
-            <span style="margin-left:.25rem;font-size:.75rem;font-weight:600;">PDFs</span>
-        </button>
-                <button id="dark-mode-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Toggle dark mode (D)">
+        <button id="dark-mode-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Toggle dark mode (D)">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
             Dark <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">D</kbd>
         </button>
@@ -883,6 +879,10 @@
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem;">
             <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
                 <button id="toggle-stats-btn" class="tab-toolbar-btn" style="font-size:.75rem;">▴ Hide Analytics</button>
+                <button id="pdf-nav-btn" class="tab-toolbar-btn" title="Browse Student PDFs (P)" onclick="window._openPdfSearchPanel()" style="display:flex;align-items:center;gap:.35rem;color:var(--navy);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
+                    Student PDFs
+                </button>
                 <button id="save-preset-btn" class="tab-toolbar-btn" title="Save current grade+search as a preset">
                     <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
                     Save Filter
@@ -1173,6 +1173,12 @@
             <span id="pdf-loading-spinner" style="display:none;margin-left:.4rem;">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
             </span>
+            <div style="width:1px;height:22px;background:var(--border);margin:0 .15rem;"></div>
+            <!-- Zoom Controls -->
+            <button id="pdf-zoom-out" title="Zoom out (-)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;line-height:1;">−</button>
+            <span id="pdf-zoom-level" style="font-size:.78rem;font-weight:700;color:var(--navy);min-width:40px;text-align:center;user-select:none;">100%</span>
+            <button id="pdf-zoom-in" title="Zoom in (+)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;line-height:1;">+</button>
+            <button id="pdf-zoom-reset" title="Reset zoom (0)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;">FIT</button>
         </div>
 
         <!-- Canvas area — takes all remaining vertical space -->
@@ -1183,34 +1189,40 @@
     </div>
 </div>
 
-<!-- PDF SEARCH PANEL -->
-<div id="pdf-search-panel" style="
-    display:none;position:fixed;top:64px;right:0;width:340px;height:calc(100vh - 64px);
-    background:var(--surface);border-left:1px solid var(--border);
-    box-shadow:-8px 0 32px rgba(13,31,53,.13);z-index:500;
-    display:flex;flex-direction:column;transform:translateX(100%);
-    transition:transform .25s cubic-bezier(.4,0,.2,1);
-    font-family:'DM Sans',sans-serif;
-" id="pdf-search-panel">
-    <div style="padding:1rem 1.1rem .75rem;border-bottom:1px solid var(--border);background:var(--navy);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
-        <div style="display:flex;align-items:center;gap:.6rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
-            <span style="font-weight:700;color:#fff;font-size:.95rem;">Student PDFs</span>
+<!-- PDF SEARCH MODAL (universal modal style) -->
+<div id="pdf-search-panel" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(13,31,53,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+    <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);margin:1rem;">
+        <!-- Header -->
+        <div style="padding:1rem 1.25rem .875rem;border-bottom:1px solid var(--border);background:var(--navy);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
+            <div style="display:flex;align-items:center;gap:.65rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
+                <span style="font-weight:700;color:#fff;font-size:.97rem;">Student PDFs</span>
+            </div>
+            <button onclick="window._closePdfSearchPanel()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
-        <button onclick="window._closePdfSearchPanel()" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.1);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-        </button>
-    </div>
-    <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);flex-shrink:0;">
-        <div style="position:relative;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2" style="position:absolute;left:.6rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
-            <input id="pdf-search-input" type="text" placeholder="Search by name or class…" style="width:100%;padding:.5rem .75rem .5rem 2rem;border:1px solid var(--border2);border-radius:8px;font-size:.82rem;font-family:'DM Sans',sans-serif;background:var(--surface2);color:var(--text);outline:none;" oninput="window._filterPdfList(this.value)">
+        <!-- Advanced Filters -->
+        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
+            <div style="display:flex;gap:.55rem;align-items:center;">
+                <div style="position:relative;flex:1;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2" style="position:absolute;left:.6rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
+                    <input id="pdf-search-input" type="text" placeholder="Search by name…" style="width:100%;padding:.5rem .75rem .5rem 2rem;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s;" oninput="window._filterPdfList()" onfocus="this.style.borderColor='var(--navy-lt)'" onblur="this.style.borderColor='var(--border)'">
+                </div>
+                <select id="pdf-grade-filter" style="padding:.49rem .7rem;border:1.5px solid var(--border);border-radius:8px;font-size:.82rem;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;cursor:pointer;min-width:110px;transition:border-color .15s;" onchange="window._filterPdfList()" onfocus="this.style.borderColor='var(--navy-lt)'" onblur="this.style.borderColor='var(--border)'">
+                    <option value="">All Grades</option>
+                </select>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.4rem;">
+                <div id="pdf-search-count" style="font-size:.72rem;color:var(--slate);"></div>
+                <button id="pdf-filter-clear" onclick="window._clearPdfFilters()" style="display:none;font-size:.7rem;color:var(--navy-lt);background:none;border:none;cursor:pointer;font-weight:600;padding:0;">Clear filters ✕</button>
+            </div>
         </div>
-        <div id="pdf-search-count" style="font-size:.72rem;color:var(--slate);margin-top:.4rem;text-align:right;"></div>
+        <!-- Student List -->
+        <div id="pdf-student-list" style="flex:1;overflow-y:auto;padding:.5rem .75rem;min-height:200px;"></div>
     </div>
-    <div id="pdf-student-list" style="flex:1;overflow-y:auto;padding:.5rem .75rem;"></div>
 </div>
-<div id="pdf-panel-overlay" onclick="window._closePdfSearchPanel()" style="display:none;position:fixed;inset:0;z-index:499;background:rgba(0,0,0,.25);"></div>
+<div id="pdf-panel-overlay" onclick="window._closePdfSearchPanel()" style="display:none;"></div>
 
 <!-- PROMOTE MODAL -->
 <div id="promote-modal" class="modal-backdrop hidden">
@@ -1576,6 +1588,16 @@ const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
     let _rotation    = 0;      // 0 | 90 | 180 | 270
     let _rendering   = false;
     let _blobUrl     = null;   // keep a ref so we can revoke on close
+    let _zoomMultiplier = 1.0; // 1.0 = fit-to-screen; adjusted by zoom in/out
+
+    const ZOOM_STEP = 0.2;
+    const ZOOM_MIN  = 0.3;
+    const ZOOM_MAX  = 4.0;
+    const zoomLevelEl = document.getElementById('pdf-zoom-level');
+
+    function updateZoomBadge() {
+        if (zoomLevelEl) zoomLevelEl.textContent = Math.round(_zoomMultiplier * 100) + '%';
+    }
 
     // ── Scale: fit the page inside the visible canvas area ──────────
     function computeScale(rawVp) {
@@ -1584,7 +1606,8 @@ const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
         const availH = Math.max(vp.clientHeight - pad, 100);
         const sw = availW  / rawVp.width;
         const sh = availH  / rawVp.height;
-        return Math.min(sw, sh, 3);   // cap at 3× (crisp on retina)
+        const fitScale = Math.min(sw, sh, 3);   // cap at 3× (crisp on retina)
+        return fitScale * _zoomMultiplier;
     }
 
     async function renderPage(pageNum) {
@@ -1629,6 +1652,8 @@ const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
         _rotation    = 0;
         _currentPage = 1;
         _pdfDoc      = null;
+        _zoomMultiplier = 1.0;
+        updateZoomBadge();
         rotBadge.textContent   = '0°';
         pageInfo.textContent   = '— / —';
         canvas.style.display   = 'none';
@@ -1697,11 +1722,57 @@ const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
         if (_pdfDoc) renderPage(_currentPage);
     });
 
+    // Zoom controls
+    document.getElementById('pdf-zoom-in').addEventListener('click', () => {
+        _zoomMultiplier = Math.min(_zoomMultiplier + ZOOM_STEP, ZOOM_MAX);
+        updateZoomBadge();
+        if (_pdfDoc) renderPage(_currentPage);
+    });
+    document.getElementById('pdf-zoom-out').addEventListener('click', () => {
+        _zoomMultiplier = Math.max(_zoomMultiplier - ZOOM_STEP, ZOOM_MIN);
+        updateZoomBadge();
+        if (_pdfDoc) renderPage(_currentPage);
+    });
+    document.getElementById('pdf-zoom-reset').addEventListener('click', () => {
+        _zoomMultiplier = 1.0;
+        updateZoomBadge();
+        if (_pdfDoc) renderPage(_currentPage);
+    });
+
+    // Keyboard zoom shortcuts (+ / - / 0) when PDF modal is open
+    document.addEventListener('keydown', e => {
+        if (document.getElementById('pdf-modal-backdrop')?.classList.contains('hidden')) return;
+        if (['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)) return;
+        if (e.key === '+' || (e.key === '=' && e.shiftKey)) {
+            _zoomMultiplier = Math.min(_zoomMultiplier + ZOOM_STEP, ZOOM_MAX);
+            updateZoomBadge(); if (_pdfDoc) renderPage(_currentPage);
+        } else if (e.key === '-') {
+            _zoomMultiplier = Math.max(_zoomMultiplier - ZOOM_STEP, ZOOM_MIN);
+            updateZoomBadge(); if (_pdfDoc) renderPage(_currentPage);
+        } else if (e.key === '0') {
+            _zoomMultiplier = 1.0;
+            updateZoomBadge(); if (_pdfDoc) renderPage(_currentPage);
+        }
+    });
+
+    // Mouse-wheel zoom (Ctrl + scroll) in PDF viewer
+    vp.addEventListener('wheel', e => {
+        if (!e.ctrlKey && !e.metaKey) return;
+        e.preventDefault();
+        _zoomMultiplier = e.deltaY < 0
+            ? Math.min(_zoomMultiplier + ZOOM_STEP * 0.5, ZOOM_MAX)
+            : Math.max(_zoomMultiplier - ZOOM_STEP * 0.5, ZOOM_MIN);
+        updateZoomBadge();
+        if (_pdfDoc && !_rendering) renderPage(_currentPage);
+    }, { passive: false });
+
     // Cleanup blob on modal close
     document.getElementById('close-pdf-modal-btn').addEventListener('click', () => {
         pdfModalBackdrop.classList.add('hidden');
         if (_blobUrl) { URL.revokeObjectURL(_blobUrl); _blobUrl = null; }
         _pdfDoc = null;
+        _zoomMultiplier = 1.0;
+        updateZoomBadge();
         canvas.style.display   = 'none';
         errorMsg.style.display = 'none';
         pageInfo.textContent   = '— / —';
@@ -4607,10 +4678,11 @@ setTimeout(() => {
 // ── PDF SEARCH PANEL ──────────────────────────────────
 (function() {
     const panel = document.getElementById('pdf-search-panel');
-    const overlay = document.getElementById('pdf-panel-overlay');
     const listEl = document.getElementById('pdf-student-list');
     const countEl = document.getElementById('pdf-search-count');
     const searchInput = document.getElementById('pdf-search-input');
+    const gradeFilter = document.getElementById('pdf-grade-filter');
+    const clearBtn = document.getElementById('pdf-filter-clear');
 
     let _cachedStudents = [];
 
@@ -4618,12 +4690,32 @@ setTimeout(() => {
         return window._studentsData || [];
     }
 
-    // Store student data keyed by index for event delegation
     let _renderData = [];
+
+    function populateGradeFilter(students) {
+        const grades = [...new Set(students.map(s =>
+            s['Grade'] || s['Class'] || s['grade'] || s['class'] || ''
+        ).filter(Boolean))].sort((a, b) => {
+            const na = parseInt(a), nb = parseInt(b);
+            if (!isNaN(na) && !isNaN(nb)) return na - nb;
+            return a.localeCompare(b);
+        });
+        gradeFilter.innerHTML = '<option value="">All Grades</option>' +
+            grades.map(g => `<option value="${g}">Grade ${g}</option>`).join('');
+    }
 
     function renderList(students) {
         _renderData = students;
-        countEl.textContent = students.length + ' student' + (students.length !== 1 ? 's' : '');
+        const total = _cachedStudents.length;
+        const shown = students.length;
+        countEl.textContent = shown === total
+            ? `${total} student${total !== 1 ? 's' : ''}`
+            : `${shown} of ${total} students`;
+
+        // Show/hide clear button
+        const hasFilter = (searchInput.value.trim() !== '') || (gradeFilter.value !== '');
+        if (clearBtn) clearBtn.style.display = hasFilter ? 'block' : 'none';
+
         if (!students.length) {
             listEl.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--slate);font-size:.83rem;">No students found</div>';
             return;
@@ -4647,8 +4739,6 @@ setTimeout(() => {
         }).join('');
     }
 
-
-    // Event delegation — handles clicks on all .pdf-list-item rows
     listEl.addEventListener('click', e => {
         const item = e.target.closest('.pdf-list-item');
         if (!item) return;
@@ -4661,7 +4751,6 @@ setTimeout(() => {
         setTimeout(() => window.openLocalPDF(assessNo, name), 200);
     });
 
-    // Hover styling via event delegation
     listEl.addEventListener('mouseover', e => {
         const item = e.target.closest('.pdf-list-item');
         if (item) { item.style.background = 'var(--surface2)'; item.style.borderColor = 'var(--border)'; }
@@ -4671,25 +4760,34 @@ setTimeout(() => {
         if (item) { item.style.background = ''; item.style.borderColor = 'transparent'; }
     });
 
-    window._filterPdfList = function(q) {
-        const term = q.trim().toLowerCase();
-        if (!term) { renderList(_cachedStudents); return; }
+    window._filterPdfList = function() {
+        const term = (searchInput.value || '').trim().toLowerCase();
+        const grade = (gradeFilter.value || '').toLowerCase();
         const filtered = _cachedStudents.filter(s => {
             const name = (s['Official Student Name'] || s['name'] || '').toLowerCase();
-            const grade = (s['Grade'] || s['Class'] || s['grade'] || s['class'] || '').toLowerCase();
+            const sGrade = (s['Grade'] || s['Class'] || s['grade'] || s['class'] || '').toLowerCase();
             const no = (s['Assessment No'] || s.id || '').toLowerCase();
-            return name.includes(term) || grade.includes(term) || no.includes(term);
+            const matchesSearch = !term || name.includes(term) || no.includes(term);
+            const matchesGrade = !grade || sGrade === grade;
+            return matchesSearch && matchesGrade;
         });
         renderList(filtered);
     };
 
+    window._clearPdfFilters = function() {
+        if (searchInput) searchInput.value = '';
+        if (gradeFilter) gradeFilter.value = '';
+        renderList(_cachedStudents);
+        if (clearBtn) clearBtn.style.display = 'none';
+    };
+
     window._openPdfSearchPanel = async function() {
         panel.style.display = 'flex';
-        overlay.style.display = 'block';
-        requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
+        requestAnimationFrame(() => { panel.style.opacity = '1'; });
         if (searchInput) searchInput.value = '';
+        if (gradeFilter) gradeFilter.value = '';
+        if (clearBtn) clearBtn.style.display = 'none';
 
-        // Show loading state
         listEl.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--slate);font-size:.83rem;">Checking PDFs…</div>';
         countEl.textContent = '';
 
@@ -4701,7 +4799,6 @@ setTimeout(() => {
 
         const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
 
-        // Check each student's PDF exists via HEAD request
         const checks = await Promise.all(all.map(s => {
             const name = s['Official Student Name'] || '';
             if (!name) return Promise.resolve(false);
@@ -4712,19 +4809,22 @@ setTimeout(() => {
         }));
 
         _cachedStudents = all.filter((_, i) => checks[i]);
+        populateGradeFilter(_cachedStudents);
         renderList(_cachedStudents);
         setTimeout(() => searchInput.focus(), 50);
     };
 
     window._closePdfSearchPanel = function() {
-        panel.style.transform = 'translateX(100%)';
-        overlay.style.display = 'none';
-        setTimeout(() => { if(panel.style.transform==='translateX(100%)') panel.style.display = 'none'; }, 260);
+        panel.style.display = 'none';
     };
 
-    // Close on Escape
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && panel.style.display === 'flex') window._closePdfSearchPanel();
+    });
+
+    // Click outside to close
+    panel.addEventListener('click', e => {
+        if (e.target === panel) window._closePdfSearchPanel();
     });
 })();
 </script>
