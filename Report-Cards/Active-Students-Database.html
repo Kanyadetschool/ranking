@@ -497,6 +497,7 @@
         #uni-modal .um-box { background:var(--surface);border-radius:18px;box-shadow:0 24px 64px rgba(13,31,53,.32);width:100%;max-width:480px;max-height:90vh;border:1px solid var(--border);transform:scale(.96) translateY(8px);transition:transform .22s ease;overflow:hidden;display:flex;flex-direction:column; }
         #uni-modal.open .um-box { transform:scale(1) translateY(0); }
         #uni-modal .um-box.um-wide { max-width:680px; }
+        #uni-modal .um-box.um-wide-xl { max-width:900px; }
         #uni-modal .um-icon-ring { width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto .85rem;flex-shrink:0; }
         #uni-modal .um-icon-ring.danger { background:var(--danger-lt);border:2px solid var(--danger); }
         #uni-modal .um-icon-ring.warning { background:#fffbeb;border:2px solid var(--gold); }
@@ -1130,36 +1131,17 @@
     </div>
 </div>
 
-<!-- PDF Viewer Modal -->
-<div id="pdf-modal-backdrop" class="modal-backdrop hidden" style="align-items:center;">
-    <div class="modal-box modal-box-wide" style="padding:1.5rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
-            <div style="display:flex;align-items:center;gap:1rem;">
-                <img id="pdf-modal-student-image" class="modal-student-image" src="" alt="Student Image" onerror="this.src='./student_images/default.jpg'">
-                <div>
-                    <div id="pdf-modal-student-name" style="font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--navy);"></div>
-                    <div style="font-size:.8rem;color:var(--slate);">Birth Certificate</div>
-                </div>
-            </div>
-            <button id="close-pdf-modal-btn" style="width:36px;height:36px;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-        <div id="pdf-content" style="width:100%;min-height:400px;height:70vh;">
-            <iframe id="pdf-iframe" style="width:100%;height:100%;border-radius:8px;border:none;" src=""></iframe>
-        </div>
-    </div>
-</div>
+<!-- PDF Viewer Modal — now rendered via universal modal (openModal) -->
 
 <!-- PDF SEARCH PANEL -->
 <div id="pdf-search-panel" style="
-    display:none;position:fixed;top:64px;right:0;width:340px;height:calc(100vh - 64px);
+    position:fixed;top:64px;right:0;width:340px;height:calc(100vh - 64px);
     background:var(--surface);border-left:1px solid var(--border);
     box-shadow:-8px 0 32px rgba(13,31,53,.13);z-index:500;
     display:flex;flex-direction:column;transform:translateX(100%);
     transition:transform .25s cubic-bezier(.4,0,.2,1);
-    font-family:'DM Sans',sans-serif;
-" id="pdf-search-panel">
+    font-family:'DM Sans',sans-serif;visibility:hidden;
+">
     <div style="padding:1rem 1.1rem .75rem;border-bottom:1px solid var(--border);background:var(--navy);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
         <div style="display:flex;align-items:center;gap:.6rem;">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
@@ -1358,7 +1340,7 @@
             const box   = document.getElementById('uni-modal-box');
             if (!modal || !box) { resolve({isCancelled:true}); return; }
 
-            box.className = 'um-box' + (options.wide ? ' um-wide' : '');
+            box.className = 'um-box' + (options.wideXl ? ' um-wide-xl' : options.wide ? ' um-wide' : '');
 
             // Loading spinner state
             if (options.loading) {
@@ -1518,11 +1500,7 @@ const printWordBtn = document.getElementById('print-word-btn');
 const printPdfBtn = document.getElementById('print-pdf-btn');
 const searchInput = document.getElementById('search-input');
 const statsSection = document.getElementById('stats-section');
-const pdfModalBackdrop = document.getElementById('pdf-modal-backdrop');
-const pdfIframe = document.getElementById('pdf-iframe');
-const closePdfModalBtn = document.getElementById('close-pdf-modal-btn');
-const pdfModalStudentImage = document.getElementById('pdf-modal-student-image');
-const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
+// PDF viewer now uses universal modal — no separate backdrop elements needed
 const studentsPerPageSelect = document.getElementById('students-per-page');
 const kpiGrid = document.getElementById('kpi-grid');
 const bulkSelectToggleBtn = null; // removed from UI — checkboxes always visible
@@ -1538,17 +1516,109 @@ const showModal = (message) => {
 
 closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
 closePrintModalBtn.addEventListener('click', () => printModal.classList.add('hidden'));
-closePdfModalBtn.addEventListener('click', () => { pdfModalBackdrop.classList.add('hidden'); pdfIframe.src = ''; });
-export const openLocalPDF = (assessmentNo, studentName) => {
+// closePdfModalBtn removed — PDF modal now uses universal modal
+// ── openLocalPDF — uses universal modal + name-mismatch diagnostics ──────────
+window.openLocalPDF = async function(assessmentNo, studentName) {
     if (!studentName && !assessmentNo) return;
-    const pdfName = studentName || assessmentNo;
-    pdfModalStudentName.textContent = pdfName;
-    pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
-    const localUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}.pdf`;
-    pdfIframe.src = `https://docs.google.com/viewer?url=${encodeURIComponent(localUrl)}&embedded=true`;
-    pdfModalBackdrop.classList.remove('hidden');
+    const displayName = studentName || assessmentNo;
+    const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
+
+    // Helper: try a URL, return true if it resolves
+    async function tryHead(url) {
+        try { const r = await fetch(url, { method: 'HEAD' }); return r.ok; } catch { return false; }
+    }
+
+    // Normalise a name to a comparable key: lowercase, collapse spaces, strip punctuation
+    function norm(s) { return (s||'').toLowerCase().replace(/[''.,\-]/g,'').replace(/\s+/g,' ').trim(); }
+
+    // 1. Try exact encoded name first
+    const exactUrl = base + encodeURIComponent(displayName) + '.pdf';
+    let resolvedUrl = null;
+
+    if (await tryHead(exactUrl)) {
+        resolvedUrl = exactUrl;
+    } else {
+        // 2. Try common normalised variants
+        const variants = [
+            displayName.trim(),
+            displayName.trim().replace(/\s+/g,' '),
+            // Title-case all words
+            displayName.trim().replace(/\b\w/g, c => c.toUpperCase()),
+            // All-caps
+            displayName.trim().toUpperCase(),
+            // All-lowercase
+            displayName.trim().toLowerCase(),
+        ];
+        for (const v of variants) {
+            const u = base + encodeURIComponent(v) + '.pdf';
+            if (await tryHead(u)) { resolvedUrl = u; break; }
+        }
+
+        // 3. If still not found, try matching against all students in _studentsData by norm
+        if (!resolvedUrl && window._studentsData) {
+            const normTarget = norm(displayName);
+            for (const s of window._studentsData) {
+                const candidate = s['Official Student Name'] || s['name'] || '';
+                if (norm(candidate) === normTarget && candidate !== displayName) {
+                    const u = base + encodeURIComponent(candidate) + '.pdf';
+                    if (await tryHead(u)) { resolvedUrl = u; break; }
+                }
+            }
+        }
+    }
+
+    if (!resolvedUrl) {
+        // Show mismatch diagnostic in universal modal
+        const normName = norm(displayName);
+        // Collect possible near-matches from student data
+        let suggestions = '';
+        if (window._studentsData) {
+            const close = window._studentsData
+                .map(s => s['Official Student Name'] || s['name'] || '')
+                .filter(n => n && norm(n).includes(normName.split(' ')[0]))
+                .slice(0, 5);
+            if (close.length) suggestions = '<div style="margin-top:.75rem;font-size:.78rem;color:var(--slate);">Possible name matches in database:<br>' +
+                close.map(n => `<span style="font-weight:600;color:var(--navy);">${n}</span>`).join(', ') + '</div>';
+        }
+        await openModal({
+            icon: 'warning',
+            title: 'PDF Not Found',
+            html: `<div style="font-size:.85rem;color:var(--text2);line-height:1.6;">
+                No file found for <strong>${displayName}</strong>.<br>
+                Expected filename: <code style="font-size:.78rem;background:var(--surface2);padding:2px 6px;border-radius:4px;border:1px solid var(--border);">${encodeURIComponent(displayName)}.pdf</code>
+                <br><br>The server filename may differ — check capitalisation, spaces, or special characters.
+                ${suggestions}
+            </div>`,
+            confirmButtonText: 'OK',
+        });
+        return;
+    }
+
+    // 4. Open PDF in universal modal using Google Docs viewer (works on most servers)
+    const iframeUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(resolvedUrl)}&embedded=true`;
+    const imgSrc = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
+
+    const headerHtml = `<div style="display:flex;align-items:center;gap:.85rem;margin-bottom:.75rem;">
+        <img src="${imgSrc}" onerror="this.style.display='none'" style="width:48px;height:48px;object-fit:cover;border-radius:8px;border:2px solid var(--border);">
+        <div>
+            <div style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--navy);">${displayName}</div>
+            <div style="font-size:.75rem;color:var(--slate);">Birth Certificate / Document</div>
+        </div>
+    </div>
+    <iframe src="${iframeUrl}" style="width:100%;height:68vh;border-radius:8px;border:1px solid var(--border);"></iframe>`;
+
+    await openModal({
+        icon: null,
+        title: null,
+        html: headerHtml,
+        confirmButtonText: 'Close',
+        wideXl: true,
+        noFooter: false,
+    });
 };
-window.openLocalPDF = openLocalPDF;
+
+// Alias kept for backward-compat
+const openLocalPDF = window.openLocalPDF;
 
 // ── TOGGLE UPLOAD SECTION ─────────────────────────────
 const toggleUploadBtn = document.getElementById('toggle-upload-btn');
@@ -4424,13 +4494,12 @@ setTimeout(() => {
     const searchInput = document.getElementById('pdf-search-input');
 
     let _cachedStudents = [];
-
-    function getStudents() {
-        return window._studentsData || [];
-    }
-
-    // Store student data keyed by index for event delegation
     let _renderData = [];
+
+    function getStudents() { return window._studentsData || []; }
+
+    // Normalise for filename matching
+    function norm(s) { return (s||'').toLowerCase().replace(/[''.,\-]/g,'').replace(/\s+/g,' ').trim(); }
 
     function renderList(students) {
         _renderData = students;
@@ -4443,14 +4512,18 @@ setTimeout(() => {
             const name = s['Official Student Name'] || s['name'] || '—';
             const grade = s['Grade'] || s['Class'] || s['grade'] || s['class'] || '';
             const initials = name.split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
-            return `<div class="pdf-list-item" data-idx="${i}"
+            const hasMismatch = s._pdfNameMismatch ? ' title="⚠ PDF filename may differ from student name"' : '';
+            const mismatchBadge = s._pdfNameMismatch
+                ? `<span style="font-size:.65rem;background:#fffbeb;border:1px solid var(--gold);color:#92400e;border-radius:4px;padding:1px 4px;margin-left:.3rem;" title="Filename: ${s._pdfResolvedName}">⚠ name fix</span>`
+                : '';
+            return `<div class="pdf-list-item" data-idx="${i}"${hasMismatch}
                 style="display:flex;align-items:center;gap:.7rem;padding:.55rem .6rem;border-radius:8px;cursor:pointer;transition:background .13s;margin-bottom:.2rem;border:1px solid transparent;">
                 <div style="width:36px;height:36px;border-radius:50%;background:var(--gold-dim);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:var(--navy);flex-shrink:0;overflow:hidden;">
                     <img src="./student_images/${encodeURIComponent(name)}.jpg" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">${initials}</span>
                 </div>
                 <div style="min-width:0;flex:1;">
-                    <div style="font-weight:600;font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
+                    <div style="font-weight:600;font-size:.82rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}${mismatchBadge}</div>
                     <div style="font-size:.7rem;color:var(--slate);">${grade ? 'Grade ' + grade : ''}</div>
                 </div>
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.5" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
@@ -4458,8 +4531,6 @@ setTimeout(() => {
         }).join('');
     }
 
-
-    // Event delegation — handles clicks on all .pdf-list-item rows
     listEl.addEventListener('click', e => {
         const item = e.target.closest('.pdf-list-item');
         if (!item) return;
@@ -4472,7 +4543,6 @@ setTimeout(() => {
         setTimeout(() => window.openLocalPDF(assessNo, name), 200);
     });
 
-    // Hover styling via event delegation
     listEl.addEventListener('mouseover', e => {
         const item = e.target.closest('.pdf-list-item');
         if (item) { item.style.background = 'var(--surface2)'; item.style.borderColor = 'var(--border)'; }
@@ -4482,6 +4552,7 @@ setTimeout(() => {
         if (item) { item.style.background = ''; item.style.borderColor = 'transparent'; }
     });
 
+    // Search always works against _cachedStudents (populated on panel open)
     window._filterPdfList = function(q) {
         const term = q.trim().toLowerCase();
         if (!term) { renderList(_cachedStudents); return; }
@@ -4495,12 +4566,12 @@ setTimeout(() => {
     };
 
     window._openPdfSearchPanel = async function() {
-        panel.style.display = 'flex';
+        // Show panel immediately (visibility:visible + slide in)
+        panel.style.visibility = 'visible';
         overlay.style.display = 'block';
         requestAnimationFrame(() => { panel.style.transform = 'translateX(0)'; });
-        if (searchInput) searchInput.value = '';
+        if (searchInput) { searchInput.value = ''; searchInput.disabled = true; }
 
-        // Show loading state
         listEl.innerHTML = '<div style="text-align:center;padding:2rem 1rem;color:var(--slate);font-size:.83rem;">Checking PDFs…</div>';
         countEl.textContent = '';
 
@@ -4512,30 +4583,52 @@ setTimeout(() => {
 
         const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
 
-        // Check each student's PDF exists via HEAD request
-        const checks = await Promise.all(all.map(s => {
-            const name = s['Official Student Name'] || '';
-            if (!name) return Promise.resolve(false);
-            const url = base + encodeURIComponent(name) + '.pdf';
-            return fetch(url, { method: 'HEAD' })
-                .then(r => r.ok)
-                .catch(() => false);
+        // Check PDFs — try exact name first, then normalised variants (name-mismatch fix)
+        async function tryHead(url) {
+            try { const r = await fetch(url, {method:'HEAD'}); return r.ok; } catch { return false; }
+        }
+
+        const checks = await Promise.all(all.map(async s => {
+            const name = s['Official Student Name'] || s['name'] || '';
+            if (!name) return false;
+            // Exact match
+            if (await tryHead(base + encodeURIComponent(name) + '.pdf')) return true;
+            // Normalised variants
+            const variants = [
+                name.trim(),
+                name.trim().replace(/\b\w/g, c=>c.toUpperCase()),
+                name.trim().toUpperCase(),
+                name.trim().toLowerCase(),
+            ];
+            for (const v of variants) {
+                if (v !== name && await tryHead(base + encodeURIComponent(v) + '.pdf')) {
+                    s._pdfNameMismatch = true;
+                    s._pdfResolvedName = v + '.pdf';
+                    return true;
+                }
+            }
+            return false;
         }));
 
         _cachedStudents = all.filter((_, i) => checks[i]);
         renderList(_cachedStudents);
-        setTimeout(() => searchInput.focus(), 50);
+        if (searchInput) { searchInput.disabled = false; searchInput.focus(); }
+
+        // After rendering, show mismatch summary in the count area
+        const mismatches = _cachedStudents.filter(s => s._pdfNameMismatch);
+        if (mismatches.length) {
+            countEl.innerHTML = `${_cachedStudents.length} students &nbsp;·&nbsp; <span style="color:#92400e;font-weight:700;">⚠ ${mismatches.length} name mismatch${mismatches.length>1?'es':''}</span>`;
+        }
     };
 
     window._closePdfSearchPanel = function() {
         panel.style.transform = 'translateX(100%)';
         overlay.style.display = 'none';
-        setTimeout(() => { if(panel.style.transform==='translateX(100%)') panel.style.display = 'none'; }, 260);
+        setTimeout(() => { if(panel.style.transform==='translateX(100%)') panel.style.visibility = 'hidden'; }, 260);
     };
 
-    // Close on Escape
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && panel.style.display === 'flex') window._closePdfSearchPanel();
+        if (e.key === 'Escape' && panel.style.visibility === 'visible') window._closePdfSearchPanel();
     });
 })();
 </script>
