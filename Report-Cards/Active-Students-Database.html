@@ -681,13 +681,13 @@
             </div>
         </div>
         <!-- History icon -->
-        <button id="tour-launch-btn" class="nav-hide-mobile" title="Start guided tour" onclick="window._tourStart()">
+        <button id="tour-launch-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Start guided tour (T)" onclick="window._tourStart()">
             <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Tour
+            Tour <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">T</kbd>
         </button>
         <button id="shortcut-help-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Keyboard shortcuts (?)" onclick="window._toggleShortcutPanel()">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            ?
+            Shortcuts <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">?</kbd>
         </button>
         <button id="hist-panel-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Change History Panel (H)">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -703,7 +703,7 @@
         </button>
         <button onclick="document.getElementById('spotlight-overlay').classList.remove('hidden');document.getElementById('spotlight-input').focus();" class="btn btn-ghost btn-sm nav-hide-mobile" title="Universal Search (S)">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <kbd style="font-size:.65rem;opacity:.7;">S</kbd>
+            Search <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">S</kbd>
         </button>
         <!-- Hamburger (mobile only) -->
         <button id="nav-hamburger" aria-label="Menu">
@@ -4761,11 +4761,11 @@ setTimeout(() => {
     });
 
     window._filterPdfList = function() {
-        const term = (searchInput.value || '').trim().toLowerCase();
-        const grade = (gradeFilter.value || '').toLowerCase();
+        const term = (searchInput ? searchInput.value : '').trim().toLowerCase();
+        const grade = (gradeFilter ? gradeFilter.value : '').trim().toLowerCase();
         const filtered = _cachedStudents.filter(s => {
             const name = (s['Official Student Name'] || s['name'] || '').toLowerCase();
-            const sGrade = (s['Grade'] || s['Class'] || s['grade'] || s['class'] || '').toLowerCase();
+            const sGrade = (s['Grade'] || s['Class'] || s['grade'] || s['class'] || '').toString().trim().toLowerCase();
             const no = (s['Assessment No'] || s.id || '').toLowerCase();
             const matchesSearch = !term || name.includes(term) || no.includes(term);
             const matchesGrade = !grade || sGrade === grade;
@@ -4808,10 +4808,13 @@ setTimeout(() => {
                 .catch(() => false);
         }));
 
-        _cachedStudents = all.filter((_, i) => checks[i]);
+        const withPdfs = all.filter((_, i) => checks[i]);
+        // Fall back to all students if no PDFs found via HEAD
+        // (HEAD checks fail on file:// protocol, GitHub Pages with CORS, etc.)
+        _cachedStudents = withPdfs.length > 0 ? withPdfs : all;
         populateGradeFilter(_cachedStudents);
         renderList(_cachedStudents);
-        setTimeout(() => searchInput.focus(), 50);
+        setTimeout(() => searchInput && searchInput.focus(), 50);
     };
 
     window._closePdfSearchPanel = function() {
