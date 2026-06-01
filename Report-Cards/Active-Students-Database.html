@@ -382,20 +382,35 @@
 
         /* KPI CARDS */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .85rem; margin-bottom: 1.25rem; }
-        .kpi-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 1rem 1.15rem; box-shadow: var(--shadow-sm); }
-        .kpi-label { font-size: .71rem; font-weight: 700; color: var(--slate); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .35rem; }
-        .kpi-value { font-size: 1.6rem; font-weight: 800; color: var(--navy); line-height: 1; }
-        .kpi-sub { font-size: .72rem; color: var(--slate-lt); margin-top: .2rem; }
+        /* ── Smart Analytics ── */
+        .kpi-card { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:1rem 1.1rem .9rem; box-shadow:0 1px 4px rgba(13,31,53,.07); position:relative; overflow:hidden; transition:box-shadow .18s,transform .18s; cursor:default; }
+        .kpi-card:hover { box-shadow:0 4px 16px rgba(13,31,53,.13); transform:translateY(-1px); }
+        .kpi-card-accent { position:absolute; left:0; top:0; bottom:0; width:3.5px; border-radius:12px 0 0 12px; }
+        .kpi-label { font-size:.68rem; font-weight:700; color:var(--slate); text-transform:uppercase; letter-spacing:.07em; margin-bottom:.3rem; }
+        .kpi-value { font-size:1.75rem; font-weight:900; color:var(--navy); line-height:1; letter-spacing:-.02em; }
+        .kpi-sub { font-size:.7rem; color:var(--slate-lt); margin-top:.22rem; display:flex; align-items:center; gap:.3rem; }
+        .kpi-badge { display:inline-flex; align-items:center; gap:.2rem; font-size:.65rem; font-weight:700; padding:.1rem .35rem; border-radius:20px; }
+        .kpi-badge.up   { background:rgba(5,150,105,.12); color:#059669; }
+        .kpi-badge.warn { background:rgba(245,158,11,.12); color:#d97706; }
+        .kpi-badge.down { background:rgba(220,38,38,.12);  color:#dc2626; }
+        .kpi-mini-bar { display:flex; align-items:flex-end; gap:1.5px; height:22px; margin-top:.45rem; }
+        .kpi-mini-bar span { flex:1; border-radius:2px 2px 0 0; transition:height .4s ease; min-width:3px; }
+        .kpi-donut { width:44px; height:44px; position:absolute; right:.9rem; top:50%; transform:translateY(-50%); }
 
         /* STATS SECTION */
         #stats-section { margin-bottom: 1.25rem; }
-        .stats-dist-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .85rem; }
-        .dist-card { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); padding: 1rem; box-shadow: var(--shadow-sm); }
-        .dist-card h3 { font-size: .82rem; font-weight: 700; color: var(--navy); margin-bottom: .75rem; }
-        .dist-bar-row { margin-bottom: .55rem; }
-        .dist-bar-label { display: flex; justify-content: space-between; font-size: .75rem; color: var(--text2); margin-bottom: .2rem; font-weight: 500; }
-        .dist-bar-track { background: var(--surface3); border-radius: 4px; height: 7px; overflow: hidden; }
-        .dist-bar-fill { height: 7px; border-radius: 4px; transition: width .4s ease; }
+        .stats-dist-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; }
+        .dist-card { background:var(--surface); border-radius:12px; border:1px solid var(--border); padding:1rem 1.1rem; box-shadow:0 1px 4px rgba(13,31,53,.07); }
+        .dist-card-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:.75rem; }
+        .dist-card-title { font-size:.72rem; font-weight:700; color:var(--navy); text-transform:uppercase; letter-spacing:.06em; display:flex; align-items:center; gap:.4rem; }
+        .dist-card-total { font-size:.68rem; color:var(--slate); background:var(--surface2); border-radius:20px; padding:.1rem .45rem; font-weight:600; }
+        .dist-bar-row { margin-bottom:.5rem; }
+        .dist-bar-label { display:flex; justify-content:space-between; align-items:center; font-size:.74rem; color:var(--text2); margin-bottom:.18rem; font-weight:500; }
+        .dist-bar-pct { font-size:.68rem; color:var(--slate); font-weight:600; }
+        .dist-bar-track { background:var(--surface3); border-radius:20px; height:8px; overflow:hidden; }
+        .dist-bar-fill { height:8px; border-radius:20px; transition:width .5s cubic-bezier(.4,0,.2,1); }
+        .insight-strip { background:linear-gradient(135deg,rgba(21,101,176,.07),rgba(240,165,0,.07)); border:1px solid rgba(21,101,176,.15); border-radius:10px; padding:.6rem .9rem; font-size:.75rem; color:var(--navy); font-weight:500; display:flex; align-items:flex-start; gap:.5rem; margin-top:.85rem; line-height:1.45; }
+        .insight-strip svg { flex-shrink:0; margin-top:.05rem; }
 
         /* BULK SELECT TOOLBAR */
         #bulk-action-toolbar {
@@ -2544,57 +2559,207 @@ const getOrderedHeaders = (students) => {
 // ── KPI CARDS ─────────────────────────────────────────
 const updateKPI = (students) => {
     const total = students.length;
-    const grades = new Set(students.map(s => s.Grade).filter(Boolean)).size;
-    const male = students.filter(s => (s.Gender || '').toLowerCase() === 'male').length;
-    const female = students.filter(s => (s.Gender || '').toLowerCase() === 'female').length;
-    const complete = students.filter(s => s['Official Student Name'] && s.Grade).length;
-    const completePct = total > 0 ? Math.round(complete / total * 100) : 0;
+    if (!total) { kpiGrid.innerHTML = ''; kpiGrid.style.display = 'none'; return; }
+
+    // Core counts
+    const gradeMap = {};
+    students.forEach(s => { const g = s.Grade||'?'; gradeMap[g]=(gradeMap[g]||0)+1; });
+    const grades = Object.keys(gradeMap).filter(g=>g!=='?').length;
+    const male   = students.filter(s=>(s.Gender||'').toLowerCase()==='male').length;
+    const female = students.filter(s=>(s.Gender||'').toLowerCase()==='female').length;
+    const unspecGender = total - male - female;
+
+    // Data quality score (weighted)
+    const fields = ['Official Student Name','Grade','Gender','Assessment No','UPI','DOB'];
+    const weights = [2, 2, 1, 2, 1, 1]; // name+grade+admNo are critical
+    const maxScore = weights.reduce((a,b)=>a+b,0);
+    let totalScore = 0;
+    students.forEach(s => fields.forEach((f,i) => { if(s[f]) totalScore += weights[i]; }));
+    const qualityPct = Math.round(totalScore / (total * maxScore) * 100);
+    const qualityClass = qualityPct >= 85 ? 'up' : qualityPct >= 60 ? 'warn' : 'down';
+    const qualityLabel = qualityPct >= 85 ? '✦ Excellent' : qualityPct >= 60 ? '⚠ Fair' : '✕ Poor';
+
+    // Gender ratio
+    const femalePct = total > 0 ? Math.round(female/total*100) : 0;
+    const malePct   = total > 0 ? Math.round(male/total*100) : 0;
+    const genderBalance = Math.abs(femalePct - malePct);
+    const genderClass = genderBalance <= 10 ? 'up' : genderBalance <= 25 ? 'warn' : 'down';
+    const genderLabel = genderBalance <= 10 ? '≈ Balanced' : genderBalance <= 25 ? '~ Uneven' : '⚠ Skewed';
+
+    // PDF coverage (use _pdfHref if available)
+    const withPdf = students.filter(s=>s._pdfHref).length;
+    const pdfPct  = total > 0 ? Math.round(withPdf/total*100) : 0;
+    const pdfClass = pdfPct >= 80 ? 'up' : pdfPct >= 40 ? 'warn' : 'down';
+
+    // Grade distribution mini-bar
+    const gradeSorted = Object.entries(gradeMap).filter(([g])=>g!=='?').sort((a,b)=>b[1]-a[1]);
+    const gradeMax = gradeSorted.length ? gradeSorted[0][1] : 1;
+    const miniBar = gradeSorted.slice(0,10).map(([,v]) => {
+        const h = Math.round(Math.max(3, v/gradeMax*20));
+        const opacity = 0.4 + (v/gradeMax)*0.6;
+        return `<span style="height:${h}px;background:var(--navy-lt);opacity:${opacity.toFixed(2)};"></span>`;
+    }).join('');
+
+    // SVG donut for gender
+    const r=18, cx=22, cy=22, circ=2*Math.PI*r;
+    const fDash = femalePct/100*circ;
+    const mDash = malePct/100*circ;
+    const donutSVG = `<svg viewBox="0 0 44 44" class="kpi-donut">
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="5"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#a855f7" stroke-width="5"
+            stroke-dasharray="${fDash.toFixed(1)} ${circ.toFixed(1)}"
+            stroke-dashoffset="${(circ/4).toFixed(1)}" stroke-linecap="round"/>
+        <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--navy-lt)" stroke-width="5"
+            stroke-dasharray="${mDash.toFixed(1)} ${circ.toFixed(1)}"
+            stroke-dashoffset="${(circ/4 - fDash).toFixed(1)}" stroke-linecap="round" opacity=".6"/>
+    </svg>`;
+
     kpiGrid.innerHTML = `
-        <div class="kpi-card"><div class="kpi-label">Total Students</div><div class="kpi-value">${total}</div><div class="kpi-sub">in database</div></div>
-        <div class="kpi-card"><div class="kpi-label">Grades</div><div class="kpi-value">${grades}</div><div class="kpi-sub">unique grades</div></div>
-        <div class="kpi-card"><div class="kpi-label">Male</div><div class="kpi-value">${male}</div><div class="kpi-sub">${total > 0 ? Math.round(male/total*100) : 0}% of total</div></div>
-        <div class="kpi-card"><div class="kpi-label">Female</div><div class="kpi-value">${female}</div><div class="kpi-sub">${total > 0 ? Math.round(female/total*100) : 0}% of total</div></div>
-        <div class="kpi-card"><div class="kpi-label">Data Completeness</div><div class="kpi-value">${completePct}%</div><div class="kpi-sub">${complete} complete records</div></div>
-    `;
-    kpiGrid.style.display = 'grid';
+    <div class="kpi-card">
+        <div class="kpi-card-accent" style="background:#1565b0;"></div>
+        <div class="kpi-label">Total Students</div>
+        <div class="kpi-value">${total.toLocaleString()}</div>
+        <div class="kpi-sub">across <strong>${grades}</strong> grade${grades!==1?'s':''}</div>
+        <div class="kpi-mini-bar">${miniBar}</div>
+    </div>
+    <div class="kpi-card" style="position:relative;">
+        <div class="kpi-card-accent" style="background:#a855f7;"></div>
+        ${donutSVG}
+        <div class="kpi-label">Gender Split</div>
+        <div class="kpi-value">${femalePct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%F</span></div>
+        <div class="kpi-sub">${female} F · ${male} M${unspecGender?` · ${unspecGender} N/A`:''}</div>
+        <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${genderClass}">${genderLabel}</span></div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-accent" style="background:#059669;"></div>
+        <div class="kpi-label">Data Quality</div>
+        <div class="kpi-value">${qualityPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
+        <div class="kpi-sub">
+            <div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;">
+                <div style="height:5px;width:${qualityPct}%;background:${qualityPct>=85?'#059669':qualityPct>=60?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div>
+            </div>
+        </div>
+        <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${qualityClass}">${qualityLabel}</span></div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-accent" style="background:#f0a500;"></div>
+        <div class="kpi-label">PDF Coverage</div>
+        <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
+        <div class="kpi-sub">${withPdf} of ${total} have report PDFs</div>
+        <div class="kpi-sub" style="margin-top:.3rem;">
+            <div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;">
+                <div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div>
+            </div>
+            <span class="kpi-badge ${pdfClass}">${withPdf} ready</span>
+        </div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-card-accent" style="background:#06b6d4;"></div>
+        <div class="kpi-label">Avg Class Size</div>
+        <div class="kpi-value">${grades>0?Math.round(total/grades):0}</div>
+        <div class="kpi-sub">students per grade</div>
+        <div class="kpi-sub" style="margin-top:.3rem;">
+            <span style="font-size:.68rem;color:var(--slate);">Largest: </span>
+            <strong style="font-size:.72rem;">${gradeSorted[0]?`${gradeSorted[0][0]} (${gradeSorted[0][1]})`:'—'}</strong>
+        </div>
+    </div>`;
+    if (!statsCol) kpiGrid.style.display = 'grid';
 };
 
-// ── ANALYTICS ─────────────────────────────────────────
+// ── SMART ANALYTICS ─────────────────────────────────────
 const updateAnalytics = (students) => {
     if (!students || students.length === 0) { statsSection.innerHTML = ''; return; }
-    const gradeMap = {};
+    const total = students.length;
+
+    // Build distributions
+    const gradeDist = {}, classDist = {}, genderDist = {}, missingFields = {};
+    const criticalFields = ['Official Student Name','Grade','Gender','Assessment No','UPI','DOB'];
+
     students.forEach(s => {
-        const g = s.Grade || 'N/A';
-        if (!gradeMap[g]) gradeMap[g] = { Male: 0, Female: 0, Other: 0 };
-        const gnd = (s.Gender || '').toLowerCase();
-        if (gnd === 'male') gradeMap[g].Male++;
-        else if (gnd === 'female') gradeMap[g].Female++;
-        else gradeMap[g].Other++;
+        if (s.Grade)       gradeDist[s.Grade]     = (gradeDist[s.Grade]||0)+1;
+        if (s['Class'])    classDist[s['Class']]   = (classDist[s['Class']]||0)+1;
+        const gnd = (s.Gender||'').trim() || 'Not Set';
+        genderDist[gnd] = (genderDist[gnd]||0)+1;
+        criticalFields.forEach(f => { if (!s[f]) missingFields[f] = (missingFields[f]||0)+1; });
     });
 
-    const barHTML = (label, dist, color) => {
-        if (!dist || Object.keys(dist).length === 0) return '';
-        const total = Object.values(dist).reduce((a, b) => a + b, 0);
-        return `<div class="dist-card"><h3>${label}</h3>${Object.entries(dist).sort((a,b)=>b[1]-a[1]).map(([k,v]) => `
-            <div class="dist-bar-row">
-                <div class="dist-bar-label"><span>${k}</span><span>${v}</span></div>
-                <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${total>0?v/total*100:0}%;background:${color};"></div></div>
-            </div>`).join('')}</div>`;
+    // Colour palettes
+    const GRADE_COLORS   = ['#1565b0','#1976d2','#1e88e5','#42a5f5','#64b5f6','#90caf9','#bbdefb','#e3f2fd','#0d47a1','#0288d1'];
+    const GENDER_COLORS  = { 'Male':'#1565b0','male':'#1565b0','Female':'#a855f7','female':'#a855f7','Not Set':'#94a3b8','Other':'#06b6d4' };
+    const MISSING_COLORS = ['#dc2626','#ef4444','#f87171','#fca5a5','#fee2e2','#fef2f2'];
+
+    const barCard = (title, icon, dist, colors, opts={}) => {
+        if (!Object.keys(dist).length) return '';
+        const entries = Object.entries(dist).sort((a,b)=>b[1]-a[1]);
+        const max = entries[0][1];
+        const cardTotal = Object.values(dist).reduce((a,b)=>a+b,0);
+        const isArray  = Array.isArray(colors);
+        const rows = entries.map(([k,v],i) => {
+            const pct = Math.round(v/cardTotal*100);
+            const w   = Math.round(v/max*100);
+            const col = isArray ? (colors[i % colors.length]) : (colors[k] || colors[k.toLowerCase()] || '#64748b');
+            return `<div class="dist-bar-row">
+                <div class="dist-bar-label">
+                    <span style="display:flex;align-items:center;gap:.4rem;">
+                        <span style="width:8px;height:8px;border-radius:50%;background:${col};flex-shrink:0;display:inline-block;"></span>
+                        ${k}
+                    </span>
+                    <span style="display:flex;align-items:center;gap:.4rem;">
+                        <span class="dist-bar-pct">${pct}%</span>
+                        <strong style="min-width:22px;text-align:right;">${v}</strong>
+                    </span>
+                </div>
+                <div class="dist-bar-track">
+                    <div class="dist-bar-fill" style="width:${w}%;background:${col};"></div>
+                </div>
+            </div>`;
+        }).join('');
+
+        const insight = opts.insight || '';
+        return `<div class="dist-card">
+            <div class="dist-card-header">
+                <div class="dist-card-title">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">${icon}</svg>
+                    ${title}
+                </div>
+                <span class="dist-card-total">${cardTotal} total</span>
+            </div>
+            ${rows}
+            ${insight ? `<div class="insight-strip"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#1565b0" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>${insight}</div>` : ''}
+        </div>`;
     };
 
-    const gradeDist = {};
-    const classDist = {};
-    const genderDist = {};
-    students.forEach(s => {
-        if (s.Grade) gradeDist[s.Grade] = (gradeDist[s.Grade]||0)+1;
-        if (s['Class']) classDist[s['Class']] = (classDist[s['Class']]||0)+1;
-        if (s.Gender) genderDist[s.Gender] = (genderDist[s.Gender]||0)+1;
-    });
+    // Smart insights
+    const gradeEntries = Object.entries(gradeDist).sort((a,b)=>b[1]-a[1]);
+    const largestGrade = gradeEntries[0];
+    const smallestGrade = gradeEntries[gradeEntries.length-1];
+    const gradeInsight = largestGrade && smallestGrade && gradeEntries.length > 1
+        ? `<strong>${largestGrade[0]}</strong> is the largest class (${largestGrade[1]} students). <strong>${smallestGrade[0]}</strong> has the fewest (${smallestGrade[1]}).`
+        : '';
+
+    const female = students.filter(s=>(s.Gender||'').toLowerCase()==='female').length;
+    const male   = students.filter(s=>(s.Gender||'').toLowerCase()==='male').length;
+    const genderInsight = total > 0
+        ? `${female > male ? 'Female' : male > female ? 'Male' : 'Equal'} majority at <strong>${Math.round(Math.max(female,male)/total*100)}%</strong>. ${Math.abs(female-male)} student gap.`
+        : '';
+
+    // Missing data card — only show if any missing
+    const missingEntries = Object.entries(missingFields).sort((a,b)=>b[1]-a[1]);
+    const missingCard = missingEntries.length ? barCard(
+        'Missing Fields', '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>',
+        Object.fromEntries(missingEntries),
+        MISSING_COLORS,
+        { insight: `<strong>${missingEntries[0][0]}</strong> is the most common gap — missing in ${missingEntries[0][1]} record${missingEntries[0][1]!==1?'s':''} (${Math.round(missingEntries[0][1]/total*100)}%).` }
+    ) : `<div class="dist-card" style="display:flex;align-items:center;gap:.75rem;padding:1.1rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <div><div style="font-size:.82rem;font-weight:700;color:#059669;">All fields complete</div><div style="font-size:.72rem;color:var(--slate);margin-top:.1rem;">No missing critical data in current view</div></div>
+    </div>`;
 
     statsSection.innerHTML = `<div class="stats-dist-grid" style="margin-bottom:1.25rem;">
-        ${barHTML('Grade Distribution', gradeDist, 'var(--navy-lt)')}
-        ${barHTML('Graduation Year', classDist, 'var(--success)')}
-        ${barHTML('Gender Distribution', genderDist, '#a855f7')}
+        ${barCard('Grade Distribution','<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>',gradeDist,GRADE_COLORS,{insight:gradeInsight})}
+        ${barCard('Gender Distribution','<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>',genderDist,GENDER_COLORS,{insight:genderInsight})}
+        ${Object.keys(classDist).length ? barCard('Class / Year','<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>',classDist,GRADE_COLORS.slice(3)) : ''}
+        ${missingCard}
     </div>`;
 };
 
@@ -4323,7 +4488,7 @@ $('dark-mode-btn')?.addEventListener('click', () => { darkOn=!darkOn; applyDark(
 
 // ── 16. COLLAPSIBLE STATS ─────────────────────────────
 const STATS_KEY = 'ksd_stats_col';
-let statsCol = false; // always start expanded; user can collapse
+let statsCol = localStorage.getItem(STATS_KEY) !== '0'; // hidden by default, shown only if user explicitly opened
 const applyStatsCollapse = () => {
     const kpi=$('kpi-grid'), stats=$('stats-section'), btn=$('toggle-stats-btn');
     if(kpi) kpi.style.display = statsCol?'none':'grid';
