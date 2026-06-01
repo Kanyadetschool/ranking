@@ -4733,17 +4733,19 @@ setTimeout(() => {
         listEl.innerHTML = students.map((s, i) => {
             const name    = getName(s) || '—';
             const grade   = getRawGrade(s);
+            const isOrphan = !!s._orphan;
             const initials = name.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
             return `<div class="pdf-list-item" data-idx="${i}" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .65rem;border-radius:8px;cursor:pointer;margin-bottom:.18rem;border:1.5px solid transparent;transition:background .12s,border-color .12s;">
-                <div style="width:38px;height:38px;border-radius:50%;background:var(--gold-dim);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:var(--navy);flex-shrink:0;overflow:hidden;">
-                    <img src="./student_images/${encodeURIComponent(name)}.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextSibling.style.display='flex';">
-                    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">${initials}</span>
+                <div style="width:38px;height:38px;border-radius:50%;background:${isOrphan ? 'rgba(100,116,139,.12)' : 'var(--gold-dim)'};border:1.5px solid ${isOrphan ? 'var(--slate)' : 'var(--gold)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:var(--navy);flex-shrink:0;overflow:hidden;">
+                    ${isOrphan ? `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>`
+                    : `<img src="./student_images/${encodeURIComponent(name)}.jpg" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextSibling.style.display='flex';">
+                    <span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;">${initials}</span>`}
                 </div>
                 <div style="min-width:0;flex:1;">
                     <div style="font-weight:600;font-size:.83rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${name}</div>
-                    <div style="font-size:.7rem;color:var(--slate);">${grade ? 'Grade ' + grade : 'No grade'}</div>
+                    <div style="font-size:.7rem;color:var(--slate);">${isOrphan ? '<em style="color:var(--slate);opacity:.7;">PDF on server — no student record</em>' : (grade ? 'Grade ' + grade : 'No grade')}</div>
                 </div>
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.5" style="flex-shrink:0;opacity:.8;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="${isOrphan ? 'var(--slate)' : 'var(--gold)'}" stroke-width="2.5" style="flex-shrink:0;opacity:.8;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
             </div>`;
         }).join('');
     }
@@ -4787,7 +4789,18 @@ setTimeout(() => {
         const s = _renderData[parseInt(item.dataset.idx, 10)];
         if (!s) return;
         window._closePdfSearchPanel();
-        setTimeout(() => window.openLocalPDF(s['Assessment No'] || s.id || '', getName(s)), 180);
+        if (s._pdfHref) {
+            // Use the exact URL we already verified exists on the server
+            setTimeout(() => {
+                const name = getName(s) || s._pdfHref.split('/').pop().replace(/\.pdf$/i,'');
+                pdfModalStudentName && (pdfModalStudentName.textContent = name);
+                pdfModalStudentImage && (pdfModalStudentImage.src = `./student_images/${encodeURIComponent(name)}.jpg`);
+                pdfModalBackdrop && pdfModalBackdrop.classList.remove('hidden');
+                requestAnimationFrame(() => requestAnimationFrame(() => window._pdfViewerLoad(s._pdfHref)));
+            }, 180);
+        } else {
+            setTimeout(() => window.openLocalPDF(s['Assessment No'] || s.id || '', getName(s)), 180);
+        }
     });
     listEl.addEventListener('mouseover', e => {
         const item = e.target.closest('.pdf-list-item');
@@ -4805,15 +4818,14 @@ setTimeout(() => {
         renderList(_cachedStudents);
     };
 
-    /* ─── Open panel — HEAD-check PDFs with progress ─────── */
+    /* ─── Open panel — discover ALL PDFs on server ──────────── */
     window._openPdfSearchPanel = async function() {
         searchInput.value = '';
         gradeFilter.value = '';
         clearBtn.style.display = 'none';
-        _cachedStudents = [];   // clear while loading
+        _cachedStudents = [];
         panel.style.display = 'flex';
 
-        // Disable filters while loading
         searchInput.disabled = true;
         gradeFilter.disabled = true;
         searchInput.style.opacity = '.5';
@@ -4831,43 +4843,129 @@ setTimeout(() => {
             return;
         }
 
-        // Show loading progress
         listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
-            <div style="margin-bottom:.6rem;">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;display:inline-block;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-            </div>
-            <span id="pdf-check-msg">Checking PDFs… 0 / ${all.length}</span>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;display:inline-block;margin-bottom:.5rem;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <div id="pdf-check-msg">Scanning server for PDFs…</div>
         </div>`;
         countEl.textContent = '';
 
         const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
-        let checked = 0;
+
+        // ── Step 1: Try to get directory listing (GitHub Pages serves HTML index) ──
+        let serverFileNames = null;   // Set of lowercased basenames if we get a listing
+        try {
+            const res = await fetch(base, { method: 'GET', headers: { Accept: 'text/html' } });
+            if (res.ok) {
+                const html = await res.text();
+                // Parse <a href="..."> links from the directory listing
+                const matches = [...html.matchAll(/href="([^"]+\.pdf)"/gi)];
+                if (matches.length) {
+                    serverFileNames = new Map();   // lowercase basename → actual href
+                    matches.forEach(m => {
+                        const href = m[1];
+                        const basename = decodeURIComponent(href.split('/').pop());
+                        serverFileNames.set(basename.toLowerCase().replace(/\.pdf$/i, ''), href);
+                    });
+                }
+            }
+        } catch (_) { /* directory listing not available */ }
+
+        const msgEl = () => document.getElementById('pdf-check-msg');
+
+        // ── Step 2: Match students to PDFs ──────────────────────────────────────
         const withPdfs = [];
 
-        const BATCH = 10;
-        for (let i = 0; i < all.length; i += BATCH) {
-            const batch = all.slice(i, i + BATCH);
-            const results = await Promise.all(batch.map(s => {
+        if (serverFileNames && serverFileNames.size > 0) {
+            // We have a directory listing — match directly without HEAD requests
+            const m = msgEl();
+            if (m) m.textContent = `Matching ${serverFileNames.size} PDFs to students…`;
+
+            all.forEach(s => {
+                const name    = getName(s);
+                const no      = (s['Assessment No'] || s.id || '').toString().trim();
+                const rawGrade = getRawGrade(s);
+
+                // Try several normalisation variants
+                const candidates = [
+                    name,
+                    name.toUpperCase(),
+                    name.toLowerCase(),
+                    no,
+                    `${no} ${name}`,
+                    `${name} ${no}`,
+                    `${rawGrade} ${name}`,
+                ].map(c => c.trim().toLowerCase().replace(/\.pdf$/i, ''));
+
+                for (const c of candidates) {
+                    if (serverFileNames.has(c)) {
+                        // Store the matched server href so openLocalPDF can use it
+                        s._pdfHref = serverFileNames.get(c);
+                        withPdfs.push(s);
+                        break;
+                    }
+                }
+            });
+
+            // Also add ANY server PDF that didn't match a student (orphan PDFs)
+            const matchedHrefs = new Set(withPdfs.map(s => s._pdfHref));
+            serverFileNames.forEach((href, key) => {
+                if (!matchedHrefs.has(href)) {
+                    // Create a synthetic entry so it still shows in the list
+                    const displayName = decodeURIComponent(href.split('/').pop()).replace(/\.pdf$/i, '');
+                    withPdfs.push({ 'Official Student Name': displayName, _pdfHref: href, _orphan: true });
+                }
+            });
+
+        } else {
+            // ── Fallback: HEAD-check each student with multiple filename variants ──
+            let checked = 0;
+            const BATCH = 10;
+
+            // Build per-student variant list
+            const buildUrls = s => {
                 const name = getName(s);
-                if (!name) return Promise.resolve(false);
-                return fetch(base + encodeURIComponent(name) + '.pdf', { method: 'HEAD' })
-                    .then(r => r.ok).catch(() => false);
-            }));
-            batch.forEach((s, j) => { if (results[j]) withPdfs.push(s); });
-            checked += batch.length;
-            const m = document.getElementById('pdf-check-msg');
-            if (m) m.textContent = `Checking PDFs… ${Math.min(checked, all.length)} / ${all.length}  (${withPdfs.length} found)`;
+                const no   = (s['Assessment No'] || s.id || '').toString().trim();
+                return [
+                    name,
+                    name.toUpperCase(),
+                    no,
+                    `${no}_${name}`,
+                    name.replace(/\s+/g, '_'),
+                    name.toUpperCase().replace(/\s+/g, '_'),
+                ].filter((v, i, a) => v && a.indexOf(v) === i)
+                 .map(v => base + encodeURIComponent(v) + '.pdf');
+            };
+
+            for (let i = 0; i < all.length; i += BATCH) {
+                const batch = all.slice(i, i + BATCH);
+                await Promise.all(batch.map(async s => {
+                    for (const url of buildUrls(s)) {
+                        try {
+                            const r = await fetch(url, { method: 'HEAD' });
+                            if (r.ok) { s._pdfHref = url; withPdfs.push(s); return; }
+                        } catch (_) {}
+                    }
+                }));
+                checked += batch.length;
+                const m = msgEl();
+                if (m) m.textContent = `Checking PDFs… ${Math.min(checked, all.length)} / ${all.length}  (${withPdfs.length} found)`;
+            }
         }
 
-        // Re-enable filters
+        // Re-sort (orphans at end)
+        withPdfs.sort((a, b) => {
+            if (a._orphan && !b._orphan) return 1;
+            if (!a._orphan && b._orphan) return -1;
+            return getName(a).toLowerCase().localeCompare(getName(b).toLowerCase());
+        });
+
         searchInput.disabled = false; gradeFilter.disabled = false;
         searchInput.style.opacity = ''; gradeFilter.style.opacity = '';
 
         if (!withPdfs.length) {
             listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
                 <div style="font-size:1.6rem;margin-bottom:.5rem;">📂</div>
-                No PDFs found in <code style="font-size:.75rem;background:var(--surface2);padding:.1rem .3rem;border-radius:4px;">student_pdfs/</code><br>
-                <span style="font-size:.72rem;margin-top:.35rem;display:block;">Expected files like: <em>STUDENT NAME.pdf</em></span>
+                No PDFs found in <code style="font-size:.75rem;background:var(--surface2);padding:.1rem .3rem;border-radius:4px;">student_pdfs/</code>
             </div>`;
             countEl.textContent = '0 PDFs found';
             return;
@@ -4875,7 +4973,6 @@ setTimeout(() => {
 
         _cachedStudents = withPdfs;
         populateGradeFilter(_cachedStudents);
-        // Apply any filter the user may have typed/selected during loading
         doFilter();
         setTimeout(() => searchInput.focus(), 60);
     };
