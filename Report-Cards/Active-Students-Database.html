@@ -1951,7 +1951,7 @@ export const openLocalPDF = (assessmentNo, studentName) => {
     if (!studentName && !assessmentNo) return;
     const pdfName = studentName || assessmentNo;
     pdfModalStudentName.textContent = pdfName;
-    pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
+    pdfModalStudentImage.src = `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     const _pdfBase = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}`;
     // Show modal FIRST so the container has real dimensions, then load
     pdfModalBackdrop.classList.remove('hidden');
@@ -1968,7 +1968,7 @@ window.openLocalPDF = openLocalPDF;
 window._openPdfDirect = (url, studentName) => {
     const name = studentName || decodeURIComponent(url.split('/').pop()).replace(/\.pdf$/i, '');
     pdfModalStudentName.textContent = name;
-    pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
+    pdfModalStudentImage.src = `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     pdfModalBackdrop.classList.remove('hidden');
     requestAnimationFrame(() => requestAnimationFrame(() => window._pdfViewerLoad(url)));
 };
@@ -4197,6 +4197,15 @@ $('hist-search-clear')?.addEventListener('click', () => {
 
 histPanelBtn?.addEventListener('click', () => toggleHistPanel());
 histPanelClose?.addEventListener('click', () => toggleHistPanel(false));
+
+// Close history panel on outside click
+document.addEventListener('click', e => {
+    if (!histPanel?.classList.contains('open')) return;
+    if (histPanel.contains(e.target)) return;       // click inside panel — ignore
+    if (histPanelBtn?.contains(e.target)) return;   // click on toggle button — let its own handler run
+    toggleHistPanel(false);
+}, true);
+
 $('mobile-hist-btn')?.addEventListener('click', () => {
     $('nav-mobile-drawer')?.classList.remove('open');
     toggleHistPanel(true);
@@ -5592,144 +5601,272 @@ setTimeout(() => {
     };
 
     /* ── Print PDF status report ─────────────────────────── */
-    window._printPdfStatusReport = function() {
+    window._printPdfStatusReport = async function() {
         const students = (window._studentsData || window.studentsData || []);
         if (!students.length) { alert('No student data loaded yet.'); return; }
 
-        // Group students by Grade/Class
-        const groups = {};
-        students.forEach(s => {
-            const grade = (s.Grade || s['Class'] || s['grade'] || s['class'] || 'Unknown').toString().trim();
-            if (!groups[grade]) groups[grade] = { withPdf: [], noPdf: [] };
-            if (s._pdfHref) groups[grade].withPdf.push(s);
-            else groups[grade].noPdf.push(s);
-        });
+        const btn = document.getElementById('unmatched-print-btn');
+        if (btn) { btn.disabled = true; btn.textContent = 'Building PDF…'; }
 
-        // Sort grade keys naturally
-        const gradeKeys = Object.keys(groups).sort((a, b) => {
-            const numA = parseInt(a.replace(/\D+/g, '')) || 0;
-            const numB = parseInt(b.replace(/\D+/g, '')) || 0;
-            return numA !== numB ? numA - numB : a.localeCompare(b);
-        });
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const PW = doc.internal.pageSize.getWidth();
+            const PH = doc.internal.pageSize.getHeight();
+            const MARGIN = 12;
+            const today = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
 
-        const totalWith    = students.filter(s => s._pdfHref).length;
-        const totalWithout = students.length - totalWith;
-        const today        = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
+            // ── helper: load image as base64 ──────────────────────────────
+            const imgCache = {};
+            const loadImg = (url) => {
+                if (imgCache[url]) return imgCache[url];
+                imgCache[url] = new Promise(resolve => {
+                    const img = new Image();
+                    img.crossOrigin = 'anonymous';
+                    img.onload  = () => {
+                        const c = document.createElement('canvas');
+                        c.width = img.naturalWidth; c.height = img.naturalHeight;
+                        c.getContext('2d').drawImage(img, 0, 0);
+                        try { resolve(c.toDataURL('image/jpeg', 0.82)); }
+                        catch(_) { resolve(null); }
+                    };
+                    img.onerror = () => resolve(null);
+                    img.src = url;
+                });
+                return imgCache[url];
+            };
 
-        let rows = '';
-        gradeKeys.forEach(grade => {
-            const g = groups[grade];
-            const total = g.withPdf.length + g.noPdf.length;
-            rows += `
-            <tr class="grade-header">
-                <td colspan="4" style="background:#0d1f35;color:#fff;font-weight:800;font-size:.82rem;padding:.45rem .75rem;letter-spacing:.03em;">
-                    ${grade}
-                    <span style="margin-left:.75rem;font-weight:600;font-size:.72rem;opacity:.8;">
-                        ${g.withPdf.length} with PDF &nbsp;&middot;&nbsp; ${g.noPdf.length} missing &nbsp;&middot;&nbsp; ${total} total
-                    </span>
-                </td>
-            </tr>`;
+            // Pre-load default image
+            const defaultImgUrl = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_images/default.jpg';
+            const defaultImgB64 = await loadImg(defaultImgUrl);
 
-            g.withPdf.sort((a,b) => (a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
-            g.withPdf.forEach(s => {
-                rows += `<tr class="row-with">
-                    <td style="padding:.32rem .75rem;font-size:.75rem;color:#475569;">${s['Assessment No'] || '\u2014'}</td>
-                    <td style="padding:.32rem .75rem;font-size:.78rem;font-weight:600;color:#0f172a;">${s['Official Student Name'] || '\u2014'}</td>
-                    <td style="padding:.32rem .75rem;font-size:.75rem;color:#059669;text-align:center;">
-                        <span style="background:#d1fae5;border-radius:4px;padding:.1rem .45rem;font-weight:700;">&#10003; PDF</span>
-                    </td>
-                    <td style="padding:.32rem .75rem;font-size:.72rem;color:#64748b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(s._pdfHref||'').split('/').pop().replace(/\.(pdf|PDF)$/,'')}</td>
-                </tr>`;
+            const getStudentImg = async (name) => {
+                if (!name) return defaultImgB64;
+                const url = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_images/' + encodeURIComponent(name) + '.jpg';
+                const b64 = await loadImg(url);
+                return b64 || defaultImgB64;
+            };
+
+            // ── group & sort ──────────────────────────────────────────────
+            const groups = {};
+            students.forEach(s => {
+                const grade = (s.Grade || s['Class'] || s['grade'] || s['class'] || 'Unknown').toString().trim();
+                if (!groups[grade]) groups[grade] = { withPdf: [], noPdf: [] };
+                if (s._pdfHref) groups[grade].withPdf.push(s);
+                else            groups[grade].noPdf.push(s);
+            });
+            const gradeKeys = Object.keys(groups).sort((a, b) => {
+                const na = parseInt(a.replace(/\D+/g,'')) || 0;
+                const nb = parseInt(b.replace(/\D+/g,'')) || 0;
+                return na !== nb ? na - nb : a.localeCompare(b);
+            });
+            const totalWith    = students.filter(s => s._pdfHref).length;
+            const totalWithout = students.length - totalWith;
+            const coverage     = students.length ? Math.round(totalWith / students.length * 100) : 0;
+
+            // ── page header helper ────────────────────────────────────────
+            let pageNum = 0;
+            const drawPageHeader = () => {
+                pageNum++;
+                // Dark navy bar
+                doc.setFillColor(13, 31, 53);
+                doc.rect(0, 0, PW, 20, 'F');
+                // Gold accent line
+                doc.setFillColor(240, 165, 0);
+                doc.rect(0, 20, PW, 1.2, 'F');
+                // Title
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(11); doc.setFont(undefined, 'bold');
+                doc.text('KANYADET PRI & JUNIOR SCHOOL', MARGIN, 8);
+                doc.setFontSize(7.5); doc.setFont(undefined, 'normal');
+                doc.text('PDF Status Report  \u2014  ' + today, MARGIN, 14);
+                // Right side stats
+                doc.setFontSize(7); doc.setTextColor(200, 210, 220);
+                doc.text(`${totalWith}/${students.length} have PDF  \u00B7  ${coverage}%  \u00B7  Page ${pageNum}`, PW - MARGIN, 14, { align: 'right' });
+            };
+
+            // ── cover summary page ────────────────────────────────────────
+            drawPageHeader();
+            let y = 28;
+
+            // Summary boxes
+            const boxes = [
+                { label: 'Total Students', val: students.length, r:13,g:31,b:53 },
+                { label: 'Have PDF',        val: totalWith,       r:5, g:150,b:105 },
+                { label: 'Missing PDF',     val: totalWithout,    r:220,g:38,b:38 },
+                { label: 'Classes',         val: gradeKeys.length,r:13,g:31,b:53 },
+                { label: 'Coverage',        val: coverage + '%',  r:30,g:64,b:128 },
+            ];
+            const bw = (PW - MARGIN * 2 - 4 * 3) / 5;
+            boxes.forEach((b, i) => {
+                const bx = MARGIN + i * (bw + 3);
+                doc.setFillColor(b.r, b.g, b.b);
+                doc.roundedRect(bx, y, bw, 16, 2, 2, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(13); doc.setFont(undefined, 'bold');
+                doc.text(String(b.val), bx + bw / 2, y + 8, { align: 'center' });
+                doc.setFontSize(6); doc.setFont(undefined, 'normal');
+                doc.text(b.label, bx + bw / 2, y + 13.5, { align: 'center' });
+            });
+            y += 22;
+
+            // Per-class summary mini-table
+            doc.setFontSize(8); doc.setFont(undefined, 'bold');
+            doc.setTextColor(13, 31, 53);
+            doc.text('Summary by Class', MARGIN, y); y += 4;
+
+            doc.autoTable({
+                startY: y,
+                head: [['Class', 'Total', 'Have PDF', 'Missing', 'Coverage']],
+                body: gradeKeys.map(g => {
+                    const gr = groups[g];
+                    const tot = gr.withPdf.length + gr.noPdf.length;
+                    const cov = tot ? Math.round(gr.withPdf.length / tot * 100) + '%' : '0%';
+                    return [g, tot, gr.withPdf.length, gr.noPdf.length, cov];
+                }),
+                styles: { fontSize: 8, cellPadding: 2.2, font: 'helvetica' },
+                headStyles: { fillColor: [30, 64, 128], textColor: [255,255,255], fontStyle: 'bold', fontSize: 7.5 },
+                alternateRowStyles: { fillColor: [246, 248, 251] },
+                columnStyles: {
+                    0: { fontStyle: 'bold' },
+                    2: { textColor: [5, 150, 105] },
+                    3: { textColor: [220, 38, 38] },
+                },
+                margin: { left: MARGIN, right: MARGIN },
             });
 
-            g.noPdf.sort((a,b) => (a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
-            g.noPdf.forEach(s => {
-                rows += `<tr class="row-without">
-                    <td style="padding:.32rem .75rem;font-size:.75rem;color:#475569;">${s['Assessment No'] || '\u2014'}</td>
-                    <td style="padding:.32rem .75rem;font-size:.78rem;font-weight:600;color:#0f172a;">${s['Official Student Name'] || '\u2014'}</td>
-                    <td style="padding:.32rem .75rem;font-size:.75rem;color:#dc2626;text-align:center;">
-                        <span style="background:#fee2e2;border-radius:4px;padding:.1rem .45rem;font-weight:700;">&#10007; Missing</span>
-                    </td>
-                    <td style="padding:.32rem .75rem;font-size:.72rem;color:#94a3b8;">\u2014</td>
-                </tr>`;
-            });
-        });
+            // ── per-class detail pages ────────────────────────────────────
+            const ROW_H   = 9;       // row height mm
+            const IMG_SZ  = 7;       // photo size mm
+            const COL_IMG = MARGIN;
+            const COL_NO  = MARGIN + IMG_SZ + 2;
+            const COL_NAME= COL_NO  + 22;
+            const COL_STAT= PW - MARGIN - 28;
+            const COL_FILE= COL_STAT + 18;
 
-        const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>PDF Status Report \u2014 Kanyadet Pri &amp; Junior School</title>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .page-header { background: #0d1f35; color: #fff; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
-  .page-header h1 { font-size: 1rem; font-weight: 800; }
-  .page-header p  { font-size: .72rem; opacity: .65; margin-top: .15rem; }
-  .summary { display: flex; gap: .75rem; padding: .65rem 1.5rem; background: #f6f8fb; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
-  .sum-box { background: #fff; border-radius: 6px; border: 1px solid #e2e8f0; padding: .45rem .85rem; text-align: center; min-width: 80px; }
-  .sum-box .val { font-size: 1.1rem; font-weight: 800; }
-  .sum-box .lbl { font-size: .65rem; color: #64748b; margin-top: .05rem; }
-  .sum-box.green .val { color: #059669; }
-  .sum-box.red   .val { color: #dc2626; }
-  .sum-box.navy  .val { color: #0d1f35; }
-  table { width: 100%; border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; }
-  th { background: #1e4080; color: #fff; font-size: .72rem; font-weight: 700; padding: .4rem .75rem; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  tr.grade-header td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  tr.row-with  { background: #fff; }
-  tr.row-with:nth-child(even)  { background: #f8fff8; }
-  tr.row-without { background: #fff; }
-  tr.row-without:nth-child(even) { background: #fffafa; }
-  tr:not(.grade-header) td { border-bottom: 1px solid #f1f5f9; }
-  .footer { padding: .6rem 1.5rem; font-size: .68rem; color: #94a3b8; border-top: 1px solid #e2e8f0; margin-top: .5rem; }
-  @media print {
-    @page { margin: .6cm 1cm; size: A4 portrait; }
-    table { page-break-inside: auto; }
-    tr { page-break-inside: avoid; }
-    tr.grade-header { page-break-before: auto; }
-  }
-</style>
-</head>
-<body>
-<div class="page-header">
-  <div>
-    <h1>PDF Status Report \u2014 Kanyadet Pri &amp; Junior School</h1>
-    <p>Generated: ${today} &nbsp;&middot;&nbsp; ${students.length} students across ${gradeKeys.length} classes</p>
-  </div>
-  <div style="text-align:right;">
-    <div style="font-size:1.5rem;font-weight:800;color:#f0a500;">${totalWith}/${students.length}</div>
-    <div style="font-size:.68rem;opacity:.65;">students have PDFs</div>
-  </div>
-</div>
-<div class="summary">
-  <div class="sum-box navy"><div class="val">${students.length}</div><div class="lbl">Total Students</div></div>
-  <div class="sum-box green"><div class="val">${totalWith}</div><div class="lbl">Have PDF</div></div>
-  <div class="sum-box red"><div class="val">${totalWithout}</div><div class="lbl">Missing PDF</div></div>
-  <div class="sum-box navy"><div class="val">${gradeKeys.length}</div><div class="lbl">Classes</div></div>
-  <div class="sum-box navy"><div class="val">${totalWith ? Math.round(totalWith/students.length*100) : 0}%</div><div class="lbl">Coverage</div></div>
-</div>
-<table>
-  <thead>
-    <tr>
-      <th style="width:90px;">Adm. No</th>
-      <th>Student Name</th>
-      <th style="width:90px;text-align:center;">PDF Status</th>
-      <th>Filename</th>
-    </tr>
-  </thead>
-  <tbody>${rows}</tbody>
-</table>
-<div class="footer">Kanyadet Pri &amp; Junior School &nbsp;&middot;&nbsp; PDF Status Report &nbsp;&middot;&nbsp; ${today}</div>
-<script>window.onload = () => { window.print(); };<\/script>
-</body>
-</html>`;
+            for (const grade of gradeKeys) {
+                const g = groups[grade];
+                const allRows = [
+                    ...g.withPdf.sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||'')),
+                    ...g.noPdf.sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||'')),
+                ];
 
-        const win = window.open('', '_blank', 'width=900,height=700');
-        if (!win) { alert('Please allow popups for this page to use Print Report.'); return; }
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
+                doc.addPage();
+                drawPageHeader();
+                y = 26;
+
+                // Class header bar
+                doc.setFillColor(30, 64, 128);
+                doc.rect(MARGIN, y, PW - MARGIN * 2, 7, 'F');
+                doc.setTextColor(255, 255, 255);
+                doc.setFontSize(8.5); doc.setFont(undefined, 'bold');
+                doc.text(grade, MARGIN + 2, y + 4.8);
+                const tot = g.withPdf.length + g.noPdf.length;
+                const covTxt = `${g.withPdf.length} PDF  \u00B7  ${g.noPdf.length} missing  \u00B7  ${tot} total`;
+                doc.setFontSize(7); doc.setFont(undefined, 'normal');
+                doc.text(covTxt, PW - MARGIN - 2, y + 4.8, { align: 'right' });
+                y += 9;
+
+                // Column headers
+                doc.setFontSize(6.5); doc.setFont(undefined, 'bold');
+                doc.setTextColor(100, 116, 139);
+                doc.text('Photo',     COL_IMG, y);
+                doc.text('Adm. No',   COL_NO,  y);
+                doc.text('Name',      COL_NAME, y);
+                doc.text('Status',    COL_STAT, y);
+                y += 2;
+                doc.setDrawColor(200, 210, 220);
+                doc.line(MARGIN, y, PW - MARGIN, y);
+                y += 2;
+
+                for (const s of allRows) {
+                    // New page if needed
+                    if (y + ROW_H > PH - 14) {
+                        doc.addPage();
+                        drawPageHeader();
+                        y = 26;
+                        // Continuation bar
+                        doc.setFillColor(30, 64, 128);
+                        doc.rect(MARGIN, y, PW - MARGIN * 2, 6, 'F');
+                        doc.setTextColor(255, 255, 255);
+                        doc.setFontSize(7.5); doc.setFont(undefined, 'bold');
+                        doc.text(grade + ' (cont.)', MARGIN + 2, y + 4);
+                        y += 9;
+                    }
+
+                    const hasPdf  = !!s._pdfHref;
+                    const name    = s['Official Student Name'] || '';
+                    const admNo   = String(s['Assessment No'] || '\u2014');
+
+                    // Alternating row background
+                    const rowIdx = allRows.indexOf(s);
+                    if (rowIdx % 2 === 0) {
+                        doc.setFillColor(248, 250, 252);
+                        doc.rect(MARGIN, y - 1, PW - MARGIN * 2, ROW_H, 'F');
+                    }
+
+                    // Student photo
+                    const imgB64 = await getStudentImg(name);
+                    if (imgB64) {
+                        try { doc.addImage(imgB64, 'JPEG', COL_IMG, y, IMG_SZ, IMG_SZ); } catch(_){}
+                    }
+
+                    // Adm No
+                    doc.setFontSize(7); doc.setFont(undefined, 'normal');
+                    doc.setTextColor(100, 116, 139);
+                    doc.text(admNo, COL_NO, y + 4.5);
+
+                    // Name
+                    doc.setFontSize(7.5); doc.setFont(undefined, 'bold');
+                    doc.setTextColor(15, 23, 42);
+                    const nameMax = COL_STAT - COL_NAME - 3;
+                    const shortName = doc.splitTextToSize(name || '\u2014', nameMax)[0];
+                    doc.text(shortName, COL_NAME, y + 4.5);
+
+                    // Status pill
+                    if (hasPdf) {
+                        doc.setFillColor(209, 250, 229);
+                        doc.roundedRect(COL_STAT, y + 1, 16, 5, 1, 1, 'F');
+                        doc.setFontSize(6.5); doc.setFont(undefined, 'bold');
+                        doc.setTextColor(5, 150, 105);
+                        doc.text('\u2713 PDF', COL_STAT + 8, y + 4.5, { align: 'center' });
+                    } else {
+                        doc.setFillColor(254, 226, 226);
+                        doc.roundedRect(COL_STAT, y + 1, 16, 5, 1, 1, 'F');
+                        doc.setFontSize(6.5); doc.setFont(undefined, 'bold');
+                        doc.setTextColor(220, 38, 38);
+                        doc.text('\u2717 Missing', COL_STAT + 8, y + 4.5, { align: 'center' });
+                    }
+
+                    y += ROW_H;
+                }
+
+                // Divider after class
+                doc.setDrawColor(226, 232, 240);
+                doc.line(MARGIN, y, PW - MARGIN, y);
+                y += 3;
+            }
+
+            // ── footer on every page ──────────────────────────────────────
+            const total = doc.internal.getNumberOfPages();
+            for (let p = 1; p <= total; p++) {
+                doc.setPage(p);
+                doc.setFontSize(6.5); doc.setTextColor(148, 163, 184);
+                doc.setFont(undefined, 'normal');
+                doc.text(`Kanyadet Pri & Junior School  \u00B7  PDF Status Report  \u00B7  ${today}  \u00B7  Page ${p} of ${total}`,
+                    PW / 2, PH - 6, { align: 'center' });
+            }
+
+            doc.save(`PDF_Status_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+
+        } catch(err) {
+            console.error('Print report error:', err);
+            alert('Could not generate PDF: ' + err.message);
+        } finally {
+            if (btn) { btn.disabled = false; btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg> Print Report'; }
+        }
     };
+
 
     // Close on backdrop click or Escape
     modal.addEventListener('click', e => { if (e.target === modal) window._closeUnmatchedPdfsModal(); });
