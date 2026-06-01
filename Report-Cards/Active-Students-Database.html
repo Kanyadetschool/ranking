@@ -5269,9 +5269,10 @@ setTimeout(() => {
         return { apiUrl: `https://api.github.com/repos/${owner}/${repo}/contents/${folderPath}`, owner, repo, folderPath };
     }
 
-    async function fetchServerFiles(statusCb) {
+    async function fetchServerFiles(statusCb, forceRefresh) {
         // Strategy 1: reuse the map already built this session (free, instant)
-        if (window._allServerPdfMap && window._allServerPdfMap.size > 0) {
+        // Skip cache if forceRefresh is set (e.g. user clicked Scan or modal just opened)
+        if (!forceRefresh && window._allServerPdfMap && window._allServerPdfMap.size > 0) {
             statusCb && statusCb(`Using cached server list — ${window._allServerPdfMap.size} PDFs found`);
             return new Map(window._allServerPdfMap);
         }
@@ -5460,7 +5461,7 @@ setTimeout(() => {
         };
 
         if (freshServerScan || !_serverFetched) {
-            _serverFileMap = await fetchServerFiles(statusCb);
+            _serverFileMap = await fetchServerFiles(statusCb, freshServerScan);
             _serverFetched = true;
         }
 
@@ -5562,7 +5563,7 @@ setTimeout(() => {
         modal.style.display = 'flex';
         if (searchInput) searchInput.value = '';
         attachRealtimeListener();
-        await runCheck(false);      // fresh check on open (use cached server list unless first time)
+        await runCheck(true);       // always do a fresh server scan on open so new PDFs are detected
     };
 
     window._closeUnmatchedPdfsModal = function() {
