@@ -1232,6 +1232,57 @@
 <div id="pdf-panel-overlay" onclick="window._closePdfSearchPanel()" style="display:none;"></div>
 
 <!-- ══ UNMATCHED PDFs MODAL ══ -->
+
+<!-- PRINT OPTIONS DIALOG -->
+<div id="print-options-modal" style="display:none;position:fixed;inset:0;z-index:900;background:rgba(13,31,53,.65);backdrop-filter:blur(6px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+  <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:440px;border:1px solid var(--border);margin:1rem;overflow:hidden;">
+    <!-- Header -->
+    <div style="background:var(--navy);padding:.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg>
+        <span style="font-weight:700;color:#fff;font-size:.95rem;">Print Report Options</span>
+      </div>
+      <button onclick="document.getElementById('print-options-modal').style.display='none'" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <!-- Body -->
+    <div style="padding:1.1rem 1.2rem;display:flex;flex-direction:column;gap:1rem;">
+      <!-- Filter -->
+      <div>
+        <div style="font-size:.8rem;font-weight:700;color:var(--navy);margin-bottom:.5rem;">Include Students</div>
+        <div id="print-filter-btns" style="display:flex;gap:.45rem;flex-wrap:wrap;">
+          <button data-filter="all"     onclick="window._setPrintFilter(this)" style="flex:1;padding:.5rem .6rem;border-radius:8px;border:2px solid var(--navy-lt);background:var(--navy-lt);color:#fff;font-size:.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">All Students</button>
+          <button data-filter="with"    onclick="window._setPrintFilter(this)" style="flex:1;padding:.5rem .6rem;border-radius:8px;border:2px solid var(--border2);background:transparent;color:var(--success);font-size:.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">✓ Have PDF</button>
+          <button data-filter="without" onclick="window._setPrintFilter(this)" style="flex:1;padding:.5rem .6rem;border-radius:8px;border:2px solid var(--border2);background:transparent;color:var(--danger);font-size:.8rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;">✗ No PDF</button>
+        </div>
+      </div>
+      <!-- Grade selector -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+          <span style="font-size:.8rem;font-weight:700;color:var(--navy);">Classes / Grades</span>
+          <div style="display:flex;gap:.4rem;">
+            <button onclick="window._selectAllGrades(true)"  style="font-size:.7rem;color:var(--navy-lt);background:none;border:none;cursor:pointer;font-weight:600;padding:0;font-family:'DM Sans',sans-serif;">Select All</button>
+            <span style="color:var(--border2);font-size:.7rem;">|</span>
+            <button onclick="window._selectAllGrades(false)" style="font-size:.7rem;color:var(--slate);background:none;border:none;cursor:pointer;font-weight:600;padding:0;font-family:'DM Sans',sans-serif;">Clear</button>
+          </div>
+        </div>
+        <div id="print-grade-checkboxes" style="display:flex;flex-direction:column;gap:.3rem;max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;padding:.5rem .65rem;background:var(--surface2);"></div>
+      </div>
+      <!-- Count preview -->
+      <div id="print-preview-count" style="font-size:.78rem;color:var(--slate);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.5rem .75rem;text-align:center;"></div>
+    </div>
+    <!-- Footer -->
+    <div style="padding:.75rem 1.2rem;border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:flex-end;gap:.5rem;">
+      <button onclick="document.getElementById('print-options-modal').style.display='none'" style="padding:.45rem 1rem;border-radius:8px;border:1.5px solid var(--border2);background:transparent;color:var(--text2);font-size:.82rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;">Cancel</button>
+      <button id="print-options-go-btn" onclick="window._executePrintReport()" style="padding:.45rem 1.1rem;border-radius:8px;border:none;background:var(--gold);color:var(--navy);font-size:.82rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:.4rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg>
+        Download PDF
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="unmatched-pdfs-modal" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(13,31,53,.6);backdrop-filter:blur(5px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
     <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);margin:1rem;">
         <!-- Header -->
@@ -1268,7 +1319,7 @@
         <div style="padding:.65rem 1.1rem;border-top:1px solid var(--border);background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
             <span style="font-size:.72rem;color:var(--slate);">Click a PDF to view it · Recheck runs automatically on every database change</span>
             <div style="display:flex;align-items:center;gap:.45rem;flex-shrink:0;">
-                <button onclick="window._printPdfStatusReport()" id="unmatched-print-btn" title="Print PDF status report by class" style="display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:6px;background:var(--gold);border:none;color:var(--navy);font-size:.75rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--gold-lt)'" onmouseout="this.style.background='var(--gold)'">
+                <button onclick="window._openPrintOptions()" id="unmatched-print-btn" title="Print PDF status report by class" style="display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:6px;background:var(--gold);border:none;color:var(--navy);font-size:.75rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--gold-lt)'" onmouseout="this.style.background='var(--gold)'">
                     <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg>
                     Print Report
                 </button>
@@ -5600,10 +5651,119 @@ setTimeout(() => {
         await runCheck(true);   // force server re-scan
     };
 
-    /* ── Print PDF status report ─────────────────────────── */
-    window._printPdfStatusReport = async function() {
+    /* ── Print Options Dialog ───────────────────────────── */
+    let _printFilter    = 'all';   // 'all' | 'with' | 'without'
+    let _printGrades    = new Set();
+
+    window._openPrintOptions = function() {
         const students = (window._studentsData || window.studentsData || []);
         if (!students.length) { alert('No student data loaded yet.'); return; }
+
+        // Build grade list
+        const groups = {};
+        students.forEach(s => {
+            const grade = (s.Grade||s['Class']||s['grade']||s['class']||'Unknown').toString().trim();
+            if (!groups[grade]) groups[grade] = { withPdf:[], noPdf:[] };
+            (s._pdfHref ? groups[grade].withPdf : groups[grade].noPdf).push(s);
+        });
+        const gradeKeys = Object.keys(groups).sort((a,b) => {
+            const na = parseInt(a.replace(/\D+/g,''))||0, nb = parseInt(b.replace(/\D+/g,''))||0;
+            return na !== nb ? na-nb : a.localeCompare(b);
+        });
+        _printGrades = new Set(gradeKeys);
+
+        // Render checkboxes
+        const box = document.getElementById('print-grade-checkboxes');
+        if (box) {
+            box.innerHTML = gradeKeys.map(g => {
+                const gr = groups[g];
+                const tot = gr.withPdf.length + gr.noPdf.length;
+                return `<label style="display:flex;align-items:center;gap:.55rem;cursor:pointer;padding:.18rem 0;">
+                    <input type="checkbox" data-grade="${g}" checked
+                        onchange="window._togglePrintGrade(this)"
+                        style="width:15px;height:15px;accent-color:var(--navy-lt);cursor:pointer;flex-shrink:0;">
+                    <span style="font-size:.8rem;font-weight:600;color:var(--text);flex:1;">${g}</span>
+                    <span style="font-size:.72rem;color:var(--slate);">${tot} students</span>
+                    <span style="font-size:.7rem;color:var(--success);margin-left:.3rem;">${gr.withPdf.length}✓</span>
+                    <span style="font-size:.7rem;color:var(--danger);">${gr.noPdf.length}✗</span>
+                </label>`;
+            }).join('');
+        }
+
+        // Reset filter to all
+        _printFilter = 'all';
+        document.querySelectorAll('#print-filter-btns button').forEach(b => {
+            const active = b.dataset.filter === 'all';
+            b.style.background  = active ? 'var(--navy-lt)' : 'transparent';
+            b.style.color       = active ? '#fff' : (b.dataset.filter==='with'?'var(--success)':'var(--danger)');
+            b.style.borderColor = active ? 'var(--navy-lt)' : 'var(--border2)';
+        });
+
+        window._updatePrintPreview();
+        document.getElementById('print-options-modal').style.display = 'flex';
+    };
+
+    window._setPrintFilter = function(btn) {
+        _printFilter = btn.dataset.filter;
+        document.querySelectorAll('#print-filter-btns button').forEach(b => {
+            const active = b === btn;
+            b.style.background  = active ? 'var(--navy-lt)' : 'transparent';
+            b.style.color       = active ? '#fff' : (b.dataset.filter==='with'?'var(--success)':'var(--danger)');
+            b.style.borderColor = active ? 'var(--navy-lt)' : 'var(--border2)';
+        });
+        window._updatePrintPreview();
+    };
+
+    window._togglePrintGrade = function(cb) {
+        if (cb.checked) _printGrades.add(cb.dataset.grade);
+        else _printGrades.delete(cb.dataset.grade);
+        window._updatePrintPreview();
+    };
+
+    window._selectAllGrades = function(selectAll) {
+        document.querySelectorAll('#print-grade-checkboxes input[type=checkbox]').forEach(cb => {
+            cb.checked = selectAll;
+            if (selectAll) _printGrades.add(cb.dataset.grade);
+            else _printGrades.delete(cb.dataset.grade);
+        });
+        window._updatePrintPreview();
+    };
+
+    window._updatePrintPreview = function() {
+        const students = (window._studentsData || window.studentsData || []);
+        const filtered = students.filter(s => {
+            const grade = (s.Grade||s['Class']||s['grade']||s['class']||'Unknown').toString().trim();
+            if (!_printGrades.has(grade)) return false;
+            if (_printFilter === 'with')    return !!s._pdfHref;
+            if (_printFilter === 'without') return !s._pdfHref;
+            return true;
+        });
+        const el = document.getElementById('print-preview-count');
+        if (el) {
+            const withPdf = filtered.filter(s=>s._pdfHref).length;
+            const noPdf   = filtered.length - withPdf;
+            el.innerHTML = filtered.length
+                ? `<strong>${filtered.length}</strong> students will be included &nbsp;&middot;&nbsp; <span style="color:var(--success);">${withPdf} with PDF</span> &nbsp;&middot;&nbsp; <span style="color:var(--danger);">${noPdf} missing</span>`
+                : `<span style="color:var(--danger);">No students match the selected criteria</span>`;
+            const goBtn = document.getElementById('print-options-go-btn');
+            if (goBtn) goBtn.disabled = filtered.length === 0;
+        }
+    };
+
+    /* ── Execute Print ─────────────────────────────────── */
+    window._executePrintReport = async function() {
+        const allStudents = (window._studentsData || window.studentsData || []);
+        const students = allStudents.filter(s => {
+            const grade = (s.Grade||s['Class']||s['grade']||s['class']||'Unknown').toString().trim();
+            if (!_printGrades.has(grade)) return false;
+            if (_printFilter === 'with')    return !!s._pdfHref;
+            if (_printFilter === 'without') return !s._pdfHref;
+            return true;
+        });
+        if (!students.length) { alert('No students match the selected criteria.'); return; }
+
+        // Close options dialog
+        document.getElementById('print-options-modal').style.display = 'none';
 
         const btn = document.getElementById('unmatched-print-btn');
         const setBtn = (txt, dis) => {
@@ -5614,20 +5774,18 @@ setTimeout(() => {
                 : `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg> Print Report`;
         };
         setBtn('Preparing…', true);
-
-        // Yield to let the button update render before heavy work
         await new Promise(r => setTimeout(r, 30));
 
         try {
             const { jsPDF } = window.jspdf;
-            const doc   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const doc   = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
             const PW    = doc.internal.pageSize.getWidth();
             const PH    = doc.internal.pageSize.getHeight();
-            const M     = 12;   // margin
+            const M     = 12;
             const today = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
             const base  = location.origin + location.pathname.replace(/[^/]*$/, '');
 
-            // ── 1. Group & sort ───────────────────────────────────────────
+            // ── Group & sort ──────────────────────────────────────────────
             const groups = {};
             students.forEach(s => {
                 const grade = (s.Grade||s['Class']||s['grade']||s['class']||'Unknown').toString().trim();
@@ -5642,51 +5800,53 @@ setTimeout(() => {
             const totalWithout = students.length - totalWith;
             const coverage     = students.length ? Math.round(totalWith/students.length*100) : 0;
 
-            // ── 2. Pre-fetch ALL images in parallel (fast) ────────────────
+            // ── Pre-fetch images in parallel — full quality ───────────────
             setBtn('Loading photos…', true);
             await new Promise(r => setTimeout(r, 20));
 
+            // Render at full natural resolution then compress as JPEG 97 — crisp in PDF
             const toDataURL = url => new Promise(resolve => {
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = () => {
                     try {
                         const c = document.createElement('canvas');
-                        // Downsample to max 40×40 px — plenty for thumbnail, much faster encode
-                        const sz = 40;
-                        c.width = sz; c.height = sz;
-                        c.getContext('2d').drawImage(img, 0, 0, sz, sz);
-                        resolve(c.toDataURL('image/jpeg', 0.7));
+                        // Use natural dimensions — full resolution, no downsampling
+                        c.width  = img.naturalWidth  || img.width;
+                        c.height = img.naturalHeight || img.height;
+                        const ctx = c.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, c.width, c.height);
+                        resolve(c.toDataURL('image/jpeg', 0.97));
                     } catch(_) { resolve(null); }
                 };
                 img.onerror = () => resolve(null);
-                img.src = url + '?_t=' + Date.now(); // bust cache
+                img.src = url + '?_r=' + Date.now();
             });
 
             const defaultB64 = await toDataURL(base + 'student_images/default.jpg');
 
-            // Build unique name list, fetch all concurrently
             const nameSet = [...new Set(students.map(s => s['Official Student Name']||'').filter(Boolean))];
             const imgMap  = { '': defaultB64 };
-
-            // Batch in groups of 20 to avoid overwhelming the browser
-            const BATCH = 20;
+            const BATCH   = 15;  // slightly smaller batch — full-res images are heavier
             for (let i = 0; i < nameSet.length; i += BATCH) {
                 const slice = nameSet.slice(i, i+BATCH);
-                const results = await Promise.all(slice.map(async name => {
+                const res   = await Promise.all(slice.map(async name => {
                     const b64 = await toDataURL(base + 'student_images/' + encodeURIComponent(name) + '.jpg');
                     return [name, b64 || defaultB64];
                 }));
-                results.forEach(([n,b]) => { imgMap[n] = b; });
+                res.forEach(([n,b]) => { imgMap[n] = b; });
                 setBtn(`Loading photos… ${Math.min(i+BATCH, nameSet.length)}/${nameSet.length}`, true);
-                await new Promise(r => setTimeout(r, 0)); // keep UI responsive
+                await new Promise(r => setTimeout(r, 0));
             }
 
-            // ── 3. Build PDF (synchronous after images loaded) ────────────
+            // ── Build PDF ─────────────────────────────────────────────────
             setBtn('Building PDF…', true);
             await new Promise(r => setTimeout(r, 20));
 
-            // Page header
+            const filterLabel = _printFilter==='with' ? 'Students With PDF' : _printFilter==='without' ? 'Students Without PDF' : 'All Students';
+
             let pageNum = 0;
             const drawHeader = () => {
                 pageNum++;
@@ -5696,9 +5856,9 @@ setTimeout(() => {
                 doc.setFontSize(10); doc.setFont(undefined,'bold');
                 doc.text('KANYADET PRI & JUNIOR SCHOOL', M, 7.5);
                 doc.setFontSize(7); doc.setFont(undefined,'normal');
-                doc.text('PDF Status Report  \u2014  '+today, M, 13.5);
+                doc.text(`PDF Status Report \u2014 ${filterLabel} \u2014 ${today}`, M, 13.5);
                 doc.setFontSize(6.5); doc.setTextColor(180,195,210);
-                doc.text(`${totalWith}/${students.length} have PDF  \u00B7  ${coverage}%  \u00B7  p.${pageNum}`, PW-M, 13.5, {align:'right'});
+                doc.text(`${totalWith}/${students.length} have PDF \u00B7 ${coverage}% \u00B7 p.${pageNum}`, PW-M, 13.5, {align:'right'});
             };
 
             // Cover page
@@ -5733,8 +5893,8 @@ setTimeout(() => {
                 head: [['Class','Total','Have PDF','Missing','Coverage']],
                 body: gradeKeys.map(g => {
                     const gr = groups[g];
-                    const tot = gr.withPdf.length+gr.noPdf.length;
-                    return [g, tot, gr.withPdf.length, gr.noPdf.length, tot?Math.round(gr.withPdf.length/tot*100)+'%':'0%'];
+                    const tot = gr.withPdf.length + gr.noPdf.length;
+                    return [g, tot, gr.withPdf.length, gr.noPdf.length, tot ? Math.round(gr.withPdf.length/tot*100)+'%' : '0%'];
                 }),
                 styles:{ fontSize:8, cellPadding:2, font:'helvetica' },
                 headStyles:{ fillColor:[30,64,128], textColor:[255,255,255], fontStyle:'bold', fontSize:7.5 },
@@ -5743,12 +5903,12 @@ setTimeout(() => {
                 margin:{ left:M, right:M },
             });
 
-            // Per-class detail pages
-            const RH   = 8.5;   // row height
-            const ISZ  = 6.5;   // image size
+            // Detail pages per class
+            const RH  = 9;
+            const ISZ = 7;   // image cell size mm — larger for quality
             const C_IM = M;
-            const C_NO = M + ISZ + 2;
-            const C_NM = C_NO + 21;
+            const C_NO = M + ISZ + 2.5;
+            const C_NM = C_NO + 22;
             const C_ST = PW - M - 22;
 
             for (const grade of gradeKeys) {
@@ -5760,18 +5920,15 @@ setTimeout(() => {
 
                 doc.addPage(); drawHeader(); y = 25;
 
-                // Class header
-                doc.setFillColor(30,64,128);
-                doc.rect(M, y, PW-M*2, 6.5,'F');
+                doc.setFillColor(30,64,128); doc.rect(M,y,PW-M*2,6.5,'F');
                 doc.setTextColor(255,255,255);
                 doc.setFontSize(8); doc.setFont(undefined,'bold');
                 doc.text(grade, M+2, y+4.5);
-                const tot2 = g.withPdf.length+g.noPdf.length;
+                const tot2 = g.withPdf.length + g.noPdf.length;
                 doc.setFontSize(6.5); doc.setFont(undefined,'normal');
                 doc.text(`${g.withPdf.length} PDF \u00B7 ${g.noPdf.length} missing \u00B7 ${tot2} total`, PW-M-2, y+4.5, {align:'right'});
                 y += 8.5;
 
-                // Col headers
                 doc.setFontSize(6); doc.setFont(undefined,'bold'); doc.setTextColor(120,130,150);
                 doc.text('Photo',C_IM,y); doc.text('Adm.No',C_NO,y); doc.text('Name',C_NM,y); doc.text('Status',C_ST,y);
                 y += 1.5;
@@ -5789,33 +5946,34 @@ setTimeout(() => {
                     const name   = s['Official Student Name']||'';
                     const admNo  = String(s['Assessment No']||'\u2014');
 
-                    // Alt row bg
                     if (ri%2===0) {
                         doc.setFillColor(248,250,252);
-                        doc.rect(M, y-0.5, PW-M*2, RH,'F');
+                        doc.rect(M, y-0.5, PW-M*2, RH, 'F');
                     }
 
-                    // Photo — synchronous, already loaded
-                    const b64 = imgMap[name]||defaultB64;
-                    if (b64) { try { doc.addImage(b64,'JPEG',C_IM,y,ISZ,ISZ); } catch(_){} }
+                    // Full-quality photo
+                    const b64 = imgMap[name] || defaultB64;
+                    if (b64) {
+                        try {
+                            // addImage with explicit alias prevents duplicate embedding
+                            doc.addImage(b64, 'JPEG', C_IM, y, ISZ, ISZ, name||'default', 'FAST');
+                        } catch(_) {}
+                    }
 
-                    // Adm No
                     doc.setFontSize(6.5); doc.setFont(undefined,'normal'); doc.setTextColor(110,120,140);
-                    doc.text(admNo, C_NO, y+4);
+                    doc.text(admNo, C_NO, y+4.5);
 
-                    // Name
-                    doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(15,23,42);
-                    doc.text(doc.splitTextToSize(name||'\u2014', C_ST-C_NM-3)[0], C_NM, y+4);
+                    doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(15,23,42);
+                    doc.text(doc.splitTextToSize(name||'\u2014', C_ST-C_NM-3)[0], C_NM, y+4.5);
 
-                    // Status pill
                     if (hasPdf) {
-                        doc.setFillColor(209,250,229); doc.roundedRect(C_ST,y+1,15,4.5,1,1,'F');
-                        doc.setFontSize(6); doc.setFont(undefined,'bold'); doc.setTextColor(5,150,105);
-                        doc.text('\u2713 PDF', C_ST+7.5, y+4, {align:'center'});
+                        doc.setFillColor(209,250,229); doc.roundedRect(C_ST,y+1.5,16,5,1,1,'F');
+                        doc.setFontSize(6.5); doc.setFont(undefined,'bold'); doc.setTextColor(5,150,105);
+                        doc.text('\u2713 PDF', C_ST+8, y+5, {align:'center'});
                     } else {
-                        doc.setFillColor(254,226,226); doc.roundedRect(C_ST,y+1,15,4.5,1,1,'F');
-                        doc.setFontSize(6); doc.setFont(undefined,'bold'); doc.setTextColor(220,38,38);
-                        doc.text('\u2717 No PDF', C_ST+7.5, y+4, {align:'center'});
+                        doc.setFillColor(254,226,226); doc.roundedRect(C_ST,y+1.5,16,5,1,1,'F');
+                        doc.setFontSize(6.5); doc.setFont(undefined,'bold'); doc.setTextColor(220,38,38);
+                        doc.text('\u2717 No PDF', C_ST+8, y+5, {align:'center'});
                     }
 
                     y += RH;
@@ -5829,11 +5987,12 @@ setTimeout(() => {
             for (let p=1; p<=tp; p++) {
                 doc.setPage(p);
                 doc.setFontSize(6); doc.setTextColor(160,170,185); doc.setFont(undefined,'normal');
-                doc.text(`Kanyadet Pri & Junior School  \u00B7  PDF Status Report  \u00B7  ${today}  \u00B7  Page ${p} of ${tp}`,
+                doc.text(`Kanyadet Pri & Junior School \u00B7 PDF Status Report \u00B7 ${today} \u00B7 Page ${p} of ${tp}`,
                     PW/2, PH-5.5, {align:'center'});
             }
 
-            doc.save(`PDF_Status_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+            const filterSuffix = _printFilter==='with' ? '_WithPDF' : _printFilter==='without' ? '_NoPDF' : '_All';
+            doc.save(`PDF_Status_Report${filterSuffix}_${new Date().toISOString().split('T')[0]}.pdf`);
 
         } catch(err) {
             console.error('Print report error:', err);
@@ -5843,7 +6002,17 @@ setTimeout(() => {
         }
     };
 
+    /* kept for backward compat */
+    window._printPdfStatusReport = window._openPrintOptions;
 
+
+
+
+    // Close print-options on backdrop click
+    document.getElementById('print-options-modal')?.addEventListener('click', e => {
+        if (e.target === document.getElementById('print-options-modal'))
+            document.getElementById('print-options-modal').style.display = 'none';
+    });
 
     // Close on backdrop click or Escape
     modal.addEventListener('click', e => { if (e.target === modal) window._closeUnmatchedPdfsModal(); });
