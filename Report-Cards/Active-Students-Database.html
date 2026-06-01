@@ -1817,6 +1817,99 @@ const pdfModalStudentName = document.getElementById('pdf-modal-student-name');
         if (_pdfDoc && !_rendering) renderPage(_currentPage);
     }, { passive: false });
 
+    // ── Double-click zoom ──────────────────────────────────────────────
+    // Cycles through smart zoom levels: fit(1.0) → 1.5 → 2.0 → 3.0 → back to fit
+    // Also scrolls to keep the double-clicked point centred after zoom.
+    const DBLCLICK_LEVELS = [1.0, 1.5, 2.0, 3.0];
+
+    // Smooth CSS transition on the canvas while zoom animates
+    canvas.style.transition = 'transform 0.18s cubic-bezier(0.22,1,0.36,1), opacity 0.12s ease';
+    canvas.style.transformOrigin = 'top center';
+
+    // Ripple element — appears at click point
+    const _zoomRipple = document.createElement('div');
+    _zoomRipple.style.cssText = `
+        position:absolute;pointer-events:none;border-radius:50%;
+        background:rgba(255,255,255,0.35);transform:scale(0);
+        transition:transform 0.35s ease-out,opacity 0.35s ease-out;
+        opacity:1;z-index:10;display:none;
+    `;
+    vp.style.position = 'relative';
+    vp.appendChild(_zoomRipple);
+
+    function showZoomRipple(x, y) {
+        const size = 80;
+        _zoomRipple.style.width  = size + 'px';
+        _zoomRipple.style.height = size + 'px';
+        _zoomRipple.style.left   = (x - size / 2) + 'px';
+        _zoomRipple.style.top    = (y - size / 2) + 'px';
+        _zoomRipple.style.display = 'block';
+        _zoomRipple.style.transform = 'scale(0)';
+        _zoomRipple.style.opacity = '1';
+        requestAnimationFrame(() => {
+            _zoomRipple.style.transform = 'scale(3)';
+            _zoomRipple.style.opacity   = '0';
+        });
+        setTimeout(() => { _zoomRipple.style.display = 'none'; }, 380);
+    }
+
+    // Show zoom badge briefly as a toast
+    function flashZoomBadge() {
+        if (!zoomLevelEl) return;
+        zoomLevelEl.style.transition = 'transform 0.15s ease, background 0.15s ease, color 0.15s ease';
+        zoomLevelEl.style.transform = 'scale(1.35)';
+        zoomLevelEl.style.background = 'var(--gold)';
+        zoomLevelEl.style.color = 'var(--navy)';
+        zoomLevelEl.style.borderRadius = '5px';
+        zoomLevelEl.style.padding = '1px 4px';
+        setTimeout(() => {
+            zoomLevelEl.style.transform = 'scale(1)';
+            zoomLevelEl.style.background = '';
+            zoomLevelEl.style.color = '';
+        }, 500);
+    }
+
+    canvas.addEventListener('dblclick', e => {
+        if (!_pdfDoc) return;
+        e.preventDefault();
+
+        // Find next zoom level in cycle
+        const cur = _zoomMultiplier;
+        let next = DBLCLICK_LEVELS[0]; // default: reset to fit
+        for (let i = 0; i < DBLCLICK_LEVELS.length; i++) {
+            if (cur < DBLCLICK_LEVELS[i] - 0.05) { next = DBLCLICK_LEVELS[i]; break; }
+        }
+
+        // Remember scroll position relative to clicked point so we can restore centre
+        const rect    = canvas.getBoundingClientRect();
+        const vpRect  = vp.getBoundingClientRect();
+        const clickX  = e.clientX - rect.left;   // click inside canvas
+        const clickY  = e.clientY - rect.top;
+        const fracX   = clickX / rect.width;
+        const fracY   = clickY / rect.height;
+
+        // Ripple at click position relative to scroll container
+        showZoomRipple(e.clientX - vpRect.left + vp.scrollLeft,
+                       e.clientY - vpRect.top  + vp.scrollTop);
+
+        _zoomMultiplier = next;
+        updateZoomBadge();
+        flashZoomBadge();
+
+        // Re-render then scroll so the clicked point stays centred
+        renderPage(_currentPage).then ? renderPage(_currentPage) : renderPage(_currentPage);
+        // Use rAF chain to wait for canvas resize after render
+        const waitAndScroll = () => {
+            if (_rendering) { requestAnimationFrame(waitAndScroll); return; }
+            const newRect = canvas.getBoundingClientRect();
+            const targetX = newRect.width  * fracX - vp.clientWidth  / 2;
+            const targetY = newRect.height * fracY - vp.clientHeight / 2;
+            vp.scrollTo({ left: Math.max(0, targetX + vp.scrollLeft + (newRect.left - vpRect.left)),
+                           top:  Math.max(0, targetY), behavior: 'smooth' });
+        };
+        requestAnimationFrame(() => requestAnimationFrame(waitAndScroll));
+    });
+
     // Cleanup blob on modal close
     document.getElementById('close-pdf-modal-btn').addEventListener('click', () => {
         pdfModalBackdrop.classList.add('hidden');
@@ -4998,7 +5091,7 @@ setTimeout(() => {
             });
         } else {
             let checked = 0;
-            const BATCH = 100;
+            const BATCH = 350;
             const buildUrls = s => {
                 const name = getName(s), no = (s['Assessment No'] || s.id || '').toString().trim();
                 return [name, name.toUpperCase(), no, `${no}_${name}`,
@@ -5239,7 +5332,7 @@ setTimeout(() => {
         const students = (window._studentsData || window.studentsData || []);
         if (!students.length) return map;
 
-        const BATCH = 100;
+        const BATCH = 350;
         const buildUrls = s => {
             const name  = normName(s);
             const no    = (s['Assessment No'] || s.id || '').toString().trim();
@@ -5396,28 +5489,71 @@ setTimeout(() => {
     function attachRealtimeListener() {
         if (_listenerAttached) return;
         _listenerAttached = true;
+
+        // 1️⃣ Firebase: recheck matches whenever student records change
         try {
-            // Use the same `db` / `ref` / `onValue` that the main app imports
-            const dbRef  = window._firebaseDB;
+            const dbRef   = window._firebaseDB;
             const onValFn = window._firebaseOnValue;
             const refFn   = window._firebaseRef;
             if (dbRef && onValFn && refFn) {
-                // Watch the root students node — fires on any child change
                 const studentsRef = refFn(dbRef, 'students');
                 onValFn(studentsRef, () => {
-                    // Small debounce so rapid writes don't stack up
                     clearTimeout(window._unmatchedDebounce);
                     window._unmatchedDebounce = setTimeout(() => runCheck(false), 400);
                 });
-                return;
+            } else {
+                // Fallback: poll _studentsData length every 3 s
+                let lastLen = -1;
+                setInterval(() => {
+                    const cur = (window._studentsData || []).length;
+                    if (cur !== lastLen) { lastLen = cur; runCheck(false); }
+                }, 3000);
             }
         } catch(_) {}
-        // Fallback: poll _studentsData length every 3 s
-        let lastLen = -1;
-        setInterval(() => {
-            const cur = (window._studentsData || []).length;
-            if (cur !== lastLen) { lastLen = cur; runCheck(false); }
-        }, 3000);
+
+        // 2️⃣ GitHub server poll: re-fetch the file list every 3 minutes
+        // so newly uploaded PDFs are detected automatically without a manual re-scan.
+        const SERVER_POLL_MS = 3 * 60 * 1000; // 3 minutes
+        setInterval(async () => {
+            try {
+                const host = location.hostname;
+                const hparts = host.split('.');
+                if (hparts.length < 3 || hparts[1] !== 'github' || hparts[2] !== 'io') return;
+                const owner = hparts[0];
+                const pathParts = location.pathname.split('/').filter(Boolean);
+                const repo = pathParts[0];
+                const folderSegs = pathParts.slice(1, -1);
+                folderSegs.push('student_pdfs');
+                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${folderSegs.join('/')}`;
+
+                const res = await fetch(apiUrl, { headers:{ Accept:'application/vnd.github.v3+json' }, cache:'no-store' });
+                if (!res.ok) return;
+                const items = await res.json();
+                if (!Array.isArray(items)) return;
+
+                const pagesBase = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
+                const freshMap = new Map();
+                items.forEach(item => {
+                    if (item.type === 'file' && /\.pdf$/i.test(item.name))
+                        freshMap.set(normKey(item.name), pagesBase + encodeURIComponent(item.name));
+                });
+
+                // Only trigger a recheck if the file list actually changed
+                const oldMap = window._allServerPdfMap;
+                const changed = !oldMap
+                    || oldMap.size !== freshMap.size
+                    || [...freshMap.keys()].some(k => !oldMap.has(k))
+                    || [...oldMap.keys()].some(k => !freshMap.has(k));
+
+                if (changed) {
+                    window._allServerPdfMap = freshMap;
+                    _serverFileMap = freshMap;
+                    _serverFetched = true;
+                    clearTimeout(window._unmatchedDebounce);
+                    window._unmatchedDebounce = setTimeout(() => runCheck(false), 300);
+                }
+            } catch(_) {}
+        }, SERVER_POLL_MS);
     }
 
     /* ── open / close / recheck ───────────────────────────── */
