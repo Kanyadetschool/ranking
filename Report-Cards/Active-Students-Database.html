@@ -4921,21 +4921,57 @@ setTimeout(() => {
 
         const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
         let serverFileNames = null;
+
+        // ── Strategy 1: GitHub API (authoritative for GitHub Pages) ──────
+        try {
+            const host = location.hostname;
+            const hparts = host.split('.');
+            if (hparts.length >= 3 && hparts[1] === 'github' && hparts[2] === 'io') {
+                const owner = hparts[0];
+                const pathParts = location.pathname.split('/').filter(Boolean);
+                const repo = pathParts[0];
+                const folderSegs = pathParts.slice(1, -1);
+                folderSegs.push('student_pdfs');
+                const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${folderSegs.join('/')}`;
+                const m = msgEl(); if (m) m.textContent = 'Fetching file list from GitHub…';
+                const res = await fetch(apiUrl, { headers:{ Accept:'application/vnd.github.v3+json' }, cache:'no-store' });
+                if (res.ok) {
+                    const items = await res.json();
+                    if (Array.isArray(items)) {
+                        serverFileNames = new Map();
+                        items.forEach(item => {
+                            if (item.type === 'file' && /\.pdf$/i.test(item.name)) {
+                                const pagesUrl = base + encodeURIComponent(item.name);
+                                serverFileNames.set(item.name.toLowerCase().replace(/\.pdf$/i,''), pagesUrl);
+                            }
+                        });
+                        if (!serverFileNames.size) serverFileNames = null;
+                        else window._allServerPdfMap = serverFileNames; // share with unmatched panel
+                    }
+                }
+            }
+        } catch(_) {}
+
+        // ── Strategy 2: plain directory listing ──────────────────────────
+        if (!serverFileNames) {
         try {
             const res = await fetch(base, { method: 'GET', headers: { Accept: 'text/html' } });
             if (res.ok) {
                 const html = await res.text();
-                const matches = [...html.matchAll(/href="([^"]+\.pdf)"/gi)];
+                const matches = [...html.matchAll(/href="([^"]+\\.pdf)"/gi)];
                 if (matches.length) {
                     serverFileNames = new Map();
                     matches.forEach(m => {
                         const href = m[1];
                         const basename = decodeURIComponent(href.split('/').pop());
-                        serverFileNames.set(basename.toLowerCase().replace(/\.pdf$/i, ''), href);
+                        serverFileNames.set(basename.toLowerCase().replace(/\\.pdf$/i, ''), href);
                     });
+                    if (serverFileNames.size) window._allServerPdfMap = serverFileNames;
+                    else serverFileNames = null;
                 }
             }
         } catch (_) {}
+        }
 
         const msgEl = () => document.getElementById('pdf-check-msg');
         const withPdfs = [];
@@ -4962,7 +4998,7 @@ setTimeout(() => {
             });
         } else {
             let checked = 0;
-            const BATCH = 10;
+            const BATCH = 100;
             const buildUrls = s => {
                 const name = getName(s), no = (s['Assessment No'] || s.id || '').toString().trim();
                 return [name, name.toUpperCase(), no, `${no}_${name}`,
@@ -5122,21 +5158,67 @@ setTimeout(() => {
     }
 
     /* ── fetch server PDF listing ─────────────────────────── */
+    // Derives repo/owner/path from the current GitHub Pages URL, then calls the GitHub API.
+    function getGithubApiUrl() {
+        // GitHub Pages pattern: https://<owner>.github.io/<repo>/<path-to-html>
+        // We need: https://api.github.com/repos/<owner>/<repo>/contents/<folder-path>
+        const host = location.hostname; // e.g. kanyadetschool.github.io
+        const parts = host.split('.');
+        if (parts.length < 3 || parts[1] !== 'github' || parts[2] !== 'io') return null;
+        const owner = parts[0];                                      // kanyadetschool
+        const pathParts = location.pathname.split('/').filter(Boolean); // ['ranking','Report-Cards','Active-Students-Database.html']
+        if (!pathParts.length) return null;
+        const repo = pathParts[0];                                   // ranking
+        // Build folder path: same as current page path minus the filename, plus 'student_pdfs'
+        const folderSegments = pathParts.slice(1, -1);               // ['Report-Cards']
+        folderSegments.push('student_pdfs');
+        const folderPath = folderSegments.join('/');                  // Report-Cards/student_pdfs
+        return { apiUrl: `https://api.github.com/repos/${owner}/${repo}/contents/${folderPath}`, owner, repo, folderPath };
+    }
+
     async function fetchServerFiles(statusCb) {
-        // Strategy 1: reuse the map already built by the main PDF panel (free, instant)
+        // Strategy 1: reuse the map already built this session (free, instant)
         if (window._allServerPdfMap && window._allServerPdfMap.size > 0) {
             statusCb && statusCb(`Using cached server list — ${window._allServerPdfMap.size} PDFs found`);
-            // Return a copy so we don't mutate the shared map
             return new Map(window._allServerPdfMap);
         }
 
-        const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
-        const map  = new Map();
+        const pagesBase = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
+        const map = new Map();
 
-        // Strategy 2: directory listing (fast, works if server has index enabled)
+        // Strategy 2: GitHub API (authoritative — works on GitHub Pages without directory listing)
+        const ghInfo = getGithubApiUrl();
+        if (ghInfo) {
+            try {
+                statusCb && statusCb('Fetching file list from GitHub…');
+                const res = await fetch(ghInfo.apiUrl, {
+                    headers: { Accept: 'application/vnd.github.v3+json' },
+                    cache: 'no-store'
+                });
+                if (res.ok) {
+                    const items = await res.json();
+                    if (Array.isArray(items)) {
+                        items.forEach(item => {
+                            if (item.type === 'file' && /\.pdf$/i.test(item.name)) {
+                                // Build the GitHub Pages URL for this PDF
+                                const pagesUrl = pagesBase + encodeURIComponent(item.name);
+                                map.set(normKey(item.name), pagesUrl);
+                            }
+                        });
+                    }
+                }
+                if (map.size > 0) {
+                    window._allServerPdfMap = map;
+                    statusCb && statusCb(`GitHub API: ${map.size} PDFs found`);
+                    return map;
+                }
+            } catch(_) {}
+        }
+
+        // Strategy 3: plain directory listing fetch (works if server has index enabled)
         try {
             statusCb && statusCb('Fetching server directory listing…');
-            const res = await fetch(base, { method:'GET', headers:{ Accept:'text/html' }, cache:'no-store' });
+            const res = await fetch(pagesBase, { method:'GET', headers:{ Accept:'text/html' }, cache:'no-store' });
             if (res.ok) {
                 const html = await res.text();
                 const matches = [...html.matchAll(/href="([^"]+\.pdf)"/gi)];
@@ -5152,8 +5234,8 @@ setTimeout(() => {
             }
         } catch(_) {}
 
-        // Strategy 3: HEAD-probe every student name variant in batches of 100
-        statusCb && statusCb('Directory listing unavailable — probing by student names…');
+        // Strategy 4: HEAD-probe every student name variant in batches of 100
+        statusCb && statusCb('Probing PDFs by student names (batches of 100)…');
         const students = (window._studentsData || window.studentsData || []);
         if (!students.length) return map;
 
@@ -5167,7 +5249,7 @@ setTimeout(() => {
                 `${no} ${name}`, `${name} ${no}`, `${grade} ${name}`,
                 name.replace(/\s+/g,'_'), name.toUpperCase().replace(/\s+/g,'_'),
             ].filter((v,i,a) => v && a.indexOf(v) === i)
-             .map(v => ({ key: normKey(v), url: base + encodeURIComponent(v) + '.pdf' }));
+             .map(v => ({ key: normKey(v), url: pagesBase + encodeURIComponent(v) + '.pdf' }));
         };
 
         let checked = 0;
@@ -5182,7 +5264,7 @@ setTimeout(() => {
                 }
             }));
             checked += batch.length;
-            statusCb && statusCb(`Probing PDFs… ${Math.min(checked, students.length)} / ${students.length} students checked (${map.size} found)`);
+            statusCb && statusCb(`Probing… ${Math.min(checked, students.length)}/${students.length} students (${map.size} found)`);
         }
         if (map.size > 0) window._allServerPdfMap = map;
         return map;
