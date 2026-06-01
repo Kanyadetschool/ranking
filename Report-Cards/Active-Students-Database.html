@@ -2663,7 +2663,7 @@ const updateKPI = (students) => {
             <strong style="font-size:.72rem;">${gradeSorted[0]?`${gradeSorted[0][0]} (${gradeSorted[0][1]})`:'—'}</strong>
         </div>
     </div>`;
-    if (!statsCol) kpiGrid.style.display = 'grid';
+    kpiGrid.style.display = 'grid';
 };
 
 // ── SMART ANALYTICS ─────────────────────────────────────
@@ -4488,7 +4488,7 @@ $('dark-mode-btn')?.addEventListener('click', () => { darkOn=!darkOn; applyDark(
 
 // ── 16. COLLAPSIBLE STATS ─────────────────────────────
 const STATS_KEY = 'ksd_stats_col';
-let statsCol = localStorage.getItem(STATS_KEY) !== '0'; // hidden by default, shown only if user explicitly opened
+let statsCol = false; // always start expanded; user can collapse
 const applyStatsCollapse = () => {
     const kpi=$('kpi-grid'), stats=$('stats-section'), btn=$('toggle-stats-btn');
     if(kpi) kpi.style.display = statsCol?'none':'grid';
