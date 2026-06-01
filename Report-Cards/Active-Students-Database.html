@@ -1810,6 +1810,15 @@ export const openLocalPDF = (assessmentNo, studentName) => {
 };
 window.openLocalPDF = openLocalPDF;
 
+// Direct-URL variant used by the PDF search panel (cached href)
+window._openPdfDirect = (url, studentName) => {
+    const name = studentName || decodeURIComponent(url.split('/').pop()).replace(/\.pdf$/i, '');
+    pdfModalStudentName.textContent = name;
+    pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
+    pdfModalBackdrop.classList.remove('hidden');
+    requestAnimationFrame(() => requestAnimationFrame(() => window._pdfViewerLoad(url)));
+};
+
 // ── TOGGLE UPLOAD SECTION ─────────────────────────────
 const toggleUploadBtn = document.getElementById('toggle-upload-btn');
 const uploadInner = document.getElementById('upload-inner');
@@ -4798,18 +4807,13 @@ setTimeout(() => {
         const s = _renderData[parseInt(item.dataset.idx, 10)];
         if (!s) return;
         window._closePdfSearchPanel();
-        if (s._pdfHref) {
-            // Use the exact URL we already verified exists on the server
-            setTimeout(() => {
-                const name = getName(s) || s._pdfHref.split('/').pop().replace(/\.pdf$/i,'');
-                pdfModalStudentName && (pdfModalStudentName.textContent = name);
-                pdfModalStudentImage && (pdfModalStudentImage.src = `./student_images/${encodeURIComponent(name)}.jpg`);
-                pdfModalBackdrop && pdfModalBackdrop.classList.remove('hidden');
-                requestAnimationFrame(() => requestAnimationFrame(() => window._pdfViewerLoad(s._pdfHref)));
-            }, 180);
-        } else {
-            setTimeout(() => window.openLocalPDF(s['Assessment No'] || s.id || '', getName(s)), 180);
-        }
+        setTimeout(() => {
+            if (s._pdfHref) {
+                window._openPdfDirect(s._pdfHref, getName(s) || '');
+            } else {
+                window.openLocalPDF(s['Assessment No'] || s.id || '', getName(s));
+            }
+        }, 180);
     });
     listEl.addEventListener('mouseover', e => {
         const item = e.target.closest('.pdf-list-item');
