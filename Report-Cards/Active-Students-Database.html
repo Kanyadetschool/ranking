@@ -687,7 +687,7 @@
         </button>
         <button id="shortcut-help-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Keyboard shortcuts (?)" onclick="window._toggleShortcutPanel()">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-             <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">?</kbd>
+            Shortcuts <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">?</kbd>
         </button>
         <button id="hist-panel-btn" class="btn btn-ghost btn-sm nav-hide-mobile" title="Change History Panel (H)">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -882,7 +882,6 @@
                 <button id="pdf-nav-btn" class="tab-toolbar-btn" title="Browse Student PDFs (P)" onclick="window._openPdfSearchPanel()" style="display:flex;align-items:center;gap:.35rem;color:var(--navy);">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
                     Student PDFs
-                    <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">P</kbd>
                 </button>
                 <button id="save-preset-btn" class="tab-toolbar-btn" title="Save current grade+search as a preset">
                     <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
@@ -1199,9 +1198,16 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
                 <span style="font-weight:700;color:#fff;font-size:.97rem;">Student PDFs</span>
             </div>
-            <button onclick="window._closePdfSearchPanel()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+            <div style="display:flex;align-items:center;gap:.5rem;">
+                <button id="unmatched-pdfs-btn" onclick="window._openUnmatchedPdfsModal()" title="Show PDFs with no matching student name" style="display:flex;align-items:center;gap:.35rem;padding:.3rem .65rem;border-radius:6px;background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.45);color:#fca5a5;font-size:.72rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;white-space:nowrap;" onmouseover="this.style.background='rgba(239,68,68,.30)'" onmouseout="this.style.background='rgba(239,68,68,.18)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                    Unmatched PDFs
+                    <span id="unmatched-pdfs-badge" style="display:none;background:rgba(239,68,68,.7);color:#fff;border-radius:9px;padding:0 .35rem;font-size:.65rem;font-weight:800;min-width:16px;text-align:center;"></span>
+                </button>
+                <button onclick="window._closePdfSearchPanel()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
                 <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
+            </div><!-- /right button group -->
         </div>
         <!-- Advanced Filters -->
         <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
@@ -1224,6 +1230,50 @@
     </div>
 </div>
 <div id="pdf-panel-overlay" onclick="window._closePdfSearchPanel()" style="display:none;"></div>
+
+<!-- ══ UNMATCHED PDFs MODAL ══ -->
+<div id="unmatched-pdfs-modal" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(13,31,53,.6);backdrop-filter:blur(5px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+    <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);margin:1rem;">
+        <!-- Header -->
+        <div style="padding:1rem 1.25rem .875rem;border-bottom:1px solid var(--border);background:var(--navy);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
+            <div style="display:flex;align-items:center;gap:.65rem;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#fca5a5" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                <span style="font-weight:700;color:#fff;font-size:.97rem;">Unmatched PDFs</span>
+                <span id="unmatched-modal-badge" style="background:rgba(239,68,68,.6);color:#fff;border-radius:9px;padding:.1rem .45rem;font-size:.7rem;font-weight:800;"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+                <span id="unmatched-live-dot" title="Live — updates as database changes" style="display:inline-flex;align-items:center;gap:.3rem;font-size:.68rem;color:rgba(255,255,255,.55);font-weight:600;">
+                    <span style="width:7px;height:7px;border-radius:50%;background:#4ade80;display:inline-block;animation:um-pulse 1.8s ease-in-out infinite;"></span>Live
+                </span>
+                <button onclick="window._closeUnmatchedPdfsModal()" style="width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.22)'" onmouseout="this.style.background='rgba(255,255,255,.12)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+        </div>
+        <!-- Status bar -->
+        <div id="unmatched-status-bar" style="padding:.55rem 1rem;background:rgba(239,68,68,.07);border-bottom:1px solid rgba(239,68,68,.15);font-size:.75rem;color:var(--slate);display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01"/></svg>
+            <span id="unmatched-status-text">PDFs on server whose filenames don't match any student name in the database.</span>
+        </div>
+        <!-- Search -->
+        <div style="padding:.65rem 1rem;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
+            <div style="position:relative;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2" style="position:absolute;left:.65rem;top:50%;transform:translateY(-50%);pointer-events:none;"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
+                <input id="unmatched-search" type="text" placeholder="Filter by filename…" autocomplete="off" oninput="window._filterUnmatched()" style="box-sizing:border-box;width:100%;padding:.52rem .75rem .52rem 2rem;border:1.5px solid var(--border);border-radius:8px;font-size:.84rem;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;" onfocus="this.style.borderColor='var(--navy-lt)';this.style.boxShadow='0 0 0 3px rgba(59,130,246,.15)'" onblur="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+            </div>
+        </div>
+        <!-- List -->
+        <div id="unmatched-pdf-list" style="flex:1;overflow-y:auto;padding:.5rem .75rem;min-height:160px;"></div>
+        <!-- Footer -->
+        <div style="padding:.65rem 1.1rem;border-top:1px solid var(--border);background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
+            <span style="font-size:.72rem;color:var(--slate);">Click a PDF to view it · Recheck runs automatically on every database change</span>
+            <button onclick="window._recheckUnmatched()" id="unmatched-recheck-btn" title="Re-scan server and recheck matches" style="display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:6px;background:var(--navy-lt);border:none;color:#fff;font-size:.75rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--navy-mid)'" onmouseout="this.style.background='var(--navy-lt)'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                Re-scan Server
+            </button>
+        </div>
+    </div>
+</div>
 
 <!-- PROMOTE MODAL -->
 <div id="promote-modal" class="modal-backdrop hidden">
@@ -1839,6 +1889,12 @@ auth = getAuth(app);
 // Ensure session survives page reloads (default, but set explicitly for passkey flow)
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 
+// Expose Firebase handles for the Unmatched PDFs realtime listener
+window._firebaseDB      = db;
+window._firebaseRef     = ref;
+window._firebaseOnValue = onValue;
+
+
 // ── SPLASH SCREEN ─────────────────────────────────────
 const _splashEl = document.getElementById('splash-screen');
 const _splashStart = Date.now();
@@ -2284,6 +2340,12 @@ const fetchStudents = () => {
         window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
         updateGradeFilter();
         renderStudents(studentsData);
+        // ── Background badge check for Unmatched PDFs ──
+        if (typeof window._recheckUnmatched === 'function') {
+            // Debounce so only the final data snapshot triggers a check
+            clearTimeout(window._unmatchedBadgeDebounce);
+            window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 800);
+        }
         
     }, (error) => {
         showModal(`Error fetching data: ${error.message}`);
@@ -5015,6 +5077,239 @@ setTimeout(() => {
     panel.addEventListener('click', e => {
         if (e.target === panel) window._closePdfSearchPanel();
     });
+})();
+
+/* ══════════════════════════════════════════════════════════════════
+   UNMATCHED PDFs MODAL
+   Shows PDFs on server whose filenames don't match any student name.
+   Runs a fresh check on every Firebase onValue() event (realtime).
+   ══════════════════════════════════════════════════════════════════ */
+(function() {
+    const modal       = document.getElementById('unmatched-pdfs-modal');
+    const listEl      = document.getElementById('unmatched-pdf-list');
+    const statusText  = document.getElementById('unmatched-status-text');
+    const modalBadge  = document.getElementById('unmatched-modal-badge');
+    const headerBadge = document.getElementById('unmatched-pdfs-badge');
+    const searchInput = document.getElementById('unmatched-search');
+
+    if (!modal || !listEl) return;
+
+    let _serverFileMap   = new Map();   // basename(lower, no .pdf) → href
+    let _unmatchedItems  = [];          // array of { name, href } — filtered view
+    let _allUnmatched    = [];          // unfiltered
+    let _serverFetched   = false;       // have we fetched the server listing at all?
+    let _isOpen          = false;
+    let _checking        = false;
+
+    /* ── helpers ──────────────────────────────────────────── */
+    function normName(s) {
+        return (s['Official Student Name'] || s['name'] || '').trim();
+    }
+    function normKey(str) {
+        return str.trim().toLowerCase().replace(/\.pdf$/i, '');
+    }
+    function buildCandidates(s) {
+        const name = normName(s);
+        const no   = (s['Assessment No'] || s.id || '').toString().trim();
+        const grade = (s.Grade || s['Class'] || s['grade'] || s['class'] || '').toString().replace(/^Grade\s+/i,'').trim();
+        return [
+            name, name.toUpperCase(), name.toLowerCase(), no,
+            `${no} ${name}`, `${name} ${no}`, `${grade} ${name}`,
+            name.replace(/\s+/g,'_'), name.toUpperCase().replace(/\s+/g,'_'),
+        ].filter(Boolean).map(normKey);
+    }
+
+    /* ── fetch server PDF listing ─────────────────────────── */
+    async function fetchServerFiles() {
+        const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
+        const map  = new Map();
+        try {
+            const res = await fetch(base, { method:'GET', headers:{ Accept:'text/html' } });
+            if (res.ok) {
+                const html = await res.text();
+                const matches = [...html.matchAll(/href="([^"]+\.pdf)"/gi)];
+                matches.forEach(m => {
+                    const href     = m[1];
+                    const basename = decodeURIComponent(href.split('/').pop());
+                    map.set(normKey(basename), href);
+                });
+            }
+        } catch(_) {}
+        // Fallback: try HEAD-probing from existing pdfList cache
+        if (!map.size) {
+            try {
+                const cache = sessionStorage.getItem('pdfList_v1');
+                if (cache) {
+                    JSON.parse(cache).forEach(c => {
+                        if (c._pdfHref) map.set(normKey(decodeURIComponent(c._pdfHref.split('/').pop())), c._pdfHref);
+                    });
+                }
+            } catch(_) {}
+        }
+        return map;
+    }
+
+    /* ── compute unmatched ────────────────────────────────── */
+    function computeUnmatched(serverMap, students) {
+        const matchedHrefs = new Set();
+        students.forEach(s => {
+            const cands = buildCandidates(s);
+            for (const c of cands) {
+                if (serverMap.has(c)) { matchedHrefs.add(serverMap.get(c)); break; }
+            }
+        });
+        const unmatched = [];
+        serverMap.forEach((href, key) => {
+            if (!matchedHrefs.has(href)) {
+                const displayName = decodeURIComponent(href.split('/').pop()).replace(/\.pdf$/i,'');
+                unmatched.push({ name: displayName, href });
+            }
+        });
+        unmatched.sort((a,b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+        return unmatched;
+    }
+
+    /* ── render list ──────────────────────────────────────── */
+    function renderUnmatched(items) {
+        if (!items.length) {
+            listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.84rem;">
+                <div style="font-size:1.8rem;margin-bottom:.5rem;">✅</div>
+                All PDFs on the server match a student record.
+            </div>`;
+            return;
+        }
+        listEl.innerHTML = items.map((item, i) => {
+            const initials = item.name.split(/[\s_]+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase() || '?';
+            return `<div class="unm-row" data-href="${encodeURIComponent(item.href)}" data-name="${encodeURIComponent(item.name)}" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .65rem;border-radius:8px;cursor:pointer;margin-bottom:.18rem;border:1.5px solid transparent;transition:background .12s,border-color .12s;"
+                onmouseover="this.style.background='var(--surface2)';this.style.borderColor='rgba(239,68,68,.25)'"
+                onmouseout="this.style.background='';this.style.borderColor='transparent'"
+                onclick="(function(el){const href=decodeURIComponent(el.dataset.href);const name=decodeURIComponent(el.dataset.name);window._closeUnmatchedPdfsModal();setTimeout(()=>window._openPdfDirect(href,name),160);})(this)">
+                <div style="width:38px;height:38px;border-radius:50%;background:rgba(239,68,68,.1);border:1.5px solid rgba(239,68,68,.35);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:#ef4444;flex-shrink:0;">${initials}</div>
+                <div style="min-width:0;flex:1;">
+                    <div style="font-weight:600;font-size:.83rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${item.name}</div>
+                    <div style="font-size:.7rem;color:rgba(239,68,68,.8);font-style:italic;">No matching student record</div>
+                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="rgba(239,68,68,.5)" stroke-width="2.5" style="flex-shrink:0;"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+            </div>`;
+        }).join('');
+    }
+
+    /* ── update badges ────────────────────────────────────── */
+    function updateBadges(count) {
+        if (headerBadge) {
+            headerBadge.textContent = count || '';
+            headerBadge.style.display = count ? 'inline-block' : 'none';
+        }
+        if (modalBadge) {
+            modalBadge.textContent = count ? `${count} unmatched` : 'All matched';
+            modalBadge.style.background = count ? 'rgba(239,68,68,.6)' : 'rgba(74,222,128,.4)';
+            modalBadge.style.color = count ? '#fff' : '#166534';
+        }
+    }
+
+    /* ── filter ───────────────────────────────────────────── */
+    window._filterUnmatched = function() {
+        const term = (searchInput?.value || '').trim().toLowerCase();
+        const filtered = term ? _allUnmatched.filter(i => i.name.toLowerCase().includes(term)) : _allUnmatched;
+        _unmatchedItems = filtered;
+        renderUnmatched(filtered);
+    };
+
+    /* ── show loading state ───────────────────────────────── */
+    function showChecking(msg) {
+        listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;display:inline-block;margin-bottom:.5rem;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <div>${msg || 'Checking…'}</div>
+        </div>`;
+        if (statusText) statusText.textContent = msg || 'Checking server…';
+    }
+
+    /* ── core check ───────────────────────────────────────── */
+    async function runCheck(freshServerScan) {
+        if (_checking) return;
+        _checking = true;
+        if (_isOpen) showChecking(freshServerScan ? 'Re-scanning server for PDFs…' : 'Rechecking matches…');
+
+        if (freshServerScan || !_serverFetched) {
+            _serverFileMap = await fetchServerFiles();
+            _serverFetched = true;
+        }
+
+        const students = (window._studentsData || window.studentsData || []);
+        _allUnmatched = computeUnmatched(_serverFileMap, students);
+        _unmatchedItems = _allUnmatched;
+
+        updateBadges(_allUnmatched.length);
+
+        if (_isOpen) {
+            if (searchInput) searchInput.value = '';
+            renderUnmatched(_allUnmatched);
+            if (statusText) {
+                const ts = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
+                statusText.textContent = _allUnmatched.length
+                    ? `${_allUnmatched.length} PDF${_allUnmatched.length!==1?'s':''} on server with no matching student — last checked ${ts}`
+                    : `All ${_serverFileMap.size} server PDF${_serverFileMap.size!==1?'s':''} matched — last checked ${ts}`;
+            }
+        }
+        _checking = false;
+    }
+
+    /* ── Firebase realtime listener ───────────────────────── */
+    // Subscribe once to the students node; every onValue fires runCheck().
+    let _listenerAttached = false;
+    function attachRealtimeListener() {
+        if (_listenerAttached) return;
+        _listenerAttached = true;
+        try {
+            // Use the same `db` / `ref` / `onValue` that the main app imports
+            const dbRef  = window._firebaseDB;
+            const onValFn = window._firebaseOnValue;
+            const refFn   = window._firebaseRef;
+            if (dbRef && onValFn && refFn) {
+                // Watch the root students node — fires on any child change
+                const studentsRef = refFn(dbRef, 'students');
+                onValFn(studentsRef, () => {
+                    // Small debounce so rapid writes don't stack up
+                    clearTimeout(window._unmatchedDebounce);
+                    window._unmatchedDebounce = setTimeout(() => runCheck(false), 400);
+                });
+                return;
+            }
+        } catch(_) {}
+        // Fallback: poll _studentsData length every 3 s
+        let lastLen = -1;
+        setInterval(() => {
+            const cur = (window._studentsData || []).length;
+            if (cur !== lastLen) { lastLen = cur; runCheck(false); }
+        }, 3000);
+    }
+
+    /* ── open / close / recheck ───────────────────────────── */
+    window._openUnmatchedPdfsModal = async function() {
+        _isOpen = true;
+        modal.style.display = 'flex';
+        if (searchInput) searchInput.value = '';
+        attachRealtimeListener();
+        await runCheck(false);      // fresh check on open (use cached server list unless first time)
+    };
+
+    window._closeUnmatchedPdfsModal = function() {
+        _isOpen = false;
+        modal.style.display = 'none';
+    };
+
+    window._recheckUnmatched = async function() {
+        await runCheck(true);   // force server re-scan
+    };
+
+    // Close on backdrop click or Escape
+    modal.addEventListener('click', e => { if (e.target === modal) window._closeUnmatchedPdfsModal(); });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && _isOpen) window._closeUnmatchedPdfsModal();
+    });
+
+    // Expose Firebase handles so the listener helper can find them.
+    // These are set after Firebase initialises in the main module below — we wire them up there.
 })();
 </script>
 </body>
