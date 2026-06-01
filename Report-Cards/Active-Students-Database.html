@@ -1265,12 +1265,18 @@
         <!-- List -->
         <div id="unmatched-pdf-list" style="flex:1;overflow-y:auto;padding:.5rem .75rem;min-height:160px;"></div>
         <!-- Footer -->
-        <div style="padding:.65rem 1.1rem;border-top:1px solid var(--border);background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
+        <div style="padding:.65rem 1.1rem;border-top:1px solid var(--border);background:var(--surface2);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
             <span style="font-size:.72rem;color:var(--slate);">Click a PDF to view it · Recheck runs automatically on every database change</span>
-            <button onclick="window._recheckUnmatched()" id="unmatched-recheck-btn" title="Re-scan server and recheck matches" style="display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:6px;background:var(--navy-lt);border:none;color:#fff;font-size:.75rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--navy-mid)'" onmouseout="this.style.background='var(--navy-lt)'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                Re-scan Server
-            </button>
+            <div style="display:flex;align-items:center;gap:.45rem;flex-shrink:0;">
+                <button onclick="window._printPdfStatusReport()" id="unmatched-print-btn" title="Print PDF status report by class" style="display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:6px;background:var(--gold);border:none;color:var(--navy);font-size:.75rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--gold-lt)'" onmouseout="this.style.background='var(--gold)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg>
+                    Print Report
+                </button>
+                <button onclick="window._recheckUnmatched()" id="unmatched-recheck-btn" title="Re-scan server and recheck matches" style="display:flex;align-items:center;gap:.35rem;padding:.35rem .75rem;border-radius:6px;background:var(--navy-lt);border:none;color:#fff;font-size:.75rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:background .15s;" onmouseover="this.style.background='var(--navy-mid)'" onmouseout="this.style.background='var(--navy-lt)'">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    Re-scan Server
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -5583,6 +5589,146 @@ setTimeout(() => {
 
     window._recheckUnmatched = async function() {
         await runCheck(true);   // force server re-scan
+    };
+
+    /* ── Print PDF status report ─────────────────────────── */
+    window._printPdfStatusReport = function() {
+        const students = (window._studentsData || window.studentsData || []);
+        if (!students.length) { alert('No student data loaded yet.'); return; }
+
+        // Group students by Grade/Class
+        const groups = {};
+        students.forEach(s => {
+            const grade = (s.Grade || s['Class'] || s['grade'] || s['class'] || 'Unknown').toString().trim();
+            if (!groups[grade]) groups[grade] = { withPdf: [], noPdf: [] };
+            if (s._pdfHref) groups[grade].withPdf.push(s);
+            else groups[grade].noPdf.push(s);
+        });
+
+        // Sort grade keys naturally
+        const gradeKeys = Object.keys(groups).sort((a, b) => {
+            const numA = parseInt(a.replace(/\D+/g, '')) || 0;
+            const numB = parseInt(b.replace(/\D+/g, '')) || 0;
+            return numA !== numB ? numA - numB : a.localeCompare(b);
+        });
+
+        const totalWith    = students.filter(s => s._pdfHref).length;
+        const totalWithout = students.length - totalWith;
+        const today        = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
+
+        let rows = '';
+        gradeKeys.forEach(grade => {
+            const g = groups[grade];
+            const total = g.withPdf.length + g.noPdf.length;
+            rows += `
+            <tr class="grade-header">
+                <td colspan="4" style="background:#0d1f35;color:#fff;font-weight:800;font-size:.82rem;padding:.45rem .75rem;letter-spacing:.03em;">
+                    ${grade}
+                    <span style="margin-left:.75rem;font-weight:600;font-size:.72rem;opacity:.8;">
+                        ${g.withPdf.length} with PDF &nbsp;&middot;&nbsp; ${g.noPdf.length} missing &nbsp;&middot;&nbsp; ${total} total
+                    </span>
+                </td>
+            </tr>`;
+
+            g.withPdf.sort((a,b) => (a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
+            g.withPdf.forEach(s => {
+                rows += `<tr class="row-with">
+                    <td style="padding:.32rem .75rem;font-size:.75rem;color:#475569;">${s['Assessment No'] || '\u2014'}</td>
+                    <td style="padding:.32rem .75rem;font-size:.78rem;font-weight:600;color:#0f172a;">${s['Official Student Name'] || '\u2014'}</td>
+                    <td style="padding:.32rem .75rem;font-size:.75rem;color:#059669;text-align:center;">
+                        <span style="background:#d1fae5;border-radius:4px;padding:.1rem .45rem;font-weight:700;">&#10003; PDF</span>
+                    </td>
+                    <td style="padding:.32rem .75rem;font-size:.72rem;color:#64748b;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${(s._pdfHref||'').split('/').pop().replace(/\.(pdf|PDF)$/,'')}</td>
+                </tr>`;
+            });
+
+            g.noPdf.sort((a,b) => (a['Official Student Name']||'').localeCompare(b['Official Student Name']||''));
+            g.noPdf.forEach(s => {
+                rows += `<tr class="row-without">
+                    <td style="padding:.32rem .75rem;font-size:.75rem;color:#475569;">${s['Assessment No'] || '\u2014'}</td>
+                    <td style="padding:.32rem .75rem;font-size:.78rem;font-weight:600;color:#0f172a;">${s['Official Student Name'] || '\u2014'}</td>
+                    <td style="padding:.32rem .75rem;font-size:.75rem;color:#dc2626;text-align:center;">
+                        <span style="background:#fee2e2;border-radius:4px;padding:.1rem .45rem;font-weight:700;">&#10007; Missing</span>
+                    </td>
+                    <td style="padding:.32rem .75rem;font-size:.72rem;color:#94a3b8;">\u2014</td>
+                </tr>`;
+            });
+        });
+
+        const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>PDF Status Report \u2014 Kanyadet Pri &amp; Junior School</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; background: #fff; color: #0f172a; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page-header { background: #0d1f35; color: #fff; padding: 1rem 1.5rem; display: flex; align-items: center; justify-content: space-between; }
+  .page-header h1 { font-size: 1rem; font-weight: 800; }
+  .page-header p  { font-size: .72rem; opacity: .65; margin-top: .15rem; }
+  .summary { display: flex; gap: .75rem; padding: .65rem 1.5rem; background: #f6f8fb; border-bottom: 1px solid #e2e8f0; flex-wrap: wrap; }
+  .sum-box { background: #fff; border-radius: 6px; border: 1px solid #e2e8f0; padding: .45rem .85rem; text-align: center; min-width: 80px; }
+  .sum-box .val { font-size: 1.1rem; font-weight: 800; }
+  .sum-box .lbl { font-size: .65rem; color: #64748b; margin-top: .05rem; }
+  .sum-box.green .val { color: #059669; }
+  .sum-box.red   .val { color: #dc2626; }
+  .sum-box.navy  .val { color: #0d1f35; }
+  table { width: 100%; border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; }
+  th { background: #1e4080; color: #fff; font-size: .72rem; font-weight: 700; padding: .4rem .75rem; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tr.grade-header td { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  tr.row-with  { background: #fff; }
+  tr.row-with:nth-child(even)  { background: #f8fff8; }
+  tr.row-without { background: #fff; }
+  tr.row-without:nth-child(even) { background: #fffafa; }
+  tr:not(.grade-header) td { border-bottom: 1px solid #f1f5f9; }
+  .footer { padding: .6rem 1.5rem; font-size: .68rem; color: #94a3b8; border-top: 1px solid #e2e8f0; margin-top: .5rem; }
+  @media print {
+    @page { margin: .6cm 1cm; size: A4 portrait; }
+    table { page-break-inside: auto; }
+    tr { page-break-inside: avoid; }
+    tr.grade-header { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div>
+    <h1>PDF Status Report \u2014 Kanyadet Pri &amp; Junior School</h1>
+    <p>Generated: ${today} &nbsp;&middot;&nbsp; ${students.length} students across ${gradeKeys.length} classes</p>
+  </div>
+  <div style="text-align:right;">
+    <div style="font-size:1.5rem;font-weight:800;color:#f0a500;">${totalWith}/${students.length}</div>
+    <div style="font-size:.68rem;opacity:.65;">students have PDFs</div>
+  </div>
+</div>
+<div class="summary">
+  <div class="sum-box navy"><div class="val">${students.length}</div><div class="lbl">Total Students</div></div>
+  <div class="sum-box green"><div class="val">${totalWith}</div><div class="lbl">Have PDF</div></div>
+  <div class="sum-box red"><div class="val">${totalWithout}</div><div class="lbl">Missing PDF</div></div>
+  <div class="sum-box navy"><div class="val">${gradeKeys.length}</div><div class="lbl">Classes</div></div>
+  <div class="sum-box navy"><div class="val">${totalWith ? Math.round(totalWith/students.length*100) : 0}%</div><div class="lbl">Coverage</div></div>
+</div>
+<table>
+  <thead>
+    <tr>
+      <th style="width:90px;">Adm. No</th>
+      <th>Student Name</th>
+      <th style="width:90px;text-align:center;">PDF Status</th>
+      <th>Filename</th>
+    </tr>
+  </thead>
+  <tbody>${rows}</tbody>
+</table>
+<div class="footer">Kanyadet Pri &amp; Junior School &nbsp;&middot;&nbsp; PDF Status Report &nbsp;&middot;&nbsp; ${today}</div>
+<script>window.onload = () => { window.print(); };<\/script>
+</body>
+</html>`;
+
+        const win = window.open('', '_blank', 'width=900,height=700');
+        if (!win) { alert('Please allow popups for this page to use Print Report.'); return; }
+        win.document.open();
+        win.document.write(html);
+        win.document.close();
     };
 
     // Close on backdrop click or Escape
