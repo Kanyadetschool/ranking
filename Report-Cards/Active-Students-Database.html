@@ -4941,6 +4941,8 @@ setTimeout(() => {
         const withPdfs = [];
 
         if (serverFileNames && serverFileNames.size > 0) {
+            // Expose the full raw server map so the Unmatched PDFs modal can reuse it without re-fetching
+            window._allServerPdfMap = serverFileNames;
             const m = msgEl(); if (m) m.textContent = `Matching ${serverFileNames.size} PDFs to students…`;
             all.forEach(s => {
                 const name = getName(s), no = (s['Assessment No'] || s.id || '').toString().trim();
@@ -5120,11 +5122,21 @@ setTimeout(() => {
     }
 
     /* ── fetch server PDF listing ─────────────────────────── */
-    async function fetchServerFiles() {
+    async function fetchServerFiles(statusCb) {
+        // Strategy 1: reuse the map already built by the main PDF panel (free, instant)
+        if (window._allServerPdfMap && window._allServerPdfMap.size > 0) {
+            statusCb && statusCb(`Using cached server list — ${window._allServerPdfMap.size} PDFs found`);
+            // Return a copy so we don't mutate the shared map
+            return new Map(window._allServerPdfMap);
+        }
+
         const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
         const map  = new Map();
+
+        // Strategy 2: directory listing (fast, works if server has index enabled)
         try {
-            const res = await fetch(base, { method:'GET', headers:{ Accept:'text/html' } });
+            statusCb && statusCb('Fetching server directory listing…');
+            const res = await fetch(base, { method:'GET', headers:{ Accept:'text/html' }, cache:'no-store' });
             if (res.ok) {
                 const html = await res.text();
                 const matches = [...html.matchAll(/href="([^"]+\.pdf)"/gi)];
@@ -5133,19 +5145,46 @@ setTimeout(() => {
                     const basename = decodeURIComponent(href.split('/').pop());
                     map.set(normKey(basename), href);
                 });
+                if (map.size > 0) {
+                    window._allServerPdfMap = map;
+                    return map;
+                }
             }
         } catch(_) {}
-        // Fallback: try HEAD-probing from existing pdfList cache
-        if (!map.size) {
-            try {
-                const cache = sessionStorage.getItem('pdfList_v1');
-                if (cache) {
-                    JSON.parse(cache).forEach(c => {
-                        if (c._pdfHref) map.set(normKey(decodeURIComponent(c._pdfHref.split('/').pop())), c._pdfHref);
-                    });
+
+        // Strategy 3: HEAD-probe every student name variant in batches of 100
+        statusCb && statusCb('Directory listing unavailable — probing by student names…');
+        const students = (window._studentsData || window.studentsData || []);
+        if (!students.length) return map;
+
+        const BATCH = 100;
+        const buildUrls = s => {
+            const name  = normName(s);
+            const no    = (s['Assessment No'] || s.id || '').toString().trim();
+            const grade = (s.Grade || s['Class'] || '').toString().replace(/^Grade\s+/i,'').trim();
+            return [
+                name, name.toUpperCase(), name.toLowerCase(), no,
+                `${no} ${name}`, `${name} ${no}`, `${grade} ${name}`,
+                name.replace(/\s+/g,'_'), name.toUpperCase().replace(/\s+/g,'_'),
+            ].filter((v,i,a) => v && a.indexOf(v) === i)
+             .map(v => ({ key: normKey(v), url: base + encodeURIComponent(v) + '.pdf' }));
+        };
+
+        let checked = 0;
+        for (let i = 0; i < students.length; i += BATCH) {
+            const batch = students.slice(i, i + BATCH);
+            await Promise.all(batch.map(async s => {
+                for (const { key, url } of buildUrls(s)) {
+                    try {
+                        const r = await fetch(url, { method:'HEAD', cache:'no-store' });
+                        if (r.ok) { map.set(key, url); break; }
+                    } catch(_) {}
                 }
-            } catch(_) {}
+            }));
+            checked += batch.length;
+            statusCb && statusCb(`Probing PDFs… ${Math.min(checked, students.length)} / ${students.length} students checked (${map.size} found)`);
         }
+        if (map.size > 0) window._allServerPdfMap = map;
         return map;
     }
 
@@ -5219,7 +5258,7 @@ setTimeout(() => {
     function showChecking(msg) {
         listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;display:inline-block;margin-bottom:.5rem;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
-            <div>${msg || 'Checking…'}</div>
+            <div id="unmatched-check-msg">${msg || 'Checking…'}</div>
         </div>`;
         if (statusText) statusText.textContent = msg || 'Checking server…';
     }
@@ -5228,10 +5267,25 @@ setTimeout(() => {
     async function runCheck(freshServerScan) {
         if (_checking) return;
         _checking = true;
+
+        if (freshServerScan) {
+            // Force re-fetch from server by clearing the shared cache
+            window._allServerPdfMap = null;
+            _serverFetched = false;
+        }
+
         if (_isOpen) showChecking(freshServerScan ? 'Re-scanning server for PDFs…' : 'Rechecking matches…');
 
+        const statusCb = msg => {
+            if (!_isOpen) return;
+            if (statusText) statusText.textContent = msg;
+            // Update the spinner message too if still loading
+            const msgEl = listEl.querySelector('#unmatched-check-msg');
+            if (msgEl) msgEl.textContent = msg;
+        };
+
         if (freshServerScan || !_serverFetched) {
-            _serverFileMap = await fetchServerFiles();
+            _serverFileMap = await fetchServerFiles(statusCb);
             _serverFetched = true;
         }
 
@@ -5248,7 +5302,7 @@ setTimeout(() => {
                 const ts = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit',second:'2-digit'});
                 statusText.textContent = _allUnmatched.length
                     ? `${_allUnmatched.length} PDF${_allUnmatched.length!==1?'s':''} on server with no matching student — last checked ${ts}`
-                    : `All ${_serverFileMap.size} server PDF${_serverFileMap.size!==1?'s':''} matched — last checked ${ts}`;
+                    : `All ${_serverFileMap.size} server PDF${_serverFileMap.size!==1?'s':''} matched ✓ — last checked ${ts}`;
             }
         }
         _checking = false;
