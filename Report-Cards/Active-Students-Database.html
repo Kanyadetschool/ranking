@@ -5713,35 +5713,67 @@ setTimeout(() => {
 
         let withPdfs;
 
-        if (!forceRefresh) {
-            const cached = loadCache();
-            if (cached && cached.length) {
-                // Restore _pdfHref onto live student objects where possible
-                const byName = new Map(all.map(s => [getName(s).toLowerCase(), s]));
-                withPdfs = cached.map(c => {
-                    const live = byName.get((c['Official Student Name']||'').toLowerCase());
-                    if (live) { live._pdfHref = c._pdfHref; return live; }
-                    return c;   // orphan or unmatched — use serialised form
+        // If background scan already ran, reuse _pdfHref already set on student objects — no re-scan needed
+        if (!forceRefresh && window._bgPdfScanDone) {
+            const matched = all.filter(s => s._pdfHref);
+            // Also include orphans (server files with no student match) from the server map
+            const matchedHrefs = new Set(matched.map(s => s._pdfHref));
+            const orphans = [];
+            if (window._allServerPdfMap) {
+                window._allServerPdfMap.forEach((href) => {
+                    if (!matchedHrefs.has(href)) {
+                        const displayName = decodeURIComponent(href.split('/').pop()).replace(/\.pdf$/i, '');
+                        orphans.push({ 'Official Student Name': displayName, _pdfHref: href, _orphan: true });
+                    }
                 });
             }
+            withPdfs = [...matched, ...orphans].sort((a,b) => {
+                if (a._orphan && !b._orphan) return 1;
+                if (!a._orphan && b._orphan) return -1;
+                return getName(a).toLowerCase().localeCompare(getName(b).toLowerCase());
+            });
+            searchInput.disabled = false; gradeFilter.disabled = false;
+            searchInput.style.opacity = ''; gradeFilter.style.opacity = '';
         }
 
         if (!withPdfs || !withPdfs.length) {
-            if (forceRefresh) clearCache();
-            withPdfs = await fetchPdfList(all, forceRefresh);
-            if (!withPdfs.length) return;
-        } else {
-            // Served from cache — show immediately, add refresh hint in count
-            searchInput.disabled = false; gradeFilter.disabled = false;
-            searchInput.style.opacity = ''; gradeFilter.style.opacity = '';
+            if (!forceRefresh && window._bgPdfScanDone) {
+                // Scan ran but found nothing — show empty state
+                listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
+                    <div style="font-size:1.6rem;margin-bottom:.5rem;">📂</div>
+                    No PDFs found in <code style="font-size:.75rem;background:var(--surface2);padding:.1rem .3rem;border-radius:4px;">student_pdfs/</code>
+                </div>`;
+                countEl.innerHTML = `<span>0 PDFs found</span>
+                    <button id="pdf-refresh-btn" style="margin-left:.5rem;font-size:.7rem;color:var(--navy-lt);background:none;border:1px solid var(--border);border-radius:5px;padding:.1rem .4rem;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="window._openPdfSearchPanel(true)">🔄 Refresh</button>`;
+                return;
+            }
+            if (!forceRefresh) {
+                const cached = loadCache();
+                if (cached && cached.length) {
+                    const byName = new Map(all.map(s => [getName(s).toLowerCase(), s]));
+                    withPdfs = cached.map(c => {
+                        const live = byName.get((c['Official Student Name']||'').toLowerCase());
+                        if (live) { live._pdfHref = c._pdfHref; return live; }
+                        return c;
+                    });
+                    searchInput.disabled = false; gradeFilter.disabled = false;
+                    searchInput.style.opacity = ''; gradeFilter.style.opacity = '';
+                }
+            }
+            if (!withPdfs || !withPdfs.length) {
+                if (forceRefresh) clearCache();
+                withPdfs = await fetchPdfList(all, forceRefresh);
+                if (!withPdfs.length) return;
+                // Mark bg scan done since we just fetched
+                window._bgPdfScanDone = true;
+            }
         }
 
         _cachedStudents = withPdfs;
         populateGradeFilter(_cachedStudents);
         doFilter();
 
-        // Update count to show cache status + refresh button
-        const fromCache = !forceRefresh && !!loadCache();
+        const fromCache = !forceRefresh && !window._bgPdfScanDone && !!loadCache();
         countEl.innerHTML = `<span>${withPdfs.length} PDF${withPdfs.length!==1?'s':''} found</span>
             <button id="pdf-refresh-btn" title="Re-scan server for PDFs" style="margin-left:.5rem;font-size:.7rem;color:var(--navy-lt);background:none;border:1px solid var(--border);border-radius:5px;padding:.1rem .4rem;cursor:pointer;font-family:'DM Sans',sans-serif;" onclick="window._openPdfSearchPanel(true)">
                 🔄 ${fromCache ? 'Cached · Refresh' : 'Refresh'}
