@@ -4750,24 +4750,26 @@ setTimeout(() => {
 
     /* ─── Filter logic ───────────────────────────────────── */
     function doFilter() {
+        if (!_cachedStudents.length) return;   // still loading — do nothing
         const term  = searchInput.value.trim().toLowerCase();
-        const grade = gradeFilter.value.trim();   // raw grade e.g. "8"
+        const grade = gradeFilter.value.trim();
         const filtered = _cachedStudents.filter(s => {
             const name   = getName(s).toLowerCase();
             const sGrade = getRawGrade(s);
-            const no     = (s['Assessment No'] || s.id || '').toLowerCase();
-            return (!term  || name.includes(term) || no.includes(term))
-                && (!grade || sGrade === grade);
+            const no     = (s['Assessment No'] || s.id || '').toString().toLowerCase();
+            const matchName  = !term  || name.includes(term) || no.includes(term);
+            const matchGrade = !grade || sGrade === grade;
+            return matchName && matchGrade;
         });
         renderList(filtered);
     }
 
     /* ─── Events ─────────────────────────────────────────── */
-    searchInput.addEventListener('input', doFilter);
+    searchInput.addEventListener('input',  doFilter);
     gradeFilter.addEventListener('change', doFilter);
 
     // Expand search on focus, collapse on blur (if empty)
-    const searchWrap = searchInput.closest('div[style*="position:relative"]') || searchInput.parentElement;
+    const searchWrap = searchInput.parentElement;
     searchInput.addEventListener('focus', () => {
         searchInput.style.borderColor = 'var(--navy-lt)';
         searchInput.style.boxShadow   = '0 0 0 3px rgba(59,130,246,.18)';
@@ -4808,7 +4810,14 @@ setTimeout(() => {
         searchInput.value = '';
         gradeFilter.value = '';
         clearBtn.style.display = 'none';
+        _cachedStudents = [];   // clear while loading
         panel.style.display = 'flex';
+
+        // Disable filters while loading
+        searchInput.disabled = true;
+        gradeFilter.disabled = true;
+        searchInput.style.opacity = '.5';
+        gradeFilter.style.opacity = '.5';
 
         const all = (window._studentsData || []).slice().sort((a, b) =>
             getName(a).toLowerCase().localeCompare(getName(b).toLowerCase())
@@ -4817,10 +4826,12 @@ setTimeout(() => {
         if (!all.length) {
             listEl.innerHTML = '<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">No student data loaded yet.<br>Please wait for the database to load.</div>';
             countEl.textContent = '';
+            searchInput.disabled = false; gradeFilter.disabled = false;
+            searchInput.style.opacity = ''; gradeFilter.style.opacity = '';
             return;
         }
 
-        // Show loading state
+        // Show loading progress
         listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
             <div style="margin-bottom:.6rem;">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;display:inline-block;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
@@ -4830,33 +4841,33 @@ setTimeout(() => {
         countEl.textContent = '';
 
         const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
-        const msgEl = () => document.getElementById('pdf-check-msg');
         let checked = 0;
-
-        // Check in batches of 8 for speed without flooding
-        const BATCH = 8;
         const withPdfs = [];
+
+        const BATCH = 10;
         for (let i = 0; i < all.length; i += BATCH) {
             const batch = all.slice(i, i + BATCH);
             const results = await Promise.all(batch.map(s => {
                 const name = getName(s);
                 if (!name) return Promise.resolve(false);
-                const url = base + encodeURIComponent(name) + '.pdf';
-                return fetch(url, { method: 'HEAD' })
+                return fetch(base + encodeURIComponent(name) + '.pdf', { method: 'HEAD' })
                     .then(r => r.ok).catch(() => false);
             }));
             batch.forEach((s, j) => { if (results[j]) withPdfs.push(s); });
             checked += batch.length;
-            const m = msgEl();
+            const m = document.getElementById('pdf-check-msg');
             if (m) m.textContent = `Checking PDFs… ${Math.min(checked, all.length)} / ${all.length}  (${withPdfs.length} found)`;
         }
 
+        // Re-enable filters
+        searchInput.disabled = false; gradeFilter.disabled = false;
+        searchInput.style.opacity = ''; gradeFilter.style.opacity = '';
+
         if (!withPdfs.length) {
-            // No PDFs found at all — show a helpful message
             listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
                 <div style="font-size:1.6rem;margin-bottom:.5rem;">📂</div>
                 No PDFs found in <code style="font-size:.75rem;background:var(--surface2);padding:.1rem .3rem;border-radius:4px;">student_pdfs/</code><br>
-                <span style="font-size:.72rem;margin-top:.35rem;display:block;">Expected files like:<br><em>STUDENT NAME.pdf</em></span>
+                <span style="font-size:.72rem;margin-top:.35rem;display:block;">Expected files like: <em>STUDENT NAME.pdf</em></span>
             </div>`;
             countEl.textContent = '0 PDFs found';
             return;
@@ -4864,7 +4875,8 @@ setTimeout(() => {
 
         _cachedStudents = withPdfs;
         populateGradeFilter(_cachedStudents);
-        renderList(_cachedStudents);
+        // Apply any filter the user may have typed/selected during loading
+        doFilter();
         setTimeout(() => searchInput.focus(), 60);
     };
 
