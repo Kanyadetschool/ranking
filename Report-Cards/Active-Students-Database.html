@@ -1946,11 +1946,15 @@ export const openLocalPDF = (assessmentNo, studentName) => {
     const pdfName = studentName || assessmentNo;
     pdfModalStudentName.textContent = pdfName;
     pdfModalStudentImage.src = studentName ? `./student_images/${encodeURIComponent(studentName)}.jpg` : '';
-    const localUrl = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}.pdf`;
+    const _pdfBase = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}`;
     // Show modal FIRST so the container has real dimensions, then load
     pdfModalBackdrop.classList.remove('hidden');
-    // Two rAF to ensure layout is committed before measuring
-    requestAnimationFrame(() => requestAnimationFrame(() => window._pdfViewerLoad(localUrl)));
+    // Two rAF to ensure layout is committed before measuring.
+    // Try .pdf first, fall back to .PDF (some files uploaded with uppercase extension).
+    requestAnimationFrame(() => requestAnimationFrame(async () => {
+        const r = await fetch(_pdfBase + '.pdf', { method: 'HEAD', cache: 'no-store' }).catch(() => ({ ok: false }));
+        window._pdfViewerLoad(r.ok ? _pdfBase + '.pdf' : _pdfBase + '.PDF');
+    }));
 };
 window.openLocalPDF = openLocalPDF;
 
@@ -5051,13 +5055,13 @@ setTimeout(() => {
             const res = await fetch(base, { method: 'GET', headers: { Accept: 'text/html' } });
             if (res.ok) {
                 const html = await res.text();
-                const matches = [...html.matchAll(/href="([^"]+\\.pdf)"/gi)];
+                const matches = [...html.matchAll(/href="([^"]+\.pdf)"/gi)];
                 if (matches.length) {
                     serverFileNames = new Map();
                     matches.forEach(m => {
                         const href = m[1];
                         const basename = decodeURIComponent(href.split('/').pop());
-                        serverFileNames.set(basename.toLowerCase().replace(/\\.pdf$/i, ''), href);
+                        serverFileNames.set(basename.toLowerCase().replace(/\.pdf$/i, ''), href);
                     });
                     if (serverFileNames.size) window._allServerPdfMap = serverFileNames;
                     else serverFileNames = null;
@@ -5097,7 +5101,10 @@ setTimeout(() => {
                 return [name, name.toUpperCase(), no, `${no}_${name}`,
                     name.replace(/\s+/g,'_'), name.toUpperCase().replace(/\s+/g,'_')]
                     .filter((v,i,a) => v && a.indexOf(v)===i)
-                    .map(v => base + encodeURIComponent(v) + '.pdf');
+                    .flatMap(v => [
+                        base + encodeURIComponent(v) + '.pdf',
+                        base + encodeURIComponent(v) + '.PDF'
+                    ]);
             };
             for (let i = 0; i < all.length; i += BATCH) {
                 const batch = all.slice(i, i + BATCH);
@@ -5343,7 +5350,10 @@ setTimeout(() => {
                 `${no} ${name}`, `${name} ${no}`, `${grade} ${name}`,
                 name.replace(/\s+/g,'_'), name.toUpperCase().replace(/\s+/g,'_'),
             ].filter((v,i,a) => v && a.indexOf(v) === i)
-             .map(v => ({ key: normKey(v), url: pagesBase + encodeURIComponent(v) + '.pdf' }));
+             .flatMap(v => [
+                 { key: normKey(v), url: pagesBase + encodeURIComponent(v) + '.pdf' },
+                 { key: normKey(v), url: pagesBase + encodeURIComponent(v) + '.PDF' },
+             ]);
         };
 
         let checked = 0;
