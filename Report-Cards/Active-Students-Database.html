@@ -1182,8 +1182,8 @@
         </div>
 
         <!-- Canvas area — takes all remaining vertical space -->
-        <div id="pdf-content" style="flex:1;overflow:auto;background:#525659;display:flex;align-items:center;justify-content:center;padding:1rem;min-height:0;">
-            <canvas id="pdf-canvas" style="display:none;box-shadow:0 4px 32px rgba(0,0,0,.5);border-radius:3px;"></canvas>
+        <div id="pdf-content" style="flex:1;overflow:auto;background:#525659;display:flex;align-items:flex-start;justify-content:center;padding:1rem;min-height:0;">
+            <canvas id="pdf-canvas" style="display:none;box-shadow:0 4px 32px rgba(0,0,0,.5);border-radius:3px;margin:auto;"></canvas>
             <div id="pdf-error-msg" style="display:none;color:#fca5a5;font-size:.9rem;padding:2rem;text-align:center;max-width:400px;line-height:1.6;"></div>
         </div>
     </div>
@@ -5606,143 +5606,150 @@ setTimeout(() => {
         if (!students.length) { alert('No student data loaded yet.'); return; }
 
         const btn = document.getElementById('unmatched-print-btn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Building PDF…'; }
+        const setBtn = (txt, dis) => {
+            if (!btn) return;
+            btn.disabled = dis;
+            btn.innerHTML = dis
+                ? `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="animation:um-spin .7s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg> ${txt}`
+                : `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg> Print Report`;
+        };
+        setBtn('Preparing…', true);
+
+        // Yield to let the button update render before heavy work
+        await new Promise(r => setTimeout(r, 30));
 
         try {
             const { jsPDF } = window.jspdf;
-            const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-            const PW = doc.internal.pageSize.getWidth();
-            const PH = doc.internal.pageSize.getHeight();
-            const MARGIN = 12;
+            const doc   = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+            const PW    = doc.internal.pageSize.getWidth();
+            const PH    = doc.internal.pageSize.getHeight();
+            const M     = 12;   // margin
             const today = new Date().toLocaleDateString('en-GB', { day:'2-digit', month:'long', year:'numeric' });
+            const base  = location.origin + location.pathname.replace(/[^/]*$/, '');
 
-            // ── helper: load image as base64 ──────────────────────────────
-            const imgCache = {};
-            const loadImg = (url) => {
-                if (imgCache[url]) return imgCache[url];
-                imgCache[url] = new Promise(resolve => {
-                    const img = new Image();
-                    img.crossOrigin = 'anonymous';
-                    img.onload  = () => {
-                        const c = document.createElement('canvas');
-                        c.width = img.naturalWidth; c.height = img.naturalHeight;
-                        c.getContext('2d').drawImage(img, 0, 0);
-                        try { resolve(c.toDataURL('image/jpeg', 0.82)); }
-                        catch(_) { resolve(null); }
-                    };
-                    img.onerror = () => resolve(null);
-                    img.src = url;
-                });
-                return imgCache[url];
-            };
-
-            // Pre-load default image
-            const defaultImgUrl = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_images/default.jpg';
-            const defaultImgB64 = await loadImg(defaultImgUrl);
-
-            const getStudentImg = async (name) => {
-                if (!name) return defaultImgB64;
-                const url = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_images/' + encodeURIComponent(name) + '.jpg';
-                const b64 = await loadImg(url);
-                return b64 || defaultImgB64;
-            };
-
-            // ── group & sort ──────────────────────────────────────────────
+            // ── 1. Group & sort ───────────────────────────────────────────
             const groups = {};
             students.forEach(s => {
-                const grade = (s.Grade || s['Class'] || s['grade'] || s['class'] || 'Unknown').toString().trim();
-                if (!groups[grade]) groups[grade] = { withPdf: [], noPdf: [] };
-                if (s._pdfHref) groups[grade].withPdf.push(s);
-                else            groups[grade].noPdf.push(s);
+                const grade = (s.Grade||s['Class']||s['grade']||s['class']||'Unknown').toString().trim();
+                if (!groups[grade]) groups[grade] = { withPdf:[], noPdf:[] };
+                (s._pdfHref ? groups[grade].withPdf : groups[grade].noPdf).push(s);
             });
-            const gradeKeys = Object.keys(groups).sort((a, b) => {
-                const na = parseInt(a.replace(/\D+/g,'')) || 0;
-                const nb = parseInt(b.replace(/\D+/g,'')) || 0;
-                return na !== nb ? na - nb : a.localeCompare(b);
+            const gradeKeys = Object.keys(groups).sort((a,b) => {
+                const na = parseInt(a.replace(/\D+/g,''))||0, nb = parseInt(b.replace(/\D+/g,''))||0;
+                return na !== nb ? na-nb : a.localeCompare(b);
             });
-            const totalWith    = students.filter(s => s._pdfHref).length;
+            const totalWith    = students.filter(s=>s._pdfHref).length;
             const totalWithout = students.length - totalWith;
-            const coverage     = students.length ? Math.round(totalWith / students.length * 100) : 0;
+            const coverage     = students.length ? Math.round(totalWith/students.length*100) : 0;
 
-            // ── page header helper ────────────────────────────────────────
+            // ── 2. Pre-fetch ALL images in parallel (fast) ────────────────
+            setBtn('Loading photos…', true);
+            await new Promise(r => setTimeout(r, 20));
+
+            const toDataURL = url => new Promise(resolve => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+                img.onload = () => {
+                    try {
+                        const c = document.createElement('canvas');
+                        // Downsample to max 40×40 px — plenty for thumbnail, much faster encode
+                        const sz = 40;
+                        c.width = sz; c.height = sz;
+                        c.getContext('2d').drawImage(img, 0, 0, sz, sz);
+                        resolve(c.toDataURL('image/jpeg', 0.7));
+                    } catch(_) { resolve(null); }
+                };
+                img.onerror = () => resolve(null);
+                img.src = url + '?_t=' + Date.now(); // bust cache
+            });
+
+            const defaultB64 = await toDataURL(base + 'student_images/default.jpg');
+
+            // Build unique name list, fetch all concurrently
+            const nameSet = [...new Set(students.map(s => s['Official Student Name']||'').filter(Boolean))];
+            const imgMap  = { '': defaultB64 };
+
+            // Batch in groups of 20 to avoid overwhelming the browser
+            const BATCH = 20;
+            for (let i = 0; i < nameSet.length; i += BATCH) {
+                const slice = nameSet.slice(i, i+BATCH);
+                const results = await Promise.all(slice.map(async name => {
+                    const b64 = await toDataURL(base + 'student_images/' + encodeURIComponent(name) + '.jpg');
+                    return [name, b64 || defaultB64];
+                }));
+                results.forEach(([n,b]) => { imgMap[n] = b; });
+                setBtn(`Loading photos… ${Math.min(i+BATCH, nameSet.length)}/${nameSet.length}`, true);
+                await new Promise(r => setTimeout(r, 0)); // keep UI responsive
+            }
+
+            // ── 3. Build PDF (synchronous after images loaded) ────────────
+            setBtn('Building PDF…', true);
+            await new Promise(r => setTimeout(r, 20));
+
+            // Page header
             let pageNum = 0;
-            const drawPageHeader = () => {
+            const drawHeader = () => {
                 pageNum++;
-                // Dark navy bar
-                doc.setFillColor(13, 31, 53);
-                doc.rect(0, 0, PW, 20, 'F');
-                // Gold accent line
-                doc.setFillColor(240, 165, 0);
-                doc.rect(0, 20, PW, 1.2, 'F');
-                // Title
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(11); doc.setFont(undefined, 'bold');
-                doc.text('KANYADET PRI & JUNIOR SCHOOL', MARGIN, 8);
-                doc.setFontSize(7.5); doc.setFont(undefined, 'normal');
-                doc.text('PDF Status Report  \u2014  ' + today, MARGIN, 14);
-                // Right side stats
-                doc.setFontSize(7); doc.setTextColor(200, 210, 220);
-                doc.text(`${totalWith}/${students.length} have PDF  \u00B7  ${coverage}%  \u00B7  Page ${pageNum}`, PW - MARGIN, 14, { align: 'right' });
+                doc.setFillColor(13,31,53); doc.rect(0,0,PW,19,'F');
+                doc.setFillColor(240,165,0); doc.rect(0,19,PW,1.1,'F');
+                doc.setTextColor(255,255,255);
+                doc.setFontSize(10); doc.setFont(undefined,'bold');
+                doc.text('KANYADET PRI & JUNIOR SCHOOL', M, 7.5);
+                doc.setFontSize(7); doc.setFont(undefined,'normal');
+                doc.text('PDF Status Report  \u2014  '+today, M, 13.5);
+                doc.setFontSize(6.5); doc.setTextColor(180,195,210);
+                doc.text(`${totalWith}/${students.length} have PDF  \u00B7  ${coverage}%  \u00B7  p.${pageNum}`, PW-M, 13.5, {align:'right'});
             };
 
-            // ── cover summary page ────────────────────────────────────────
-            drawPageHeader();
-            let y = 28;
+            // Cover page
+            drawHeader();
+            let y = 27;
 
-            // Summary boxes
             const boxes = [
-                { label: 'Total Students', val: students.length, r:13,g:31,b:53 },
-                { label: 'Have PDF',        val: totalWith,       r:5, g:150,b:105 },
-                { label: 'Missing PDF',     val: totalWithout,    r:220,g:38,b:38 },
-                { label: 'Classes',         val: gradeKeys.length,r:13,g:31,b:53 },
-                { label: 'Coverage',        val: coverage + '%',  r:30,g:64,b:128 },
+                {l:'Total',val:students.length,r:13,g:31,b:53},
+                {l:'Have PDF',val:totalWith,r:5,g:150,b:105},
+                {l:'Missing',val:totalWithout,r:220,g:38,b:38},
+                {l:'Classes',val:gradeKeys.length,r:30,g:64,b:128},
+                {l:'Coverage',val:coverage+'%',r:13,g:31,b:53},
             ];
-            const bw = (PW - MARGIN * 2 - 4 * 3) / 5;
-            boxes.forEach((b, i) => {
-                const bx = MARGIN + i * (bw + 3);
-                doc.setFillColor(b.r, b.g, b.b);
-                doc.roundedRect(bx, y, bw, 16, 2, 2, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(13); doc.setFont(undefined, 'bold');
-                doc.text(String(b.val), bx + bw / 2, y + 8, { align: 'center' });
-                doc.setFontSize(6); doc.setFont(undefined, 'normal');
-                doc.text(b.label, bx + bw / 2, y + 13.5, { align: 'center' });
+            const bw = (PW - M*2 - 4*3)/5;
+            boxes.forEach((b,i) => {
+                const bx = M + i*(bw+3);
+                doc.setFillColor(b.r,b.g,b.b);
+                doc.roundedRect(bx, y, bw, 15, 2,2,'F');
+                doc.setTextColor(255,255,255);
+                doc.setFontSize(12); doc.setFont(undefined,'bold');
+                doc.text(String(b.val), bx+bw/2, y+7.5, {align:'center'});
+                doc.setFontSize(5.5); doc.setFont(undefined,'normal');
+                doc.text(b.l, bx+bw/2, y+12.5, {align:'center'});
             });
-            y += 22;
+            y += 20;
 
-            // Per-class summary mini-table
-            doc.setFontSize(8); doc.setFont(undefined, 'bold');
-            doc.setTextColor(13, 31, 53);
-            doc.text('Summary by Class', MARGIN, y); y += 4;
+            doc.setFontSize(7.5); doc.setFont(undefined,'bold'); doc.setTextColor(13,31,53);
+            doc.text('Summary by Class', M, y); y += 3.5;
 
             doc.autoTable({
                 startY: y,
-                head: [['Class', 'Total', 'Have PDF', 'Missing', 'Coverage']],
+                head: [['Class','Total','Have PDF','Missing','Coverage']],
                 body: gradeKeys.map(g => {
                     const gr = groups[g];
-                    const tot = gr.withPdf.length + gr.noPdf.length;
-                    const cov = tot ? Math.round(gr.withPdf.length / tot * 100) + '%' : '0%';
-                    return [g, tot, gr.withPdf.length, gr.noPdf.length, cov];
+                    const tot = gr.withPdf.length+gr.noPdf.length;
+                    return [g, tot, gr.withPdf.length, gr.noPdf.length, tot?Math.round(gr.withPdf.length/tot*100)+'%':'0%'];
                 }),
-                styles: { fontSize: 8, cellPadding: 2.2, font: 'helvetica' },
-                headStyles: { fillColor: [30, 64, 128], textColor: [255,255,255], fontStyle: 'bold', fontSize: 7.5 },
-                alternateRowStyles: { fillColor: [246, 248, 251] },
-                columnStyles: {
-                    0: { fontStyle: 'bold' },
-                    2: { textColor: [5, 150, 105] },
-                    3: { textColor: [220, 38, 38] },
-                },
-                margin: { left: MARGIN, right: MARGIN },
+                styles:{ fontSize:8, cellPadding:2, font:'helvetica' },
+                headStyles:{ fillColor:[30,64,128], textColor:[255,255,255], fontStyle:'bold', fontSize:7.5 },
+                alternateRowStyles:{ fillColor:[246,248,251] },
+                columnStyles:{ 0:{fontStyle:'bold'}, 2:{textColor:[5,150,105]}, 3:{textColor:[220,38,38]} },
+                margin:{ left:M, right:M },
             });
 
-            // ── per-class detail pages ────────────────────────────────────
-            const ROW_H   = 9;       // row height mm
-            const IMG_SZ  = 7;       // photo size mm
-            const COL_IMG = MARGIN;
-            const COL_NO  = MARGIN + IMG_SZ + 2;
-            const COL_NAME= COL_NO  + 22;
-            const COL_STAT= PW - MARGIN - 28;
-            const COL_FILE= COL_STAT + 18;
+            // Per-class detail pages
+            const RH   = 8.5;   // row height
+            const ISZ  = 6.5;   // image size
+            const C_IM = M;
+            const C_NO = M + ISZ + 2;
+            const C_NM = C_NO + 21;
+            const C_ST = PW - M - 22;
 
             for (const grade of gradeKeys) {
                 const g = groups[grade];
@@ -5751,110 +5758,79 @@ setTimeout(() => {
                     ...g.noPdf.sort((a,b)=>(a['Official Student Name']||'').localeCompare(b['Official Student Name']||'')),
                 ];
 
-                doc.addPage();
-                drawPageHeader();
-                y = 26;
+                doc.addPage(); drawHeader(); y = 25;
 
-                // Class header bar
-                doc.setFillColor(30, 64, 128);
-                doc.rect(MARGIN, y, PW - MARGIN * 2, 7, 'F');
-                doc.setTextColor(255, 255, 255);
-                doc.setFontSize(8.5); doc.setFont(undefined, 'bold');
-                doc.text(grade, MARGIN + 2, y + 4.8);
-                const tot = g.withPdf.length + g.noPdf.length;
-                const covTxt = `${g.withPdf.length} PDF  \u00B7  ${g.noPdf.length} missing  \u00B7  ${tot} total`;
-                doc.setFontSize(7); doc.setFont(undefined, 'normal');
-                doc.text(covTxt, PW - MARGIN - 2, y + 4.8, { align: 'right' });
-                y += 9;
+                // Class header
+                doc.setFillColor(30,64,128);
+                doc.rect(M, y, PW-M*2, 6.5,'F');
+                doc.setTextColor(255,255,255);
+                doc.setFontSize(8); doc.setFont(undefined,'bold');
+                doc.text(grade, M+2, y+4.5);
+                const tot2 = g.withPdf.length+g.noPdf.length;
+                doc.setFontSize(6.5); doc.setFont(undefined,'normal');
+                doc.text(`${g.withPdf.length} PDF \u00B7 ${g.noPdf.length} missing \u00B7 ${tot2} total`, PW-M-2, y+4.5, {align:'right'});
+                y += 8.5;
 
-                // Column headers
-                doc.setFontSize(6.5); doc.setFont(undefined, 'bold');
-                doc.setTextColor(100, 116, 139);
-                doc.text('Photo',     COL_IMG, y);
-                doc.text('Adm. No',   COL_NO,  y);
-                doc.text('Name',      COL_NAME, y);
-                doc.text('Status',    COL_STAT, y);
-                y += 2;
-                doc.setDrawColor(200, 210, 220);
-                doc.line(MARGIN, y, PW - MARGIN, y);
-                y += 2;
+                // Col headers
+                doc.setFontSize(6); doc.setFont(undefined,'bold'); doc.setTextColor(120,130,150);
+                doc.text('Photo',C_IM,y); doc.text('Adm.No',C_NO,y); doc.text('Name',C_NM,y); doc.text('Status',C_ST,y);
+                y += 1.5;
+                doc.setDrawColor(210,218,230); doc.line(M,y,PW-M,y); y += 2;
 
-                for (const s of allRows) {
-                    // New page if needed
-                    if (y + ROW_H > PH - 14) {
-                        doc.addPage();
-                        drawPageHeader();
-                        y = 26;
-                        // Continuation bar
-                        doc.setFillColor(30, 64, 128);
-                        doc.rect(MARGIN, y, PW - MARGIN * 2, 6, 'F');
-                        doc.setTextColor(255, 255, 255);
-                        doc.setFontSize(7.5); doc.setFont(undefined, 'bold');
-                        doc.text(grade + ' (cont.)', MARGIN + 2, y + 4);
-                        y += 9;
+                allRows.forEach((s,ri) => {
+                    if (y+RH > PH-12) {
+                        doc.addPage(); drawHeader(); y = 25;
+                        doc.setFillColor(30,64,128); doc.rect(M,y,PW-M*2,6,'F');
+                        doc.setTextColor(255,255,255); doc.setFontSize(7); doc.setFont(undefined,'bold');
+                        doc.text(grade+' (cont.)', M+2, y+4); y += 8.5;
                     }
 
-                    const hasPdf  = !!s._pdfHref;
-                    const name    = s['Official Student Name'] || '';
-                    const admNo   = String(s['Assessment No'] || '\u2014');
+                    const hasPdf = !!s._pdfHref;
+                    const name   = s['Official Student Name']||'';
+                    const admNo  = String(s['Assessment No']||'\u2014');
 
-                    // Alternating row background
-                    const rowIdx = allRows.indexOf(s);
-                    if (rowIdx % 2 === 0) {
-                        doc.setFillColor(248, 250, 252);
-                        doc.rect(MARGIN, y - 1, PW - MARGIN * 2, ROW_H, 'F');
+                    // Alt row bg
+                    if (ri%2===0) {
+                        doc.setFillColor(248,250,252);
+                        doc.rect(M, y-0.5, PW-M*2, RH,'F');
                     }
 
-                    // Student photo
-                    const imgB64 = await getStudentImg(name);
-                    if (imgB64) {
-                        try { doc.addImage(imgB64, 'JPEG', COL_IMG, y, IMG_SZ, IMG_SZ); } catch(_){}
-                    }
+                    // Photo — synchronous, already loaded
+                    const b64 = imgMap[name]||defaultB64;
+                    if (b64) { try { doc.addImage(b64,'JPEG',C_IM,y,ISZ,ISZ); } catch(_){} }
 
                     // Adm No
-                    doc.setFontSize(7); doc.setFont(undefined, 'normal');
-                    doc.setTextColor(100, 116, 139);
-                    doc.text(admNo, COL_NO, y + 4.5);
+                    doc.setFontSize(6.5); doc.setFont(undefined,'normal'); doc.setTextColor(110,120,140);
+                    doc.text(admNo, C_NO, y+4);
 
                     // Name
-                    doc.setFontSize(7.5); doc.setFont(undefined, 'bold');
-                    doc.setTextColor(15, 23, 42);
-                    const nameMax = COL_STAT - COL_NAME - 3;
-                    const shortName = doc.splitTextToSize(name || '\u2014', nameMax)[0];
-                    doc.text(shortName, COL_NAME, y + 4.5);
+                    doc.setFontSize(7); doc.setFont(undefined,'bold'); doc.setTextColor(15,23,42);
+                    doc.text(doc.splitTextToSize(name||'\u2014', C_ST-C_NM-3)[0], C_NM, y+4);
 
                     // Status pill
                     if (hasPdf) {
-                        doc.setFillColor(209, 250, 229);
-                        doc.roundedRect(COL_STAT, y + 1, 16, 5, 1, 1, 'F');
-                        doc.setFontSize(6.5); doc.setFont(undefined, 'bold');
-                        doc.setTextColor(5, 150, 105);
-                        doc.text('\u2713 PDF', COL_STAT + 8, y + 4.5, { align: 'center' });
+                        doc.setFillColor(209,250,229); doc.roundedRect(C_ST,y+1,15,4.5,1,1,'F');
+                        doc.setFontSize(6); doc.setFont(undefined,'bold'); doc.setTextColor(5,150,105);
+                        doc.text('\u2713 PDF', C_ST+7.5, y+4, {align:'center'});
                     } else {
-                        doc.setFillColor(254, 226, 226);
-                        doc.roundedRect(COL_STAT, y + 1, 16, 5, 1, 1, 'F');
-                        doc.setFontSize(6.5); doc.setFont(undefined, 'bold');
-                        doc.setTextColor(220, 38, 38);
-                        doc.text('\u2717 Missing', COL_STAT + 8, y + 4.5, { align: 'center' });
+                        doc.setFillColor(254,226,226); doc.roundedRect(C_ST,y+1,15,4.5,1,1,'F');
+                        doc.setFontSize(6); doc.setFont(undefined,'bold'); doc.setTextColor(220,38,38);
+                        doc.text('\u2717 No PDF', C_ST+7.5, y+4, {align:'center'});
                     }
 
-                    y += ROW_H;
-                }
+                    y += RH;
+                });
 
-                // Divider after class
-                doc.setDrawColor(226, 232, 240);
-                doc.line(MARGIN, y, PW - MARGIN, y);
-                y += 3;
+                doc.setDrawColor(220,228,240); doc.line(M,y,PW-M,y); y += 2;
             }
 
-            // ── footer on every page ──────────────────────────────────────
-            const total = doc.internal.getNumberOfPages();
-            for (let p = 1; p <= total; p++) {
+            // Footer on all pages
+            const tp = doc.internal.getNumberOfPages();
+            for (let p=1; p<=tp; p++) {
                 doc.setPage(p);
-                doc.setFontSize(6.5); doc.setTextColor(148, 163, 184);
-                doc.setFont(undefined, 'normal');
-                doc.text(`Kanyadet Pri & Junior School  \u00B7  PDF Status Report  \u00B7  ${today}  \u00B7  Page ${p} of ${total}`,
-                    PW / 2, PH - 6, { align: 'center' });
+                doc.setFontSize(6); doc.setTextColor(160,170,185); doc.setFont(undefined,'normal');
+                doc.text(`Kanyadet Pri & Junior School  \u00B7  PDF Status Report  \u00B7  ${today}  \u00B7  Page ${p} of ${tp}`,
+                    PW/2, PH-5.5, {align:'center'});
             }
 
             doc.save(`PDF_Status_Report_${new Date().toISOString().split('T')[0]}.pdf`);
@@ -5863,9 +5839,10 @@ setTimeout(() => {
             console.error('Print report error:', err);
             alert('Could not generate PDF: ' + err.message);
         } finally {
-            if (btn) { btn.disabled = false; btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg> Print Report'; }
+            setBtn('', false);
         }
     };
+
 
 
     // Close on backdrop click or Escape
