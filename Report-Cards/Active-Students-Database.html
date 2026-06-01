@@ -1205,11 +1205,11 @@
         <!-- Advanced Filters -->
         <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border);background:var(--surface2);flex-shrink:0;">
             <div style="display:flex;gap:.55rem;align-items:center;">
-                <div style="position:relative;flex:1;min-width:0;">
+                <div style="position:relative;flex:1;min-width:0;transition:flex .2s ease;">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="var(--slate)" stroke-width="2" style="position:absolute;left:.65rem;top:50%;transform:translateY(-50%);pointer-events:none;z-index:1;"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
-                    <input id="pdf-search-input" type="text" placeholder="Search by name…" autocomplete="off" style="box-sizing:border-box;width:100%;padding:.55rem .75rem .55rem 2.1rem;border:1.5px solid var(--border);border-radius:8px;font-size:.84rem;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;display:block;">
+                    <input id="pdf-search-input" type="text" placeholder="Search name…" autocomplete="off" style="box-sizing:border-box;width:100%;padding:.58rem .75rem .58rem 2.1rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;transition:border-color .15s,box-shadow .15s;display:block;min-width:0;">
                 </div>
-                <select id="pdf-grade-filter" style="box-sizing:border-box;padding:.52rem .7rem;border:1.5px solid var(--border);border-radius:8px;font-size:.84rem;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;cursor:pointer;flex-shrink:0;min-width:115px;transition:border-color .15s;">
+                <select id="pdf-grade-filter" style="box-sizing:border-box;padding:.55rem .7rem;border:1.5px solid var(--border);border-radius:8px;font-size:.84rem;font-family:'DM Sans',sans-serif;background:var(--surface);color:var(--text);outline:none;cursor:pointer;flex-shrink:0;width:120px;transition:border-color .15s,width .2s ease;">
                     <option value="">All Grades</option>
                 </select>
             </div>
@@ -4677,32 +4677,35 @@ setTimeout(() => {
 
 // ── PDF SEARCH PANEL ──────────────────────────────────
 (function() {
-    const panel      = document.getElementById('pdf-search-panel');
-    const listEl     = document.getElementById('pdf-student-list');
-    const countEl    = document.getElementById('pdf-search-count');
+    const panel       = document.getElementById('pdf-search-panel');
+    const listEl      = document.getElementById('pdf-student-list');
+    const countEl     = document.getElementById('pdf-search-count');
     const searchInput = document.getElementById('pdf-search-input');
     const gradeFilter = document.getElementById('pdf-grade-filter');
-    const clearBtn   = document.getElementById('pdf-filter-clear');
+    const clearBtn    = document.getElementById('pdf-filter-clear');
 
     if (!panel || !listEl || !searchInput || !gradeFilter) {
         console.warn('[PDF Panel] Missing DOM elements — panel disabled');
         return;
     }
 
-    let _cachedStudents = [];
-    let _renderData    = [];
+    let _cachedStudents = [];   // only students that have PDFs
+    let _renderData     = [];
 
-    /* ── Helpers ──────────────────────────────────── */
-    function getGrade(s) {
-        return (s.Grade || s['Class'] || s['grade'] || s['class'] || '').toString().trim();
-    }
+    /* ─── Helpers ────────────────────────────────────────── */
     function getName(s) {
         return (s['Official Student Name'] || s['name'] || '').trim();
     }
+    function getRawGrade(s) {
+        // Firestore may store "Grade 8" or just "8" — normalise to the raw number/label
+        const raw = (s.Grade || s['Class'] || s['grade'] || s['class'] || '').toString().trim();
+        // Strip leading "Grade " prefix if present so we never double-print it
+        return raw.replace(/^Grade\s+/i, '').trim();
+    }
 
-    /* ── Grade dropdown ───────────────────────────── */
+    /* ─── Grade dropdown ─────────────────────────────────── */
     function populateGradeFilter(students) {
-        const grades = [...new Set(students.map(getGrade).filter(Boolean))].sort((a, b) => {
+        const grades = [...new Set(students.map(getRawGrade).filter(Boolean))].sort((a, b) => {
             const na = parseInt(a), nb = parseInt(b);
             return (!isNaN(na) && !isNaN(nb)) ? na - nb : a.localeCompare(b);
         });
@@ -4710,14 +4713,14 @@ setTimeout(() => {
             grades.map(g => `<option value="${g}">Grade ${g}</option>`).join('');
     }
 
-    /* ── Render list ──────────────────────────────── */
+    /* ─── Render student list ────────────────────────────── */
     function renderList(students) {
         _renderData = students;
         const total = _cachedStudents.length;
         const shown = students.length;
         countEl.textContent = (shown === total)
-            ? `${total} student${total !== 1 ? 's' : ''}`
-            : `${shown} of ${total} students`;
+            ? `${total} student${total !== 1 ? 's' : ''} with PDFs`
+            : `${shown} of ${total} students with PDFs`;
 
         const hasFilter = searchInput.value.trim() !== '' || gradeFilter.value !== '';
         clearBtn.style.display = hasFilter ? 'inline-block' : 'none';
@@ -4729,7 +4732,7 @@ setTimeout(() => {
 
         listEl.innerHTML = students.map((s, i) => {
             const name    = getName(s) || '—';
-            const grade   = getGrade(s);
+            const grade   = getRawGrade(s);
             const initials = name.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase();
             return `<div class="pdf-list-item" data-idx="${i}" style="display:flex;align-items:center;gap:.7rem;padding:.6rem .65rem;border-radius:8px;cursor:pointer;margin-bottom:.18rem;border:1.5px solid transparent;transition:background .12s,border-color .12s;">
                 <div style="width:38px;height:38px;border-radius:50%;background:var(--gold-dim);border:1.5px solid var(--gold);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.72rem;color:var(--navy);flex-shrink:0;overflow:hidden;">
@@ -4745,13 +4748,13 @@ setTimeout(() => {
         }).join('');
     }
 
-    /* ── Filter logic ─────────────────────────────── */
+    /* ─── Filter logic ───────────────────────────────────── */
     function doFilter() {
         const term  = searchInput.value.trim().toLowerCase();
-        const grade = gradeFilter.value.trim();   // exact match — same value as stored
+        const grade = gradeFilter.value.trim();   // raw grade e.g. "8"
         const filtered = _cachedStudents.filter(s => {
             const name   = getName(s).toLowerCase();
-            const sGrade = getGrade(s);
+            const sGrade = getRawGrade(s);
             const no     = (s['Assessment No'] || s.id || '').toLowerCase();
             return (!term  || name.includes(term) || no.includes(term))
                 && (!grade || sGrade === grade);
@@ -4759,22 +4762,23 @@ setTimeout(() => {
         renderList(filtered);
     }
 
-    /* ── Attach filter events (JS, not inline HTML) ── */
+    /* ─── Events ─────────────────────────────────────────── */
     searchInput.addEventListener('input', doFilter);
     gradeFilter.addEventListener('change', doFilter);
 
-    /* ── Input grow + highlight on focus ─────────── */
+    // Expand search on focus, collapse on blur (if empty)
+    const searchWrap = searchInput.closest('div[style*="position:relative"]') || searchInput.parentElement;
     searchInput.addEventListener('focus', () => {
         searchInput.style.borderColor = 'var(--navy-lt)';
-        searchInput.style.boxShadow   = '0 0 0 3px rgba(59,130,246,.15)';
-        searchInput.style.background  = 'var(--surface)';
+        searchInput.style.boxShadow   = '0 0 0 3px rgba(59,130,246,.18)';
+        if (searchWrap) searchWrap.style.flex = '2';
     });
     searchInput.addEventListener('blur', () => {
         searchInput.style.borderColor = 'var(--border)';
         searchInput.style.boxShadow   = 'none';
+        if (searchWrap && !searchInput.value) searchWrap.style.flex = '1';
     });
 
-    /* ── Click handler (event delegation) ────────── */
     listEl.addEventListener('click', e => {
         const item = e.target.closest('.pdf-list-item');
         if (!item) return;
@@ -4783,7 +4787,6 @@ setTimeout(() => {
         window._closePdfSearchPanel();
         setTimeout(() => window.openLocalPDF(s['Assessment No'] || s.id || '', getName(s)), 180);
     });
-
     listEl.addEventListener('mouseover', e => {
         const item = e.target.closest('.pdf-list-item');
         if (item) { item.style.background = 'var(--surface2)'; item.style.borderColor = 'var(--border)'; }
@@ -4793,7 +4796,6 @@ setTimeout(() => {
         if (item) { item.style.background = ''; item.style.borderColor = 'transparent'; }
     });
 
-    /* ── Clear filters ────────────────────────────── */
     window._clearPdfFilters = function() {
         searchInput.value = '';
         gradeFilter.value = '';
@@ -4801,20 +4803,16 @@ setTimeout(() => {
         renderList(_cachedStudents);
     };
 
-    /* ── Open panel ───────────────────────────────── */
-    window._openPdfSearchPanel = function() {
-        // Reset filters
+    /* ─── Open panel — HEAD-check PDFs with progress ─────── */
+    window._openPdfSearchPanel = async function() {
         searchInput.value = '';
         gradeFilter.value = '';
         clearBtn.style.display = 'none';
-
-        // Show immediately
         panel.style.display = 'flex';
 
-        // Load students directly from window._studentsData — no slow HEAD checks
-        const all = (window._studentsData || []).slice().sort((a, b) => {
-            return getName(a).toLowerCase().localeCompare(getName(b).toLowerCase());
-        });
+        const all = (window._studentsData || []).slice().sort((a, b) =>
+            getName(a).toLowerCase().localeCompare(getName(b).toLowerCase())
+        );
 
         if (!all.length) {
             listEl.innerHTML = '<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">No student data loaded yet.<br>Please wait for the database to load.</div>';
@@ -4822,23 +4820,61 @@ setTimeout(() => {
             return;
         }
 
-        _cachedStudents = all;
+        // Show loading state
+        listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
+            <div style="margin-bottom:.6rem;">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;display:inline-block;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            </div>
+            <span id="pdf-check-msg">Checking PDFs… 0 / ${all.length}</span>
+        </div>`;
+        countEl.textContent = '';
+
+        const base = location.origin + location.pathname.replace(/[^/]*$/, '') + 'student_pdfs/';
+        const msgEl = () => document.getElementById('pdf-check-msg');
+        let checked = 0;
+
+        // Check in batches of 8 for speed without flooding
+        const BATCH = 8;
+        const withPdfs = [];
+        for (let i = 0; i < all.length; i += BATCH) {
+            const batch = all.slice(i, i + BATCH);
+            const results = await Promise.all(batch.map(s => {
+                const name = getName(s);
+                if (!name) return Promise.resolve(false);
+                const url = base + encodeURIComponent(name) + '.pdf';
+                return fetch(url, { method: 'HEAD' })
+                    .then(r => r.ok).catch(() => false);
+            }));
+            batch.forEach((s, j) => { if (results[j]) withPdfs.push(s); });
+            checked += batch.length;
+            const m = msgEl();
+            if (m) m.textContent = `Checking PDFs… ${Math.min(checked, all.length)} / ${all.length}  (${withPdfs.length} found)`;
+        }
+
+        if (!withPdfs.length) {
+            // No PDFs found at all — show a helpful message
+            listEl.innerHTML = `<div style="text-align:center;padding:2.5rem 1rem;color:var(--slate);font-size:.83rem;">
+                <div style="font-size:1.6rem;margin-bottom:.5rem;">📂</div>
+                No PDFs found in <code style="font-size:.75rem;background:var(--surface2);padding:.1rem .3rem;border-radius:4px;">student_pdfs/</code><br>
+                <span style="font-size:.72rem;margin-top:.35rem;display:block;">Expected files like:<br><em>STUDENT NAME.pdf</em></span>
+            </div>`;
+            countEl.textContent = '0 PDFs found';
+            return;
+        }
+
+        _cachedStudents = withPdfs;
         populateGradeFilter(_cachedStudents);
         renderList(_cachedStudents);
         setTimeout(() => searchInput.focus(), 60);
     };
 
-    /* ── Close panel ──────────────────────────────── */
     window._closePdfSearchPanel = function() {
         panel.style.display = 'none';
     };
 
-    // Escape closes
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape' && panel.style.display === 'flex') window._closePdfSearchPanel();
     });
-
-    // Click backdrop to close
     panel.addEventListener('click', e => {
         if (e.target === panel) window._closePdfSearchPanel();
     });
