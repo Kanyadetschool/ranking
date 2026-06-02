@@ -397,9 +397,9 @@
         .kpi-mini-bar { display:flex; align-items:flex-end; gap:1.5px; height:22px; margin-top:.45rem; }
         .kpi-mini-bar span { flex:1; border-radius:2px 2px 0 0; transition:height .4s ease; min-width:3px; }
         .kpi-donut { width:44px; height:44px; position:absolute; right:.9rem; top:50%; transform:translateY(-50%); }
-        .kpi-expand-hint { position:absolute; bottom:.45rem; right:.65rem; font-size:.6rem; color:var(--slate-lt); display:flex; align-items:center; gap:.2rem; }
+        .kpi-expand-hint { position:absolute; bottom:.45rem; right:.65rem; font-size:.6rem; color:var(--slate-lt); display:flex; align-items:center; gap:.2rem; transition:color .15s; }
         .kpi-expand-hint svg { transition:transform .25s; }
-        .kpi-active .kpi-expand-hint svg { transform:rotate(180deg); }
+        .kpi-card:hover .kpi-expand-hint { color:var(--navy-lt); }
 
         /* KPI DRAWER */
         .kpi-drawer-wrap { overflow:hidden; max-height:0; transition:max-height .35s cubic-bezier(.4,0,.2,1); margin-bottom:0; }
@@ -909,10 +909,7 @@
         <!-- Analytics toolbar -->
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem;">
             <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-                <button id="toggle-stats-btn" class="tab-toolbar-btn" style="font-size:.75rem;display:flex;align-items:center;gap:.35rem;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    Stats
-                </button>
+                <button id="toggle-stats-btn" class="tab-toolbar-btn" style="font-size:.75rem;">▴ Hide Analytics</button>
                 <button id="pdf-nav-btn" class="tab-toolbar-btn" title="Browse Student PDFs (P)" onclick="window._openPdfSearchPanel()" style="display:flex;align-items:center;gap:.35rem;color:var(--navy);">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
                     Student PDFs <span class="tab-kbd">P</span>
@@ -937,11 +934,11 @@
         <div class="kpi-grid" id="kpi-grid"></div>
 
         <!-- KPI DRAWERS (one per card, revealed on click) -->
-        <div class="kpi-drawer-wrap" id="kpi-drawer-students"><div class="kpi-drawer" id="kpi-drawer-students-inner"></div></div>
-        <div class="kpi-drawer-wrap" id="kpi-drawer-gender"><div class="kpi-drawer" id="kpi-drawer-gender-inner"></div></div>
-        <div class="kpi-drawer-wrap" id="kpi-drawer-quality"><div class="kpi-drawer" id="kpi-drawer-quality-inner"></div></div>
-        <div class="kpi-drawer-wrap" id="kpi-drawer-pdf"><div class="kpi-drawer" id="kpi-drawer-pdf-inner"></div></div>
-        <div class="kpi-drawer-wrap" id="kpi-drawer-classsize"><div class="kpi-drawer" id="kpi-drawer-classsize-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-students"><div id="kpi-drawer-students-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-gender"><div id="kpi-drawer-gender-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-quality"><div id="kpi-drawer-quality-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-pdf"><div id="kpi-drawer-pdf-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-classsize"><div id="kpi-drawer-classsize-inner"></div></div>
 
         <!-- ANALYTICS / STATS -->
         <section id="stats-section"></section>
@@ -2586,24 +2583,71 @@ const getOrderedHeaders = (students) => {
 };
 
 // ── KPI CARDS ─────────────────────────────────────────
-// ── KPI DRAWER STATE ────────────────────────────────────
+// ── KPI MODAL (replaces drawer dropdowns) ────────────────
+const _kpiTitles = {
+    students:  'Student Enrollment Breakdown',
+    gender:    'Gender Distribution',
+    quality:   'Data Completeness Analysis',
+    pdf:       'PDF Coverage — Report Cards',
+    classsize: 'Class Size & Year Distribution',
+};
+const _kpiIcons = {
+    students:  '<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>',
+    gender:    '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>',
+    quality:   '<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>',
+    pdf:       '<path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>',
+    classsize: '<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>',
+};
 let _kpiActiveDrawer = null;
-const _kpiDrawerIds = ['students','gender','quality','pdf','classsize'];
 
 function _toggleKpiDrawer(id) {
-    const wasActive = _kpiActiveDrawer === id;
-    // Close all
-    _kpiDrawerIds.forEach(k => {
-        document.getElementById('kpi-drawer-'+k)?.classList.remove('kpi-drawer-open');
+    // Mark card active (for expand-hint arrow rotation) — clear others
+    ['students','gender','quality','pdf','classsize'].forEach(k => {
         document.getElementById('kpi-card-'+k)?.classList.remove('kpi-active');
     });
-    if (!wasActive) {
-        document.getElementById('kpi-drawer-'+id)?.classList.add('kpi-drawer-open');
-        document.getElementById('kpi-card-'+id)?.classList.add('kpi-active');
-        _kpiActiveDrawer = id;
-    } else {
+    document.getElementById('kpi-card-'+id)?.classList.add('kpi-active');
+    _kpiActiveDrawer = id;
+
+    const modal = document.getElementById('uni-modal');
+    const box   = document.getElementById('uni-modal-box');
+    if (!modal || !box) return;
+
+    // Pull the already-rendered drawer inner HTML
+    const drawerEl = document.getElementById('kpi-drawer-'+id+'-inner');
+    const drawerHTML = drawerEl ? drawerEl.innerHTML : '<p style="color:var(--slate);font-size:.85rem;">No data available yet.</p>';
+
+    box.className = 'um-box um-wide';
+    box.innerHTML = `
+        <div class="um-header" style="padding-bottom:.75rem;">
+            <div class="um-icon-ring info">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="var(--info)" stroke-width="2">${_kpiIcons[id]||''}</svg>
+            </div>
+            <div class="um-title">${_kpiTitles[id]||id}</div>
+        </div>
+        <div class="um-body" style="padding-top:.5rem;">
+            <div class="um-scroll" style="padding:.85rem .95rem;max-height:480px;">${drawerHTML}</div>
+        </div>
+        <div class="um-footer">
+            <button class="um-btn-confirm primary" id="um-kpi-close-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                Close
+            </button>
+        </div>`;
+
+    const _closeKpiModal = () => {
+        modal.classList.remove('open');
+        box.className = 'um-box';
+        document.getElementById('kpi-card-'+id)?.classList.remove('kpi-active');
         _kpiActiveDrawer = null;
-    }
+        modal.removeEventListener('click', _bdClose);
+        document.removeEventListener('keydown', _escClose);
+    };
+    box.querySelector('#um-kpi-close-btn').addEventListener('click', _closeKpiModal);
+    const _bdClose  = (e) => { if (e.target === modal) _closeKpiModal(); };
+    const _escClose = (e) => { if (e.key === 'Escape') _closeKpiModal(); };
+    modal.addEventListener('click', _bdClose);
+    document.addEventListener('keydown', _escClose);
+    modal.classList.add('open');
 }
 window._toggleKpiDrawer = _toggleKpiDrawer;
 
@@ -2787,10 +2831,10 @@ const updateKPI = (students) => {
             stroke-dashoffset="${(circ/4 - fDash).toFixed(1)}" stroke-linecap="round" opacity=".6"/>
     </svg>`;
 
-    const expandHint = `<div class="kpi-expand-hint"><span>details</span><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></div>`;
+    const expandHint = `<div class="kpi-expand-hint"><span>details</span><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></div>`;
 
     kpiGrid.innerHTML = `
-    <div class="kpi-card" id="kpi-card-students" onclick="window._toggleKpiDrawer('students')" title="Click for grade breakdown">
+    <div class="kpi-card" id="kpi-card-students" onclick="window._toggleKpiDrawer('students')" title="Click for enrollment details">
         <div class="kpi-card-accent" style="background:#1565b0;"></div>
         <div class="kpi-label">Total Students</div>
         <div class="kpi-value">${total.toLocaleString()}</div>
@@ -2798,7 +2842,7 @@ const updateKPI = (students) => {
         <div class="kpi-mini-bar">${miniBar}</div>
         ${expandHint}
     </div>
-    <div class="kpi-card" id="kpi-card-gender" onclick="window._toggleKpiDrawer('gender')" style="position:relative;" title="Click for gender breakdown">
+    <div class="kpi-card" id="kpi-card-gender" onclick="window._toggleKpiDrawer('gender')" style="position:relative;" title="Click for gender details">
         <div class="kpi-card-accent" style="background:#a855f7;"></div>
         ${donutSVG}
         <div class="kpi-label">Gender Split</div>
@@ -2807,7 +2851,7 @@ const updateKPI = (students) => {
         <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${genderClass}">${genderLabel}</span></div>
         ${expandHint}
     </div>
-    <div class="kpi-card" id="kpi-card-quality" onclick="window._toggleKpiDrawer('quality')" title="Click for data quality details">
+    <div class="kpi-card" id="kpi-card-quality" onclick="window._toggleKpiDrawer('quality')" title="Click for quality details">
         <div class="kpi-card-accent" style="background:#059669;"></div>
         <div class="kpi-label">Data Quality</div>
         <div class="kpi-value">${qualityPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
@@ -2815,7 +2859,7 @@ const updateKPI = (students) => {
         <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${qualityClass}">${qualityLabel}</span></div>
         ${expandHint}
     </div>
-    <div class="kpi-card" id="kpi-card-pdf" onclick="window._toggleKpiDrawer('pdf')" title="Click for PDF coverage details">
+    <div class="kpi-card" id="kpi-card-pdf" onclick="window._toggleKpiDrawer('pdf')" title="Click for PDF details">
         <div class="kpi-card-accent" style="background:#f0a500;"></div>
         <div class="kpi-label">PDF Coverage</div>
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
@@ -2823,7 +2867,7 @@ const updateKPI = (students) => {
         <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
         ${expandHint}
     </div>
-    <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size breakdown">
+    <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
         <div class="kpi-card-accent" style="background:#06b6d4;"></div>
         <div class="kpi-label">Avg Class Size</div>
         <div class="kpi-value">${grades>0?Math.round(total/grades):0}</div>
@@ -4788,153 +4832,21 @@ let darkOn = localStorage.getItem(DARK_KEY) === '1';
 applyDark(darkOn);
 $('dark-mode-btn')?.addEventListener('click', () => { darkOn=!darkOn; applyDark(darkOn); });
 
-// ── 16. STATS MODAL ───────────────────────────────────
-// KPI grid and stats section stay hidden; Stats button opens a universal modal.
-const _kpiGrid2 = $('kpi-grid'), _statsSection2 = $('stats-section');
-if (_kpiGrid2) _kpiGrid2.style.display = 'none';
-if (_statsSection2) _statsSection2.style.display = 'none';
-
-window._openStatsModal = () => {
-    const students = window._studentsData || [];
-    if (!students.length) {
-        openModal({ icon:'info', title:'No Data', text:'No student data loaded yet.', confirmButtonText:'OK' });
-        return;
-    }
-
-    const total = students.length;
-    const gradeMap = {};
-    students.forEach(s => { const g = s.Grade||'?'; gradeMap[g]=(gradeMap[g]||0)+1; });
-    const gradeSorted = Object.entries(gradeMap).filter(([g])=>g!=='?').sort((a,b)=>b[1]-a[1]);
-    const grades = gradeSorted.length;
-    const male   = students.filter(s=>(s.Gender||'').toLowerCase()==='male').length;
-    const female = students.filter(s=>(s.Gender||'').toLowerCase()==='female').length;
-    const unspec = total - male - female;
-    const femalePct = total > 0 ? Math.round(female/total*100) : 0;
-    const malePct   = total > 0 ? Math.round(male/total*100) : 0;
-    const withPdf   = students.filter(s=>s._pdfHref).length;
-    const pdfPct    = total > 0 ? Math.round(withPdf/total*100) : 0;
-    const avgSize   = grades > 0 ? Math.round(total/grades) : 0;
-
-    const fields  = ['Official Student Name','Grade','Gender','Assessment No','UPI','DOB'];
-    const weights = [2, 2, 1, 2, 1, 1];
-    const maxScore = weights.reduce((a,b)=>a+b,0);
-    let totalScore = 0;
-    students.forEach(s => fields.forEach((f,i)=>{ if(s[f]) totalScore+=weights[i]; }));
-    const qualityPct = Math.round(totalScore / (total * maxScore) * 100);
-
-    const GRADE_COLORS = ['#1565b0','#1976d2','#1e88e5','#42a5f5','#64b5f6','#90caf9','#bbdefb','#e3f2fd','#0d47a1','#0288d1'];
-    const gradeMax = gradeSorted.length ? gradeSorted[0][1] : 1;
-
-    const barRow = (label, value, pct, color, extra='') =>
-        `<div style="margin-bottom:.6rem;">
-            <div style="display:flex;justify-content:space-between;align-items:center;font-size:.77rem;color:var(--text2);margin-bottom:.22rem;">
-                <span style="display:flex;align-items:center;gap:.4rem;">
-                    <span style="width:8px;height:8px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0;"></span>
-                    ${label}
-                </span>
-                <span style="display:flex;gap:.5rem;align-items:center;">
-                    <span style="font-size:.7rem;color:var(--slate);">${pct}%</span>
-                    <strong style="min-width:20px;text-align:right;font-size:.77rem;">${value}</strong>
-                </span>
-            </div>
-            <div style="background:var(--surface3);border-radius:20px;height:6px;overflow:hidden;">
-                <div style="width:${pct}%;height:6px;border-radius:20px;background:${color};transition:width .5s ease;"></div>
-            </div>
-            ${extra}
-        </div>`;
-
-    // Grade distribution bars
-    const gradeBars = gradeSorted.slice(0, 10).map(([g, v], i) => {
-        const pct = Math.round(v / gradeMax * 100);
-        return barRow(g, v, pct, GRADE_COLORS[i % GRADE_COLORS.length]);
-    }).join('');
-
-    // Gender bars
-    const genderBars = [
-        male   > 0 ? barRow('Male',      male,   malePct,   '#1565b0') : '',
-        female > 0 ? barRow('Female',    female, femalePct, '#a855f7') : '',
-        unspec > 0 ? barRow('Not Set',   unspec, Math.round(unspec/total*100), '#94a3b8') : ''
-    ].join('');
-
-    // Quality score color
-    const qCol = qualityPct >= 85 ? '#059669' : qualityPct >= 60 ? '#d97706' : '#dc2626';
-    const pdfCol = pdfPct >= 80 ? '#059669' : pdfPct >= 40 ? '#d97706' : '#dc2626';
-
-    const sectionTitle = (txt) =>
-        `<div style="font-size:.65rem;font-weight:700;color:var(--slate);text-transform:uppercase;letter-spacing:.07em;margin:1rem 0 .5rem;display:flex;align-items:center;gap:.4rem;">
-            <div style="width:3px;height:12px;background:var(--navy-lt);border-radius:2px;"></div>${txt}
-        </div>`;
-
-    const kpiPill = (label, value, color='var(--navy)') =>
-        `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:.6rem .85rem;text-align:center;">
-            <div style="font-size:1.4rem;font-weight:800;color:${color};line-height:1;">${value}</div>
-            <div style="font-size:.64rem;font-weight:600;color:var(--slate);text-transform:uppercase;letter-spacing:.05em;margin-top:.2rem;">${label}</div>
-        </div>`;
-
-    const html = `
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:.25rem;">
-            ${kpiPill('Students', total.toLocaleString(), '#1565b0')}
-            ${kpiPill('Grades', grades, '#1976d2')}
-            ${kpiPill('Data Quality', qualityPct+'%', qCol)}
-            ${kpiPill('PDF Coverage', pdfPct+'%', pdfCol)}
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin-bottom:.5rem;">
-            ${kpiPill('Male', male, '#1565b0')}
-            ${kpiPill('Female', female, '#a855f7')}
-            ${kpiPill('Avg Class', avgSize, '#06b6d4')}
-        </div>
-        ${sectionTitle('Grade Distribution')}
-        ${gradeBars || '<div style="font-size:.8rem;color:var(--slate-lt);padding:.5rem 0;">No grade data available.</div>'}
-        ${sectionTitle('Gender Breakdown')}
-        ${genderBars || '<div style="font-size:.8rem;color:var(--slate-lt);padding:.5rem 0;">No gender data available.</div>'}
-        ${sectionTitle('Key Fields Completeness')}
-        ${fields.map((f, i) => {
-            const filled = students.filter(s=>s[f]).length;
-            const pct = Math.round(filled/total*100);
-            const col = pct===100?'#059669':pct>=80?'#d97706':'#dc2626';
-            return barRow(f, filled+'/'+total, pct, col);
-        }).join('')}
-        ${sectionTitle('PDF Report Cards')}
-        ${barRow('PDFs Matched', withPdf, pdfPct, pdfCol)}
-        ${barRow('Missing PDFs', total-withPdf, 100-pdfPct, '#94a3b8')}
-    `;
-
-    // Open using the universal modal (same pattern as openModal utility)
-    const modal = document.getElementById('uni-modal');
-    const box   = document.getElementById('uni-modal-box');
-    if (!modal || !box) return;
-    box.className = 'um-box um-wide';
-    box.innerHTML = `
-        <div class="um-header">
-            <div class="um-icon-ring info">
-                <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="var(--info)" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-            </div>
-            <div class="um-title">School Analytics</div>
-            <p class="um-subtitle">${total.toLocaleString()} student${total!==1?'s':''} across ${grades} grade${grades!==1?'s':''} &nbsp;&middot;&nbsp; ${new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</p>
-        </div>
-        <div class="um-body">
-            <div class="um-scroll" style="padding:.85rem .95rem;">${html}</div>
-        </div>
-        <div class="um-footer">
-            <button class="um-btn-confirm primary" id="um-stats-close-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                Close
-            </button>
-        </div>`;
-    box.querySelector('#um-stats-close-btn').addEventListener('click', () => {
-        modal.classList.remove('open');
-        box.className = 'um-box'; // reset wide class
-    });
-    // Backdrop click to close
-    const _bdClose = (e) => { if (e.target === modal) { modal.classList.remove('open'); box.className = 'um-box'; modal.removeEventListener('click', _bdClose); } };
-    modal.addEventListener('click', _bdClose);
-    // Escape key to close
-    const _escClose = (e) => { if (e.key === 'Escape') { modal.classList.remove('open'); box.className = 'um-box'; document.removeEventListener('keydown', _escClose); } };
-    document.addEventListener('keydown', _escClose);
-    modal.classList.add('open');
+// ── 16. COLLAPSIBLE STATS ─────────────────────────────
+const STATS_KEY = 'ksd_stats_col';
+let statsCol = false; // always start expanded; user can collapse
+const applyStatsCollapse = () => {
+    const kpi=$('kpi-grid'), stats=$('stats-section'), btn=$('toggle-stats-btn');
+    if(kpi) kpi.style.display = statsCol?'none':'grid';
+    if(stats) stats.style.display = statsCol?'none':'';
+    if(btn) btn.textContent = statsCol ? '▾ Show Analytics' : '▴ Hide Analytics';
 };
-
-$('toggle-stats-btn')?.addEventListener('click', window._openStatsModal);
+applyStatsCollapse();
+$('toggle-stats-btn')?.addEventListener('click', () => {
+    statsCol=!statsCol;
+    try{localStorage.setItem(STATS_KEY,statsCol?'1':'0');}catch{}
+    applyStatsCollapse();
+});
 
 // ── 11. SAVED FILTER PRESETS ──────────────────────────
 const PRESETS_KEY = 'ksd_presets';
