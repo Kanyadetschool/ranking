@@ -18,7 +18,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Firebase compat/firebaseui scripts removed — app uses modular v10 SDK only -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 
     <style>
         :root {
@@ -392,9 +397,9 @@
         .kpi-mini-bar { display:flex; align-items:flex-end; gap:1.5px; height:22px; margin-top:.45rem; }
         .kpi-mini-bar span { flex:1; border-radius:2px 2px 0 0; transition:height .4s ease; min-width:3px; }
         .kpi-donut { width:44px; height:44px; position:absolute; right:.9rem; top:50%; transform:translateY(-50%); }
-        .kpi-expand-hint { position:absolute; bottom:.45rem; right:.65rem; font-size:.6rem; color:var(--slate-lt); display:flex; align-items:center; gap:.2rem; }
+        .kpi-expand-hint { position:absolute; bottom:.45rem; right:.65rem; font-size:.6rem; color:var(--slate-lt); display:flex; align-items:center; gap:.2rem; transition:color .15s; }
         .kpi-expand-hint svg { transition:transform .25s; }
-        .kpi-active .kpi-expand-hint svg { transform:rotate(180deg); }
+        .kpi-card:hover .kpi-expand-hint { color:var(--navy-lt); }
 
         /* KPI DRAWER */
         .kpi-drawer-wrap { overflow:hidden; max-height:0; transition:max-height .35s cubic-bezier(.4,0,.2,1); margin-bottom:0; }
@@ -418,20 +423,6 @@
         .insight-strip svg { flex-shrink:0; margin-top:.05rem; }
         .pdf-warn-strip { background:#fffbeb; border:1px solid var(--gold); border-radius:10px; padding:.65rem .9rem; font-size:.75rem; color:var(--navy); display:flex; align-items:flex-start; gap:.5rem; margin-bottom:.85rem; line-height:1.5; }
 
-        /* NEW KPI CARDS */
-        .kpi-alert-dot { position:absolute; top:.55rem; right:.55rem; width:8px; height:8px; border-radius:50%; background:var(--danger); border:2px solid var(--surface); }
-        .kpi-sparkline { display:flex; align-items:flex-end; gap:2px; height:26px; margin-top:.45rem; }
-        .kpi-sparkline span { flex:1; border-radius:2px 2px 0 0; min-width:4px; transition:height .4s; }
-        .kpi-leaderboard-row { display:flex; align-items:center; gap:.5rem; padding:.28rem 0; border-bottom:1px solid var(--border); font-size:.74rem; }
-        .kpi-leaderboard-row:last-child { border-bottom:none; }
-        .kpi-leaderboard-rank { width:18px; font-size:.65rem; font-weight:800; color:var(--slate-lt); flex-shrink:0; text-align:center; }
-        .kpi-leaderboard-name { flex:1; font-weight:600; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .kpi-leaderboard-bar { flex:1; height:5px; background:var(--surface3); border-radius:10px; overflow:hidden; }
-        .kpi-leaderboard-bar-fill { height:5px; border-radius:10px; transition:width .5s; }
-        .kpi-leaderboard-val { font-size:.7rem; font-weight:700; flex-shrink:0; min-width:32px; text-align:right; }
-        .dup-row { display:flex; align-items:center; justify-content:space-between; padding:.4rem .6rem; border-radius:7px; background:var(--danger-lt); border:1px solid rgba(220,38,38,.2); margin-bottom:.4rem; font-size:.76rem; }
-        .dup-row-names { font-weight:600; color:var(--navy); flex:1; }
-        .dup-row-badge { font-size:.65rem; font-weight:700; color:var(--danger); background:rgba(220,38,38,.1); padding:.1rem .35rem; border-radius:10px; flex-shrink:0; margin-left:.5rem; }
         /* STATS SECTION (kept for compat but hidden by default since drawers take over) */
         #stats-section { margin-bottom: 1.25rem; display:none; }
         .stats-dist-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; }
@@ -918,10 +909,7 @@
         <!-- Analytics toolbar -->
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;margin-bottom:.6rem;">
             <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-                <button id="toggle-stats-btn" class="tab-toolbar-btn" style="font-size:.75rem;display:flex;align-items:center;gap:.35rem;" title="Jump to analytics cards">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                    Analytics
-                </button>
+                <button id="toggle-stats-btn" class="tab-toolbar-btn" style="font-size:.75rem;">▴ Hide Analytics</button>
                 <button id="pdf-nav-btn" class="tab-toolbar-btn" title="Browse Student PDFs (P)" onclick="window._openPdfSearchPanel()" style="display:flex;align-items:center;gap:.35rem;color:var(--navy);">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v6h6"/></svg>
                     Student PDFs <span class="tab-kbd">P</span>
@@ -945,16 +933,12 @@
         <!-- KPI CARDS -->
         <div class="kpi-grid" id="kpi-grid"></div>
 
-        <!-- KPI DRAWERS (hidden — content rendered into modal) -->
-        <div style="display:none;"><div id="kpi-drawer-students-inner"></div></div>
-        <div style="display:none;"><div id="kpi-drawer-gender-inner"></div></div>
-        <div style="display:none;"><div id="kpi-drawer-quality-inner"></div></div>
-        <div style="display:none;"><div id="kpi-drawer-pdf-inner"></div></div>
-        <div style="display:none;"><div id="kpi-drawer-classsize-inner"></div></div>
-        <div style="display:none;"><div id="kpi-drawer-upi-inner"></div></div>
-        <div style="display:none;"><div id="kpi-drawer-recent-inner"></div></div>
-        <div style="display:none;"><div id="kpi-drawer-duplicates-inner"></div></div>
-        <div style="display:none;"><div id="kpi-drawer-completeness-inner"></div></div>
+        <!-- KPI DRAWERS (one per card, revealed on click) -->
+        <div style="display:none;" id="kpi-drawer-students"><div id="kpi-drawer-students-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-gender"><div id="kpi-drawer-gender-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-quality"><div id="kpi-drawer-quality-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-pdf"><div id="kpi-drawer-pdf-inner"></div></div>
+        <div style="display:none;" id="kpi-drawer-classsize"><div id="kpi-drawer-classsize-inner"></div></div>
 
         <!-- ANALYTICS / STATS -->
         <section id="stats-section"></section>
@@ -1665,9 +1649,9 @@
 <!-- External scripts -->
 <!-- <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
 <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthmain.js"></script> -->
-<script src="./image-popup.js" defer></script>
-<script src="./js/image-popup.js" defer></script>
-<script src="https://kanyadet-school-admin.web.app/Report-Cards/js/Toggle.js" defer></script>
+<script src="./image-popup.js"></script>
+<script src="./js/image-popup.js"></script>
+<script src="https://kanyadet-school-admin.web.app/Report-Cards/js/Toggle.js"></script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -2275,11 +2259,7 @@ async function _unlockAccount(email) {
 // Fires the last-used account's biometric automatically on load.
 async function _autoUnlockIfPossible() {
     if (_autoUnlockFired) return;
-    if (!PK.hasAny() || !window.PublicKeyCredential) {
-        // WebAuthn unavailable or no passkeys — dismiss splash and show sign-in
-        _dismissSplash(() => _showSignInUI());
-        return;
-    }
+    if (!PK.hasAny() || !window.PublicKeyCredential) return;
     _autoUnlockFired = true;
     const email = PK.lastEmail();
     if (!email || !PK.get(email)) { _dismissSplash(() => _showSignInUI()); return; }
@@ -2322,7 +2302,6 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     if (user) {
-        _dismissSplash();   // guard: if _firstAuthCheck was already false, splash would never dismiss
         _openApp(user);
 
     } else {
@@ -2604,33 +2583,26 @@ const getOrderedHeaders = (students) => {
 };
 
 // ── KPI CARDS ─────────────────────────────────────────
-// ── KPI DRAWER STATE ────────────────────────────────────
+// ── KPI MODAL (replaces drawer dropdowns) ────────────────
 const _kpiTitles = {
-    students:    'Student Enrollment Breakdown',
-    gender:      'Gender Distribution',
-    quality:     'Data Completeness Analysis',
-    pdf:         'PDF Coverage — Report Cards',
-    classsize:   'Class Size & Year Distribution',
-    upi:         'UPI (NEMIS) Registration Status',
-    recent:      'Recently Added Students',
-    duplicates:  'Duplicate & Integrity Alerts',
-    completeness:'Grade Completeness Leaderboard',
+    students:  'Student Enrollment Breakdown',
+    gender:    'Gender Distribution',
+    quality:   'Data Completeness Analysis',
+    pdf:       'PDF Coverage — Report Cards',
+    classsize: 'Class Size & Year Distribution',
 };
 const _kpiIcons = {
-    students:    '<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>',
-    gender:      '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>',
-    quality:     '<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>',
-    pdf:         '<path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>',
-    classsize:   '<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>',
-    upi:         '<path stroke-linecap="round" stroke-linejoin="round" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"/>',
-    recent:      '<path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>',
-    duplicates:  '<path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>',
-    completeness:'<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>',
+    students:  '<path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>',
+    gender:    '<path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>',
+    quality:   '<path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>',
+    pdf:       '<path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>',
+    classsize: '<path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>',
 };
 let _kpiActiveDrawer = null;
 
 function _toggleKpiDrawer(id) {
-    ['students','gender','quality','pdf','classsize','upi','recent','duplicates','completeness'].forEach(k => {
+    // Mark card active (for expand-hint arrow rotation) — clear others
+    ['students','gender','quality','pdf','classsize'].forEach(k => {
         document.getElementById('kpi-card-'+k)?.classList.remove('kpi-active');
     });
     document.getElementById('kpi-card-'+id)?.classList.add('kpi-active');
@@ -2640,8 +2612,9 @@ function _toggleKpiDrawer(id) {
     const box   = document.getElementById('uni-modal-box');
     if (!modal || !box) return;
 
-    const drawerEl  = document.getElementById('kpi-drawer-'+id+'-inner');
-    const drawerHTML = drawerEl ? drawerEl.innerHTML : '<p style="color:var(--slate);font-size:.85rem;padding:1rem 0;">No data yet.</p>';
+    // Pull the already-rendered drawer inner HTML
+    const drawerEl = document.getElementById('kpi-drawer-'+id+'-inner');
+    const drawerHTML = drawerEl ? drawerEl.innerHTML : '<p style="color:var(--slate);font-size:.85rem;">No data available yet.</p>';
 
     box.className = 'um-box um-wide';
     box.innerHTML = `
@@ -2652,7 +2625,7 @@ function _toggleKpiDrawer(id) {
             <div class="um-title">${_kpiTitles[id]||id}</div>
         </div>
         <div class="um-body" style="padding-top:.5rem;">
-            <div class="um-scroll" style="padding:.85rem .95rem;max-height:500px;">${drawerHTML}</div>
+            <div class="um-scroll" style="padding:.85rem .95rem;max-height:480px;">${drawerHTML}</div>
         </div>
         <div class="um-footer">
             <button class="um-btn-confirm primary" id="um-kpi-close-btn">
@@ -2690,9 +2663,6 @@ function _kpiBarRows(entries, max, colorFn) {
 }
 
 // ── BACKGROUND PDF SCAN (fixes 0% coverage bug) ─────────
-window._bgPdfScanDone = false;
-async function _bgScanPdfs(students) {
-
 window._bgPdfScanDone = false;
 async function _bgScanPdfs(students) {
     if (!students || !students.length || window._bgPdfScanDone) return;
@@ -2807,9 +2777,7 @@ const updateKPI = (students) => {
     const total = students.length;
     if (!total) { kpiGrid.innerHTML = ''; kpiGrid.style.display = 'none'; return; }
 
-    const isMV = v => !v || String(v).trim() === '' || ['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase());
-
-    // ── Core counts ──────────────────────────────────────────
+    // Core counts
     const gradeMap = {};
     students.forEach(s => { const g = s.Grade||'?'; gradeMap[g]=(gradeMap[g]||0)+1; });
     const grades = Object.keys(gradeMap).filter(g=>g!=='?').length;
@@ -2817,96 +2785,42 @@ const updateKPI = (students) => {
     const female = students.filter(s=>(s.Gender||'').toLowerCase()==='female').length;
     const unspecGender = total - male - female;
 
-    // ── Data quality (weighted) ───────────────────────────────
-    const fields  = ['Official Student Name','Grade','Gender','Assessment No','UPI','DOB'];
+    // Data quality score (weighted)
+    const fields = ['Official Student Name','Grade','Gender','Assessment No','UPI','DOB'];
     const weights = [2, 2, 1, 2, 1, 1];
     const maxScore = weights.reduce((a,b)=>a+b,0);
     let totalScore = 0;
-    students.forEach(s => fields.forEach((f,i) => { if(s[f] && !isMV(s[f])) totalScore += weights[i]; }));
+    students.forEach(s => fields.forEach((f,i) => { if(s[f]) totalScore += weights[i]; }));
     const qualityPct = Math.round(totalScore / (total * maxScore) * 100);
     const qualityClass = qualityPct >= 85 ? 'up' : qualityPct >= 60 ? 'warn' : 'down';
     const qualityLabel = qualityPct >= 85 ? '✦ Excellent' : qualityPct >= 60 ? '⚠ Fair' : '✕ Poor';
 
-    // ── Gender ratio ─────────────────────────────────────────
+    // Gender ratio
     const femalePct = total > 0 ? Math.round(female/total*100) : 0;
-    const malePct   = total > 0 ? Math.round(male/total*100)   : 0;
+    const malePct   = total > 0 ? Math.round(male/total*100) : 0;
     const genderBalance = Math.abs(femalePct - malePct);
     const genderClass = genderBalance <= 10 ? 'up' : genderBalance <= 25 ? 'warn' : 'down';
     const genderLabel = genderBalance <= 10 ? '≈ Balanced' : genderBalance <= 25 ? '~ Uneven' : '⚠ Skewed';
 
-    // ── PDF coverage ─────────────────────────────────────────
-    const withPdf  = students.filter(s=>s._pdfHref).length;
-    const pdfPct   = total > 0 ? Math.round(withPdf/total*100) : 0;
+    // PDF coverage — reads _pdfHref (populated by background scan)
+    const withPdf = students.filter(s=>s._pdfHref).length;
+    const pdfPct  = total > 0 ? Math.round(withPdf/total*100) : 0;
     const pdfClass = pdfPct >= 80 ? 'up' : pdfPct >= 40 ? 'warn' : 'down';
-    const pdfLabel = window._bgPdfScanDone ? `${withPdf} matched` : '⟳ Scanning…';
+    const pdfLabel = window._bgPdfScanDone ? (pdfPct >= 40 ? `${withPdf} matched` : `${withPdf} matched`) : '⟳ Scanning…';
 
-    // ── Grade distribution ────────────────────────────────────
+    // Grade distribution
     const gradeSorted = Object.entries(gradeMap).filter(([g])=>g!=='?').sort((a,b)=>b[1]-a[1]);
-    const gradeMax    = gradeSorted.length ? gradeSorted[0][1] : 1;
+    const gradeMax = gradeSorted.length ? gradeSorted[0][1] : 1;
     const miniBar = gradeSorted.slice(0,10).map(([,v]) => {
         const h = Math.round(Math.max(3, v/gradeMax*20));
-        return `<span style="height:${h}px;background:var(--navy-lt);opacity:${(0.4+v/gradeMax*0.6).toFixed(2)};"></span>`;
+        const opacity = 0.4 + (v/gradeMax)*0.6;
+        return `<span style="height:${h}px;background:var(--navy-lt);opacity:${opacity.toFixed(2)};"></span>`;
     }).join('');
 
-    // ── UPI coverage ──────────────────────────────────────────
-    const withUpi   = students.filter(s=>s.UPI && !isMV(s.UPI)).length;
-    const upiPct    = total > 0 ? Math.round(withUpi/total*100) : 0;
-    const upiClass  = upiPct >= 90 ? 'up' : upiPct >= 60 ? 'warn' : 'down';
-    const missingUpi = total - withUpi;
-
-    // ── Recent additions (last 30 days via _addedAt or id timestamp) ──
-    const now = Date.now();
-    const MS30 = 30 * 24 * 60 * 60 * 1000;
-    const recentStudents = students.filter(s => {
-        const ts = s._addedAt || (typeof s.id === 'string' && /^\d{10,}/.test(s.id) ? parseInt(s.id.split('_')[0]) : 0);
-        return ts && (now - ts) <= MS30;
-    });
-    const recentCount = recentStudents.length;
-    const recentClass = recentCount > 0 ? 'up' : 'warn';
-
-    // ── Duplicate detection (same Assessment No or very similar name) ──
-    const seenAssmt = {}, seenName = {};
-    const dupAssmt = [], dupName = [];
-    students.forEach(s => {
-        const an = (s['Assessment No']||'').trim();
-        const nm = (s['Official Student Name']||'').trim().toLowerCase().replace(/\s+/g,' ');
-        if (an) { if (seenAssmt[an]) { dupAssmt.push({key:an, s1:seenAssmt[an], s2:s}); } else seenAssmt[an]=s; }
-        if (nm.length > 3) { if (seenName[nm]) { dupName.push({key:nm, s1:seenName[nm], s2:s}); } else seenName[nm]=s; }
-    });
-    const totalDups = dupAssmt.length + dupName.length;
-    const dupClass  = totalDups === 0 ? 'up' : totalDups <= 3 ? 'warn' : 'down';
-
-    // ── Grade completeness leaderboard ────────────────────────
-    const gradeQuality = {};
-    gradeSorted.forEach(([g]) => {
-        const gs = students.filter(s=>s.Grade===g);
-        let sc = 0;
-        gs.forEach(s => fields.forEach((f,i) => { if(s[f]&&!isMV(s[f])) sc+=weights[i]; }));
-        gradeQuality[g] = gs.length > 0 ? Math.round(sc/(gs.length*maxScore)*100) : 0;
-    });
-    const gradeQSorted = Object.entries(gradeQuality).sort((a,b)=>b[1]-a[1]);
-    const topGrade = gradeQSorted[0];
-    const btmGrade = gradeQSorted[gradeQSorted.length-1];
-
-    // ── Gender per grade — skewed alert ──────────────────────
-    const gradeGenderMap = {};
-    students.forEach(s => {
-        if (!s.Grade) return;
-        if (!gradeGenderMap[s.Grade]) gradeGenderMap[s.Grade]={m:0,f:0,o:0};
-        const g=(s.Gender||'').toLowerCase();
-        if (g==='male') gradeGenderMap[s.Grade].m++;
-        else if (g==='female') gradeGenderMap[s.Grade].f++;
-        else gradeGenderMap[s.Grade].o++;
-    });
-    const skewedGrades = gradeSorted.filter(([g])=>{
-        const gg=gradeGenderMap[g]||{m:0,f:0,o:0};
-        const t=gg.m+gg.f||1;
-        return Math.abs(gg.m-gg.f)/t > 0.35 && t >= 5;
-    });
-
-    // ── SVG donut ────────────────────────────────────────────
+    // SVG donut for gender
     const r=18, cx=22, cy=22, circ=2*Math.PI*r;
-    const fDash=femalePct/100*circ, mDash=malePct/100*circ;
+    const fDash = femalePct/100*circ;
+    const mDash = malePct/100*circ;
     const donutSVG = `<svg viewBox="0 0 44 44" class="kpi-donut">
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--surface3)" stroke-width="5"/>
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#a855f7" stroke-width="5"
@@ -2914,24 +2828,13 @@ const updateKPI = (students) => {
             stroke-dashoffset="${(circ/4).toFixed(1)}" stroke-linecap="round"/>
         <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--navy-lt)" stroke-width="5"
             stroke-dasharray="${mDash.toFixed(1)} ${circ.toFixed(1)}"
-            stroke-dashoffset="${(circ/4-fDash).toFixed(1)}" stroke-linecap="round" opacity=".6"/>
+            stroke-dashoffset="${(circ/4 - fDash).toFixed(1)}" stroke-linecap="round" opacity=".6"/>
     </svg>`;
 
-    // ── UPI sparkline per grade ───────────────────────────────
-    const upiSparkline = gradeSorted.slice(0,10).map(([g]) => {
-        const gs = students.filter(s=>s.Grade===g);
-        const p  = gs.length ? Math.round(gs.filter(s=>s.UPI&&!isMV(s.UPI)).length/gs.length*100) : 0;
-        const h  = Math.max(3, Math.round(p/100*26));
-        const col = p>=90?'#059669':p>=60?'#d97706':'#dc2626';
-        return `<span style="height:${h}px;background:${col};" title="${g}: ${p}%"></span>`;
-    }).join('');
-
     const expandHint = `<div class="kpi-expand-hint"><span>details</span><svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg></div>`;
-    const avgSize = grades > 0 ? Math.round(total/grades) : 0;
 
-    // ── RENDER KPI GRID ──────────────────────────────────────
     kpiGrid.innerHTML = `
-    <div class="kpi-card" id="kpi-card-students" onclick="window._toggleKpiDrawer('students')" title="Enrollment breakdown">
+    <div class="kpi-card" id="kpi-card-students" onclick="window._toggleKpiDrawer('students')" title="Click for enrollment details">
         <div class="kpi-card-accent" style="background:#1565b0;"></div>
         <div class="kpi-label">Total Students</div>
         <div class="kpi-value">${total.toLocaleString()}</div>
@@ -2939,87 +2842,53 @@ const updateKPI = (students) => {
         <div class="kpi-mini-bar">${miniBar}</div>
         ${expandHint}
     </div>
-    <div class="kpi-card" id="kpi-card-gender" onclick="window._toggleKpiDrawer('gender')" style="position:relative;" title="Gender distribution">
+    <div class="kpi-card" id="kpi-card-gender" onclick="window._toggleKpiDrawer('gender')" style="position:relative;" title="Click for gender details">
         <div class="kpi-card-accent" style="background:#a855f7;"></div>
         ${donutSVG}
-        ${skewedGrades.length ? `<div class="kpi-alert-dot" title="${skewedGrades.length} grade(s) heavily skewed"></div>` : ''}
         <div class="kpi-label">Gender Split</div>
         <div class="kpi-value">${femalePct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%F</span></div>
-        <div class="kpi-sub">${female}F · ${male}M${unspecGender?` · ${unspecGender}?`:''}</div>
-        <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${genderClass}">${genderLabel}</span>${skewedGrades.length?`<span class="kpi-badge down">${skewedGrades.length} skewed grade${skewedGrades.length>1?'s':''}</span>`:''}</div>
+        <div class="kpi-sub">${female} F · ${male} M${unspecGender?` · ${unspecGender} N/A`:''}</div>
+        <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${genderClass}">${genderLabel}</span></div>
         ${expandHint}
     </div>
-    <div class="kpi-card" id="kpi-card-quality" onclick="window._toggleKpiDrawer('quality')" title="Data completeness">
+    <div class="kpi-card" id="kpi-card-quality" onclick="window._toggleKpiDrawer('quality')" title="Click for quality details">
         <div class="kpi-card-accent" style="background:#059669;"></div>
         <div class="kpi-label">Data Quality</div>
         <div class="kpi-value">${qualityPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
-        <div class="kpi-sub"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${qualityPct}%;background:${qualityPct>=85?'#059669':qualityPct>=60?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s;"></div></div></div>
+        <div class="kpi-sub"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${qualityPct}%;background:${qualityPct>=85?'#059669':qualityPct>=60?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div></div>
         <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${qualityClass}">${qualityLabel}</span></div>
         ${expandHint}
     </div>
-    <div class="kpi-card" id="kpi-card-pdf" onclick="window._toggleKpiDrawer('pdf')" title="PDF report card coverage">
+    <div class="kpi-card" id="kpi-card-pdf" onclick="window._toggleKpiDrawer('pdf')" title="Click for PDF details">
         <div class="kpi-card-accent" style="background:#f0a500;"></div>
         <div class="kpi-label">PDF Coverage</div>
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
         <div class="kpi-sub">${pdfLabel}</div>
-        <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
+        <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
         ${expandHint}
     </div>
-    <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Class size breakdown">
+    <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
         <div class="kpi-card-accent" style="background:#06b6d4;"></div>
         <div class="kpi-label">Avg Class Size</div>
-        <div class="kpi-value">${avgSize}</div>
+        <div class="kpi-value">${grades>0?Math.round(total/grades):0}</div>
         <div class="kpi-sub">students per grade</div>
         <div class="kpi-sub" style="margin-top:.3rem;"><span style="font-size:.68rem;color:var(--slate);">Largest: </span><strong style="font-size:.72rem;">${gradeSorted[0]?`${gradeSorted[0][0]} (${gradeSorted[0][1]})`:'—'}</strong></div>
-        ${expandHint}
-    </div>
-    <div class="kpi-card" id="kpi-card-upi" onclick="window._toggleKpiDrawer('upi')" title="UPI / NEMIS registration">
-        <div class="kpi-card-accent" style="background:#7c3aed;"></div>
-        ${upiPct < 80 ? `<div class="kpi-alert-dot" title="${missingUpi} students missing UPI"></div>` : ''}
-        <div class="kpi-label">UPI Coverage</div>
-        <div class="kpi-value">${upiPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
-        <div class="kpi-sub">${withUpi} registered · <span style="color:${missingUpi?'#dc2626':'#059669'};font-weight:700;">${missingUpi} missing</span></div>
-        <div class="kpi-sparkline">${upiSparkline}</div>
-        ${expandHint}
-    </div>
-    <div class="kpi-card" id="kpi-card-recent" onclick="window._toggleKpiDrawer('recent')" title="Newly added students (last 30 days)">
-        <div class="kpi-card-accent" style="background:#0284c7;"></div>
-        <div class="kpi-label">New (30 days)</div>
-        <div class="kpi-value">${recentCount}</div>
-        <div class="kpi-sub">student${recentCount!==1?'s':''} added recently</div>
-        <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${recentClass}">${recentCount>0?`+${recentCount} this month`:'None this month'}</span></div>
-        ${expandHint}
-    </div>
-    <div class="kpi-card" id="kpi-card-duplicates" onclick="window._toggleKpiDrawer('duplicates')" title="Duplicate & integrity alerts">
-        <div class="kpi-card-accent" style="background:${totalDups>0?'#dc2626':'#059669'};"></div>
-        ${totalDups > 0 ? `<div class="kpi-alert-dot"></div>` : ''}
-        <div class="kpi-label">Duplicates</div>
-        <div class="kpi-value" style="color:${totalDups>0?'#dc2626':'#059669'};">${totalDups}</div>
-        <div class="kpi-sub">${totalDups===0?'No issues found':`${dupAssmt.length} Assmt No · ${dupName.length} name`}</div>
-        <div class="kpi-sub" style="margin-top:.3rem;"><span class="kpi-badge ${dupClass}">${totalDups===0?'✓ Clean':'⚠ Review needed'}</span></div>
-        ${expandHint}
-    </div>
-    <div class="kpi-card" id="kpi-card-completeness" onclick="window._toggleKpiDrawer('completeness')" title="Grade completeness leaderboard">
-        <div class="kpi-card-accent" style="background:#d97706;"></div>
-        <div class="kpi-label">Best Grade</div>
-        <div class="kpi-value" style="font-size:1.35rem;">${topGrade?topGrade[0]:'—'}</div>
-        <div class="kpi-sub">${topGrade?`${topGrade[1]}% complete`:''}</div>
-        <div class="kpi-sub" style="margin-top:.3rem;">${btmGrade&&btmGrade[0]!==topGrade?.[0]?`<span style="font-size:.68rem;color:var(--slate);">Needs work: </span><strong style="font-size:.72rem;color:#dc2626;">${btmGrade[0]} (${btmGrade[1]}%)</strong>`:''}</div>
         ${expandHint}
     </div>`;
     kpiGrid.style.display = 'grid';
 
-    // ── PRE-BUILD ALL MODAL DRAWER CONTENTS ──────────────────
-    const GRADE_COLORS  = ['#1565b0','#1976d2','#1e88e5','#42a5f5','#64b5f6','#90caf9','#bbdefb','#e3f2fd','#0d47a1','#0288d1'];
+    // ── Pre-build all drawer contents ──────────────────────
+    const GRADE_COLORS = ['#1565b0','#1976d2','#1e88e5','#42a5f5','#64b5f6','#90caf9','#bbdefb','#e3f2fd','#0d47a1','#0288d1'];
     const GENDER_COLORS = { 'Male':'#1565b0','male':'#1565b0','Female':'#a855f7','female':'#a855f7','Not Set':'#94a3b8','Other':'#06b6d4' };
     const classDist = {};
-    students.forEach(s => { if(s['Class']) classDist[s['Class']]=(classDist[s['Class']]||0)+1; });
+    students.forEach(s => { if (s['Class']) classDist[s['Class']]=(classDist[s['Class']]||0)+1; });
     const classEntries = Object.entries(classDist).sort((a,b)=>b[1]-a[1]);
-    const classMax     = classEntries.length ? classEntries[0][1] : 1;
-    const totalMax     = gradeSorted.length ? gradeSorted[0][1] : 1;
-    const smallestGrade = gradeSorted[gradeSorted.length-1];
+    const classMax = classEntries.length ? classEntries[0][1] : 1;
 
-    // ── 1. Enrollment ─────────────────────────────────────────
+    // 1. Total Students drawer
+    const totalMax = gradeSorted.length ? gradeSorted[0][1] : 1;
+    const avgSize = grades > 0 ? Math.round(total/grades) : 0;
+    const smallestGrade = gradeSorted[gradeSorted.length-1];
     document.getElementById('kpi-drawer-students-inner').innerHTML = `
         <div class="kpi-drawer-header"><span>Student Enrollment Breakdown</span><span class="kpi-badge up">${total} total</span></div>
         <div class="kpi-drawer-grid">
@@ -3032,46 +2901,48 @@ const updateKPI = (students) => {
         </div>
         <div class="kpi-drawer-section">
             <div class="kpi-drawer-section-title">Students per grade</div>
-            ${_kpiBarRows(gradeSorted, totalMax, (k)=>GRADE_COLORS[gradeSorted.findIndex(([g])=>g===k)%GRADE_COLORS.length])}
+            ${_kpiBarRows(gradeSorted, totalMax, (k,i)=>GRADE_COLORS[gradeSorted.findIndex(([g])=>g===k)%GRADE_COLORS.length])}
         </div>
         ${classEntries.length ? `<div class="kpi-drawer-section">
             <div class="kpi-drawer-section-title">Students by graduation year</div>
-            ${_kpiBarRows(classEntries, classMax, (_)=>GRADE_COLORS[classEntries.findIndex(([g])=>g===_)%GRADE_COLORS.length])}
+            ${_kpiBarRows(classEntries, classMax, (_,i)=>GRADE_COLORS[classEntries.findIndex(([g])=>g===_)%GRADE_COLORS.length])}
         </div>` : ''}`;
 
-    // ── 2. Gender ─────────────────────────────────────────────
+    // 2. Gender drawer
     const genderDist = {};
     students.forEach(s => { const g=(s.Gender||'').trim()||'Not Set'; genderDist[g]=(genderDist[g]||0)+1; });
     const genderEntries = Object.entries(genderDist).sort((a,b)=>b[1]-a[1]);
-    const genderMax     = genderEntries.length ? genderEntries[0][1] : 1;
+    const genderMax = genderEntries.length ? genderEntries[0][1] : 1;
+    // Per-grade gender split
+    const gradeGenderMap = {};
+    students.forEach(s => {
+        if (!s.Grade) return;
+        if (!gradeGenderMap[s.Grade]) gradeGenderMap[s.Grade] = {m:0,f:0,o:0};
+        const g=(s.Gender||'').toLowerCase();
+        if (g==='male') gradeGenderMap[s.Grade].m++;
+        else if (g==='female') gradeGenderMap[s.Grade].f++;
+        else gradeGenderMap[s.Grade].o++;
+    });
     document.getElementById('kpi-drawer-gender-inner').innerHTML = `
         <div class="kpi-drawer-header"><span>Gender Distribution</span><span class="kpi-badge ${genderClass}">${genderLabel}</span></div>
         <div class="kpi-drawer-grid">
             <div class="kpi-drawer-mini"><div class="dm-val" style="color:#1565b0">${male}</div><div class="dm-label">Male</div><div class="dm-sub">${malePct}% of total</div></div>
             <div class="kpi-drawer-mini"><div class="dm-val" style="color:#a855f7">${female}</div><div class="dm-label">Female</div><div class="dm-sub">${femalePct}% of total</div></div>
             <div class="kpi-drawer-mini"><div class="dm-val">${Math.abs(female-male)}</div><div class="dm-label">Gender gap</div><div class="dm-sub">${female>male?'More female':'More male'}</div></div>
-            ${unspecGender?`<div class="kpi-drawer-mini"><div class="dm-val" style="color:#94a3b8">${unspecGender}</div><div class="dm-label">Unspecified</div></div>`:''}
+            ${unspecGender ? `<div class="kpi-drawer-mini"><div class="dm-val" style="color:#94a3b8">${unspecGender}</div><div class="dm-label">Unspecified</div></div>` : ''}
         </div>
         <div class="kpi-drawer-section">
             <div class="kpi-drawer-section-title">Overall gender split</div>
             ${_kpiBarRows(genderEntries, genderMax, k=>GENDER_COLORS[k]||GENDER_COLORS[k.toLowerCase()]||'#94a3b8')}
         </div>
-        ${skewedGrades.length ? `<div class="insight-strip" style="background:rgba(220,38,38,.05);border-color:rgba(220,38,38,.2);margin-top:.75rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#dc2626" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
-            <span><strong>${skewedGrades.length} grade${skewedGrades.length>1?'s are':' is'} heavily skewed (&gt;35% gap):</strong> ${skewedGrades.map(([g])=>{const gg=gradeGenderMap[g]||{m:0,f:0,o:0};return `${g} (${gg.m}M·${gg.f}F)`;}).join(', ')}.</span>
-        </div>` : `<div class="insight-strip" style="background:rgba(5,150,105,.06);border-color:rgba(5,150,105,.2);margin-top:.75rem;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Gender ratios are balanced across all grades.</div>`}
         <div class="kpi-drawer-section">
             <div class="kpi-drawer-section-title">Male / Female ratio by grade</div>
             ${gradeSorted.map(([g]) => {
-                const gg=gradeGenderMap[g]||{m:0,f:0,o:0};
-                const tot=gg.m+gg.f+gg.o||1;
-                const mw=Math.round(gg.m/tot*100), fw=Math.round(gg.f/tot*100);
-                const skewed=Math.abs(gg.m-gg.f)/tot>0.35&&tot>=5;
+                const gg = gradeGenderMap[g]||{m:0,f:0,o:0};
+                const tot = gg.m+gg.f+gg.o||1;
+                const mw = Math.round(gg.m/tot*100), fw = Math.round(gg.f/tot*100);
                 return `<div style="margin-bottom:.7rem;">
-                    <div style="display:flex;justify-content:space-between;font-size:.73rem;color:var(--text2);margin-bottom:.25rem;">
-                        <span style="display:flex;align-items:center;gap:.35rem;">${g}${skewed?`<span style="font-size:.6rem;color:#dc2626;font-weight:700;">⚠ skewed</span>`:''}</span>
-                        <span style="color:var(--slate-lt);">${gg.m}M · ${gg.f}F${gg.o?` · ${gg.o}?`:''}</span>
-                    </div>
+                    <div style="display:flex;justify-content:space-between;font-size:.73rem;color:var(--text2);margin-bottom:.25rem;"><span>${g}</span><span style="color:var(--slate-lt);">${gg.m}M · ${gg.f}F${gg.o?` · ${gg.o}?`:''}</span></div>
                     <div class="kpi-gender-stack"><div style="width:${mw}%;background:#1565b0;"></div><div style="width:${fw}%;background:#a855f7;"></div>${gg.o?`<div style="flex:1;background:#e2e8f0;"></div>`:''}</div>
                 </div>`;
             }).join('')}
@@ -3081,31 +2952,34 @@ const updateKPI = (students) => {
             </div>
         </div>`;
 
-    // ── 3. Data Quality ───────────────────────────────────────
+    // 3. Data Quality drawer
     const missingMap = {};
-    fields.forEach(f => { const c=students.filter(s=>isMV(s[f])).length; if(c>0) missingMap[f]=c; });
-    const missingEntries    = Object.entries(missingMap).sort((a,b)=>b[1]-a[1]);
-    const completeStudents  = students.filter(s=>fields.every(f=>s[f]&&!isMV(s[f]))).length;
+    fields.forEach(f => {
+        const count = students.filter(s=>!s[f]).length;
+        if (count > 0) missingMap[f] = count;
+    });
+    const missingEntries = Object.entries(missingMap).sort((a,b)=>b[1]-a[1]);
+    const completeStudents = students.filter(s=>fields.every(f=>s[f])).length;
     document.getElementById('kpi-drawer-quality-inner').innerHTML = `
         <div class="kpi-drawer-header"><span>Data Completeness Analysis</span><span class="kpi-badge ${qualityClass}">${qualityLabel}</span></div>
         <div class="kpi-drawer-grid">
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:#059669">${qualityPct}%</div><div class="dm-label">Quality score</div><div class="dm-sub">weighted by importance</div></div>
+            <div class="kpi-drawer-mini"><div class="dm-val" style="color:#059669">${qualityPct}%</div><div class="dm-label">Quality score</div><div class="dm-sub">weighted by field importance</div></div>
             <div class="kpi-drawer-mini"><div class="dm-val">${completeStudents}</div><div class="dm-label">Fully complete</div><div class="dm-sub">all 6 key fields filled</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:${total-completeStudents>0?'#dc2626':'#059669'}">${total-completeStudents}</div><div class="dm-label">Have gaps</div><div class="dm-sub">≥1 field missing</div></div>
+            <div class="kpi-drawer-mini"><div class="dm-val" style="color:${total-completeStudents>0?'#dc2626':'#059669'}">${total-completeStudents}</div><div class="dm-label">Have gaps</div><div class="dm-sub">at least 1 field missing</div></div>
             <div class="kpi-drawer-mini"><div class="dm-val">${missingEntries.length}</div><div class="dm-label">Fields with gaps</div><div class="dm-sub">out of 6 tracked</div></div>
         </div>
         ${missingEntries.length ? `<div class="kpi-drawer-section">
             <div class="kpi-drawer-section-title">Missing field frequency</div>
             ${_kpiBarRows(missingEntries, missingEntries[0][1], ()=>'#dc2626')}
             <div class="insight-strip"><svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#1565b0" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <strong>${missingEntries[0][0]}</strong> is the top gap — missing in ${missingEntries[0][1]} records (${Math.round(missingEntries[0][1]/total*100)}% of students).</div>
-        </div>` : `<div class="insight-strip" style="background:rgba(5,150,105,.07);border-color:rgba(5,150,105,.2);margin-top:.75rem;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>All 6 fields 100% complete across all ${total} students.</div>`}
+            <strong>${missingEntries[0][0]}</strong> is the most common gap — missing in ${missingEntries[0][1]} record${missingEntries[0][1]!==1?'s':''} (${Math.round(missingEntries[0][1]/total*100)}% of students).</div>
+        </div>` : `<div class="insight-strip" style="background:rgba(5,150,105,.07);border-color:rgba(5,150,105,.2);"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>All 6 critical fields are 100% complete across all ${total} students.</div>`}
         <div class="kpi-drawer-section">
             <div class="kpi-drawer-section-title">Field coverage breakdown</div>
-            ${fields.map(f => {
-                const filled = students.filter(s=>s[f]&&!isMV(s[f])).length;
-                const pct    = Math.round(filled/total*100);
-                const col    = pct===100?'#059669':pct>=80?'#d97706':'#dc2626';
+            ${fields.map((f,i) => {
+                const filled = students.filter(s=>s[f]).length;
+                const pct = Math.round(filled/total*100);
+                const col = pct===100?'#059669':pct>=80?'#d97706':'#dc2626';
                 return `<div class="dist-bar-row">
                     <div class="dist-bar-label"><span>${f}</span><span style="display:flex;gap:.4rem;align-items:center;"><span class="dist-bar-pct" style="color:${col}">${pct}%</span><strong style="min-width:22px;text-align:right;">${filled}/${total}</strong></span></div>
                     <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${pct}%;background:${col};"></div></div>
@@ -3113,10 +2987,10 @@ const updateKPI = (students) => {
             }).join('')}
         </div>`;
 
-    // ── 4. PDF ────────────────────────────────────────────────
+    // 4. PDF drawer
     _buildPdfDrawer(students);
 
-    // ── 5. Class Size ─────────────────────────────────────────
+    // 5. Class Size drawer
     document.getElementById('kpi-drawer-classsize-inner').innerHTML = `
         <div class="kpi-drawer-header"><span>Class Size & Year Distribution</span><span class="kpi-badge up">${grades} grades</span></div>
         <div class="kpi-drawer-grid">
@@ -3134,164 +3008,7 @@ const updateKPI = (students) => {
             ${_kpiBarRows(classEntries, classMax, k=>GRADE_COLORS[classEntries.findIndex(([g])=>g===k)%GRADE_COLORS.length])}
         </div>` : ''}`;
 
-    // ── 6. UPI Coverage ───────────────────────────────────────
-    const upiByGrade = gradeSorted.map(([g]) => {
-        const gs  = students.filter(s=>s.Grade===g);
-        const has = gs.filter(s=>s.UPI&&!isMV(s.UPI)).length;
-        return [g, has, gs.length, gs.length?Math.round(has/gs.length*100):0];
-    });
-    document.getElementById('kpi-drawer-upi-inner').innerHTML = `
-        <div class="kpi-drawer-header"><span>UPI / NEMIS Registration Status</span><span class="kpi-badge ${upiClass}">${upiPct}% registered</span></div>
-        <div class="kpi-drawer-grid">
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:#7c3aed">${withUpi}</div><div class="dm-label">UPI registered</div><div class="dm-sub">${upiPct}% of total</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:${missingUpi?'#dc2626':'#059669'}">${missingUpi}</div><div class="dm-label">Missing UPI</div><div class="dm-sub">need registration</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val">${total}</div><div class="dm-label">Total students</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val">${grades}</div><div class="dm-label">Grades affected</div><div class="dm-sub">${upiByGrade.filter(([,,, p])=>p<100).length} incomplete</div></div>
-        </div>
-        ${missingUpi > 0 ? `<div class="insight-strip" style="background:rgba(124,58,237,.06);border-color:rgba(124,58,237,.2);margin-top:.5rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#7c3aed" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <span><strong>${missingUpi} student${missingUpi!==1?'s':''}</strong> missing UPI — these cannot be submitted to NEMIS until registered.</span>
-        </div>` : `<div class="insight-strip" style="background:rgba(5,150,105,.06);border-color:rgba(5,150,105,.2);margin-top:.5rem;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>All students have UPI — NEMIS submission ready.</div>`}
-        <div class="kpi-drawer-section">
-            <div class="kpi-drawer-section-title">UPI coverage per grade</div>
-            ${upiByGrade.map(([g, has, tot2, pct], i) => {
-                const col = pct===100?'#059669':pct>=80?'#d97706':'#dc2626';
-                return `<div class="dist-bar-row">
-                    <div class="dist-bar-label">
-                        <span style="display:flex;align-items:center;gap:.4rem;">
-                            <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block;"></span>${g}
-                        </span>
-                        <span style="display:flex;gap:.4rem;align-items:center;">
-                            <span class="dist-bar-pct" style="color:${col}">${pct}%</span>
-                            <strong style="min-width:42px;text-align:right;">${has}/${tot2}</strong>
-                        </span>
-                    </div>
-                    <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${pct}%;background:${col};"></div></div>
-                </div>`;
-            }).join('')}
-        </div>
-        ${missingUpi > 0 ? `<div class="kpi-drawer-section">
-            <div class="kpi-drawer-section-title">Students missing UPI (first 15)</div>
-            <div style="display:flex;flex-direction:column;gap:.3rem;">
-                ${students.filter(s=>!s.UPI||isMV(s.UPI)).slice(0,15).map(s=>`
-                    <div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .6rem;background:rgba(124,58,237,.05);border:1px solid rgba(124,58,237,.15);border-radius:7px;font-size:.75rem;">
-                        <span style="font-weight:600;color:var(--navy);">${s['Official Student Name']||'—'}</span>
-                        <span style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
-                            <span style="color:var(--slate-lt);">${s.Grade||'?'}</span>
-                            <button onclick="window._editRow('${s.id}')" style="font-size:.65rem;padding:.15rem .45rem;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;">Edit</button>
-                        </span>
-                    </div>`).join('')}
-                ${students.filter(s=>!s.UPI||isMV(s.UPI)).length>15?`<div style="font-size:.72rem;color:var(--slate-lt);text-align:center;padding:.25rem;">… and ${students.filter(s=>!s.UPI||isMV(s.UPI)).length-15} more</div>`:''}
-            </div>
-        </div>` : ''}`;
-
-    // ── 7. Recent Additions ───────────────────────────────────
-    const recentSorted = [...recentStudents].sort((a,b)=>{
-        const ta = a._addedAt||(parseInt((a.id||'').split('_')[0])||0);
-        const tb = b._addedAt||(parseInt((b.id||'').split('_')[0])||0);
-        return tb-ta;
-    });
-    // Also bucket by 7-day windows
-    const MS7 = 7*24*60*60*1000;
-    const last7  = recentStudents.filter(s=>{ const ts=s._addedAt||(parseInt((s.id||'').split('_')[0])||0); return ts&&(now-ts)<=MS7; }).length;
-    const prev7  = recentStudents.filter(s=>{ const ts=s._addedAt||(parseInt((s.id||'').split('_')[0])||0); return ts&&(now-ts)>MS7&&(now-ts)<=2*MS7; }).length;
-    document.getElementById('kpi-drawer-recent-inner').innerHTML = `
-        <div class="kpi-drawer-header"><span>Recently Added Students</span><span class="kpi-badge ${recentClass}">${recentCount} this month</span></div>
-        <div class="kpi-drawer-grid">
-            <div class="kpi-drawer-mini"><div class="dm-val">${recentCount}</div><div class="dm-label">Last 30 days</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val">${last7}</div><div class="dm-label">Last 7 days</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val">${prev7}</div><div class="dm-label">Prev 7 days</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val">${total}</div><div class="dm-label">All time</div></div>
-        </div>
-        ${recentCount === 0 ? `<div class="insight-strip" style="margin-top:.75rem;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#1565b0" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>No students added in the last 30 days. Note: this requires student IDs to contain a timestamp.</div>`
-        : `<div class="kpi-drawer-section">
-            <div class="kpi-drawer-section-title">Recent additions (newest first)</div>
-            <div style="display:flex;flex-direction:column;gap:.3rem;">
-                ${recentSorted.slice(0,20).map(s => {
-                    const ts = s._addedAt||(parseInt((s.id||'').split('_')[0])||0);
-                    const daysAgo = ts ? Math.floor((now-ts)/86400000) : null;
-                    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.35rem .6rem;background:var(--info-lt);border:1px solid rgba(2,132,199,.15);border-radius:7px;font-size:.75rem;">
-                        <span style="font-weight:600;color:var(--navy);">${s['Official Student Name']||'—'}</span>
-                        <span style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;">
-                            <span style="color:var(--slate-lt);">${s.Grade||'?'}</span>
-                            ${daysAgo!==null?`<span style="font-size:.65rem;color:var(--info);font-weight:700;">${daysAgo===0?'today':daysAgo+'d ago'}</span>`:''}
-                            <button onclick="window._editRow('${s.id}')" style="font-size:.65rem;padding:.15rem .45rem;background:var(--navy);color:#fff;border:none;border-radius:4px;cursor:pointer;">Edit</button>
-                        </span>
-                    </div>`;
-                }).join('')}
-                ${recentCount>20?`<div style="font-size:.72rem;color:var(--slate-lt);text-align:center;padding:.25rem;">… and ${recentCount-20} more</div>`:''}
-            </div>
-        </div>`}`;
-
-    // ── 8. Duplicates ─────────────────────────────────────────
-    document.getElementById('kpi-drawer-duplicates-inner').innerHTML = `
-        <div class="kpi-drawer-header"><span>Duplicate & Integrity Alerts</span><span class="kpi-badge ${dupClass}">${totalDups===0?'✓ Clean':'⚠ '+totalDups+' issue'+(totalDups!==1?'s':'')}</span></div>
-        <div class="kpi-drawer-grid">
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:${dupAssmt.length?'#dc2626':'#059669'}">${dupAssmt.length}</div><div class="dm-label">Duplicate Assmt No</div><div class="dm-sub">same ID, different records</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:${dupName.length?'#dc2626':'#059669'}">${dupName.length}</div><div class="dm-label">Duplicate Names</div><div class="dm-sub">exact name match</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val">${total}</div><div class="dm-label">Records scanned</div></div>
-        </div>
-        ${totalDups === 0
-        ? `<div class="insight-strip" style="background:rgba(5,150,105,.06);border-color:rgba(5,150,105,.2);margin-top:.75rem;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#059669" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>No duplicates found — data integrity looks good.</div>`
-        : `${dupAssmt.length ? `<div class="kpi-drawer-section">
-            <div class="kpi-drawer-section-title">Duplicate Assessment Numbers</div>
-            ${dupAssmt.map(d=>`<div class="dup-row">
-                <div class="dup-row-names">
-                    <div>${d.s1['Official Student Name']||'—'} <span style="color:var(--slate-lt);">(${d.s1.Grade||'?'})</span></div>
-                    <div style="color:var(--slate);">vs ${d.s2['Official Student Name']||'—'} <span style="color:var(--slate-lt);">(${d.s2.Grade||'?'})</span></div>
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;">
-                    <span class="dup-row-badge">No. ${d.key}</span>
-                    <button onclick="window._editRow('${d.s2.id}')" style="font-size:.63rem;padding:.12rem .4rem;background:var(--danger);color:#fff;border:none;border-radius:4px;cursor:pointer;">Edit</button>
-                </div>
-            </div>`).join('')}
-        </div>` : ''}
-        ${dupName.length ? `<div class="kpi-drawer-section">
-            <div class="kpi-drawer-section-title">Duplicate Names</div>
-            ${dupName.map(d=>`<div class="dup-row">
-                <div class="dup-row-names">
-                    <div>${d.s1['Official Student Name']||'—'} <span style="color:var(--slate-lt);">(${d.s1.Grade||'?'})</span></div>
-                    <div style="color:var(--slate);">vs ${d.s2['Official Student Name']||'—'} <span style="color:var(--slate-lt);">(${d.s2.Grade||'?'})</span></div>
-                </div>
-                <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.25rem;">
-                    <span class="dup-row-badge">Exact match</span>
-                    <button onclick="window._editRow('${d.s2.id}')" style="font-size:.63rem;padding:.12rem .4rem;background:var(--danger);color:#fff;border:none;border-radius:4px;cursor:pointer;">Edit</button>
-                </div>
-            </div>`).join('')}
-        </div>` : ''}`}`;
-
-    // ── 9. Grade Completeness Leaderboard ─────────────────────
-    document.getElementById('kpi-drawer-completeness-inner').innerHTML = `
-        <div class="kpi-drawer-header"><span>Grade Completeness Leaderboard</span><span class="kpi-badge up">${grades} grades ranked</span></div>
-        <div class="kpi-drawer-grid">
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:#059669">${topGrade?topGrade[0]:'—'}</div><div class="dm-label">Top grade</div><div class="dm-sub">${topGrade?topGrade[1]+'% complete':''}</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:${btmGrade&&btmGrade[1]<80?'#dc2626':'#059669'}">${btmGrade?btmGrade[0]:'—'}</div><div class="dm-label">Needs most work</div><div class="dm-sub">${btmGrade?btmGrade[1]+'% complete':''}</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val">${gradeQSorted.filter(([,p])=>p===100).length}</div><div class="dm-label">Perfect grades</div><div class="dm-sub">100% completeness</div></div>
-            <div class="kpi-drawer-mini"><div class="dm-val" style="color:#dc2626">${gradeQSorted.filter(([,p])=>p<60).length}</div><div class="dm-label">Critical gaps</div><div class="dm-sub">below 60%</div></div>
-        </div>
-        <div class="kpi-drawer-section">
-            <div class="kpi-drawer-section-title">All grades ranked by data completeness</div>
-            <div style="display:flex;flex-direction:column;gap:.15rem;">
-                ${gradeQSorted.map(([g,pct],i) => {
-                    const col   = pct===100?'#059669':pct>=80?'#d97706':'#dc2626';
-                    const medal = i===0?'🥇':i===1?'🥈':i===2?'🥉':'';
-                    const cnt   = gradeMap[g]||0;
-                    return `<div class="kpi-leaderboard-row">
-                        <div class="kpi-leaderboard-rank">${medal||'#'+(i+1)}</div>
-                        <div class="kpi-leaderboard-name">${g}</div>
-                        <div class="kpi-leaderboard-bar"><div class="kpi-leaderboard-bar-fill" style="width:${pct}%;background:${col};"></div></div>
-                        <div class="kpi-leaderboard-val" style="color:${col};">${pct}%</div>
-                        <div style="font-size:.65rem;color:var(--slate-lt);flex-shrink:0;min-width:38px;text-align:right;">${cnt} students</div>
-                    </div>`;
-                }).join('')}
-            </div>
-        </div>
-        ${btmGrade && btmGrade[1] < 80 ? `<div class="insight-strip" style="margin-top:.75rem;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="#1565b0" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <strong>${btmGrade[0]}</strong> has the most incomplete records at ${btmGrade[1]}%. Use the Missing Fields filter (M key) to quickly find and fix gaps.
-        </div>` : ''}`;
-
-    // ── Trigger background PDF scan ───────────────────────────
+    // Trigger background PDF scan once after first render
     setTimeout(() => _bgScanPdfs(students), 800);
 };
 
@@ -5115,21 +4832,20 @@ let darkOn = localStorage.getItem(DARK_KEY) === '1';
 applyDark(darkOn);
 $('dark-mode-btn')?.addEventListener('click', () => { darkOn=!darkOn; applyDark(darkOn); });
 
-// ── 16. STATS BUTTON — opens quick-summary modal ──────
-// Stats button label is set in HTML; KPI grid always visible
+// ── 16. COLLAPSIBLE STATS ─────────────────────────────
+const STATS_KEY = 'ksd_stats_col';
+let statsCol = false; // always start expanded; user can collapse
+const applyStatsCollapse = () => {
+    const kpi=$('kpi-grid'), stats=$('stats-section'), btn=$('toggle-stats-btn');
+    if(kpi) kpi.style.display = statsCol?'none':'grid';
+    if(stats) stats.style.display = statsCol?'none':'';
+    if(btn) btn.textContent = statsCol ? '▾ Show Analytics' : '▴ Hide Analytics';
+};
+applyStatsCollapse();
 $('toggle-stats-btn')?.addEventListener('click', () => {
-    // Scroll to the KPI grid for quick access
-    const kpiEl = $('kpi-grid');
-    if (kpiEl) kpiEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    // Flash each card briefly so user knows where to look
-    kpiEl?.querySelectorAll('.kpi-card').forEach((c, i) => {
-        setTimeout(() => {
-            c.style.transition = 'box-shadow .2s, border-color .2s';
-            c.style.borderColor = 'var(--navy-lt)';
-            c.style.boxShadow = '0 4px 20px rgba(30,64,128,.2)';
-            setTimeout(() => { c.style.borderColor = ''; c.style.boxShadow = ''; }, 600);
-        }, i * 60);
-    });
+    statsCol=!statsCol;
+    try{localStorage.setItem(STATS_KEY,statsCol?'1':'0');}catch{}
+    applyStatsCollapse();
 });
 
 // ── 11. SAVED FILTER PRESETS ──────────────────────────
@@ -6920,7 +6636,5 @@ setTimeout(() => {
     // These are set after Firebase initialises in the main module below — we wire them up there.
 })();
 </script>
-<!-- pdf.js loaded deferred here (moved from <head>) so it does not block auth init -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 </body>
 </html>
