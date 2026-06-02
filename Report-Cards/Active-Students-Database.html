@@ -18,12 +18,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/docx@7.8.2/build/index.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-auth-compat.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.6.0/firebase-firestore-compat.js"></script>
-    <script src="https://cdn.firebase.com/libs/firebaseui/2.5.1/firebaseui.js"></script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <!-- Firebase compat/firebaseui scripts removed — app uses modular v10 SDK only -->
 
     <style>
         :root {
@@ -1670,9 +1665,9 @@
 <!-- External scripts -->
 <!-- <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
 <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthmain.js"></script> -->
-<script src="./image-popup.js"></script>
-<script src="./js/image-popup.js"></script>
-<script src="https://kanyadet-school-admin.web.app/Report-Cards/js/Toggle.js"></script>
+<script src="./image-popup.js" defer></script>
+<script src="./js/image-popup.js" defer></script>
+<script src="https://kanyadet-school-admin.web.app/Report-Cards/js/Toggle.js" defer></script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -2280,7 +2275,11 @@ async function _unlockAccount(email) {
 // Fires the last-used account's biometric automatically on load.
 async function _autoUnlockIfPossible() {
     if (_autoUnlockFired) return;
-    if (!PK.hasAny() || !window.PublicKeyCredential) return;
+    if (!PK.hasAny() || !window.PublicKeyCredential) {
+        // WebAuthn unavailable or no passkeys — dismiss splash and show sign-in
+        _dismissSplash(() => _showSignInUI());
+        return;
+    }
     _autoUnlockFired = true;
     const email = PK.lastEmail();
     if (!email || !PK.get(email)) { _dismissSplash(() => _showSignInUI()); return; }
@@ -2323,6 +2322,7 @@ onAuthStateChanged(auth, async (user) => {
     }
 
     if (user) {
+        _dismissSplash();   // guard: if _firstAuthCheck was already false, splash would never dismiss
         _openApp(user);
 
     } else {
@@ -6920,5 +6920,7 @@ setTimeout(() => {
     // These are set after Firebase initialises in the main module below — we wire them up there.
 })();
 </script>
+<!-- pdf.js loaded deferred here (moved from <head>) so it does not block auth init -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js" defer></script>
 </body>
 </html>
