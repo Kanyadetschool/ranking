@@ -2547,32 +2547,75 @@ function _softUnlock() {
 
 // ── FETCH STUDENTS ────────────────────────────────────
 const fetchStudents = () => {
-    const studentsRef = ref(db, `artifacts/${sanitizedAppId}/students`);
-    onValue(studentsRef, (snapshot) => {
-        const data = snapshot.val();
-        studentsData = data
-            ? Object.entries(data)
-                .map(([id, val]) => ({ id, ...val }))
-                .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
-            : [];
-        // ── Expose to feature modules ──
-        window._studentsData   = studentsData;
-        window._tabulatorTable = tabulatorTable;
+    // ── Per-student reads via Promise.allSettled ──────────────
+    // Firebase rules scope reads to individual student nodes,
+    // so we read the index first then fetch each record separately.
+    const studentsIndexRef = ref(db, `artifacts/${sanitizedAppId}/students`);
+
+    // Use onValue for live updates — but fall back to per-student reads if
+    // the parent node is permission-denied.
+    let _perStudentUnsubscribers = [];
+
+    const _doPerStudentFetch = async (ids) => {
+        const results = await Promise.allSettled(
+            ids.map(id => get(ref(db, `artifacts/${sanitizedAppId}/students/${id}`)))
+        );
+        studentsData = results
+            .filter(r => r.status === 'fulfilled' && r.value.exists())
+            .map(r => ({ id: r.value.key, ...r.value.val() }))
+            .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity));
+        _afterFetch();
+    };
+
+    const _afterFetch = () => {
+        window._studentsData     = studentsData;
+        window._tabulatorTable   = tabulatorTable;
         window._selectedStudents = selectedStudents;
-        window._fbDb           = db;
-        window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
+        window._fbDb             = db;
+        window._fbSDK            = { ref, set, get, update, remove, signOut: () => signOut(auth) };
         updateGradeFilter();
         renderStudents(studentsData);
-        // ── Background badge check for Unmatched PDFs ──
         if (typeof window._recheckUnmatched === 'function') {
-            // Debounce so only the final data snapshot triggers a check
             clearTimeout(window._unmatchedBadgeDebounce);
             window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 800);
         }
-        
-    }, (error) => {
-        showModal(`Error fetching data: ${error.message}`);
-        
+    };
+
+    onValue(studentsIndexRef, (snapshot) => {
+        if (!snapshot.exists()) {
+            // No data — render empty state
+            studentsData = [];
+            _afterFetch();
+            return;
+        }
+        const data = snapshot.val();
+        if (data && typeof data === 'object') {
+            // Parent read succeeded — use data directly
+            studentsData = Object.entries(data)
+                .map(([id, val]) => ({ id, ...val }))
+                .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity));
+            _afterFetch();
+        }
+    }, async (error) => {
+        // PERMISSION_DENIED on parent node — fall back to per-student reads
+        if (error.code === 'PERMISSION_DENIED' || error.message?.includes('permission')) {
+            console.warn('[KSD] Parent read denied, switching to per-student reads...');
+            try {
+                // Get list of student IDs from a shallow read attempt via REST
+                const dbUrl = `https://kanyadet-school-admin-default-rtdb.firebaseio.com/artifacts/${sanitizedAppId}/students.json?shallow=true`;
+                const resp = await fetch(dbUrl);
+                if (resp.ok) {
+                    const idx = await resp.json();
+                    if (idx && typeof idx === 'object') {
+                        await _doPerStudentFetch(Object.keys(idx));
+                        return;
+                    }
+                }
+            } catch(e) { /* shallow fetch failed */ }
+            showModal(`Error fetching data: ${error.message}`);
+        } else {
+            showModal(`Error fetching data: ${error.message}`);
+        }
     });
 };
 
