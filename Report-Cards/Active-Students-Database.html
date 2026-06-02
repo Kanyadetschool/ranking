@@ -889,7 +889,11 @@
                                 <input type="text" id="man-studentClass" placeholder="Class of (e.g. 2025)">
                                 <input type="text" id="man-studentGrade" placeholder="Grade">
                             </div>
-                            <div id="custom-fields-container"></div>
+                            <!-- Extra fields hint -->
+                            <div id="manual-fields-hint" style="display:none;font-size:.72rem;color:var(--slate);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:.45rem .7rem;line-height:1.5;">
+                                <span style="font-weight:700;color:var(--navy);">Tip:</span> Field names below are pre-filled from your database columns. Select one or type a custom name, then enter the value.
+                            </div>
+                            <div id="custom-fields-container" style="display:flex;flex-direction:column;gap:.55rem;"></div>
                             <div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;">
                                 <button type="button" id="add-field-btn" class="btn btn-outline" style="font-size:.82rem;">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
@@ -4164,15 +4168,108 @@ deleteGradeBtn.addEventListener('click', async () => {
 });
 
 // ── MANUAL ADD ────────────────────────────────────────
-document.getElementById('add-field-btn').addEventListener('click', () => {
+
+// Fixed core fields always shown in the top grid — excluded from DB-header suggestions
+const _MANUAL_CORE_FIELDS = new Set(['Assessment No', 'Official Student Name', 'Class', 'Grade', 'id']);
+
+/**
+ * Returns the sorted list of extra DB headers (all keys seen in studentsData
+ * minus the four core fields already in the static form inputs).
+ */
+function _getDbExtraHeaders() {
+    const allKeys = new Set();
+    (window._studentsData || studentsData || []).forEach(s =>
+        Object.keys(s).forEach(k => allKeys.add(k))
+    );
+    return Array.from(allKeys)
+        .filter(k => !_MANUAL_CORE_FIELDS.has(k))
+        .sort();
+}
+
+/**
+ * Build and append one custom-field row.
+ * If `presetFieldName` is supplied the field-name input is pre-populated.
+ */
+function _addManualFieldRow(presetFieldName) {
+    const extraHeaders = _getDbExtraHeaders();
+    const hasDbHeaders = extraHeaders.length > 0;
+
+    // Show the hint banner once at least one field row exists
+    const hintEl = document.getElementById('manual-fields-hint');
+    if (hintEl && hasDbHeaders) hintEl.style.display = 'block';
+
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'display:flex;gap:.5rem;align-items:center;';
-    wrap.innerHTML = `<input type="text" placeholder="Field name" style="flex:1;">
-        <input type="text" placeholder="Value" style="flex:1;">
-        <button type="button" style="padding:.45rem .7rem;background:var(--danger-lt);color:var(--danger);border:none;border-radius:6px;cursor:pointer;font-weight:700;">✕</button>`;
-    wrap.querySelector('button').addEventListener('click', () => wrap.remove());
+    wrap.style.cssText = 'display:flex;gap:.45rem;align-items:stretch;';
+
+    // ── Field-name cell ──────────────────────────────────
+    const nameCell = document.createElement('div');
+    nameCell.style.cssText = 'flex:1;position:relative;display:flex;flex-direction:column;gap:.2rem;';
+
+    if (hasDbHeaders) {
+        // Datalist for autocomplete — user can still type anything
+        const listId = 'dl-db-headers-' + Date.now();
+        const dl = document.createElement('datalist');
+        dl.id = listId;
+        extraHeaders.forEach(h => {
+            const opt = document.createElement('option');
+            opt.value = h;
+            dl.appendChild(opt);
+        });
+
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Field name (or pick from list)';
+        nameInput.setAttribute('list', listId);
+        nameInput.style.cssText = 'width:100%;padding:.52rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:"DM Sans",sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;';
+        nameInput.addEventListener('focus', () => { nameInput.style.borderColor='var(--navy-lt)'; nameInput.style.boxShadow='0 0 0 3px rgba(30,64,128,.1)'; });
+        nameInput.addEventListener('blur',  () => { nameInput.style.borderColor='var(--border)';   nameInput.style.boxShadow=''; });
+
+        if (presetFieldName) nameInput.value = presetFieldName;
+
+        nameCell.appendChild(nameInput);
+        nameCell.appendChild(dl);
+    } else {
+        // No DB data yet — plain text input
+        const nameInput = document.createElement('input');
+        nameInput.type = 'text';
+        nameInput.placeholder = 'Field name';
+        nameInput.style.cssText = 'width:100%;padding:.52rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:"DM Sans",sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s;';
+        if (presetFieldName) nameInput.value = presetFieldName;
+        nameCell.appendChild(nameInput);
+    }
+
+    // ── Value input ──────────────────────────────────────
+    const valInput = document.createElement('input');
+    valInput.type = 'text';
+    valInput.placeholder = 'Value';
+    valInput.style.cssText = 'flex:1;padding:.52rem .8rem;border:1.5px solid var(--border);border-radius:8px;font-size:.85rem;font-family:"DM Sans",sans-serif;color:var(--text);background:var(--surface);outline:none;transition:border-color .15s,box-shadow .15s;';
+    valInput.addEventListener('focus', () => { valInput.style.borderColor='var(--navy-lt)'; valInput.style.boxShadow='0 0 0 3px rgba(30,64,128,.1)'; });
+    valInput.addEventListener('blur',  () => { valInput.style.borderColor='var(--border)';   valInput.style.boxShadow=''; });
+
+    // ── Remove button ────────────────────────────────────
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.innerHTML = '✕';
+    removeBtn.style.cssText = 'padding:.45rem .7rem;background:var(--danger-lt);color:var(--danger);border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:.85rem;flex-shrink:0;align-self:flex-start;margin-top:0;line-height:1;';
+    removeBtn.title = 'Remove this field';
+    removeBtn.addEventListener('click', () => {
+        wrap.remove();
+        // Hide hint if no rows remain
+        const hintEl2 = document.getElementById('manual-fields-hint');
+        if (hintEl2 && customFieldsContainer.children.length === 0) hintEl2.style.display = 'none';
+    });
+
+    wrap.appendChild(nameCell);
+    wrap.appendChild(valInput);
+    wrap.appendChild(removeBtn);
     customFieldsContainer.appendChild(wrap);
-});
+
+    // Focus the value input if a preset name was given, otherwise focus name
+    if (presetFieldName) valInput.focus();
+    else nameCell.querySelector('input')?.focus();
+}
+
+document.getElementById('add-field-btn').addEventListener('click', () => _addManualFieldRow());
 
 document.getElementById('manual-submit-btn').addEventListener('click', async () => {
     const assessmentNo = document.getElementById('man-assessmentNo').value.trim();
@@ -4183,9 +4280,15 @@ document.getElementById('manual-submit-btn').addEventListener('click', async () 
         'Class': document.getElementById('man-studentClass').value.trim(),
         'Grade': document.getElementById('man-studentGrade').value.trim(),
     };
-    customFieldsContainer.querySelectorAll('div').forEach(row => {
-        const inputs = row.querySelectorAll('input');
-        if (inputs[0].value.trim()) studentData[inputs[0].value.trim()] = inputs[1].value.trim();
+    // Collect custom field rows — each row has nameCell (first child) + valInput (second child)
+    Array.from(customFieldsContainer.children).forEach(row => {
+        const nameInput = row.querySelector('input[type="text"]');
+        const allInputs = row.querySelectorAll('input[type="text"]');
+        if (allInputs.length >= 2) {
+            const fieldName = allInputs[0].value.trim();
+            const fieldVal  = allInputs[1].value.trim();
+            if (fieldName) studentData[fieldName] = fieldVal;
+        }
     });
     const newId = Date.now().toString();
     try {
@@ -4196,6 +4299,8 @@ document.getElementById('manual-submit-btn').addEventListener('click', async () 
         document.getElementById('man-studentClass').value = '';
         document.getElementById('man-studentGrade').value = '';
         customFieldsContainer.innerHTML = '';
+        const hintEl3 = document.getElementById('manual-fields-hint');
+        if (hintEl3) hintEl3.style.display = 'none';
     } catch (e) { showModal('Error: ' + e.message); }
 });
 
