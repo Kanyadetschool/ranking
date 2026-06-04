@@ -1741,7 +1741,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase, ref, set, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
-import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const sanitizedAppId = appId.replace(/\./g, '_');
@@ -1757,7 +1757,7 @@ const customFirebaseConfig = {
 };
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : customFirebaseConfig;
 
-let db, auth, storage, userId = null;
+let db, auth, userId = null;
 let studentsData = [];
 let studentsPerPage = 10;
 let tabulatorTable = null;
@@ -2175,7 +2175,7 @@ toggleUploadBtn.addEventListener('click', () => {
 const app = initializeApp(firebaseConfig);
 db = getDatabase(app);
 auth = getAuth(app);
-storage = getStorage(app);
+
 // Ensure session survives page reloads (default, but set explicitly for passkey flow)
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 
@@ -4574,86 +4574,91 @@ window._editRow = (id) => {
         const file = fileInp.files[0];
         if (!file) return;
 
-        // Validate
-        if (file.size > 5 * 1024 * 1024) {
-            showToast('Photo must be under 5 MB', 'danger'); return;
+        // Validate size (10 MB raw limit — will be compressed down anyway)
+        if (file.size > 10 * 1024 * 1024) {
+            showToast('Photo must be under 10 MB', 'danger'); return;
         }
 
-        // Preview instantly
+        // Preview instantly from local object URL
         const localURL = URL.createObjectURL(file);
         previewImg.src = localURL;
         drawerAvatar.src = localURL;
 
-        // Upload to Firebase Storage
         chooseBtn.disabled = true;
         progressWrap.style.display = 'block';
-        progressFill.style.width = '0%';
-        progressLabel.textContent = 'Uploading…';
+        progressFill.style.width = '10%';
+        progressLabel.textContent = 'Compressing…';
 
         try {
-            const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
-            const storageRef = sRef(storage, `student_photos/${drawerCurrentId}.${ext}`);
-            const uploadTask = uploadBytesResumable(storageRef, file, { contentType: file.type });
+            // ── Compress to Base64 via canvas ──────────────────────
+            const base64 = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const MAX = 400; // max dimension in px
+                    let { width: w, height: h } = img;
+                    if (w > h && w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+                    else if (h > w && h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
+                    else if (w > MAX) { h = MAX; w = MAX; }
 
-            uploadTask.on('state_changed',
-                snap => {
-                    const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
-                    progressFill.style.width = pct + '%';
-                    progressLabel.textContent = `Uploading… ${pct}%`;
-                },
-                err => {
-                    progressWrap.style.display = 'none';
-                    chooseBtn.disabled = false;
-                    showToast('Upload failed: ' + err.message, 'danger');
-                },
-                async () => {
-                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                    // Save URL to student record in DB
-                    const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-                    await update(studentRef, { photoURL: downloadURL });
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
 
-                    // Update in-memory data
-                    const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
-                    if (idx !== -1) { studentsData[idx].photoURL = downloadURL; window._studentsData = studentsData; }
+                    // Try quality 0.75 first; if still > 150 KB drop to 0.5
+                    let data = canvas.toDataURL('image/jpeg', 0.75);
+                    if (data.length > 200000) data = canvas.toDataURL('image/jpeg', 0.5);
+                    resolve(data); // full data:image/jpeg;base64,... string
+                };
+                img.onerror = () => reject(new Error('Could not read image'));
+                img.src = localURL;
+            });
 
-                    // Update table row photo
-                    if (tabulatorTable) {
-                        const trow = tabulatorTable.getRow(drawerCurrentId);
-                        if (trow) trow.update({ _img: '' }); // re-render photo cell
-                    }
+            progressFill.style.width = '60%';
+            progressLabel.textContent = 'Saving…';
 
-                    progressWrap.style.display = 'none';
-                    chooseBtn.disabled = false;
-                    chooseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> Replace Photo`;
-                    uploadSub.textContent = 'Photo updated ✓';
-                    previewImg.src = downloadURL;
-                    drawerAvatar.src = downloadURL;
-                    showToast('Photo uploaded successfully', 'success');
-                    URL.revokeObjectURL(localURL);
-                }
-            );
+            // ── Save base64 string to Realtime DB ──────────────────
+            const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
+            await update(studentRef, { photoURL: base64 });
+
+            // Update in-memory data
+            const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
+            if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
+
+            // Refresh table row photo cell
+            if (tabulatorTable) {
+                const trow = tabulatorTable.getRow(drawerCurrentId);
+                if (trow) trow.update({ _img: '' });
+            }
+
+            progressFill.style.width = '100%';
+            progressLabel.textContent = 'Saved ✓';
+            setTimeout(() => { progressWrap.style.display = 'none'; }, 800);
+
+            chooseBtn.disabled = false;
+            chooseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> Replace Photo`;
+            uploadSub.textContent = 'Photo updated ✓';
+            previewImg.src = base64;
+            drawerAvatar.src = base64;
+            showToast('Photo saved successfully', 'success');
+            URL.revokeObjectURL(localURL);
+
         } catch(err) {
             progressWrap.style.display = 'none';
             chooseBtn.disabled = false;
-            showToast('Upload error: ' + err.message, 'danger');
+            showToast('Photo error: ' + err.message, 'danger');
+            URL.revokeObjectURL(localURL);
         }
     });
 
-    // Remove photo
     removeBtn?.addEventListener('click', async () => {
         const result = await openModal({
             icon: 'warning', title: 'Remove Photo?',
-            text: 'The student photo will be deleted from storage.',
+            text: 'The student photo will be removed.',
             showCancelButton: true, confirmButtonText: 'Remove', confirmButtonColor: 'danger'
         });
         if (!result.isConfirmed) return;
         try {
-            // Try to delete from storage (best-effort)
-            const student2 = studentsData.find(s => s.id === drawerCurrentId);
-            if (student2?.photoURL) {
-                try { await deleteObject(sRef(storage, student2.photoURL)); } catch(_) {}
-            }
-            // Clear URL from DB
+            // Clear base64 from DB
             const studentRef2 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
             await update(studentRef2, { photoURL: '' });
             const idx2 = studentsData.findIndex(s => s.id === drawerCurrentId);
