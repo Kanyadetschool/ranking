@@ -423,6 +423,63 @@
         .insight-strip svg { flex-shrink:0; margin-top:.05rem; }
         .pdf-warn-strip { background:#fffbeb; border:1px solid var(--gold); border-radius:10px; padding:.65rem .9rem; font-size:.75rem; color:var(--navy); display:flex; align-items:flex-start; gap:.5rem; margin-bottom:.85rem; line-height:1.5; }
 
+        /* ── ENHANCED KPI MODAL ─────────────────────────────────────────── */
+        #uni-modal .um-box.um-kpi { max-width:720px; border-radius:20px; overflow:hidden; }
+        .kpi-modal-hero { position:relative; overflow:hidden; padding:2rem 2rem 2.25rem; color:#fff; }
+        .kpi-modal-hero-noise { position:absolute; inset:0; opacity:.04; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); z-index:1; pointer-events:none; }
+        .kpi-modal-hero-orb { position:absolute; border-radius:50%; filter:blur(40px); opacity:.35; pointer-events:none; }
+        .kpi-modal-hero-content { position:relative; z-index:2; display:flex; align-items:flex-start; gap:1.4rem; }
+        .kpi-modal-hero-ring { flex-shrink:0; }
+        .kpi-modal-hero-text { flex:1; min-width:0; }
+        .kpi-modal-hero-label { font-size:.63rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; opacity:.7; margin-bottom:.35rem; }
+        .kpi-modal-hero-value { font-size:3.2rem; font-weight:900; line-height:1; letter-spacing:-.04em; margin-bottom:.3rem; }
+        .kpi-modal-hero-sub { font-size:.83rem; opacity:.82; font-weight:500; line-height:1.45; }
+        .kpi-modal-hero-badge { display:inline-flex; align-items:center; gap:.3rem; padding:.25rem .65rem; border-radius:20px; font-size:.68rem; font-weight:800; background:rgba(255,255,255,.2); margin-top:.6rem; border:1px solid rgba(255,255,255,.28); backdrop-filter:blur(4px); }
+        .kpi-modal-hero-nav { position:absolute; top:1rem; right:1rem; z-index:3; display:flex; gap:.35rem; }
+        .kpi-modal-close-btn { width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.28); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s; }
+        .kpi-modal-close-btn:hover { background:rgba(255,255,255,.3); }
+        .kpi-modal-nav-arrows { display:flex; gap:.3rem; }
+        .kpi-modal-nav-btn { width:30px; height:30px; border-radius:8px; background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); color:#fff; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s; }
+        .kpi-modal-nav-btn:hover { background:rgba(255,255,255,.28); }
+        .kpi-modal-nav-dots { position:absolute; bottom:.85rem; left:50%; transform:translateX(-50%); z-index:3; display:flex; gap:.4rem; }
+        .kpi-modal-nav-dot { width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.35); cursor:pointer; transition:all .2s; border:none; padding:0; }
+        .kpi-modal-nav-dot.active { background:#fff; width:18px; border-radius:3px; }
+        .kpi-modal-body { padding:1.35rem 1.5rem 1rem; flex:1; overflow-y:auto; }
+        .kpi-modal-body::-webkit-scrollbar { width:5px; }
+        .kpi-modal-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+        .kpi-modal-section { margin-bottom:1.1rem; }
+        .kpi-modal-section-title { font-size:.63rem; font-weight:800; color:var(--slate); text-transform:uppercase; letter-spacing:.1em; margin-bottom:.7rem; display:flex; align-items:center; gap:.5rem; }
+        .kpi-modal-section-title::after { content:''; flex:1; height:1px; background:var(--border); }
+        .kpi-stat-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:.6rem; margin-bottom:.9rem; }
+        .kpi-stat-chip { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:.8rem .9rem; position:relative; overflow:hidden; }
+        .kpi-stat-chip::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--chip-accent,var(--navy-lt)); border-radius:12px 12px 0 0; }
+        .kpi-stat-chip-val { font-size:1.55rem; font-weight:900; color:var(--navy); line-height:1; letter-spacing:-.02em; }
+        .kpi-stat-chip-label { font-size:.62rem; font-weight:700; color:var(--slate); text-transform:uppercase; letter-spacing:.05em; margin-top:.25rem; }
+        .kpi-stat-chip-sub { font-size:.65rem; color:var(--slate-lt); margin-top:.1rem; }
+        .kpi-bar-row { display:flex; align-items:center; gap:.65rem; margin-bottom:.55rem; }
+        .kpi-bar-row-label { font-size:.75rem; font-weight:600; color:var(--text2); min-width:76px; max-width:104px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
+        .kpi-bar-track { flex:1; height:9px; background:var(--surface3); border-radius:20px; overflow:hidden; }
+        .kpi-bar-fill { height:9px; border-radius:20px; transition:width .7s cubic-bezier(.4,0,.2,1); }
+        .kpi-bar-meta { display:flex; gap:.3rem; align-items:center; flex-shrink:0; min-width:58px; justify-content:flex-end; }
+        .kpi-bar-count { font-size:.74rem; font-weight:700; color:var(--navy); }
+        .kpi-bar-pct { font-size:.65rem; color:var(--slate-lt); }
+        .kpi-gender-row { display:flex; align-items:center; gap:.6rem; margin-bottom:.5rem; }
+        .kpi-gender-row-label { font-size:.74rem; color:var(--text2); min-width:68px; flex-shrink:0; font-weight:500; }
+        .kpi-gender-track { flex:1; height:10px; border-radius:20px; background:var(--surface3); overflow:hidden; display:flex; }
+        .kpi-gender-row-counts { font-size:.67rem; color:var(--slate); flex-shrink:0; min-width:65px; text-align:right; }
+        .kpi-insight { background:linear-gradient(135deg,rgba(21,101,176,.07),rgba(21,101,176,.02)); border:1px solid rgba(21,101,176,.18); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:flex-start; gap:.65rem; margin-top:.75rem; }
+        .kpi-insight-icon { width:30px; height:30px; border-radius:8px; background:rgba(21,101,176,.12); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .kpi-insight-text { font-size:.76rem; color:var(--navy); line-height:1.5; font-weight:500; }
+        .kpi-insight-text strong { font-weight:800; }
+        .kpi-success-insight { background:linear-gradient(135deg,rgba(5,150,105,.08),rgba(5,150,105,.02)); border:1px solid rgba(5,150,105,.22); border-radius:12px; padding:.75rem 1rem; display:flex; align-items:flex-start; gap:.65rem; margin-top:.75rem; }
+        .kpi-warn-insight { background:linear-gradient(135deg,rgba(245,158,11,.08),rgba(245,158,11,.02)); border:1px solid rgba(245,158,11,.28); border-radius:10px; padding:.65rem .9rem; display:flex; align-items:flex-start; gap:.6rem; margin-bottom:.85rem; font-size:.76rem; color:var(--navy); line-height:1.5; }
+        .kpi-modal-footer { padding:.85rem 1.5rem 1.15rem; display:flex; gap:.55rem; align-items:center; border-top:1px solid var(--border); background:var(--surface2); }
+        .kpi-modal-footer-actions { display:flex; gap:.45rem; flex:1; flex-wrap:wrap; }
+        @keyframes kpi-bar-in { from { width:0 !important; } }
+        .kpi-bar-fill { animation:kpi-bar-in .75s cubic-bezier(.4,0,.2,1) both; }
+        .kpi-ring-svg circle.ring-fill { animation:kpi-ring-in .9s cubic-bezier(.4,0,.2,1) both; }
+        @keyframes kpi-ring-in { from { stroke-dashoffset:calc(var(--circ) * 1px) !important; } }
+
         /* STATS SECTION (kept for compat but hidden by default since drawers take over) */
         #stats-section { margin-bottom: 1.25rem; display:none; }
         .stats-dist-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; }
@@ -2604,11 +2661,343 @@ const _kpiIcons = {
 };
 let _kpiActiveDrawer = null;
 
+// ── KPI ORDER & CONFIG ──────────────────────────────────
+const _KPI_ORDER = ['students','gender','quality','pdf','classsize'];
+const _KPI_COLORS = {
+    students:  { bg:'linear-gradient(135deg,#0d1f35 0%,#1e4080 100%)', orb1:'rgba(240,165,0,.6)', orb2:'rgba(30,64,128,.8)', ring:'#f0a500', ringBg:'rgba(255,255,255,.15)', accent:'#1565b0' },
+    gender:    { bg:'linear-gradient(135deg,#5b21b6 0%,#7c3aed 100%)', orb1:'rgba(168,85,247,.7)', orb2:'rgba(91,33,182,.9)', ring:'#e9d5ff', ringBg:'rgba(255,255,255,.15)', accent:'#a855f7' },
+    quality:   { bg:'linear-gradient(135deg,#064e3b 0%,#059669 100%)', orb1:'rgba(16,185,129,.6)', orb2:'rgba(6,78,59,.8)', ring:'#6ee7b7', ringBg:'rgba(255,255,255,.15)', accent:'#059669' },
+    pdf:       { bg:'linear-gradient(135deg,#78350f 0%,#d97706 100%)', orb1:'rgba(245,158,11,.65)', orb2:'rgba(120,53,15,.85)', ring:'#fde68a', ringBg:'rgba(255,255,255,.15)', accent:'#f0a500' },
+    classsize: { bg:'linear-gradient(135deg,#164e63 0%,#0891b2 100%)', orb1:'rgba(6,182,212,.6)', orb2:'rgba(22,78,99,.85)', ring:'#a5f3fc', ringBg:'rgba(255,255,255,.15)', accent:'#06b6d4' },
+};
+
+function _buildKpiModalHTML(id, students) {
+    const cfg   = _KPI_COLORS[id];
+    const total = students.length;
+    const gradeMap = {};
+    students.forEach(s => { const g=s.Grade||'?'; gradeMap[g]=(gradeMap[g]||0)+1; });
+    const grades = Object.keys(gradeMap).filter(g=>g!=='?').length;
+    const male   = students.filter(s=>(s.Gender||'').toLowerCase()==='male').length;
+    const female = students.filter(s=>(s.Gender||'').toLowerCase()==='female').length;
+    const unspec = total - male - female;
+    const femalePct = total ? Math.round(female/total*100) : 0;
+    const malePct   = total ? Math.round(male/total*100) : 0;
+    const withPdf   = students.filter(s=>s._pdfHref).length;
+    const pdfPct    = total ? Math.round(withPdf/total*100) : 0;
+    const qFields   = ['Official Student Name','Grade','Gender','Assessment No','UPI','DOB'];
+    const qWeights  = [2,2,1,2,1,1];
+    const qMax      = qWeights.reduce((a,b)=>a+b,0);
+    let qScore = 0;
+    students.forEach(s => qFields.forEach((f,i) => { if(s[f]) qScore += qWeights[i]; }));
+    const qualityPct = total ? Math.round(qScore/(total*qMax)*100) : 0;
+    const gradeSorted= Object.entries(gradeMap).filter(([g])=>g!=='?').sort((a,b)=>b[1]-a[1]);
+    const avgSize    = grades > 0 ? Math.round(total/grades) : 0;
+    const classDist  = {};
+    students.forEach(s => { if(s['Class']) classDist[s['Class']]=(classDist[s['Class']]||0)+1; });
+    const classEntries = Object.entries(classDist).sort((a,b)=>b[1]-a[1]);
+    const GRADE_COLORS = ['#1565b0','#1976d2','#1e88e5','#42a5f5','#64b5f6','#2563eb','#3b82f6','#60a5fa','#0d47a1','#0288d1'];
+    const FEMALE_COL='#a855f7', MALE_COL='#1565b0', OTHER_COL='#94a3b8';
+
+    // ── SVG ring helper ──────────────────────────────────
+    const ring = (pct, sz, sw, trackCol, fillCol, label, sublabel) => {
+        const r = (sz-sw)/2, circ = 2*Math.PI*r;
+        const dash = pct/100*circ;
+        return `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.2));">
+            <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${trackCol}" stroke-width="${sw}"/>
+            <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${fillCol}" stroke-width="${sw}"
+                stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+                stroke-dashoffset="${(circ/4).toFixed(1)}" stroke-linecap="round"
+                style="transition:stroke-dasharray .9s cubic-bezier(.4,0,.2,1);"/>
+            <text x="${sz/2}" y="${sz/2-.5}" text-anchor="middle" dominant-baseline="middle"
+                fill="#fff" font-size="${sz>80?'1.3rem':'.85rem'}" font-weight="900" font-family="DM Sans,sans-serif" letter-spacing="-.02em">${label}</text>
+            ${sublabel?`<text x="${sz/2}" y="${sz/2+14}" text-anchor="middle" fill="rgba(255,255,255,.65)" font-size=".58rem" font-weight="600" font-family="DM Sans,sans-serif" letter-spacing=".06em" text-transform="uppercase">${sublabel}</text>`:''}
+        </svg>`;
+    };
+
+    // ── bar helper ───────────────────────────────────────
+    const barRow = (label, val, pct, maxPct, col, showPct=true) => {
+        const w = maxPct > 0 ? Math.round(val/(maxPct||1)*100) : pct;
+        return `<div class="kpi-bar-row">
+            <div class="kpi-bar-row-label" title="${label}">${label}</div>
+            <div class="kpi-bar-track"><div class="kpi-bar-fill" style="width:${pct}%;background:${col};"></div></div>
+            <div class="kpi-bar-meta"><span class="kpi-bar-count">${val}</span>${showPct?`<span class="kpi-bar-pct">${pct}%</span>`:''}</div>
+        </div>`;
+    };
+
+    // ── chip helper ──────────────────────────────────────
+    const chip = (val, label, sub='', accent=cfg.accent) =>
+        `<div class="kpi-stat-chip" style="--chip-accent:${accent}">
+            <div class="kpi-stat-chip-val">${val}</div>
+            <div class="kpi-stat-chip-label">${label}</div>
+            ${sub?`<div class="kpi-stat-chip-sub">${sub}</div>`:''}
+        </div>`;
+
+    // ── insight helper ───────────────────────────────────
+    const insight = (html, type='info') => {
+        const cls = type==='success'?'kpi-success-insight':'kpi-insight';
+        const iconC = type==='success'?'rgba(5,150,105,.15)':'rgba(21,101,176,.12)';
+        const iconStroke = type==='success'?'#059669':'#1565b0';
+        const iconPath = type==='success'
+            ? '<path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>'
+            : '<path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>';
+        return `<div class="${cls}">
+            <div class="kpi-insight-icon" style="background:${iconC};">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="${iconStroke}" stroke-width="2">${iconPath}</svg>
+            </div>
+            <div class="kpi-insight-text">${html}</div>
+        </div>`;
+    };
+
+    // ── PER-PANEL BODY ───────────────────────────────────
+    let heroVal, heroSub, heroBadge, heroRingSVG, bodyHTML, footerExtra='';
+
+    if (id === 'students') {
+        heroVal = total.toLocaleString();
+        heroSub = `Enrolled across <strong>${grades}</strong> active grade${grades!==1?'s':''}`;
+        const gBal = Math.abs(femalePct-malePct);
+        heroBadge = gBal<=10 ? '✦ Balanced enrollment' : `${gradeSorted[0]?gradeSorted[0][0]:''} is the largest class`;
+        heroRingSVG = ring(100, 88, 10, 'rgba(255,255,255,.15)', cfg.ring, total.toLocaleString(), 'students');
+        const totalMax2 = gradeSorted[0]?gradeSorted[0][1]:1;
+        bodyHTML = `
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Overview</div>
+                <div class="kpi-stat-grid">
+                    ${chip(total,'Total enrolled','all grades',cfg.accent)}
+                    ${chip(grades,'Active grades','','#1976d2')}
+                    ${chip(avgSize,'Avg class size','per grade','#1e88e5')}
+                    ${chip(gradeSorted[0]?`${gradeSorted[0][1]}`:'—','Largest class',gradeSorted[0]?gradeSorted[0][0]:'','#42a5f5')}
+                    ${chip(gradeSorted[gradeSorted.length-1]?`${gradeSorted[gradeSorted.length-1][1]}`:'—','Smallest class',gradeSorted[gradeSorted.length-1]?gradeSorted[gradeSorted.length-1][0]:'',OTHER_COL)}
+                    ${chip(male+female,'Gender recorded',`${unspec} unspecified`,MALE_COL)}
+                </div>
+            </div>
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Students per grade</div>
+                ${gradeSorted.map(([g,v],i)=>barRow(g,v,Math.round(v/total*100),100,GRADE_COLORS[i%GRADE_COLORS.length])).join('')}
+            </div>
+            ${classEntries.length?`<div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">By graduation year</div>
+                ${classEntries.slice(0,8).map(([k,v],i)=>barRow('Class of '+k,v,Math.round(v/total*100),100,GRADE_COLORS[i%GRADE_COLORS.length])).join('')}
+            </div>`:''}
+            ${insight(`<strong>${gradeSorted[0]?gradeSorted[0][0]:'No grade'}</strong> is the largest cohort with <strong>${gradeSorted[0]?gradeSorted[0][1]:0}</strong> students — ${gradeSorted[0]?Math.round(gradeSorted[0][1]/total*100):0}% of enrollment.`)}`;
+    }
+
+    else if (id === 'gender') {
+        heroVal = `${femalePct}%`;
+        heroSub = `${female} Female · ${male} Male${unspec?` · ${unspec} unspecified`:''}`;
+        const gBal = Math.abs(femalePct-malePct);
+        heroBadge = gBal<=10 ? '≈ Balanced' : gBal<=25 ? '~ Slightly uneven' : '⚠ Skewed distribution';
+        // Dual ring for gender
+        const r=34, sz=88, sw=10, circ=2*Math.PI*r;
+        const fDash=femalePct/100*circ, mDash=malePct/100*circ;
+        heroRingSVG = `<svg width="${sz}" height="${sz}" viewBox="0 0 ${sz} ${sz}" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.2));">
+            <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="rgba(255,255,255,.12)" stroke-width="${sw}"/>
+            <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${FEMALE_COL}" stroke-width="${sw}"
+                stroke-dasharray="${fDash.toFixed(1)} ${circ.toFixed(1)}"
+                stroke-dashoffset="${(circ/4).toFixed(1)}" stroke-linecap="round"/>
+            <circle cx="${sz/2}" cy="${sz/2}" r="${r}" fill="none" stroke="${MALE_COL}" stroke-width="${sw}" opacity=".7"
+                stroke-dasharray="${mDash.toFixed(1)} ${circ.toFixed(1)}"
+                stroke-dashoffset="${(circ/4-fDash).toFixed(1)}" stroke-linecap="round"/>
+            <text x="${sz/2}" y="${sz/2-3}" text-anchor="middle" fill="#fff" font-size=".8rem" font-weight="900" font-family="DM Sans,sans-serif">${femalePct}%F</text>
+            <text x="${sz/2}" y="${sz/2+10}" text-anchor="middle" fill="rgba(255,255,255,.6)" font-size=".58rem" font-weight="600" font-family="DM Sans,sans-serif">${malePct}%M</text>
+        </svg>`;
+        const gradeGMap={};
+        students.forEach(s=>{ if(!s.Grade)return; if(!gradeGMap[s.Grade])gradeGMap[s.Grade]={m:0,f:0,o:0}; const g=(s.Gender||'').toLowerCase(); if(g==='male')gradeGMap[s.Grade].m++; else if(g==='female')gradeGMap[s.Grade].f++; else gradeGMap[s.Grade].o++; });
+        bodyHTML = `
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Overview</div>
+                <div class="kpi-stat-grid">
+                    ${chip(female,'Female',`${femalePct}% of total`,FEMALE_COL)}
+                    ${chip(male,'Male',`${malePct}% of total`,MALE_COL)}
+                    ${chip(Math.abs(female-male),'Gender gap',female>male?'More female':'More male','#d97706')}
+                    ${unspec?chip(unspec,'Unspecified','no gender on record',OTHER_COL):''}
+                </div>
+            </div>
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Male / Female balance by grade</div>
+                ${gradeSorted.map(([g])=>{
+                    const gg=gradeGMap[g]||{m:0,f:0,o:0}, tot=gg.m+gg.f+gg.o||1;
+                    const mw=Math.round(gg.m/tot*100), fw=Math.round(gg.f/tot*100);
+                    return `<div class="kpi-gender-row">
+                        <div class="kpi-gender-row-label">${g}</div>
+                        <div class="kpi-gender-track">
+                            <div style="width:${mw}%;background:${MALE_COL};opacity:.85;"></div>
+                            <div style="width:${fw}%;background:${FEMALE_COL};"></div>
+                            ${gg.o?`<div style="flex:1;background:${OTHER_COL};opacity:.5;"></div>`:''}
+                        </div>
+                        <div class="kpi-gender-row-counts">${gg.m}M · ${gg.f}F</div>
+                    </div>`;
+                }).join('')}
+                <div style="display:flex;gap:1.2rem;margin-top:.6rem;flex-wrap:wrap;">
+                    <span style="display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--slate);">
+                        <span style="width:12px;height:5px;border-radius:2px;background:${MALE_COL};opacity:.85;display:inline-block;"></span>Male</span>
+                    <span style="display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--slate);">
+                        <span style="width:12px;height:5px;border-radius:2px;background:${FEMALE_COL};display:inline-block;"></span>Female</span>
+                    ${unspec?`<span style="display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--slate);">
+                        <span style="width:12px;height:5px;border-radius:2px;background:${OTHER_COL};opacity:.5;display:inline-block;"></span>Unspecified</span>`:''}
+                </div>
+            </div>
+            ${gBal<=10
+                ? insight(`Gender distribution is <strong>well balanced</strong> — a ${gBal}pp gap between female (${femalePct}%) and male (${malePct}%).`,'success')
+                : insight(`There's a <strong>${gBal}pp gender gap</strong> — ${female>male?'more female':'more male'} students (${femalePct}%F vs ${malePct}%M). Consider reviewing enrollment equity.`)}`;
+    }
+
+    else if (id === 'quality') {
+        const qLabel = qualityPct>=85?'✦ Excellent':qualityPct>=60?'⚠ Fair':'✕ Poor';
+        const qCol   = qualityPct>=85?'#059669':qualityPct>=60?'#d97706':'#dc2626';
+        heroVal = `${qualityPct}%`;
+        heroSub = 'Weighted score across 6 key fields';
+        heroBadge = qLabel;
+        heroRingSVG = ring(qualityPct, 88, 10, 'rgba(255,255,255,.15)', cfg.ring, `${qualityPct}%`, 'quality');
+        const missingMap={};
+        qFields.forEach(f=>{ const c=students.filter(s=>!s[f]).length; if(c>0)missingMap[f]=c; });
+        const missingEntries=Object.entries(missingMap).sort((a,b)=>b[1]-a[1]);
+        const complete=students.filter(s=>qFields.every(f=>s[f])).length;
+        bodyHTML = `
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Overview</div>
+                <div class="kpi-stat-grid">
+                    ${chip(`${qualityPct}%`,'Quality score','weighted by importance',qCol)}
+                    ${chip(complete,'Fully complete','all 6 fields filled','#059669')}
+                    ${chip(total-complete,'Have gaps','≥1 field missing',total-complete>0?'#dc2626':'#059669')}
+                    ${chip(missingEntries.length,'Fields with gaps',`of ${qFields.length} tracked`,'#d97706')}
+                </div>
+            </div>
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Field coverage breakdown</div>
+                ${qFields.map((f,i)=>{
+                    const filled=students.filter(s=>s[f]).length;
+                    const pct=Math.round(filled/total*100);
+                    const col=pct===100?'#059669':pct>=80?'#d97706':'#dc2626';
+                    return barRow(f, filled, pct, 100, col);
+                }).join('')}
+            </div>
+            ${missingEntries.length
+                ? `<div class="kpi-modal-section">
+                    <div class="kpi-modal-section-title">Most missing fields</div>
+                    ${missingEntries.map(([f,c])=>barRow(f,c,Math.round(c/total*100),100,'#dc2626')).join('')}
+                   </div>
+                   ${insight(`<strong>${missingEntries[0][0]}</strong> is the most common gap — missing in <strong>${missingEntries[0][1]}</strong> of ${total} records (${Math.round(missingEntries[0][1]/total*100)}%). Focus data collection here first.`)}`
+                : insight('All 6 critical fields are <strong>100% complete</strong> across every student record. Excellent data quality!','success')}`;
+    }
+
+    else if (id === 'pdf') {
+        const pdfCol = pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626';
+        const scanning = !window._bgPdfScanDone;
+        heroVal = `${pdfPct}%`;
+        heroSub = `${withPdf} of ${total} students have a matched report card`;
+        heroBadge = scanning ? '⟳ Scanning server…' : pdfPct>=80?'✦ Great coverage':pdfPct>=40?'⚠ Partial':'✕ Low coverage';
+        heroRingSVG = ring(pdfPct, 88, 10, 'rgba(255,255,255,.15)', cfg.ring, `${pdfPct}%`, 'coverage');
+        const gradePdfMap={};
+        students.forEach(s=>{ if(s._pdfHref&&s.Grade) gradePdfMap[s.Grade]=(gradePdfMap[s.Grade]||0)+1; });
+        footerExtra = `<button onclick="window._openPdfSearchPanel()" class="btn btn-outline btn-sm">Open PDF Browser</button>
+            <button onclick="window._bgPdfScanDone=false;_bgScanPdfs(window._studentsData||[])" class="btn btn-outline btn-sm">Re-scan</button>`;
+        bodyHTML = `
+            ${scanning?`<div class="kpi-warn-insight">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#d97706" stroke-width="2" style="flex-shrink:0;margin-top:2px;animation:um-spin .9s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+                <span>Scanning server for PDFs — coverage will update automatically once complete.</span>
+            </div>`:''}
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Overview</div>
+                <div class="kpi-stat-grid">
+                    ${chip(withPdf,'PDFs matched','linked to students',pdfCol)}
+                    ${chip(`${pdfPct}%`,'Coverage',`${total-withPdf} still missing`,pdfCol)}
+                    ${chip(total-withPdf,'Missing','no report card yet',total-withPdf>0?'#dc2626':'#059669')}
+                    ${chip(window._allServerPdfMap?window._allServerPdfMap.size:'—','On server','files in student_pdfs/','#1565b0')}
+                </div>
+            </div>
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Coverage by grade</div>
+                ${gradeSorted.map(([g,tot],i)=>{
+                    const hasPdf=gradePdfMap[g]||0;
+                    const pct=Math.round(hasPdf/tot*100);
+                    const col=pct>=80?'#059669':pct>=40?'#d97706':'#dc2626';
+                    return `<div class="kpi-bar-row">
+                        <div class="kpi-bar-row-label" title="${g}">${g}</div>
+                        <div class="kpi-bar-track"><div class="kpi-bar-fill" style="width:${pct}%;background:${col};"></div></div>
+                        <div class="kpi-bar-meta"><span class="kpi-bar-count">${hasPdf}/${tot}</span><span class="kpi-bar-pct">${pct}%</span></div>
+                    </div>`;
+                }).join('')}
+            </div>
+            ${pdfPct<40&&!scanning?insight(`Only <strong>${pdfPct}%</strong> of students have matched PDFs. Ensure files in <code style="background:rgba(21,101,176,.08);padding:0 3px;border-radius:3px;">student_pdfs/</code> are named to match student names or Assessment Numbers.`):''}
+            ${pdfPct>=80?insight(`<strong>Excellent!</strong> ${withPdf} of ${total} students (${pdfPct}%) have a linked report card.`,'success'):''}`;
+    }
+
+    else if (id === 'classsize') {
+        const largest  = gradeSorted[0]||['—',0];
+        const smallest = gradeSorted[gradeSorted.length-1]||['—',0];
+        heroVal = avgSize.toString();
+        heroSub = `Average students per grade across <strong>${grades}</strong> grades`;
+        heroBadge = `Largest: ${largest[0]} (${largest[1]})`;
+        heroRingSVG = ring(100, 88, 10, 'rgba(255,255,255,.15)', cfg.ring, avgSize.toString(), 'avg/grade');
+        bodyHTML = `
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Overview</div>
+                <div class="kpi-stat-grid">
+                    ${chip(avgSize,'Avg class size','per grade',cfg.accent)}
+                    ${chip(largest[1],'Largest class',largest[0],'#1976d2')}
+                    ${chip(smallest[1],'Smallest class',smallest[0],'#64b5f6')}
+                    ${chip(grades,'Active grades','','#0288d1')}
+                    ${chip(total,'Total students','all grades','#0d47a1')}
+                    ${chip(classEntries.length,'Graduation years','unique Class of values','#06b6d4')}
+                </div>
+            </div>
+            <div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">Class size per grade</div>
+                ${gradeSorted.map(([g,v],i)=>barRow(g,v,Math.round(v/total*100),100,GRADE_COLORS[i%GRADE_COLORS.length])).join('')}
+            </div>
+            ${classEntries.length?`<div class="kpi-modal-section">
+                <div class="kpi-modal-section-title">By graduation year (Class of)</div>
+                ${classEntries.slice(0,10).map(([k,v],i)=>barRow('Class of '+k,v,Math.round(v/classEntries.reduce((s,[,c])=>s+c,0)*100),100,GRADE_COLORS[i%GRADE_COLORS.length])).join('')}
+            </div>`:''}
+            ${insight(`<strong>${largest[0]}</strong> has the most students (${largest[1]}), ${Math.round(largest[1]/total*100)}% of total enrollment. Average class size is <strong>${avgSize}</strong>.`)}`;
+    }
+
+    // ── NAV DOTS ─────────────────────────────────────────
+    const dots = _KPI_ORDER.map(k =>
+        `<button class="kpi-modal-nav-dot${k===id?' active':''}" onclick="window._kpiNavTo('${k}')" title="${_kpiTitles[k]}"></button>`
+    ).join('');
+    const curIdx = _KPI_ORDER.indexOf(id);
+    const prevId = _KPI_ORDER[curIdx-1];
+    const nextId = _KPI_ORDER[curIdx+1];
+
+    return `
+        <div class="kpi-modal-hero" style="background:${cfg.bg};">
+            <div class="kpi-modal-hero-noise"></div>
+            <div style="position:absolute;width:180px;height:180px;border-radius:50%;background:${cfg.orb1||'rgba(255,255,255,.1)'};filter:blur(50px);top:-60px;right:-40px;pointer-events:none;z-index:1;"></div>
+            <div style="position:absolute;width:120px;height:120px;border-radius:50%;background:${cfg.orb2||'rgba(0,0,0,.2)'};filter:blur(35px);bottom:-30px;left:10%;pointer-events:none;z-index:1;"></div>
+            <div class="kpi-modal-hero-nav">
+                ${prevId?`<button class="kpi-modal-nav-btn" onclick="window._kpiNavTo('${prevId}')" title="Previous: ${_kpiTitles[prevId]}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+                </button>`:'<div style="width:30px;"></div>'}
+                ${nextId?`<button class="kpi-modal-nav-btn" onclick="window._kpiNavTo('${nextId}')" title="Next: ${_kpiTitles[nextId]}">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+                </button>`:'<div style="width:30px;"></div>'}
+                <button class="kpi-modal-close-btn" id="um-kpi-close-btn" title="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="kpi-modal-hero-content">
+                <div class="kpi-modal-hero-ring">${heroRingSVG}</div>
+                <div class="kpi-modal-hero-text">
+                    <div class="kpi-modal-hero-label">${_kpiTitles[id]||id}</div>
+                    <div class="kpi-modal-hero-value">${heroVal}</div>
+                    <div class="kpi-modal-hero-sub">${heroSub}</div>
+                    <div class="kpi-modal-hero-badge">${heroBadge}</div>
+                </div>
+            </div>
+            <div class="kpi-modal-nav-dots">${dots}</div>
+        </div>
+        <div class="kpi-modal-body">${bodyHTML}</div>
+        <div class="kpi-modal-footer">
+            <div class="kpi-modal-footer-actions">${footerExtra}</div>
+            <button class="um-btn-confirm primary" id="um-kpi-close-btn2" style="flex-shrink:0;padding:.5rem 1.1rem;font-size:.82rem;">Close</button>
+        </div>`;
+}
+
 function _toggleKpiDrawer(id) {
-    // Mark card active (for expand-hint arrow rotation) — clear others
-    ['students','gender','quality','pdf','classsize'].forEach(k => {
-        document.getElementById('kpi-card-'+k)?.classList.remove('kpi-active');
-    });
+    ['students','gender','quality','pdf','classsize'].forEach(k =>
+        document.getElementById('kpi-card-'+k)?.classList.remove('kpi-active')
+    );
     document.getElementById('kpi-card-'+id)?.classList.add('kpi-active');
     _kpiActiveDrawer = id;
 
@@ -2616,27 +3005,9 @@ function _toggleKpiDrawer(id) {
     const box   = document.getElementById('uni-modal-box');
     if (!modal || !box) return;
 
-    // Pull the already-rendered drawer inner HTML
-    const drawerEl = document.getElementById('kpi-drawer-'+id+'-inner');
-    const drawerHTML = drawerEl ? drawerEl.innerHTML : '<p style="color:var(--slate);font-size:.85rem;">No data available yet.</p>';
-
-    box.className = 'um-box um-wide';
-    box.innerHTML = `
-        <div class="um-header" style="padding-bottom:.75rem;">
-            <div class="um-icon-ring info">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="var(--info)" stroke-width="2">${_kpiIcons[id]||''}</svg>
-            </div>
-            <div class="um-title">${_kpiTitles[id]||id}</div>
-        </div>
-        <div class="um-body" style="padding-top:.5rem;">
-            <div class="um-scroll" style="padding:.85rem .95rem;max-height:480px;">${drawerHTML}</div>
-        </div>
-        <div class="um-footer">
-            <button class="um-btn-confirm primary" id="um-kpi-close-btn">
-                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-                Close
-            </button>
-        </div>`;
+    const students = window._studentsData || studentsData || [];
+    box.className = 'um-box um-kpi';
+    box.innerHTML = _buildKpiModalHTML(id, students);
 
     const _closeKpiModal = () => {
         modal.classList.remove('open');
@@ -2646,13 +3017,63 @@ function _toggleKpiDrawer(id) {
         modal.removeEventListener('click', _bdClose);
         document.removeEventListener('keydown', _escClose);
     };
-    box.querySelector('#um-kpi-close-btn').addEventListener('click', _closeKpiModal);
+    box.querySelector('#um-kpi-close-btn')?.addEventListener('click', _closeKpiModal);
+    box.querySelector('#um-kpi-close-btn2')?.addEventListener('click', _closeKpiModal);
     const _bdClose  = (e) => { if (e.target === modal) _closeKpiModal(); };
-    const _escClose = (e) => { if (e.key === 'Escape') _closeKpiModal(); };
+    const _escClose = (e) => {
+        if (e.key === 'Escape') _closeKpiModal();
+        if (e.key === 'ArrowRight') { const ni=_KPI_ORDER[_KPI_ORDER.indexOf(_kpiActiveDrawer)+1]; if(ni) window._kpiNavTo(ni); }
+        if (e.key === 'ArrowLeft')  { const pi=_KPI_ORDER[_KPI_ORDER.indexOf(_kpiActiveDrawer)-1]; if(pi) window._kpiNavTo(pi); }
+    };
     modal.addEventListener('click', _bdClose);
     document.addEventListener('keydown', _escClose);
     modal.classList.add('open');
+
+    // Store cleanup so nav can rebind
+    modal._kpiCleanup = () => {
+        modal.removeEventListener('click', _bdClose);
+        document.removeEventListener('keydown', _escClose);
+    };
 }
+
+window._kpiNavTo = function(id) {
+    const modal = document.getElementById('uni-modal');
+    const box   = document.getElementById('uni-modal-box');
+    if (!modal || !box) return;
+    modal._kpiCleanup?.();
+    ['students','gender','quality','pdf','classsize'].forEach(k =>
+        document.getElementById('kpi-card-'+k)?.classList.remove('kpi-active')
+    );
+    document.getElementById('kpi-card-'+id)?.classList.add('kpi-active');
+    _kpiActiveDrawer = id;
+    const students = window._studentsData || studentsData || [];
+    box.innerHTML = _buildKpiModalHTML(id, students);
+
+    const _closeKpiModal = () => {
+        modal.classList.remove('open');
+        box.className = 'um-box';
+        ['students','gender','quality','pdf','classsize'].forEach(k =>
+            document.getElementById('kpi-card-'+k)?.classList.remove('kpi-active')
+        );
+        _kpiActiveDrawer = null;
+        modal.removeEventListener('click', _bdClose);
+        document.removeEventListener('keydown', _escClose);
+    };
+    box.querySelector('#um-kpi-close-btn')?.addEventListener('click', _closeKpiModal);
+    box.querySelector('#um-kpi-close-btn2')?.addEventListener('click', _closeKpiModal);
+    const _bdClose  = (e) => { if (e.target === modal) _closeKpiModal(); };
+    const _escClose = (e) => {
+        if (e.key === 'Escape') _closeKpiModal();
+        if (e.key === 'ArrowRight') { const ni=_KPI_ORDER[_KPI_ORDER.indexOf(_kpiActiveDrawer)+1]; if(ni) window._kpiNavTo(ni); }
+        if (e.key === 'ArrowLeft')  { const pi=_KPI_ORDER[_KPI_ORDER.indexOf(_kpiActiveDrawer)-1]; if(pi) window._kpiNavTo(pi); }
+    };
+    modal.addEventListener('click', _bdClose);
+    document.addEventListener('keydown', _escClose);
+    modal._kpiCleanup = () => {
+        modal.removeEventListener('click', _bdClose);
+        document.removeEventListener('keydown', _escClose);
+    };
+};
 window._toggleKpiDrawer = _toggleKpiDrawer;
 
 function _kpiBarRows(entries, max, colorFn) {
