@@ -284,6 +284,29 @@
         #edit-drawer-overlay.open #edit-drawer { transform: scale(1); }
         .drawer-header { background: var(--navy); padding: 1.25rem 1.5rem; border-radius: 18px 18px 0 0; display: flex; align-items: center; justify-content: space-between; }
         .drawer-avatar { width: 44px; height: 44px; border-radius: 10px; object-fit: cover; border: 2px solid rgba(255,255,255,.2); flex-shrink: 0; }
+
+        /* ── PHOTO UPLOAD ────────────────────────────────── */
+        .photo-upload-zone { display:flex; align-items:center; gap:1rem; padding:.85rem 1.1rem; background:var(--surface2); border-bottom:1px solid var(--border); }
+        .photo-avatar-wrap { position:relative; flex-shrink:0; cursor:pointer; }
+        .photo-avatar-wrap:hover .photo-avatar-overlay { opacity:1; }
+        .photo-avatar-img { width:72px; height:72px; border-radius:14px; object-fit:cover; border:2.5px solid var(--border2); display:block; background:var(--surface3); }
+        .photo-avatar-overlay { position:absolute; inset:0; border-radius:14px; background:rgba(13,31,53,.55); display:flex; flex-direction:column; align-items:center; justify-content:center; opacity:0; transition:opacity .18s; pointer-events:none; }
+        .photo-avatar-overlay svg { color:#fff; }
+        .photo-avatar-overlay span { color:#fff; font-size:.58rem; font-weight:700; margin-top:.2rem; letter-spacing:.05em; text-transform:uppercase; }
+        .photo-upload-info { flex:1; min-width:0; }
+        .photo-upload-title { font-size:.8rem; font-weight:700; color:var(--navy); margin-bottom:.2rem; }
+        .photo-upload-sub { font-size:.7rem; color:var(--slate); line-height:1.4; }
+        .photo-upload-actions { display:flex; gap:.4rem; margin-top:.5rem; flex-wrap:wrap; }
+        .photo-upload-btn { display:inline-flex; align-items:center; gap:.3rem; padding:.3rem .65rem; border-radius:7px; font-size:.74rem; font-weight:700; font-family:'DM Sans',sans-serif; cursor:pointer; border:none; transition:all .15s; }
+        .photo-upload-btn.primary { background:var(--navy-lt); color:#fff; }
+        .photo-upload-btn.primary:hover { background:var(--navy-mid); }
+        .photo-upload-btn.danger { background:var(--danger-lt); color:var(--danger); border:1px solid rgba(220,38,38,.25); }
+        .photo-upload-btn.danger:hover { background:#fee2e2; }
+        .photo-upload-btn:disabled { opacity:.45; cursor:not-allowed; }
+        .photo-progress-wrap { margin-top:.5rem; display:none; }
+        .photo-progress-bar { height:4px; border-radius:2px; background:var(--surface3); overflow:hidden; }
+        .photo-progress-fill { height:4px; border-radius:2px; background:var(--navy-lt); width:0%; transition:width .2s; }
+        .photo-progress-label { font-size:.67rem; color:var(--slate); margin-top:.2rem; }
         .drawer-header-title { font-size: .95rem; font-weight: 700; color: #fff; }
         .drawer-header-sub { font-size: .75rem; color: rgba(255,255,255,.5); margin-top: .15rem; }
         .drawer-close { width: 32px; height: 32px; border-radius: 8px; border: none; background: rgba(255,255,255,.12); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .15s; }
@@ -1718,6 +1741,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getDatabase, ref, set, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getStorage, ref as sRef, uploadBytesResumable, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const sanitizedAppId = appId.replace(/\./g, '_');
@@ -1733,7 +1757,7 @@ const customFirebaseConfig = {
 };
 const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : customFirebaseConfig;
 
-let db, auth, userId = null;
+let db, auth, storage, userId = null;
 let studentsData = [];
 let studentsPerPage = 10;
 let tabulatorTable = null;
@@ -2111,7 +2135,8 @@ export const openLocalPDF = (assessmentNo, studentName) => {
     if (!studentName && !assessmentNo) return;
     const pdfName = studentName || assessmentNo;
     pdfModalStudentName.textContent = pdfName;
-    pdfModalStudentImage.src = `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
+    const studentRecord = (window._studentsData || studentsData || []).find(s => s['Official Student Name'] === studentName || s['Assessment No'] === assessmentNo);
+    pdfModalStudentImage.src = studentRecord?.photoURL || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     const _pdfBase = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}`;
     // Show modal FIRST so the container has real dimensions, then load
     pdfModalBackdrop.classList.remove('hidden');
@@ -2128,7 +2153,8 @@ window.openLocalPDF = openLocalPDF;
 window._openPdfDirect = (url, studentName) => {
     const name = studentName || decodeURIComponent(url.split('/').pop()).replace(/\.pdf$/i, '');
     pdfModalStudentName.textContent = name;
-    pdfModalStudentImage.src = `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
+    const studentRecord2 = (window._studentsData || studentsData || []).find(s => s['Official Student Name'] === studentName);
+    pdfModalStudentImage.src = studentRecord2?.photoURL || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     pdfModalBackdrop.classList.remove('hidden');
     requestAnimationFrame(() => requestAnimationFrame(() => window._pdfViewerLoad(url)));
 };
@@ -2149,6 +2175,7 @@ toggleUploadBtn.addEventListener('click', () => {
 const app = initializeApp(firebaseConfig);
 db = getDatabase(app);
 auth = getAuth(app);
+storage = getStorage(app);
 // Ensure session survives page reloads (default, but set explicitly for passkey flow)
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 
@@ -3587,7 +3614,9 @@ const renderStudents = (students) => {
             formatter: (cell) => {
                 const d = cell.getRow().getData();
                 const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
-                return `<img src="${name ? `./student_images/${name}.jpg` : './student_images/default.jpg'}" class="student-img" onerror="this.src='./student_images/default.jpg'">`;
+                const photoURL = d.photoURL || '';
+                const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
+                return `<img src="${src}" class="student-img" onerror="this.src='./student_images/default.jpg'">`;
             }
         },
         {
@@ -3702,7 +3731,7 @@ const renderStudents = (students) => {
     };
 
     const rowData = students.map(s => {
-        const row = { id: s.id, _actions: '', _img: '' };
+        const row = { id: s.id, _actions: '', _img: '', photoURL: s.photoURL || '' };
         headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
         // Computed age from DOB field
         const ageObj = calcAge(s['DOB']);
@@ -4454,19 +4483,58 @@ window._editRow = (id) => {
     drawerCurrentId = id;
     const name = student['Official Student Name'] || '';
     drawerStudentLabel.textContent = name || student['Assessment No'] || id;
-    drawerAvatar.src = name ? `./student_images/${encodeURIComponent(name)}.jpg` : './student_images/default.jpg';
+
+    // Avatar in header: prefer stored photoURL, fall back to static path
+    const storedPhoto = student['photoURL'] || '';
+    drawerAvatar.src = storedPhoto || (name ? `./student_images/${encodeURIComponent(name)}.jpg` : './student_images/default.jpg');
 
     // Build full schema from ALL students so fields missing on THIS student still appear
     const allKeys = new Set();
     (window._studentsData || studentsData).forEach(s =>
-        Object.keys(s).forEach(k => { if (k !== 'id' && !k.startsWith('_')) allKeys.add(k); })
+        Object.keys(s).forEach(k => { if (k !== 'id' && !k.startsWith('_') && k !== 'photoURL') allKeys.add(k); })
     );
     const priorityFields = ['Assessment No', 'Official Student Name', 'Grade', 'Class', 'Gender', 'UPI'];
     const otherFields = [...allKeys].filter(k => !priorityFields.includes(k)).sort();
     const orderedFields = [...priorityFields.filter(k => allKeys.has(k)), ...otherFields];
     const criticalFields = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
 
-    drawerBody.innerHTML = `<div class="drawer-grid">${orderedFields.map(fieldKey => {
+    const currentPhoto = storedPhoto || (name ? `./student_images/${encodeURIComponent(name)}.jpg` : '');
+
+    drawerBody.innerHTML = `
+        <!-- ── Photo Upload Zone ── -->
+        <div class="photo-upload-zone" id="photo-upload-zone">
+            <div class="photo-avatar-wrap" id="photo-avatar-wrap" title="Click to change photo">
+                <img id="photo-preview-img" class="photo-avatar-img"
+                    src="${currentPhoto || ''}"
+                    onerror="this.src=''"
+                    alt="${name}">
+                <div class="photo-avatar-overlay">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span>Change</span>
+                </div>
+            </div>
+            <div class="photo-upload-info">
+                <div class="photo-upload-title">Student Photo</div>
+                <div class="photo-upload-sub" id="photo-upload-sub">${storedPhoto ? 'Photo on file — click to replace' : 'No photo yet — upload a JPG or PNG'}</div>
+                <div class="photo-upload-actions">
+                    <button class="photo-upload-btn primary" id="photo-choose-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                        ${storedPhoto ? 'Replace Photo' : 'Upload Photo'}
+                    </button>
+                    ${storedPhoto ? `<button class="photo-upload-btn danger" id="photo-remove-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        Remove
+                    </button>` : ''}
+                </div>
+                <div class="photo-progress-wrap" id="photo-progress-wrap">
+                    <div class="photo-progress-bar"><div class="photo-progress-fill" id="photo-progress-fill"></div></div>
+                    <div class="photo-progress-label" id="photo-progress-label">Uploading…</div>
+                </div>
+            </div>
+            <input type="file" id="photo-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;">
+        </div>
+        <!-- ── Fields ── -->
+        <div class="drawer-grid">${orderedFields.map(fieldKey => {
         const raw = student[fieldKey];
         const val = raw !== undefined && raw !== null ? raw : '';
         const isMissing = (window.isMissingVal||((v)=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase())))(val);
@@ -4486,6 +4554,121 @@ window._editRow = (id) => {
                 class="${isReq ? 'required-field' : ''}">
         </div>`;
     }).join('')}</div>`;
+
+    // ── Wire up photo upload ───────────────────────────
+    const fileInp   = drawerBody.querySelector('#photo-file-input');
+    const chooseBtn = drawerBody.querySelector('#photo-choose-btn');
+    const removeBtn = drawerBody.querySelector('#photo-remove-btn');
+    const avatarWrap= drawerBody.querySelector('#photo-avatar-wrap');
+    const previewImg= drawerBody.querySelector('#photo-preview-img');
+    const progressWrap = drawerBody.querySelector('#photo-progress-wrap');
+    const progressFill = drawerBody.querySelector('#photo-progress-fill');
+    const progressLabel= drawerBody.querySelector('#photo-progress-label');
+    const uploadSub = drawerBody.querySelector('#photo-upload-sub');
+
+    const triggerPick = () => fileInp.click();
+    chooseBtn?.addEventListener('click', triggerPick);
+    avatarWrap?.addEventListener('click', triggerPick);
+
+    fileInp?.addEventListener('change', async () => {
+        const file = fileInp.files[0];
+        if (!file) return;
+
+        // Validate
+        if (file.size > 5 * 1024 * 1024) {
+            showToast('Photo must be under 5 MB', 'danger'); return;
+        }
+
+        // Preview instantly
+        const localURL = URL.createObjectURL(file);
+        previewImg.src = localURL;
+        drawerAvatar.src = localURL;
+
+        // Upload to Firebase Storage
+        chooseBtn.disabled = true;
+        progressWrap.style.display = 'block';
+        progressFill.style.width = '0%';
+        progressLabel.textContent = 'Uploading…';
+
+        try {
+            const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
+            const storageRef = sRef(storage, `student_photos/${drawerCurrentId}.${ext}`);
+            const uploadTask = uploadBytesResumable(storageRef, file, { contentType: file.type });
+
+            uploadTask.on('state_changed',
+                snap => {
+                    const pct = Math.round(snap.bytesTransferred / snap.totalBytes * 100);
+                    progressFill.style.width = pct + '%';
+                    progressLabel.textContent = `Uploading… ${pct}%`;
+                },
+                err => {
+                    progressWrap.style.display = 'none';
+                    chooseBtn.disabled = false;
+                    showToast('Upload failed: ' + err.message, 'danger');
+                },
+                async () => {
+                    const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                    // Save URL to student record in DB
+                    const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
+                    await update(studentRef, { photoURL: downloadURL });
+
+                    // Update in-memory data
+                    const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
+                    if (idx !== -1) { studentsData[idx].photoURL = downloadURL; window._studentsData = studentsData; }
+
+                    // Update table row photo
+                    if (tabulatorTable) {
+                        const trow = tabulatorTable.getRow(drawerCurrentId);
+                        if (trow) trow.update({ _img: '' }); // re-render photo cell
+                    }
+
+                    progressWrap.style.display = 'none';
+                    chooseBtn.disabled = false;
+                    chooseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> Replace Photo`;
+                    uploadSub.textContent = 'Photo updated ✓';
+                    previewImg.src = downloadURL;
+                    drawerAvatar.src = downloadURL;
+                    showToast('Photo uploaded successfully', 'success');
+                    URL.revokeObjectURL(localURL);
+                }
+            );
+        } catch(err) {
+            progressWrap.style.display = 'none';
+            chooseBtn.disabled = false;
+            showToast('Upload error: ' + err.message, 'danger');
+        }
+    });
+
+    // Remove photo
+    removeBtn?.addEventListener('click', async () => {
+        const result = await openModal({
+            icon: 'warning', title: 'Remove Photo?',
+            text: 'The student photo will be deleted from storage.',
+            showCancelButton: true, confirmButtonText: 'Remove', confirmButtonColor: 'danger'
+        });
+        if (!result.isConfirmed) return;
+        try {
+            // Try to delete from storage (best-effort)
+            const student2 = studentsData.find(s => s.id === drawerCurrentId);
+            if (student2?.photoURL) {
+                try { await deleteObject(sRef(storage, student2.photoURL)); } catch(_) {}
+            }
+            // Clear URL from DB
+            const studentRef2 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
+            await update(studentRef2, { photoURL: '' });
+            const idx2 = studentsData.findIndex(s => s.id === drawerCurrentId);
+            if (idx2 !== -1) { studentsData[idx2].photoURL = ''; window._studentsData = studentsData; }
+            previewImg.src = '';
+            drawerAvatar.src = './student_images/default.jpg';
+            uploadSub.textContent = 'Photo removed';
+            removeBtn.remove();
+            chooseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> Upload Photo`;
+            showToast('Photo removed', 'success');
+        } catch(err) {
+            showToast('Could not remove photo: ' + err.message, 'danger');
+        }
+    });
+
     openDrawer();
 };
 
