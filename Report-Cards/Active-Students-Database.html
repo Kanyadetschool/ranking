@@ -4521,6 +4521,10 @@ window._editRow = (id) => {
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                         ${storedPhoto ? 'Replace Photo' : 'Upload Photo'}
                     </button>
+                    <button class="photo-upload-btn primary" id="photo-camera-btn" style="background:var(--navy-mid);">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Take Photo
+                    </button>
                     ${storedPhoto ? `<button class="photo-upload-btn danger" id="photo-remove-btn">
                         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                         Remove
@@ -4528,10 +4532,11 @@ window._editRow = (id) => {
                 </div>
                 <div class="photo-progress-wrap" id="photo-progress-wrap">
                     <div class="photo-progress-bar"><div class="photo-progress-fill" id="photo-progress-fill"></div></div>
-                    <div class="photo-progress-label" id="photo-progress-label">Uploading…</div>
+                    <div class="photo-progress-label" id="photo-progress-label">Saving…</div>
                 </div>
             </div>
             <input type="file" id="photo-file-input" accept="image/jpeg,image/png,image/webp" style="display:none;">
+            <input type="file" id="photo-camera-input" accept="image/*" capture="environment" style="display:none;">
         </div>
         <!-- ── Fields ── -->
         <div class="drawer-grid">${orderedFields.map(fieldKey => {
@@ -4555,59 +4560,54 @@ window._editRow = (id) => {
         </div>`;
     }).join('')}</div>`;
 
+
     // ── Wire up photo upload ───────────────────────────
-    const fileInp   = drawerBody.querySelector('#photo-file-input');
-    const chooseBtn = drawerBody.querySelector('#photo-choose-btn');
-    const removeBtn = drawerBody.querySelector('#photo-remove-btn');
-    const avatarWrap= drawerBody.querySelector('#photo-avatar-wrap');
-    const previewImg= drawerBody.querySelector('#photo-preview-img');
-    const progressWrap = drawerBody.querySelector('#photo-progress-wrap');
-    const progressFill = drawerBody.querySelector('#photo-progress-fill');
-    const progressLabel= drawerBody.querySelector('#photo-progress-label');
-    const uploadSub = drawerBody.querySelector('#photo-upload-sub');
+    const fileInp    = drawerBody.querySelector('#photo-file-input');
+    const cameraInp  = drawerBody.querySelector('#photo-camera-input');
+    const chooseBtn  = drawerBody.querySelector('#photo-choose-btn');
+    const cameraBtn  = drawerBody.querySelector('#photo-camera-btn');
+    const removeBtn  = drawerBody.querySelector('#photo-remove-btn');
+    const avatarWrap = drawerBody.querySelector('#photo-avatar-wrap');
+    const previewImg = drawerBody.querySelector('#photo-preview-img');
+    const progressWrap  = drawerBody.querySelector('#photo-progress-wrap');
+    const progressFill  = drawerBody.querySelector('#photo-progress-fill');
+    const progressLabel = drawerBody.querySelector('#photo-progress-label');
+    const uploadSub  = drawerBody.querySelector('#photo-upload-sub');
 
-    const triggerPick = () => fileInp.click();
-    chooseBtn?.addEventListener('click', triggerPick);
-    avatarWrap?.addEventListener('click', triggerPick);
+    chooseBtn?.addEventListener('click', () => fileInp.click());
+    avatarWrap?.addEventListener('click', () => fileInp.click());
+    cameraBtn?.addEventListener('click', () => cameraInp.click());
 
-    fileInp?.addEventListener('change', async () => {
-        const file = fileInp.files[0];
+    // ── Shared compress-and-save logic ─────────────────
+    const compressAndSave = async (file) => {
         if (!file) return;
+        if (file.size > 10 * 1024 * 1024) { showToast('Photo must be under 10 MB', 'danger'); return; }
 
-        // Validate size (10 MB raw limit — will be compressed down anyway)
-        if (file.size > 10 * 1024 * 1024) {
-            showToast('Photo must be under 10 MB', 'danger'); return;
-        }
-
-        // Preview instantly from local object URL
         const localURL = URL.createObjectURL(file);
         previewImg.src = localURL;
         drawerAvatar.src = localURL;
 
         chooseBtn.disabled = true;
+        if (cameraBtn) cameraBtn.disabled = true;
         progressWrap.style.display = 'block';
         progressFill.style.width = '10%';
         progressLabel.textContent = 'Compressing…';
 
         try {
-            // ── Compress to Base64 via canvas ──────────────────────
             const base64 = await new Promise((resolve, reject) => {
                 const img = new Image();
                 img.onload = () => {
-                    const MAX = 400; // max dimension in px
+                    const MAX = 400;
                     let { width: w, height: h } = img;
                     if (w > h && w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
                     else if (h > w && h > MAX) { w = Math.round(w * MAX / h); h = MAX; }
                     else if (w > MAX) { h = MAX; w = MAX; }
-
                     const canvas = document.createElement('canvas');
                     canvas.width = w; canvas.height = h;
                     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-
-                    // Try quality 0.75 first; if still > 150 KB drop to 0.5
                     let data = canvas.toDataURL('image/jpeg', 0.75);
                     if (data.length > 200000) data = canvas.toDataURL('image/jpeg', 0.5);
-                    resolve(data); // full data:image/jpeg;base64,... string
+                    resolve(data);
                 };
                 img.onerror = () => reject(new Error('Could not read image'));
                 img.src = localURL;
@@ -4616,18 +4616,16 @@ window._editRow = (id) => {
             progressFill.style.width = '60%';
             progressLabel.textContent = 'Saving…';
 
-            // ── Save base64 string to Realtime DB ──────────────────
             const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
             await update(studentRef, { photoURL: base64 });
 
-            // Update in-memory data
             const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
 
-            // Refresh table row photo cell
+            // Live table update — pass photoURL so formatter renders immediately
             if (tabulatorTable) {
                 const trow = tabulatorTable.getRow(drawerCurrentId);
-                if (trow) trow.update({ _img: '' });
+                if (trow) trow.update({ photoURL: base64, _img: '' });
             }
 
             progressFill.style.width = '100%';
@@ -4635,6 +4633,7 @@ window._editRow = (id) => {
             setTimeout(() => { progressWrap.style.display = 'none'; }, 800);
 
             chooseBtn.disabled = false;
+            if (cameraBtn) cameraBtn.disabled = false;
             chooseBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg> Replace Photo`;
             uploadSub.textContent = 'Photo updated ✓';
             previewImg.src = base64;
@@ -4645,10 +4644,14 @@ window._editRow = (id) => {
         } catch(err) {
             progressWrap.style.display = 'none';
             chooseBtn.disabled = false;
+            if (cameraBtn) cameraBtn.disabled = false;
             showToast('Photo error: ' + err.message, 'danger');
             URL.revokeObjectURL(localURL);
         }
-    });
+    };
+
+    fileInp?.addEventListener('change', () => compressAndSave(fileInp.files[0]));
+    cameraInp?.addEventListener('change', () => compressAndSave(cameraInp.files[0]));
 
     removeBtn?.addEventListener('click', async () => {
         const result = await openModal({
@@ -4663,6 +4666,10 @@ window._editRow = (id) => {
             await update(studentRef2, { photoURL: '' });
             const idx2 = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx2 !== -1) { studentsData[idx2].photoURL = ''; window._studentsData = studentsData; }
+            if (tabulatorTable) {
+                const trow2 = tabulatorTable.getRow(drawerCurrentId);
+                if (trow2) trow2.update({ photoURL: '', _img: '' });
+            }
             previewImg.src = '';
             drawerAvatar.src = './student_images/default.jpg';
             uploadSub.textContent = 'Photo removed';
