@@ -1772,6 +1772,75 @@
 <script src="./js/image-popup.js"></script>
 <script src="https://kanyadet-school-admin.web.app/Report-Cards/js/Toggle.js"></script>
 
+<script>
+// ── SweetAlert2 compatibility shim ──────────────────────────────────────────
+// image-popup-dynamic.js (external) calls Swal.fire() which no longer exists.
+// This shim redirects those calls to window.openModal (the app's custom modal).
+if (typeof window.Swal === 'undefined') {
+    window.Swal = {
+        fire: function(opts) {
+            // Image popup: show full-size image in a modal
+            if (opts && opts.imageUrl) {
+                const name = opts.title || opts.imageAlt || 'Student Photo';
+                // Build a simple lightbox using the app's uni-modal structure
+                const existing = document.getElementById('swal-img-lightbox');
+                if (existing) existing.remove();
+                const box = document.createElement('div');
+                box.id = 'swal-img-lightbox';
+                box.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(13,31,53,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;cursor:pointer;backdrop-filter:blur(6px);';
+                box.innerHTML = `
+                    <div style="font-size:.8rem;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.08em;text-transform:uppercase;">${name}</div>
+                    <img src="${opts.imageUrl}" alt="${name}" style="max-width:90vw;max-height:75vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.15);">
+                    <div style="font-size:.72rem;color:rgba(255,255,255,.45);">Tap anywhere to close</div>`;
+                box.addEventListener('click', () => box.remove());
+                document.body.appendChild(box);
+                return Promise.resolve({ isConfirmed: false });
+            }
+            // Fallback: delegate to app's openModal
+            if (typeof window.openModal === 'function') {
+                return window.openModal({
+                    title: opts.title || '',
+                    text: opts.text || opts.html || '',
+                    icon: opts.icon || 'info',
+                    confirmButtonText: opts.confirmButtonText || 'OK',
+                    showCancelButton: !!opts.showCancelButton,
+                });
+            }
+            return Promise.resolve({ isConfirmed: false });
+        }
+    };
+}
+
+// ── Image click handler: works for both static and Tabulator-rendered images ─
+// Replaces the periodic-check approach in image-popup-dynamic.js which misses
+// dynamically rendered Tabulator cells.
+document.addEventListener('click', function(e) {
+    const img = e.target.closest('img.student-image, img.student-img');
+    if (!img) return;
+    // Don't fire if inside the edit drawer or a button
+    if (img.closest('#edit-drawer-overlay') || img.closest('button')) return;
+    const src = img.src || img.getAttribute('data-src') || '';
+    if (!src || src.endsWith('default.jpg') || src.includes('data:image/gif')) return;
+    // Find student name from closest row
+    const row = img.closest('[tabulator-row]') || img.closest('tr') || img.closest('[data-id]');
+    const nameEl = row ? row.querySelector('[tabulator-field="Official Student Name"]') : null;
+    const name = nameEl ? nameEl.textContent.trim() : (img.alt || 'Student Photo');
+    // Show lightbox
+    const existing = document.getElementById('swal-img-lightbox');
+    if (existing) existing.remove();
+    const box = document.createElement('div');
+    box.id = 'swal-img-lightbox';
+    box.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(13,31,53,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1rem;cursor:pointer;backdrop-filter:blur(6px);animation:fadeIn .18s ease;';
+    box.innerHTML = `
+        <div style="font-size:.8rem;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.08em;text-transform:uppercase;">${name}</div>
+        <img src="${src}" alt="${name}" style="max-width:90vw;max-height:75vh;object-fit:contain;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.5);border:2px solid rgba(255,255,255,.15);">
+        <div style="font-size:.72rem;color:rgba(255,255,255,.45);">Tap anywhere to close</div>`;
+    box.addEventListener('click', () => box.remove());
+    document.addEventListener('keydown', function esc(ev) { if (ev.key === 'Escape') { box.remove(); document.removeEventListener('keydown', esc); } });
+    document.body.appendChild(box);
+}, false);
+</script>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -3698,7 +3767,7 @@ const renderStudents = (students) => {
                 const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
                 const photoURL = d.photoURL || '';
                 const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
-                return `<img src="${src}" class="student-img" onerror="this.src='./student_images/default.jpg'">`;
+                return `<img src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg'" style="cursor:pointer;" title="Click to view photo">`;
             }
         },
         {
@@ -3719,12 +3788,6 @@ const renderStudents = (students) => {
                     <span class="compl-pct" style="color:${color};">${Math.round(val)}%</span>
                     ${missing.length ? `<div class="compl-dots" title="Missing: ${missing.join(', ')}">${dots}</div>` : ''}
                 </div>`;
-            },
-            rowFormatter: (row) => {
-                // highlight entire row if missing critical fields
-                const missing = row.getData()._missingFields || [];
-                if (missing.length) row.getElement().classList.add('row-has-missing');
-                else row.getElement().classList.remove('row-has-missing');
             },
         },
         {
@@ -3855,6 +3918,12 @@ const renderStudents = (students) => {
         clipboard: true,
         clipboardCopyRowRange: 'selected',
         clipboardCopyStyled: false,
+        // Highlight entire row if student has missing critical fields
+        rowFormatter: (row) => {
+            const missing = row.getData()._missingFields || [];
+            if (missing.length) row.getElement().classList.add('row-has-missing');
+            else row.getElement().classList.remove('row-has-missing');
+        },
         rowClick: (e, row) => {
             if (e.target.closest('.action-wrap') || e.target.tagName === 'INPUT') return;
             if (e.target.tagName === 'IMG' && e.target.closest('[tabulator-field="_img"]')) return;
