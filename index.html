@@ -2698,10 +2698,56 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 <script>
 
 /* ══════════════════════════════════════════
-   STUDENT PHOTO LOADING (server-fetched)
-   Path: ./Report-Cards/student_images/{Grade}/{Name}.jpg
+   STUDENT PHOTO LOADING — DB-first
+   Priority: 1) photoURL stored in artifacts DB (uploaded via birthv3)
+             2) File paths ./Report-Cards/student_images/{Grade}/{Name}.jpg
+             3) Default avatar
 ══════════════════════════════════════════ */
 const _imgCache={};
+// Live photo map populated from artifacts DB: key = normalised name → base64/URL
+const _dbPhotoMap = {};   // { "john doe": "data:image/..." }
+const _dbPhotoMapById = {}; // { firebaseKey: "data:image/..." }
+let   _dbPhotoReady = false;
+
+// Called once Firebase is ready — subscribes to artifacts student photos
+function _subscribeDbPhotos(db, sanitizedAppId, refFn, onValueFn){
+    if (!db || !sanitizedAppId) return;
+    const studRef = refFn(db, `artifacts/${sanitizedAppId}/students`);
+    onValueFn(studRef, snap => {
+        const data = snap.val() || {};
+        Object.keys(_dbPhotoMap).forEach(k => delete _dbPhotoMap[k]);
+        Object.keys(_dbPhotoMapById).forEach(k => delete _dbPhotoMapById[k]);
+        for (const [key, val] of Object.entries(data)) {
+            if (val && val.photoURL) {
+                const normName = (val['Official Student Name'] || '').toLowerCase().trim();
+                if (normName) _dbPhotoMap[normName] = val.photoURL;
+                _dbPhotoMapById[key] = val.photoURL;
+                // Also index by assessment no for quick lookup
+                if (val['Assessment No']) _dbPhotoMapById['adm_' + val['Assessment No']] = val.photoURL;
+            }
+        }
+        _dbPhotoReady = true;
+        // Refresh all visible avatars that have a data-name attribute
+        document.querySelectorAll('.stu-av-wrap[data-photo-name]').forEach(el => {
+            const n = el.getAttribute('data-photo-name');
+            const url = _dbPhotoMap[n.toLowerCase().trim()];
+            if (url) _applyPhotoToAvatar(el, url, n);
+        });
+    });
+}
+
+function _applyPhotoToAvatar(el, src, name) {
+    if (!el || !src) return;
+    let img = el.querySelector('img');
+    if (!img) {
+        img = document.createElement('img');
+        img.alt = name || '';
+        img.loading = 'lazy';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;';
+        el.appendChild(img);
+    }
+    if (img.src !== src) img.src = src;
+}
 
 function _loadImg(src){
   return new Promise(resolve=>{
@@ -2715,8 +2761,14 @@ function _loadImg(src){
   });
 }
 
-async function loadStudentPhoto(name, grade){
-  // Extract base grade e.g. "Grade 7" from longer strings
+async function loadStudentPhoto(name, grade, studentId){
+  // 1. DB photo (uploaded via birthv3) — instant if ready
+  const normName = (name||'').toLowerCase().trim();
+  if (_dbPhotoReady) {
+    if (studentId && _dbPhotoMapById[studentId]) return _dbPhotoMapById[studentId];
+    if (normName && _dbPhotoMap[normName])       return _dbPhotoMap[normName];
+  }
+  // 2. Local file paths (existing behaviour)
   const g=(grade||'').match(/Grade\s*\d+/i)?.[0]||grade||'';
   const cleanName=(name||'').trim();
   const encGrade=encodeURIComponent(g);
@@ -2732,29 +2784,29 @@ async function loadStudentPhoto(name, grade){
     const src=await _loadImg(p);
     if(src) return src;
   }
-  // Final fallback: shared default avatar (same approach as reference)
+  // 3. Fallback: if DB not ready yet, wait up to 3s then retry
+  if (!_dbPhotoReady) {
+    await new Promise(res => setTimeout(res, 300));
+    if (studentId && _dbPhotoMapById[studentId]) return _dbPhotoMapById[studentId];
+    if (normName && _dbPhotoMap[normName])       return _dbPhotoMap[normName];
+  }
   return await _loadImg('./Report-Cards/student_images/default.jpg');
 }
 
 // Build a photo avatar element and async-load the image
 // wrapClass: CSS class(es) for the wrapper div
-// initials: fallback text
-function makePhotoAvatar(name, grade, wrapClass, extraStyle=''){
+function makePhotoAvatar(name, grade, wrapClass, extraStyle='', studentId=''){
   const initials=(name||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
   const uid='av_'+Math.random().toString(36).slice(2,8);
-  // Return HTML + schedule async load
-  const html=`<div class="stu-av-wrap ${wrapClass}" id="${uid}" style="${extraStyle}">${initials}</div>`;
-  // Load after current paint
+  const normName=(name||'').toLowerCase().trim();
+  // data-photo-name enables live refresh when DB photos load later
+  const html=`<div class="stu-av-wrap ${wrapClass}" id="${uid}" data-photo-name="${normName}" data-student-id="${studentId||''}" style="${extraStyle}">${initials}</div>`;
   requestAnimationFrame(()=>{
-    loadStudentPhoto(name, grade).then(src=>{
+    loadStudentPhoto(name, grade, studentId).then(src=>{
       if(!src) return;
       const el=document.getElementById(uid);
       if(!el) return;
-      const img=document.createElement('img');
-      img.src=src;
-      img.alt=name||'';
-      img.loading='lazy';
-      el.appendChild(img);
+      _applyPhotoToAvatar(el, src, name);
     });
   });
   return html;
@@ -2806,16 +2858,17 @@ async function _loadLogoPDF(){
 }
 
 // Async inject photo into an existing wrapper element by id
-function injectPhoto(elemId, name, grade){
-  loadStudentPhoto(name, grade).then(src=>{
+function injectPhoto(elemId, name, grade, studentId=''){
+  const el=document.getElementById(elemId);
+  if(!el) return;
+  // Set data attributes so live-refresh works when DB loads
+  el.setAttribute('data-photo-name', (name||'').toLowerCase().trim());
+  el.setAttribute('data-student-id', studentId||'');
+  loadStudentPhoto(name, grade, studentId).then(src=>{
     if(!src) return;
-    const el=document.getElementById(elemId);
-    if(!el) return;
-    const existing=el.querySelector('img');
-    if(existing){existing.src=src;return;}
-    const img=document.createElement('img');
-    img.src=src;img.alt=name||'';
-    el.appendChild(img);
+    const el2=document.getElementById(elemId); // re-query in case DOM changed
+    if(!el2) return;
+    _applyPhotoToAvatar(el2, src, name);
   });
 }
 
@@ -3084,6 +3137,13 @@ window.addEventListener('load',()=>{
       db=getDatabase(app);
       auth=getAuth(app);
       firestoreDb=getFirestore(app);
+      // ── Subscribe to birthv3 student photos from artifacts DB ──────────
+      // birthv3 stores photos at artifacts/${sanitizedAppId}/students/{id}.photoURL
+      // We subscribe here so photos are available across the whole portal.
+      const { ref: _fbRef, onValue: _fbOnValue } = window._fb;
+      if (_fbRef && _fbOnValue) {
+          _subscribeDbPhotos(db, sanitizedAppId, _fbRef, _fbOnValue);
+      }
       // Expose db/auth for the Report Card JS bridge
       window._rcDb = db;
       window._rcAuth = auth;
@@ -5373,7 +5433,7 @@ function renderTopStudents(){
     const color=barColor(st.avg);
     const numClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-rest';
     const termInfo=term==='all'?`<span style="font-size:9px;color:var(--text3);margin-left:4px">(${getRecordTerm(r)})</span>`:'';
-    const _rkAv=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-rank');
+    const _rkAv=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-rank', '', r.id||'');
     return `<div class="rank-item" onclick="openRecordsModal('${r.id}')" title="Click to view student records">
       <div class="rank-num ${numClass}">${i+1}</div>
       ${_rkAv}
@@ -6013,7 +6073,7 @@ function renderStudentsTable(){
     const color=barColor(st.avg);
     const allRecs=r._allRecords||[r];
     const recCount=allRecs.length;
-    const _avHtml=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm');
+    const _avHtml=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm', '', r.id||'');
     return `<tr class="student-hover-row" onclick="openRecordsModal('${r.id}')" title="Click to view all records">
       <td>${start+i+1}</td>
       <td>
@@ -6147,7 +6207,7 @@ function viewStudent(id){
   `;
   document.getElementById('modal-pdf-btn').onclick=()=>dlStudentPDF(id);
   document.getElementById('student-modal').classList.add('on');
-  injectPhoto(_modalAvId, rec['Official Student Name']||'', rec['Grade']||'');
+  injectPhoto(_modalAvId, rec['Official Student Name']||'', rec['Grade']||'', rec.id||'');
   logActivity(`👁 Viewed profile of ${rec['Official Student Name']}`, 'act-blue', currentAdminName);
 }
 window.viewStudent=viewStudent;
@@ -6422,7 +6482,7 @@ function renderResultsTable(){
     const st=calcStats(r);
     const subjects=getSubjects(r);
     const color=barColor(st.avg);
-    const _rtAv=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm');
+    const _rtAv=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm', '', r.id||'');
     return `<tr>
       <td>${start+i+1}</td>
       <td><div style="display:flex;align-items:center;gap:9px">${_rtAv}<span style="font-weight:700;color:var(--text)">${r['Official Student Name']||'—'}</span></div></td>
@@ -7640,7 +7700,7 @@ function openRecordsModal(masterId){
     // clear old img if any
     recAvEl.querySelectorAll('img').forEach(el=>el.remove());
     const grade=entry['Grade']||'';
-    injectPhoto('rec-modal-av', name, grade);
+    injectPhoto('rec-modal-av', name, grade, masterId);
   }
 
   renderRecordTabs(allRecs, 0);
@@ -7881,7 +7941,7 @@ function runSmartSearch(q){
 
   box.innerHTML=results.map(({best,all},i)=>{
     const st=calcStats(best);const color=barColor(st.avg);
-    const _srAv=makePhotoAvatar(best['Official Student Name']||'', best['Grade']||'', 'stu-av-sm');
+    const _srAv=makePhotoAvatar(best['Official Student Name']||'', best['Grade']||'', 'stu-av-sm', '', best.id||'');
     return `<div class="search-result-item" tabindex="0" data-idx="${i}" data-id="${best.id}"
       onclick="selectSearchResult('${best.id}')"
       onkeydown="if(event.key==='Enter')selectSearchResult('${best.id}')"
@@ -8112,7 +8172,7 @@ function openProgressModal(masterId){
     const ini=(name).split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
     pmAv.textContent=ini;
     pmAv.querySelectorAll('img').forEach(el=>el.remove());
-    injectPhoto('progress-modal-av',name,grade);
+    injectPhoto('progress-modal-av',name,grade,masterId);
   }
 
   const labels=allRecs.map(r=>getRecordTerm(r));
@@ -8251,7 +8311,7 @@ function renderAtRisk(){
   rows.forEach(({worst},i)=>{
     const name=worst['Official Student Name']||'';
     const grade=worst['Grade']||'';
-    injectPhoto('ar-av-'+i, name, grade);
+    injectPhoto('ar-av-'+i, name, grade, worst.id||'');
   });
 }
 window.renderAtRisk=renderAtRisk;
@@ -9575,12 +9635,31 @@ async function loadLogo() {
     return loadImg('./imgs/logo.png');
 }
 
-async function loadStudentImage(studentName, grade) {
+async function loadStudentImage(studentName, grade, studentId) {
+    // 1. DB photo uploaded via birthv3 (base64 or URL stored in artifacts DB)
+    const normName = (studentName || '').toLowerCase().trim();
+    if (_dbPhotoReady) {
+        const dbUrl = (studentId && _dbPhotoMapById[studentId])
+            || (normName && _dbPhotoMap[normName]);
+        if (dbUrl) {
+            // If it's already a data URL, wrap it in a loaded img
+            if (dbUrl.startsWith('data:')) {
+                return new Promise(resolve => {
+                    const img = new Image();
+                    img.onload  = () => resolve({ loaded: true, ok: true, img });
+                    img.onerror = () => resolve({ loaded: false, ok: false, img: null });
+                    img.src = dbUrl;
+                });
+            }
+            const r = await loadImg(dbUrl);
+            if (r.loaded) return r;
+        }
+    }
+    // 2. Local file paths (existing behaviour)
     const g    = extractGrade(grade);
     const name = (studentName || '').trim();
     const encG = encodeURIComponent(g);
     const encN = encodeURIComponent(name);
-    // Try same paths as portal's loadStudentPhoto — Report-Cards/ prefix first
     const paths = [
         `./Report-Cards/student_images/${g}/${name}.jpg`,
         `./Report-Cards/student_images/${encG}/${encN}.jpg`,
@@ -9592,7 +9671,7 @@ async function loadStudentImage(studentName, grade) {
         const r = await loadImg(path);
         if (r.loaded) return r;
     }
-    // Final fallback: shared default avatar
+    // 3. Default avatar
     let def = await loadImg('./Report-Cards/student_images/default.jpg');
     if (def.loaded) return def;
     return loadImg('./student_images/default.jpg');
@@ -9742,7 +9821,7 @@ async function generateStudentReportCard(student, includeWatermark = true) {
 
     const [logoRes, studentImageData] = await Promise.all([
         loadLogo(),
-        loadStudentImage(student['Official Student Name'], student['Grade'])
+        loadStudentImage(student['Official Student Name'], student['Grade'], student.id||'')
     ]);
 
     // Header
@@ -10278,7 +10357,7 @@ async function generateBulkReportCards() {
                 const pw = combinedDoc.internal.pageSize.width;
                 const ph = combinedDoc.internal.pageSize.height;
                 const logoRes = await loadLogo();
-                const studentImageData = await loadStudentImage(student['Official Student Name'], student['Grade']);
+                const studentImageData = await loadStudentImage(student['Official Student Name'], student['Grade'], student.id||'');
                 const stats = calculateStudentStats(student);
                 if (!isFirstPage) { /* already added page */ } 
                 _drawCompactReportPage(combinedDoc, student, stats, studentImageData, logoRes, pw, ph);
@@ -10336,7 +10415,7 @@ async function generateBulkReportCards() {
             if (!isFirstPage) combinedDoc.addPage();
             const pw = combinedDoc.internal.pageSize.width;
             const ph = combinedDoc.internal.pageSize.height;
-            const studentImageData = await loadStudentImage(ms['Official Student Name'], ms['Grade']);
+            const studentImageData = await loadStudentImage(ms['Official Student Name'], ms['Grade'], ms.id||'');
 
             const tableEnd = await _drawMultiTermReportPage(combinedDoc, ms, logoRes, studentImageData, pw, ph);
             const summaryEnd = _drawMultiTermSummary(combinedDoc, ms, tableEnd, pw);
@@ -10698,8 +10777,14 @@ function initializeAppAndSetListeners() {
         }
         db = getDatabase(app);
         auth = getAuth(app);
-        
-        controlsDiv.style.display = 'none';
+
+        // ── Subscribe to birthv3 student photos (if not already subscribed) ──
+        if (!_dbPhotoReady && typeof _subscribeDbPhotos === 'function') {
+            const _fbMod = firebaseImports || window._fb || {};
+            if (_fbMod.ref && _fbMod.onValue) {
+                _subscribeDbPhotos(db, sanitizedAppId, _fbMod.ref, _fbMod.onValue);
+            }
+        }
         printAreaDiv.style.display = 'none';
         reportSummary.textContent = 'Please sign in to load the data.';
 
@@ -10891,7 +10976,7 @@ async function generateSearchReportCards() {
             if (!isFirstPage) combinedDoc.addPage();
             const pw = combinedDoc.internal.pageSize.width;
             const ph = combinedDoc.internal.pageSize.height;
-            const studentImageData = await loadStudentImage(ms['Official Student Name'], ms['Grade']);
+            const studentImageData = await loadStudentImage(ms['Official Student Name'], ms['Grade'], ms.id||'');
 
             const tableEnd   = await _drawMultiTermReportPage(combinedDoc, ms, logoRes, studentImageData, pw, ph);
             const summaryEnd = _drawMultiTermSummary(combinedDoc, ms, tableEnd, pw);
@@ -11120,7 +11205,7 @@ function renderCurrentPage() {
         // Student Name (with avatar)
         const nameCell = row.insertCell(1);
         const avatarHtml = typeof makePhotoAvatar === 'function'
-            ? makePhotoAvatar(student['Official Student Name'] || '', student['Grade'] || '', 'stu-av-sm')
+            ? makePhotoAvatar(student['Official Student Name'] || '', student['Grade'] || '', 'stu-av-sm', '', student.id||'')
             : '';
         nameCell.innerHTML = `<div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="font-weight:700;color:var(--text)">${student['Official Student Name'] || '—'}</span></div>`;
 
@@ -11683,7 +11768,7 @@ async function generateClassReportCards() {
             if (!isFirstPage) combinedDoc.addPage();
             const pw = combinedDoc.internal.pageSize.width;
             const ph = combinedDoc.internal.pageSize.height;
-            const studentImageData = await loadStudentImage(ms['Official Student Name'], ms['Grade']);
+            const studentImageData = await loadStudentImage(ms['Official Student Name'], ms['Grade'], ms.id||'');
 
             const tableEnd   = await _drawMultiTermReportPage(combinedDoc, ms, logoRes, studentImageData, pw, ph);
             const summaryEnd = _drawMultiTermSummary(combinedDoc, ms, tableEnd, pw);
@@ -11874,7 +11959,8 @@ async function exportMissingDataToPdf() {
         dataToExport.map(student =>
             loadStudentImage(
                 student['Official Student Name'] || '',
-                student['Grade'] || ''
+                student['Grade'] || '',
+                student.id || ''
             ).catch(() => ({ loaded: false, img: null }))
         )
     );
