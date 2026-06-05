@@ -1121,6 +1121,49 @@
     <script src="https://kanyadet-school-admin.web.app/js/6GoogleAuthmain.js"></script>
     <script src="https://kanyadet-school-admin.web.app/New-Students-Database/js/image-popup.js"></script>
     <script src="https://kanyadet-school-admin.web.app/Print-Individual-Results/js/Toggle.js"></script>
+    <script>
+    // ── Patch openLocalPDF to show DB photo in the PDF modal ──────────────────
+    // The external 6GoogleAuthmain.js defines openLocalPDF but sets pdfModalStudentImage.src
+    // using only a local file path. We wrap it here so DB photos are used instead.
+    (function _patchOpenLocalPDF() {
+        const MAX_WAIT = 3000; // ms to wait for external script to define it
+        const START    = Date.now();
+        function tryPatch() {
+            if (typeof window.openLocalPDF === 'function') {
+                const _origOpenLocalPDF = window.openLocalPDF;
+                window.openLocalPDF = function(assessNo, studentName) {
+                    _origOpenLocalPDF.apply(this, arguments);
+                    // After original sets the modal, upgrade the student image with DB photo
+                    requestAnimationFrame(() => {
+                        const imgEl = document.getElementById('pdf-modal-student-image');
+                        if (!imgEl) return;
+                        imgEl.setAttribute('data-photo-name', (studentName || '').toLowerCase().trim());
+                        // Find student id by name or assessNo from studentsData
+                        let sid = '';
+                        if (window.studentsData && Array.isArray(window.studentsData)) {
+                            const s = window.studentsData.find(s =>
+                                s['Assessment No'] === assessNo ||
+                                (s['Official Student Name'] || '').toLowerCase().trim() === (studentName || '').toLowerCase().trim()
+                            );
+                            if (s) sid = s.id || '';
+                        }
+                        imgEl.setAttribute('data-photo-id', sid);
+                        // Resolve and apply photo
+                        if (typeof resolveStudentPhoto === 'function') {
+                            resolveStudentPhoto(studentName, sid).then(src => {
+                                const el = document.getElementById('pdf-modal-student-image');
+                                if (el && src) { el.src = src; el.onerror = null; }
+                            });
+                        }
+                    });
+                };
+                return; // patched
+            }
+            if (Date.now() - START < MAX_WAIT) setTimeout(tryPatch, 80);
+        }
+        tryPatch();
+    })();
+    </script>
 
 <script type="module">
 
@@ -1202,6 +1245,106 @@ toggleBtn.addEventListener('click', () => {
         let currentPage = 1;
         let studentsPerPage = 10;
         let currentFilteredStudents = []; // tracks currently visible students for export
+
+        /* ══════════════════════════════════════════════════════════════
+           STUDENT PHOTO SYSTEM — DB-first (mirrors index.html approach)
+           Priority: 1) photoURL from artifacts DB (uploaded via birthv3)
+                     2) Local file ./student_images/{Name}.jpg
+                     3) Default avatar
+        ══════════════════════════════════════════════════════════════ */
+        const _dbPhotoMap     = {};  // normalisedName → photoURL/base64
+        const _dbPhotoMapById = {};  // firebaseKey / "adm_"+assessNo → photoURL
+        let   _dbPhotoReady   = false;
+        const _imgLoadCache   = {};
+
+        function _subscribeDbPhotos(dbInst) {
+            const photosRef = ref(dbInst, `artifacts/${sanitizedAppId}/students`);
+            onValue(photosRef, snap => {
+                const data = snap.val() || {};
+                // Clear previous entries
+                Object.keys(_dbPhotoMap).forEach(k => delete _dbPhotoMap[k]);
+                Object.keys(_dbPhotoMapById).forEach(k => delete _dbPhotoMapById[k]);
+                for (const [key, val] of Object.entries(data)) {
+                    if (val && val.photoURL) {
+                        const normName = (val['Official Student Name'] || '').toLowerCase().trim();
+                        if (normName) _dbPhotoMap[normName] = val.photoURL;
+                        _dbPhotoMapById[key] = val.photoURL;
+                        if (val['Assessment No'])
+                            _dbPhotoMapById['adm_' + val['Assessment No']] = val.photoURL;
+                    }
+                }
+                _dbPhotoReady = true;
+                // Live-refresh all rendered avatars already on screen
+                document.querySelectorAll('[data-photo-name]').forEach(el => {
+                    const n   = el.getAttribute('data-photo-name');
+                    const sid = el.getAttribute('data-photo-id') || '';
+                    const url = (sid && _dbPhotoMapById[sid]) || _dbPhotoMap[n] || '';
+                    if (url) _applyPhoto(el, url);
+                });
+            });
+        }
+
+        function _applyPhoto(el, src) {
+            if (!el || !src) return;
+            // Works for both <img> elements and wrapper divs
+            if (el.tagName === 'IMG') {
+                if (el.src !== src) el.src = src;
+                return;
+            }
+            let img = el.querySelector('img');
+            if (!img) {
+                img = document.createElement('img');
+                img.alt  = el.getAttribute('data-photo-name') || '';
+                img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;';
+                el.textContent = ''; // remove initials
+                el.appendChild(img);
+            }
+            if (img.src !== src) img.src = src;
+        }
+
+        function _tryLocalPhoto(name) {
+            return new Promise(resolve => {
+                const enc = encodeURIComponent((name || '').trim());
+                if (!enc) return resolve(null);
+                const src = `./student_images/${enc}.jpg`;
+                if (_imgLoadCache[src] !== undefined) return resolve(_imgLoadCache[src]);
+                const img = new Image();
+                const t   = setTimeout(() => { _imgLoadCache[src] = null; resolve(null); }, 2000);
+                img.onload  = () => { clearTimeout(t); _imgLoadCache[src] = src; resolve(src); };
+                img.onerror = () => { clearTimeout(t); _imgLoadCache[src] = null; resolve(null); };
+                img.src = src;
+            });
+        }
+
+        async function resolveStudentPhoto(name, studentId) {
+            const normName = (name || '').toLowerCase().trim();
+            // 1. DB photo
+            if (_dbPhotoReady) {
+                const url = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
+                if (url) return url;
+            }
+            // 2. Local file
+            const local = await _tryLocalPhoto(name);
+            if (local) return local;
+            // 3. DB not ready yet? Wait briefly then retry
+            if (!_dbPhotoReady) {
+                await new Promise(r => setTimeout(r, 400));
+                const url2 = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
+                if (url2) return url2;
+            }
+            return './student_images/default.jpg';
+        }
+
+        // Async-load photo into any element (img tag or wrapper div with initials)
+        function loadPhotoInto(el, name, studentId) {
+            if (!el) return;
+            el.setAttribute('data-photo-name', (name || '').toLowerCase().trim());
+            el.setAttribute('data-photo-id',   studentId || '');
+            resolveStudentPhoto(name, studentId).then(src => {
+                const current = document.contains(el) ? el : null;
+                if (current && src) _applyPhoto(current, src);
+            });
+        }
 
         const deleteGradeBtn = document.getElementById('delete-grade-btn');
         const studentsPerPageSelect = document.getElementById('students-per-page');
@@ -1412,6 +1555,8 @@ toggleBtn.addEventListener('click', () => {
                 const app = initializeApp(firebaseConfig);
                 auth = getAuth(app);
                 db = getDatabase(app);
+                // ── Subscribe to birthv3 photos from artifacts DB ──
+                _subscribeDbPhotos(db);
 
                 // Attach AFTER auth is ready
                 if (signInGoogleBtn) signInGoogleBtn.addEventListener('click', signInWithGoogle);
@@ -1461,6 +1606,7 @@ toggleBtn.addEventListener('click', () => {
                                 return assessmentNoA - assessmentNoB;
                             });
                             studentsData = students;
+                            window.studentsData = students; // expose for openLocalPDF patch
                             currentPage = 1;
                             populateFilters(students);
                             renderStudents(students);
@@ -2238,10 +2384,24 @@ gradeFilterSelect.addEventListener('change', () => {
                 if (header === 'Image') {
                     Object.assign(col, { width: 68, resizable: false, headerSort: false, headerFilter: false,
                         formatter: (cell) => {
-                            const name = cell.getRow().getData()['Official Student Name'] || '';
-                            const enc = encodeURIComponent(name);
-                            const src = enc ? `./student_images/${enc}.jpg` : './student_images/default.jpg';
-                            return `<img src="${src}" alt="${name}" class="student-image" onerror="this.src='./student_images/default.jpg'">`;
+                            const d    = cell.getRow().getData();
+                            const name = d['Official Student Name'] || '';
+                            const sid  = d.id || '';
+                            const norm = name.toLowerCase().trim();
+                            // Check DB cache first (synchronous if already loaded)
+                            const dbUrl = (sid && _dbPhotoMapById[sid]) || _dbPhotoMap[norm];
+                            const src   = dbUrl || `./student_images/${encodeURIComponent(name)}.jpg`;
+                            const uid   = 'si_' + Math.random().toString(36).slice(2, 8);
+                            // Schedule async resolve so DB photos arrive even if not ready yet
+                            setTimeout(() => {
+                                resolveStudentPhoto(name, sid).then(resolved => {
+                                    const img = document.getElementById(uid);
+                                    if (img && img.src !== resolved) img.src = resolved;
+                                });
+                            }, 0);
+                            return `<img id="${uid}" src="${src}" alt="${name}" class="student-image"
+                                data-photo-name="${norm}" data-photo-id="${sid}"
+                                onerror="this.src='./student_images/default.jpg'">`;
                         }
                     });
                 } else if (isNumeric) {
@@ -2524,12 +2684,12 @@ gradeFilterSelect.addEventListener('change', () => {
             const name = student['Official Student Name'] || student['Assessment No'] || id;
             drawerStudentLabel.textContent = name;
 
-            // Set avatar
+            // Set avatar — DB-first with local file fallback
             const avatar = document.getElementById('drawer-avatar');
             if (avatar) {
-                const enc = name ? encodeURIComponent(student['Official Student Name'] || '') : '';
-                avatar.src = enc ? `./student_images/${enc}.jpg` : './student_images/default.jpg';
                 avatar.alt = name;
+                avatar.src = './student_images/default.jpg'; // instant placeholder
+                loadPhotoInto(avatar, student['Official Student Name'] || '', id);
             }
 
             // Priority fields full-width, others in pairs
@@ -2629,9 +2789,20 @@ gradeFilterSelect.addEventListener('change', () => {
             cells.forEach(cell => {
                 const header = cell.getAttribute('data-header');
                 if (header === 'Image') {
-                    const imageName = originalValues['Official Student Name'] ? encodeURIComponent(originalValues['Official Student Name']) : '';
-                    const imagePath = imageName ? `./student_images/${imageName}.jpg` : './student_images/default.jpg';
-                    cell.innerHTML = `<img src="${imagePath}" alt="${originalValues['Official Student Name'] || 'Student Image'}" class="student-image" onerror="this.src='./student_images/default.jpg';this.alt='Default Image'">`;
+                    const name  = originalValues['Official Student Name'] || '';
+                    const norm  = name.toLowerCase().trim();
+                    const sid   = originalValues.id || '';
+                    const dbUrl = (sid && _dbPhotoMapById[sid]) || _dbPhotoMap[norm];
+                    const src   = dbUrl || (name ? `./student_images/${encodeURIComponent(name)}.jpg` : './student_images/default.jpg');
+                    const uid   = 'ci_' + Math.random().toString(36).slice(2, 8);
+                    cell.innerHTML = `<img id="${uid}" src="${src}" alt="${name}" class="student-image"
+                        data-photo-name="${norm}" data-photo-id="${sid}"
+                        onerror="this.src='./student_images/default.jpg'">`;
+                    // Async resolve for DB photo
+                    resolveStudentPhoto(name, sid).then(resolved => {
+                        const img = document.getElementById(uid);
+                        if (img && img.src !== resolved) img.src = resolved;
+                    });
                 } else {
                     cell.textContent = originalValues[header] || '-';
                 }
