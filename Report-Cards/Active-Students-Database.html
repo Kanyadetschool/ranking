@@ -2248,7 +2248,11 @@ window._firebaseOnValue = onValue;
 const _splashEl = document.getElementById('splash-screen');
 const _splashStart = Date.now();
 function _dismissSplash(cb) {
-    if (!_splashEl || _splashEl.classList.contains('hidden')) { cb && cb(); return; }
+    if (!_splashEl || _splashEl.classList.contains('hidden')) {
+        document.body.classList.add('splash-dismissed');
+        cb && cb();
+        return;
+    }
     const elapsed = Date.now() - _splashStart;
     const delay = Math.max(0, 1200 - elapsed);
     setTimeout(() => {
@@ -2257,6 +2261,16 @@ function _dismissSplash(cb) {
         cb && cb();
     }, delay);
 }
+
+// ── HARD FAILSAFE: if Firebase auth never fires within 6s, force dismiss ──
+// Prevents the splash being stuck if network is slow or auth errors out.
+setTimeout(() => {
+    if (_splashEl && !_splashEl.classList.contains('hidden')) {
+        console.warn('[splash] Auth timeout — forcing dismiss');
+        _firstAuthCheck = false;
+        _dismissSplash(() => _showSignInUI());
+    }
+}, 6000);
 
 // ── MULTI-ACCOUNT PASSKEY STORE ──────────────────────
 // Storage: localStorage['ksd_passkeys'] = JSON map of { email: { credId, uid } }
