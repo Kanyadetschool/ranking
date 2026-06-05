@@ -1660,32 +1660,14 @@ toggleBtn.addEventListener('click', () => {
             }
         };
 
-      // gradeFilterSelect → Tabulator filter
+      // gradeFilterSelect → rebuild table with grade-specific columns
 gradeFilterSelect.addEventListener('change', () => {
     const selectedGrade = gradeFilterSelect.value;
     searchInput.value = '';
-    if (tabulatorTable) {
-        tabulatorTable.clearFilter(true);
-        if (selectedGrade) {
-            tabulatorTable.addFilter('Grade', '=', selectedGrade);
-            printGradeBtn.classList.remove('hidden');
-            deleteGradeBtn.classList.remove('hidden');
-        } else {
-            printGradeBtn.classList.add('hidden');
-            deleteGradeBtn.classList.add('hidden');
-        }
-        const visible = selectedGrade
-            ? studentsData.filter(s => s.Grade === selectedGrade)
-            : studentsData;
-        currentFilteredStudents = visible;
-        updateAnalyticsDashboard(visible, selectedGrade ? { field: 'Grade', value: selectedGrade } : null);
-        setTimeout(updateCountBadge, 30);
-    } else {
-        const filtered = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
-        renderStudents(filtered, selectedGrade ? { field: 'Grade', value: selectedGrade } : null);
-        printGradeBtn.classList.toggle('hidden', !selectedGrade);
-        deleteGradeBtn.classList.toggle('hidden', !selectedGrade);
-    }
+    const filtered = selectedGrade ? studentsData.filter(s => s.Grade === selectedGrade) : studentsData;
+    printGradeBtn.classList.toggle('hidden', !selectedGrade);
+    deleteGradeBtn.classList.toggle('hidden', !selectedGrade);
+    renderStudents(filtered, selectedGrade ? { field: 'Grade', value: selectedGrade } : null);
 });
 
         const readFileAsArrayBuffer = (file) => {
@@ -2229,15 +2211,7 @@ gradeFilterSelect.addEventListener('change', () => {
                     });
                 }
 
-                if (tabulatorTable) {
-                    tabulatorTable.clearFilter(true);
-                    tabulatorTable.addFilter(field, '=', value);
-                    currentFilteredStudents = filteredStudents;
-                    updateAnalyticsDashboard(filteredStudents, { field, value, total: filteredStudents.length, maleCount, femaleCount });
-                    setTimeout(updateCountBadge, 30);
-                } else {
-                    renderStudents(filteredStudents, { field, value, total: filteredStudents.length, maleCount, femaleCount });
-                }
+                renderStudents(filteredStudents, { field, value, total: filteredStudents.length, maleCount, femaleCount });
 
                 if (field === 'Grade') gradeFilterSelect.value = value;
                 else gradeFilterSelect.value = '';
@@ -2245,15 +2219,7 @@ gradeFilterSelect.addEventListener('change', () => {
             }
 
             if (clearButton) {
-                if (tabulatorTable) {
-                    tabulatorTable.clearFilter();
-                    tabulatorTable.clearSort();
-                    currentFilteredStudents = studentsData;
-                    updateAnalyticsDashboard(studentsData, null);
-                    updateCountBadge();
-                } else {
-                    renderStudents(studentsData);
-                }
+                renderStudents(studentsData, null);
                 gradeFilterSelect.value = '';
                 searchInput.value = '';
             }
@@ -2336,8 +2302,15 @@ gradeFilterSelect.addEventListener('change', () => {
             students.forEach(s => Object.keys(s).forEach(k => allKeys.add(k)));
             ['id','deletedAt','deletedBy'].forEach(k => allKeys.delete(k));
             allKeys.delete('Image');
-            const priorityPresent = PRIORITY_COLS.filter(k => allKeys.has(k));
-            const otherHeaders = Array.from(allKeys).filter(k => !PRIORITY_COLS.includes(k)).sort();
+            // Only keep keys that have at least one real (non-empty, non-dash, non-null) value
+            // among the current student set — prevents other-grade columns showing as blank columns
+            const hasRealValue = (key) => students.some(s => {
+                const v = s[key];
+                return v !== undefined && v !== null && v !== '' && v !== '-';
+            });
+            const filteredKeys = new Set([...allKeys].filter(hasRealValue));
+            const priorityPresent = PRIORITY_COLS.filter(k => filteredKeys.has(k));
+            const otherHeaders = Array.from(filteredKeys).filter(k => !PRIORITY_COLS.includes(k)).sort();
             return ['Image', ...priorityPresent, ...otherHeaders];
         };
 
