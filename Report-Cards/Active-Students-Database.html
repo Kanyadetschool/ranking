@@ -1034,7 +1034,11 @@
                 <!-- #4 Bulk Export Birth Certs as ZIP -->
                 <button id="bulk-export-zip-btn" onclick="window._bulkExportZip()" class="tab-toolbar-btn" title="Export all birth certificates as ZIP archive" style="display:flex;align-items:center;gap:.35rem;color:#00695c;font-weight:700;border-color:rgba(0,105,92,.35);">
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
-                    Export ZIP
+                    Certs ZIP
+                </button>
+                <button id="bulk-photos-zip-btn" onclick="window._bulkExportPhotosZip()" class="tab-toolbar-btn" title="Export all student photos grouped by grade as ZIP" style="display:flex;align-items:center;gap:.35rem;color:#6d28d9;font-weight:700;border-color:rgba(109,40,217,.35);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Photos ZIP
                 </button>
                 <!-- #5 DB Size Monitor badge -->
                 <span id="db-size-badge" title="Estimated Firebase database size" style="display:none;align-items:center;gap:.3rem;padding:.25rem .6rem;border-radius:20px;background:var(--surface3);border:1px solid var(--border);font-size:.7rem;font-weight:700;color:var(--slate);cursor:default;">
@@ -7954,6 +7958,135 @@ window._bulkExportZip = async function(){
     } catch(err){
         if(pm) pm.style.display='none';
         showToast('ZIP export failed: '+err.message,'danger');
+    }
+};
+
+// ── Photos ZIP: all student photos grouped by Grade ───────────
+window._bulkExportPhotosZip = async function() {
+    const students = window._studentsData || [];
+
+    // Collect students that have a photo (base64 or external URL)
+    const withPhoto = students.filter(s => s.photoURL && s.photoURL.trim() !== '');
+    const total = withPhoto.length;
+
+    if (!total) {
+        showToast('No student photos found in the database.', 'danger');
+        return;
+    }
+
+    // Count by grade for the confirm dialog
+    const gradeCounts = {};
+    withPhoto.forEach(s => {
+        const g = (s.Grade || 'No Grade').trim();
+        gradeCounts[g] = (gradeCounts[g] || 0) + 1;
+    });
+    const gradeList = Object.entries(gradeCounts)
+        .sort(([a],[b]) => a.localeCompare(b, undefined, {numeric:true}))
+        .map(([g, n]) => `${g} (${n})`)
+        .join(', ');
+
+    const result = await window.openModal({
+        icon: 'info',
+        title: 'Export Student Photos as ZIP',
+        text: `${total} photos across ${Object.keys(gradeCounts).length} grades will be bundled.\n\nGrades: ${gradeList}`,
+        showCancelButton: true,
+        confirmButtonText: `Export ${total} Photos`,
+        cancelButtonText: 'Cancel',
+    });
+    if (!result.isConfirmed) return;
+
+    // Reuse the zip progress modal
+    const pm   = document.getElementById('zip-progress-modal');
+    const pf   = document.getElementById('zip-progress-fill');
+    const pl   = document.getElementById('zip-progress-label');
+    const ps   = document.getElementById('zip-progress-sub');
+    if (pm) pm.style.display = 'flex';
+
+    try {
+        // Lazy-load JSZip
+        if (!window.JSZip) {
+            if (pl) pl.textContent = 'Loading ZIP library…';
+            await new Promise((res, rej) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                s.onload = res; s.onerror = () => rej(new Error('Could not load JSZip'));
+                document.head.appendChild(s);
+            });
+        }
+
+        const zip = new window.JSZip();
+
+        // Helper: convert any image src (base64 or URL) to base64 string + extension
+        async function toBase64Entry(src) {
+            // Already a data URL
+            if (src.startsWith('data:')) {
+                const mime  = src.match(/data:(image\/\w+);/)?.[1] || 'image/jpeg';
+                const ext   = mime.split('/')[1].replace('jpeg','jpg');
+                const data  = src.split(',')[1];
+                return { data, ext };
+            }
+            // External URL — fetch and convert
+            const resp = await fetch(src);
+            if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+            const arrayBuf = await resp.arrayBuffer();
+            const uint8    = new Uint8Array(arrayBuf);
+            const mime     = resp.headers.get('content-type') || 'image/jpeg';
+            const ext      = mime.split('/')[1].split(';')[0].replace('jpeg','jpg');
+            // Convert to base64
+            let binary = '';
+            uint8.forEach(b => binary += String.fromCharCode(b));
+            return { data: btoa(binary), ext };
+        }
+
+        let done = 0;
+        for (const student of withPhoto) {
+            done++;
+            const pct = Math.round((done / total) * 88);
+            if (pf) pf.style.width = pct + '%';
+            const name = (student['Official Student Name'] || student['Assessment No'] || student.id || 'unknown')
+                .replace(/[\/\\:*?"<>|]/g, '_').trim();
+            const grade = (student.Grade || 'No Grade').replace(/[\/\\:*?"<>|]/g, '_').trim();
+            if (pl) pl.textContent = `Adding ${done} of ${total}…`;
+            if (ps) ps.textContent = `${grade} / ${name}`;
+
+            try {
+                const { data, ext } = await toBase64Entry(student.photoURL);
+                // File path: Grade/Name_AssessmentNo.ext  (ensures uniqueness)
+                const assessNo = (student['Assessment No'] || '').replace(/[\/\\:*?"<>|]/g,'_');
+                const filename = assessNo ? `${name}_${assessNo}.${ext}` : `${name}.${ext}`;
+                zip.folder(grade).file(filename, data, { base64: true });
+            } catch(fetchErr) {
+                console.warn(`[Photos ZIP] Skipped ${name}:`, fetchErr.message);
+            }
+        }
+
+        if (pf) pf.style.width = '93%';
+        if (pl) pl.textContent = 'Generating ZIP…';
+        if (ps) ps.textContent = '';
+
+        const blob = await zip.generateAsync({
+            type: 'blob',
+            compression: 'DEFLATE',
+            compressionOptions: { level: 5 }
+        });
+
+        if (pf) pf.style.width = '100%';
+        if (pl) pl.textContent = 'Done!';
+
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href    = url;
+        a.download = `student_photos_${new Date().toISOString().split('T')[0]}.zip`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        setTimeout(() => { if (pm) pm.style.display = 'none'; }, 1000);
+
+        showToast(`Photos ZIP with ${total} images (${Object.keys(gradeCounts).length} grades) downloaded!`, 'success');
+
+    } catch(err) {
+        if (pm) pm.style.display = 'none';
+        showToast('Photos ZIP failed: ' + err.message, 'danger');
+        console.error('[Photos ZIP]', err);
     }
 };
 
