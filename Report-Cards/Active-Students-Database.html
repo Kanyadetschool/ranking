@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Active Students — Kanyadet Pri & Junior School</title>
+    <!-- CRITICAL: set background before any CSS loads to eliminate flash -->
+    <style>html,body{margin:0;background:#f4f6fa !important;}</style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
@@ -679,13 +681,15 @@
         /* ── SPLASH SCREEN (MySafaricom-style) ──────────────────────────── */
         #splash-screen {
             position: fixed; inset: 0; z-index: 9999;
-            background: rgba(255,255,255,.35);
-            backdrop-filter: blur(18px) saturate(1.4);
-            -webkit-backdrop-filter: blur(18px) saturate(1.4);
+            /* Fully opaque — prevents app content bleeding through before auth resolves */
+            background: #f4f6fa;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             gap: 1.25rem;
-            transition: opacity .5s ease, visibility .5s ease;
+            opacity: 1;
+            transition: opacity .45s ease, visibility .45s ease;
         }
+        /* Lock scroll while splash is up so content can't peek */
+        body:not(.splash-dismissed) { overflow: hidden; }
         #splash-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .splash-logo-ring {
             width: 90px; height: 90px; border-radius: 50%;
@@ -2247,7 +2251,11 @@ function _dismissSplash(cb) {
     if (!_splashEl || _splashEl.classList.contains('hidden')) { cb && cb(); return; }
     const elapsed = Date.now() - _splashStart;
     const delay = Math.max(0, 1200 - elapsed);
-    setTimeout(() => { _splashEl.classList.add('hidden'); cb && cb(); }, delay);
+    setTimeout(() => {
+        _splashEl.classList.add('hidden');
+        document.body.classList.add('splash-dismissed');
+        cb && cb();
+    }, delay);
 }
 
 // ── MULTI-ACCOUNT PASSKEY STORE ──────────────────────
