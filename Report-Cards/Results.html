@@ -2972,7 +2972,15 @@ deleteGradeBtn.addEventListener('click', async () => {
 
             // Any remaining keys in the DB not yet accounted for
             const knownCols = new Set([...META_PRIORITY, ...subjectCols, ...COMPUTED]);
-            const extraCols = Array.from(allKeys).filter(k => !knownCols.has(k)).sort();
+            // Only include extra cols that have at least one real (non-empty, non-dash) value
+            // among the current grade's students — prevents other-grade subject columns bleeding in
+            const extraCols = Array.from(allKeys).filter(k => {
+                if (knownCols.has(k)) return false;
+                return students.some(s => {
+                    const v = s[k];
+                    return v !== undefined && v !== '' && v !== '-' && v !== null;
+                });
+            }).sort();
 
             // Final column order
             const exportHeaders = [
