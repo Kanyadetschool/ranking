@@ -9,13 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-
-
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="./css/swalOnly.css">
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-
-    
     <!-- Tabulator -->
     <link href="https://unpkg.com/tabulator-tables@6.2.1/dist/css/tabulator.min.css" rel="stylesheet">
     <script src="https://unpkg.com/tabulator-tables@6.2.1/dist/js/tabulator.min.js"></script>
@@ -842,6 +835,12 @@
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
             Search <kbd style="font-size:.6rem;opacity:.65;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.25);border-radius:3px;padding:.05rem .3rem;margin-left:.1rem;">S</kbd>
         </button>
+        <!-- #6 Offline Indicator -->
+        <div id="offline-pill" title="You are offline — changes may not sync" style="display:none;align-items:center;gap:.3rem;padding:.25rem .65rem;border-radius:20px;background:rgba(220,38,38,.22);border:1px solid rgba(220,38,38,.5);color:#fca5a5;font-size:.72rem;font-weight:700;letter-spacing:.04em;cursor:default;flex-shrink:0;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#f87171;display:inline-block;animation:um-pulse 1.4s ease-in-out infinite;"></span>
+            OFFLINE
+        </div>
+
         <!-- Hamburger (mobile only) -->
         <button id="nav-hamburger" aria-label="Menu">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
@@ -1032,6 +1031,16 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2M6 14h12v8H6v-8z"/></svg>
                     Print Report <span class="tab-kbd" style="background:rgba(240,165,0,.15);color:var(--gold);border-color:rgba(240,165,0,.4);">Alt+R</span>
                 </button>
+                <!-- #4 Bulk Export Birth Certs as ZIP -->
+                <button id="bulk-export-zip-btn" onclick="window._bulkExportZip()" class="tab-toolbar-btn" title="Export all birth certificates as ZIP archive" style="display:flex;align-items:center;gap:.35rem;color:#00695c;font-weight:700;border-color:rgba(0,105,92,.35);">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                    Export ZIP
+                </button>
+                <!-- #5 DB Size Monitor badge -->
+                <span id="db-size-badge" title="Estimated Firebase database size" style="display:none;align-items:center;gap:.3rem;padding:.25rem .6rem;border-radius:20px;background:var(--surface3);border:1px solid var(--border);font-size:.7rem;font-weight:700;color:var(--slate);cursor:default;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><ellipse cx="12" cy="5" rx="9" ry="3"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 5v14c0 1.657 4.03 3 9 3s9-1.343 9-3V5"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 12c0 1.657 4.03 3 9 3s9-1.343 9-3"/></svg>
+                    <span id="db-size-text">DB: —</span>
+                </span>
                 <button id="save-preset-btn" class="tab-toolbar-btn" title="Save current grade+search as a preset">
                     <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
                     Save Filter
@@ -1760,6 +1769,7 @@
 <!-- <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthfireBase.js"></script>
 <script src="https://kanyadet-school-admin.web.app/js/GoogleAuthmain.js"></script> -->
 <script src="./image-popup.js"></script>
+<script src="./js/image-popup.js"></script>
 <script src="https://kanyadet-school-admin.web.app/Report-Cards/js/Toggle.js"></script>
 
 <script type="module">
@@ -3372,6 +3382,15 @@ const updateKPI = (students) => {
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
         <div class="kpi-sub">${pdfLabel}</div>
         <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
+        <!-- #3 Birth Cert Completeness % -->
+        <div id="kpi-bc-completeness" style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">
+            ${(()=>{
+                const withBC = students.filter(s=>s.birthCertBase64||s._pdfHref).length;
+                const bcPct  = Math.round(withBC/total*100);
+                const col    = bcPct>=80?'#059669':bcPct>=40?'#d97706':'#dc2626';
+                return `<span style="color:${col};">▣ ${bcPct}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${withBC}/${total})</span>`;
+            })()}
+        </div>
         ${expandHint}
     </div>
     <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
@@ -3383,6 +3402,9 @@ const updateKPI = (students) => {
         ${expandHint}
     </div>`;
     kpiGrid.style.display = 'grid';
+
+    // ── #5 Update DB size monitor badge ────────────────────
+    if (typeof window._updateDbSizeMonitor === 'function') window._updateDbSizeMonitor(students);
 
     // ── Pre-build all drawer contents ──────────────────────
     const GRADE_COLORS = ['#1565b0','#1976d2','#1e88e5','#42a5f5','#64b5f6','#90caf9','#bbdefb','#e3f2fd','#0d47a1','#0288d1'];
@@ -4536,6 +4558,7 @@ window._editRow = (id) => {
     const student = studentsData.find(s => s.id === id);
     if (!student) return;
     drawerCurrentId = id;
+    window._drawerCurrentId = id; // expose globally for feature scripts
     const name = student['Official Student Name'] || '';
     drawerStudentLabel.textContent = name || student['Assessment No'] || id;
 
@@ -4901,6 +4924,35 @@ window._editRow = (id) => {
         if (typeof updateKPI === 'function') updateKPI(studentsData);
     };
 
+    // Expose so feature scripts can call saveBcBase64 on this student
+    window._saveBcBase64 = saveBcBase64;
+    window._drawerCurrentId = drawerCurrentId;
+
+        // Render thumbnail
+        await renderBcThumb(base64);
+
+        // Inject action buttons if not present
+        const bcActions = drawerBody.querySelector('.bc-actions');
+        if (!drawerBody.querySelector('#bc-view-btn')) {
+            bcActions.insertAdjacentHTML('beforeend', `
+            <button class="photo-upload-btn primary" id="bc-view-btn" style="background:#3949ab;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                View
+            </button>
+            <button class="photo-upload-btn primary" id="bc-download-btn" style="background:#00695c;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                Download
+            </button>
+            <button class="photo-upload-btn danger" id="bc-remove-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Remove
+            </button>`);
+            wireBC();
+        }
+        showToast('Birth certificate saved', 'success');
+        if (typeof updateKPI === 'function') updateKPI(studentsData);
+    };
+
     // ── Upload PDF file ──────────────────────────────────
     bcFileInp?.addEventListener('change', async () => {
         const file = bcFileInp.files[0];
@@ -4917,7 +4969,20 @@ window._editRow = (id) => {
                 reader.onerror = () => reject(new Error('Could not read file'));
                 reader.readAsDataURL(file);
             });
-            await saveBcBase64(base64, file.name);
+            // ── #1 PDF Size Warning & optional compression ──
+            bcProgressWrap.style.display = 'none';
+            await new Promise(resolveSizeCheck => {
+                window._checkPdfSizeBeforeSave
+                    ? window._checkPdfSizeBeforeSave(base64, file.name, async (_, b64Final, fnFinal) => {
+                        bcProgressWrap.style.display = 'block';
+                        bcProgressFill.style.width = '50%';
+                        bcProgressLabel.textContent = 'Saving…';
+                        await saveBcBase64(b64Final || base64, fnFinal || file.name);
+                        resolveSizeCheck();
+                    })
+                    : saveBcBase64(base64, file.name).then(resolveSizeCheck);
+            });
+            return; // saveBcBase64 already called above
         } catch(err) {
             bcProgressWrap.style.display = 'none';
             bcUploadBtn.disabled = false;
@@ -7711,7 +7776,630 @@ setTimeout(() => {
     // These are set after Firebase initialises in the main module below — we wire them up there.
 })();
 </script>
-    <script src="./image-popup.js" defer></script>
-    
+
+<!-- ══ FEATURE #2: Multi-page camera capture modal ══ -->
+<div id="multipage-cam-modal" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(13,31,53,.75);backdrop-filter:blur(6px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+  <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);margin:1rem;">
+    <div style="background:var(--navy);padding:.9rem 1.2rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      <div style="display:flex;align-items:center;gap:.6rem;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span style="font-weight:700;color:#fff;font-size:.95rem;">Multi-Page Camera Capture</span>
+      </div>
+      <button id="mpcam-close-btn" style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.12);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);background:var(--surface2);font-size:.82rem;color:var(--slate);">
+      Photograph each page of the birth certificate separately. All pages will be combined into one PDF.
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:1rem 1.2rem;display:flex;flex-direction:column;gap:.75rem;">
+      <div id="mpcam-pages-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:.65rem;"></div>
+      <button id="mpcam-add-page-btn" style="width:100%;padding:.65rem;border:2px dashed var(--border2);border-radius:10px;background:transparent;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.84rem;font-weight:600;color:var(--navy-lt);display:flex;align-items:center;justify-content:center;gap:.45rem;transition:all .15s;" onmouseover="this.style.borderColor='var(--navy-lt)'" onmouseout="this.style.borderColor='var(--border2)'">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        Add Another Page
+      </button>
+      <input type="file" id="mpcam-page-input" accept="image/*" capture="environment" style="display:none;">
+    </div>
+    <div style="padding:.75rem 1.2rem;border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-shrink:0;">
+      <span id="mpcam-page-count" style="font-size:.8rem;font-weight:600;color:var(--slate);">0 pages captured</span>
+      <div style="display:flex;gap:.5rem;">
+        <button id="mpcam-cancel-btn" class="btn btn-outline btn-sm">Cancel</button>
+        <button id="mpcam-build-btn" class="btn btn-gold btn-sm" disabled>
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Build PDF &amp; Save
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ FEATURE #4: Bulk ZIP Export Progress Modal ══ -->
+<div id="zip-progress-modal" style="display:none;position:fixed;inset:0;z-index:800;background:rgba(13,31,53,.7);backdrop-filter:blur(4px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+  <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:400px;overflow:hidden;border:1px solid var(--border);margin:1rem;">
+    <div style="background:var(--navy);padding:.9rem 1.2rem;display:flex;align-items:center;gap:.6rem;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="var(--gold)" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+      <span style="font-weight:700;color:#fff;font-size:.95rem;">Exporting Birth Certificates</span>
+    </div>
+    <div style="padding:1.25rem 1.2rem;display:flex;flex-direction:column;gap:.85rem;">
+      <div id="zip-progress-label" style="font-size:.84rem;color:var(--slate);text-align:center;">Preparing…</div>
+      <div style="background:var(--surface3);border-radius:6px;overflow:hidden;height:10px;">
+        <div id="zip-progress-fill" style="height:100%;background:var(--gold);border-radius:6px;transition:width .3s ease;width:0%;"></div>
+      </div>
+      <div id="zip-progress-sub" style="font-size:.73rem;color:var(--slate-lt);text-align:center;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// FEATURE BUNDLE — Implemented additions to birthv3
+// ═══════════════════════════════════════════════════════════════
+
+// ── FEATURE #6: Offline Indicator ──────────────────────────────
+(function() {
+    const pill = document.getElementById('offline-pill');
+    if (!pill) return;
+    function update() {
+        if (navigator.onLine) {
+            pill.style.display = 'none';
+        } else {
+            pill.style.display = 'inline-flex';
+        }
+    }
+    update();
+    window.addEventListener('online',  update);
+    window.addEventListener('offline', update);
+})();
+
+// ── FEATURE #5: Firebase DB Size Monitor ───────────────────────
+(function() {
+    // Estimate DB size by measuring JSON of studentsData whenever it updates.
+    // Runs after studentsData is populated (waits for _studentsData to exist).
+    const badge   = document.getElementById('db-size-badge');
+    const badgeText = document.getElementById('db-size-text');
+    if (!badge || !badgeText) return;
+
+    function humanSize(bytes) {
+        if (bytes < 1024)       return bytes + ' B';
+        if (bytes < 1024*1024)  return (bytes/1024).toFixed(1) + ' KB';
+        return (bytes/1024/1024).toFixed(2) + ' MB';
+    }
+
+    function colorForSize(bytes) {
+        // Realtime DB free tier: 1GB. Warn at >500MB, danger at >800MB.
+        if (bytes > 800*1024*1024) return '#dc2626';
+        if (bytes > 500*1024*1024) return '#d97706';
+        if (bytes > 100*1024*1024) return '#ca8a04';
+        return 'var(--success)';
+    }
+
+    let _lastSize = 0;
+    window._updateDbSizeMonitor = function(data) {
+        if (!data || !Array.isArray(data)) return;
+        try {
+            const json = JSON.stringify(data);
+            const bytes = new Blob([json]).size;
+            if (bytes === _lastSize) return;
+            _lastSize = bytes;
+            const pct  = Math.min(100, Math.round(bytes / (1024*1024*1024) * 100));
+            const color = colorForSize(bytes);
+            badgeText.textContent = `DB: ${humanSize(bytes)}`;
+            badge.style.display = 'inline-flex';
+            badge.style.color = color;
+            badge.title = `Estimated Firebase DB size: ${humanSize(bytes)} (${pct}% of 1 GB free limit)`;
+        } catch(_) {}
+    };
+
+    // Poll every 5 s in case students load gradually
+    setInterval(() => {
+        const d = window._studentsData;
+        if (d) window._updateDbSizeMonitor(d);
+    }, 5000);
+})();
+
+// ── FEATURE #1: PDF Size Warning & Compression on Upload ───────
+// Patch the bcFileInp change handler — wrap saveBcBase64 with a warning
+// We inject a global that saveBcBase64 calls before saving.
+window._checkPdfSizeBeforeSave = async function(base64, filename, onProceed) {
+    if (!base64) { onProceed(base64, filename); return; }
+    // Estimate size from base64 length
+    const bytes = Math.round(base64.length * 0.75);
+    const MB = bytes / (1024 * 1024);
+    const WARN_MB = 2, DANGER_MB = 5;
+
+    if (MB < WARN_MB) { onProceed(base64, filename); return; }
+
+    // Show warning
+    const msg = MB >= DANGER_MB
+        ? `This PDF is ${MB.toFixed(1)} MB — very large! Firebase stores base64 which is ~33% bigger. Consider compressing before upload.`
+        : `This PDF is ${MB.toFixed(1)} MB. Stored base64 will use ~${(MB*1.33).toFixed(1)} MB of database quota.`;
+
+    const r = await openModal({
+        icon: 'warning',
+        title: 'Large PDF Detected',
+        text: msg,
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Upload Anyway',
+        denyButtonText: 'Compress & Upload',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: 'primary'
+    });
+
+    if (r.isCancelled) return;
+    if (r.isDenied) {
+        // Basic compression: render each page at 72 DPI via pdf.js then rebuild with jsPDF
+        showToast('Compressing PDF…', 'info', 3000);
+        try {
+            const compressed = await _compressPdfBase64(base64);
+            const compBytes = Math.round(compressed.length * 0.75);
+            showToast(`Compressed to ${(compBytes/1024/1024).toFixed(2)} MB`, 'success');
+            onProceed(compressed, filename);
+        } catch(e) {
+            showToast('Compression failed — uploading original', 'danger');
+            onProceed(base64, filename);
+        }
+        return;
+    }
+    onProceed(base64, filename);
+};
+
+async function _compressPdfBase64(base64) {
+    if (!window.pdfjsLib || !window.jspdf) throw new Error('PDF libs not available');
+    const { jsPDF } = window.jspdf;
+    const raw   = atob(base64.split(',')[1]);
+    const bytes = new Uint8Array(raw.length);
+    for (let i=0;i<raw.length;i++) bytes[i]=raw.charCodeAt(i);
+    const pdfDoc = await pdfjsLib.getDocument({ data: bytes }).promise;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    for (let p = 1; p <= pdfDoc.numPages; p++) {
+        if (p > 1) doc.addPage('a4', 'portrait');
+        const page = await pdfDoc.getPage(p);
+        const vp   = page.getViewport({ scale: 1.5 }); // 72 dpi ≈ scale 1.5 vs 96
+        const canvas = document.createElement('canvas');
+        canvas.width  = vp.width;
+        canvas.height = vp.height;
+        await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+        const imgData = canvas.toDataURL('image/jpeg', 0.7);
+        const pw = doc.internal.pageSize.getWidth();
+        const ph = doc.internal.pageSize.getHeight();
+        const ratio = Math.min(pw / (vp.width * 25.4/96), ph / (vp.height * 25.4/96));
+        const dw = (vp.width * 25.4/96) * ratio;
+        const dh = (vp.height * 25.4/96) * ratio;
+        doc.addImage(imgData, 'JPEG', (pw-dw)/2, (ph-dh)/2, dw, dh, '', 'FAST');
+    }
+    return 'data:application/pdf;base64,' + btoa(doc.output());
+}
+window._compressPdfBase64 = _compressPdfBase64;
+
+// Patch bcFileInp change handler: intercept saveBcBase64 calls
+// We override at the event level using a MutationObserver on the drawer body
+// to rewire bc-file-input after drawer opens.
+const _origDrawerBodySetter = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+// Instead, we wrap saveBcBase64 globally — the drawer function assigns it as a closure.
+// The cleanest approach: use a window hook that bcFileInp event calls.
+window._beforeSaveBcBase64 = async function(file, saveFn) {
+    if (!file) return;
+    if (file.type !== 'application/pdf') { saveFn(file); return; }
+    // Read file to base64 first, then check size
+    const base64 = await new Promise((res, rej) => {
+        const r = new FileReader(); r.onload=()=>res(r.result); r.onerror=()=>rej(new Error('read failed'));
+        r.readAsDataURL(file);
+    });
+    window._checkPdfSizeBeforeSave(base64, file.name, (b64, fn) => {
+        saveFn(null, b64, fn);
+    });
+};
+
+// ── FEATURE #3: Birth Cert Completeness % in KPI card ─────────
+// Extend updateKPI to also show completeness by grade in a nice way.
+// We hook into the existing updateKPI via a wrapper after window loads.
+(function() {
+    let _hooked = false;
+    function hookUpdateKPI() {
+        if (_hooked) return;
+        const orig = window.updateKPI;
+        if (typeof orig !== 'function') return;
+        _hooked = true;
+        window.updateKPI = function(students) {
+            orig(students);
+            _updateBcCompleteness(students);
+        };
+    }
+    // Try hooking immediately, then on DOMContentLoaded
+    hookUpdateKPI();
+    document.addEventListener('DOMContentLoaded', hookUpdateKPI);
+    // Fallback polling
+    const interval = setInterval(() => {
+        hookUpdateKPI();
+        if (_hooked) clearInterval(interval);
+    }, 500);
+})();
+
+function _updateBcCompleteness(students) {
+    if (!students || !students.length) return;
+
+    // Update DB size monitor too
+    window._updateDbSizeMonitor && window._updateDbSizeMonitor(students);
+
+    const total   = students.length;
+    const withBC  = students.filter(s => s.birthCertBase64 || s._pdfHref).length;
+    const bcPct   = Math.round(withBC / total * 100);
+    const color   = bcPct >= 80 ? 'var(--success)' : bcPct >= 40 ? '#d97706' : 'var(--danger)';
+
+    // Find the PDF KPI card and inject/update a birth cert line
+    let el = document.getElementById('kpi-bc-completeness');
+    if (!el) {
+        // Try to insert after the PDF KPI card sub-value
+        const pdfCard = document.getElementById('kpi-card-pdf');
+        if (!pdfCard) return;
+        // Find a good anchor inside
+        const sub = pdfCard.querySelector('.kpi-sub') || pdfCard.querySelector('[class*="kpi-sub"]');
+        if (sub) {
+            el = document.createElement('div');
+            el.id = 'kpi-bc-completeness';
+            el.style.cssText = `margin-top:.3rem;font-size:.72rem;font-weight:700;display:flex;align-items:center;gap:.3rem;`;
+            sub.parentNode.insertBefore(el, sub.nextSibling);
+        }
+    }
+    if (!el) return;
+    el.innerHTML = `<span style="color:${color};">▣ ${bcPct}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${withBC}/${total})</span>`;
+}
+
+// Expose so external code can call
+window._updateBcCompleteness = _updateBcCompleteness;
+
+// ── FEATURE #4: Bulk Export Birth Certs as ZIP ─────────────────
+// Uses JSZip (loaded lazily from CDN) — falls back gracefully.
+window._bulkExportZip = async function() {
+    const students = window._studentsData || [];
+    const withBC   = students.filter(s => s.birthCertBase64);
+    if (!withBC.length) {
+        showToast('No birth certificates found in the database to export.', 'danger');
+        return;
+    }
+
+    const result = await openModal({
+        icon: 'info',
+        title: 'Export Birth Certificates as ZIP',
+        text: `${withBC.length} birth certificates will be bundled into a single ZIP file. This may take a moment.`,
+        showCancelButton: true,
+        confirmButtonText: `Export ${withBC.length} Certs`,
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: 'primary'
+    });
+    if (!result.isConfirmed) return;
+
+    // Show progress modal
+    const progModal = document.getElementById('zip-progress-modal');
+    const progFill  = document.getElementById('zip-progress-fill');
+    const progLabel = document.getElementById('zip-progress-label');
+    const progSub   = document.getElementById('zip-progress-sub');
+    if (progModal) progModal.style.display = 'flex';
+
+    try {
+        // Lazy-load JSZip
+        if (!window.JSZip) {
+            progLabel.textContent = 'Loading ZIP library…';
+            await new Promise((res, rej) => {
+                const s = document.createElement('script');
+                s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js';
+                s.onload = res; s.onerror = () => rej(new Error('Could not load JSZip'));
+                document.head.appendChild(s);
+            });
+        }
+
+        const zip = new window.JSZip();
+        const folder = zip.folder('birth_certificates');
+
+        for (let i = 0; i < withBC.length; i++) {
+            const s  = withBC[i];
+            const pct = Math.round((i / withBC.length) * 85);
+            progFill.style.width  = pct + '%';
+            progLabel.textContent = `Adding ${i+1} of ${withBC.length}…`;
+            progSub.textContent   = s['Official Student Name'] || s['Assessment No'] || s.id;
+
+            const b64str = s.birthCertBase64;
+            if (!b64str) continue;
+            // Strip data URL prefix
+            const data = b64str.includes(',') ? b64str.split(',')[1] : b64str;
+            const name = s.birthCertName
+                || `${(s['Official Student Name'] || s['Assessment No'] || s.id).replace(/[\/\\:*?"<>|]/g,'_')}.pdf`;
+            // Ensure unique names
+            const gradePrefix = s.Grade ? `${s.Grade.replace(/[\/\\:*?"<>|]/g,'_')}/` : '';
+            folder.file(gradePrefix + name, data, { base64: true });
+        }
+
+        progFill.style.width  = '90%';
+        progLabel.textContent = 'Generating ZIP…';
+        progSub.textContent   = '';
+
+        const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 6 } });
+
+        progFill.style.width  = '100%';
+        progLabel.textContent = 'Done!';
+
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href    = url;
+        a.download = `birth_certificates_${new Date().toISOString().split('T')[0]}.zip`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+        setTimeout(() => {
+            if (progModal) progModal.style.display = 'none';
+        }, 1000);
+
+        showToast(`ZIP with ${withBC.length} certificates downloaded!`, 'success');
+
+    } catch(err) {
+        if (progModal) progModal.style.display = 'none';
+        showToast('ZIP export failed: ' + err.message, 'danger');
+        console.error('ZIP export error:', err);
+    }
+};
+
+// ── FEATURE #2: Multi-page Camera Capture ──────────────────────
+(function() {
+    const modal      = document.getElementById('multipage-cam-modal');
+    const grid       = document.getElementById('mpcam-pages-grid');
+    const countEl    = document.getElementById('mpcam-page-count');
+    const buildBtn   = document.getElementById('mpcam-build-btn');
+    const closeBtn   = document.getElementById('mpcam-close-btn');
+    const cancelBtn  = document.getElementById('mpcam-cancel-btn');
+    const addPageBtn = document.getElementById('mpcam-add-page-btn');
+    const pageInput  = document.getElementById('mpcam-page-input');
+
+    if (!modal) return;
+
+    let _pages = [];           // array of { dataUrl, width, height }
+    let _resolveCapture = null;
+
+    function updateUI() {
+        countEl.textContent = `${_pages.length} page${_pages.length!==1?'s':''} captured`;
+        buildBtn.disabled   = _pages.length === 0;
+        // Render thumbnails
+        grid.innerHTML = '';
+        _pages.forEach((pg, i) => {
+            const wrap = document.createElement('div');
+            wrap.style.cssText = 'position:relative;border-radius:8px;overflow:hidden;border:2px solid var(--border);background:var(--surface2);';
+            wrap.innerHTML = `
+                <img src="${pg.dataUrl}" style="width:100%;height:100px;object-fit:cover;display:block;">
+                <div style="position:absolute;top:0;left:0;background:var(--navy);color:#fff;font-size:.65rem;font-weight:700;padding:.15rem .4rem;border-bottom-right-radius:5px;">Pg ${i+1}</div>
+                <button data-idx="${i}" class="mpcam-del-btn" title="Remove this page" style="position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;background:var(--danger);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#fff;">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>`;
+            grid.appendChild(wrap);
+        });
+        // Delete buttons
+        grid.querySelectorAll('.mpcam-del-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                _pages.splice(parseInt(btn.dataset.idx), 1);
+                updateUI();
+            });
+        });
+    }
+
+    function openMultiCamModal(studentName) {
+        _pages = [];
+        updateUI();
+        modal.style.display = 'flex';
+        return new Promise(res => { _resolveCapture = res; });
+    }
+
+    function closeModal_(result) {
+        modal.style.display = 'none';
+        if (_resolveCapture) { _resolveCapture(result); _resolveCapture = null; }
+    }
+
+    closeBtn.addEventListener('click',  () => closeModal_(null));
+    cancelBtn.addEventListener('click', () => closeModal_(null));
+
+    addPageBtn.addEventListener('click', () => pageInput.click());
+
+    pageInput.addEventListener('change', () => {
+        const file = pageInput.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            const img = new Image();
+            img.onload = () => {
+                _pages.push({ dataUrl: ev.target.result, width: img.naturalWidth, height: img.naturalHeight });
+                updateUI();
+            };
+            img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+        pageInput.value = '';
+    });
+
+    buildBtn.addEventListener('click', async () => {
+        if (!_pages.length) return;
+        buildBtn.disabled = true;
+        buildBtn.textContent = 'Building…';
+        try {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+            const pw  = doc.internal.pageSize.getWidth();
+            const ph  = doc.internal.pageSize.getHeight();
+            const margin = 5;
+            const maxW = pw - margin*2, maxH = ph - margin*2;
+
+            _pages.forEach((pg, i) => {
+                if (i > 0) doc.addPage('a4', pg.height >= pg.width ? 'portrait' : 'landscape');
+                const ratio = Math.min(maxW / pg.width, maxH / pg.height);
+                const dw = pg.width * ratio, dh = pg.height * ratio;
+                const fmt = pg.dataUrl.startsWith('data:image/png') ? 'PNG' : 'JPEG';
+                doc.addImage(pg.dataUrl, fmt,
+                    margin + (maxW-dw)/2, margin + (maxH-dh)/2, dw, dh, '', 'FAST');
+            });
+
+            const pdfBase64 = 'data:application/pdf;base64,' + btoa(doc.output());
+            closeModal_(pdfBase64);
+        } catch(e) {
+            showToast('Could not build PDF: ' + e.message, 'danger');
+            buildBtn.disabled   = false;
+            buildBtn.textContent = 'Build PDF & Save';
+        }
+    });
+
+    // Expose for bc-camera-btn "multi" mode
+    window._openMultiPageCapture = openMultiCamModal;
+})();
+
+// ── Wire multi-page camera button on drawer open ─────────────
+// Override the bc-camera-btn to offer single vs multi-page.
+document.addEventListener('click', async (e) => {
+    const btn = e.target.closest('#bc-camera-btn');
+    if (!btn) return;
+
+    const drawerBody = document.getElementById('drawer-body');
+    if (!drawerBody || !drawerBody.contains(btn)) return;
+
+    // Stop the original handler from also triggering
+    e.stopImmediatePropagation();
+
+    // Offer choice via window.openModal (the app's SweetAlert wrapper)
+    const r = await window.openModal({
+        icon: 'info',
+        title: 'Capture Certificate',
+        text: 'How many pages does the birth certificate have?',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Single Page',
+        denyButtonText: 'Multi-Page (2+)',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: 'primary'
+    });
+
+    if (r.isCancelled) return;
+
+    if (r.isDenied) {
+        // Multi-page flow
+        const pdfBase64 = await window._openMultiPageCapture();
+        if (!pdfBase64) return;
+
+        // Find the student ID from drawerCurrentId & save
+        const drawerCurrentId = window._drawerCurrentId || null;
+        if (!drawerCurrentId) {
+            showToast('Could not identify current student', 'danger');
+            return;
+        }
+        const students  = window._studentsData || [];
+        const student   = students.find(s => s.id === drawerCurrentId);
+        const filename  = `${(student?.['Official Student Name'] || 'birth_cert').replace(/\s+/g,'_')}_multipage.pdf`;
+
+        // Find the bcProgressWrap / bcProgressFill / bcProgressLabel in drawer
+        const bcProgressWrap  = drawerBody.querySelector('#bc-progress-wrap');
+        const bcProgressFill  = drawerBody.querySelector('#bc-progress-fill');
+        const bcProgressLabel = drawerBody.querySelector('#bc-progress-label');
+        const bcUploadBtn     = drawerBody.querySelector('#bc-upload-btn');
+        const bcCameraBtn2    = drawerBody.querySelector('#bc-camera-btn');
+
+        if (bcUploadBtn) bcUploadBtn.disabled = true;
+        if (bcCameraBtn2) bcCameraBtn2.disabled = true;
+        if (bcProgressWrap) { bcProgressWrap.style.display = 'block'; bcProgressFill.style.width = '40%'; bcProgressLabel.textContent = 'Saving…'; }
+
+        // Check size
+        await window._checkPdfSizeBeforeSave(pdfBase64, filename, async (b64Checked, forcedB64, forcedFn) => {
+            const final = forcedB64 || pdfBase64;
+            const fnFinal = forcedFn || filename;
+
+            // Call window._saveBcBase64 if available, else do inline
+            if (typeof window._saveBcBase64 === 'function') {
+                await window._saveBcBase64(final, fnFinal);
+            } else {
+                // Inline save
+                const { ref, update } = window._fbSDK || {};
+                if (!ref || !update) { showToast('Firebase not ready', 'danger'); return; }
+                const dbRef = window._firebaseDB;
+                const sanitizedAppId = window._sanitizedAppId;
+                const studentRef = ref(dbRef, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
+                try {
+                    await update(studentRef, { birthCertBase64: final, birthCertName: fnFinal });
+                    const idx = (window._studentsData||[]).findIndex(s=>s.id===drawerCurrentId);
+                    if (idx !== -1) { window._studentsData[idx].birthCertBase64 = final; window._studentsData[idx].birthCertName = fnFinal; window._studentsData[idx]._pdfHref = final; }
+                    if (bcProgressFill) bcProgressFill.style.width = '100%';
+                    if (bcProgressLabel) bcProgressLabel.textContent = 'Saved ✓';
+                    setTimeout(() => { if (bcProgressWrap) bcProgressWrap.style.display='none'; }, 800);
+                    if (bcUploadBtn) bcUploadBtn.disabled = false;
+                    if (bcCameraBtn2) bcCameraBtn2.disabled = false;
+                    showToast('Multi-page certificate saved!', 'success');
+                    if (typeof window.updateKPI === 'function') window.updateKPI(window._studentsData||[]);
+                } catch(err) {
+                    if (bcProgressWrap) bcProgressWrap.style.display='none';
+                    if (bcUploadBtn) bcUploadBtn.disabled = false;
+                    if (bcCameraBtn2) bcCameraBtn2.disabled = false;
+                    showToast('Error: ' + err.message, 'danger');
+                }
+            }
+        });
+        return;
+    }
+    // Single-page: let the original bcCameraInp flow handle it
+    const bcCameraInp = drawerBody.querySelector('#bc-camera-input');
+    if (bcCameraInp) bcCameraInp.click();
+}, true); // capture phase so we intercept before existing listener
+
+// ── Expose drawerCurrentId globally for feature #2 ───────────
+(function() {
+    let _hooked = false;
+    function hookDrawer() {
+        if (_hooked) return;
+        const orig = window._editRow;
+        if (typeof orig !== 'function') return;
+        _hooked = true;
+        window._editRow = function(id) {
+            window._drawerCurrentId = id;
+            return orig.apply(this, arguments);
+        };
+    }
+    hookDrawer();
+    const int = setInterval(() => { hookDrawer(); if (_hooked) clearInterval(int); }, 500);
+})();
+
+// ── Feature #1: also intercept file upload via hook ──────────
+// We patch the bcFileInp event by listening globally on the upload input.
+document.addEventListener('change', async function(e) {
+    const inp = e.target;
+    if (inp.id !== 'bc-file-input') return;
+    // Stop the original event from continuing to the original handler
+    // (We can't easily do this after-the-fact, but we can augment the flow
+    // by hooking into the save step via the existing size check.)
+    // The existing handler calls saveBcBase64 which we can intercept
+    // via _checkPdfSizeBeforeSave at the actual upload time.
+    // The check is already wired via _checkPdfSizeBeforeSave called in the
+    // saveBcBase64 closure's flow.
+    // For now: the drawerBody's bcFileInp change handler calls saveBcBase64 directly.
+    // We intercept by overriding the bc-file-input BEFORE the drawer wires it.
+    // This is done by the capture listener above in bc-camera-btn handler.
+    // The simplest fix: re-read the file and show warning AFTER the existing handler runs.
+    // We use a 0-delay check on the file.
+    const file = inp.files[0];
+    if (!file || file.type !== 'application/pdf') return;
+    const bytes = file.size;
+    const MB    = bytes / (1024*1024);
+    const WARN_MB = 2;
+    if (MB < WARN_MB) return;
+    // The upload has already been triggered — we show an informational note only.
+    setTimeout(() => {
+        showToast(`📄 PDF is ${MB.toFixed(1)} MB — stored base64 uses ~${(MB*1.33).toFixed(1)} MB of DB quota.`, 'info', 5000);
+    }, 200);
+}, false);
+
+// Overlay the bc-file-input flow to add size check before save:
+// We wrap saveBcBase64 in the edit drawer by overriding the "change" event
+// at capture phase (runs before drawer's listener).
+document.addEventListener('change', async function(ev) {
+    const inp = ev.target;
+    if (inp.id !== 'bc-file-input') return;
+    const file = inp.files[0];
+    if (!file || file.type !== 'application/pdf') return;
+    const MB = file.size / (1024*1024);
+    if (MB < 2) return; // no warning needed
+    // We already notified via toast above; optionally could block here.
+}, true);
+
+</script>
 </body>
 </html>
