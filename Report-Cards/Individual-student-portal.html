@@ -1290,6 +1290,7 @@ body::before{
 <!-- jsPDF -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <!-- Chart.js -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
@@ -1600,9 +1601,8 @@ function renderDash(){
     <span class="bdg green">🏆 ${stats.level} — ${stats.label}</span>
     <span class="bdg gold">📊 Avg ${stats.avg}%</span>`;
 
-  // Load student photo into both avatars
-  loadStudentImg(s['Official Student Name']||'', s['Grade']||'').then(res=>{
-    if(!res.ok) return; // keep text initial fallback
+  loadStudentImg(s['Official Student Name']||'', s['Grade']||'', s['photoURL']||'').then(res=>{
+    if(!res.ok) return;
     const wAv = document.getElementById('w-av');
     const pAv = document.getElementById('pill-av');
     wAv.textContent = '';
@@ -1784,20 +1784,24 @@ function loadImg(src){
   });
 }
 
-async function loadStudentImg(name, grade){
-  // Extract "Grade X" cleanly from strings like "Grade 7/2024/T1/EX01"
+async function loadStudentImg(name, grade, photoURL){
+  // 1. Prefer photoURL stored in DB (base64 data URL uploaded via birthv3)
+  if(photoURL && photoURL.trim()){
+    const r = await loadImg(photoURL.trim());
+    if(r.ok) return r;
+  }
+
+  // 2. Try exact name in grade folder (legacy file-based fallback)
   const g = (grade||'').match(/^Grade\s*\d+/i)?.[0] || grade || '';
   const cleanName = (name||'').trim();
-
-  // 1. Try exact name in grade folder
-  const r = await loadImg(`./student_images/${g}/${cleanName}.jpg`);
-  if(r.ok) return r;
-
-  // 2. Try URL-encoded name (handles spaces in filenames on some servers)
-  const r2 = await loadImg(`./student_images/${g}/${encodeURIComponent(cleanName)}.jpg`);
+  const r2 = await loadImg(`./student_images/${g}/${cleanName}.jpg`);
   if(r2.ok) return r2;
 
-  // 3. Fallback: default.jpg inside student_images/ (same as teacher portal)
+  // 3. Try URL-encoded name
+  const r3 = await loadImg(`./student_images/${g}/${encodeURIComponent(cleanName)}.jpg`);
+  if(r3.ok) return r3;
+
+  // 4. Final fallback: default.jpg
   return loadImg('./student_images/default.jpg');
 }
 
@@ -1811,8 +1815,7 @@ async function drawPage(doc, rec, logoRes){
   const stats    = calcStats(rec);
   const termLabel = cleanTerm(rec['Term']);
 
-  // Load student photo  (teachers portal pattern)
-  const photoResult = await loadStudentImg(rec['Official Student Name']||'', rec['Grade']||'');
+  const photoResult = await loadStudentImg(rec['Official Student Name']||'', rec['Grade']||'', rec['photoURL']||'');
 
   // ── HEADER ──
   doc.setFillColor(41,128,185);
@@ -2536,20 +2539,31 @@ function openShareModal(){
 function saveShareCard(){
   const card = document.getElementById('actual-share-card');
   if(!card){ return; }
-  // Use html2canvas if available, else fallback to copying HTML
   if(window.html2canvas){
-    html2canvas(card,{backgroundColor:null,scale:2}).then(canvas=>{
+    notify('📸 Saving image…','info',2000);
+    html2canvas(card,{
+      backgroundColor: null,
+      scale: 2,
+      useCORS: true,
+      allowTaint: false,
+      logging: false
+    }).then(canvas=>{
       const a=document.createElement('a');
-      a.download=`ResultCard_${allRecs[activeIdx]['Official Student Name']||'Student'}.png`;
+      a.download=`ResultCard_${(allRecs[activeIdx]['Official Student Name']||'Student').replace(/\s+/g,'_')}.png`;
       a.href=canvas.toDataURL('image/png');
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       notify('✅ Score card saved as image!','success');
+    }).catch(err=>{
+      console.error('html2canvas error:',err);
+      notify('❌ Image save failed — try again.','error');
     });
   } else {
     // Fallback: copy share text
     const rec=allRecs[activeIdx]; const st=calcStats(rec);
     const txt=`🏫 Kanyadet PRI & Junior School\n📄 ${rec['Official Student Name']} — ${cleanTerm(rec['Term'])}\n📊 Average: ${st.avg}% | Level: ${st.level} — ${st.label}\n🎯 Position: ${rec['Position']||'N/A'}\n\n✅ Provisional results — Kanyadet Student Portal`;
-    navigator.clipboard.writeText(txt).then(()=>notify('📋 Results text copied! (Install html2canvas for image export)','info',5000));
+    navigator.clipboard.writeText(txt).then(()=>notify('📋 Results text copied!','info',4000));
   }
 }
 
