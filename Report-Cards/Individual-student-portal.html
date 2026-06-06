@@ -1438,6 +1438,7 @@ window.addEventListener('load', ()=>{
       const app = getApps().length===0 ? initializeApp(FB_CONFIG) : getApps()[0];
       db = getDatabase(app);
       storage = getStorage(app);
+      _subscribeDbPhotos(db); // start live photo map from artifacts DB
     }catch(e){
       document.getElementById('loader').style.display='none';
       showErr('Firebase init error: '+e.message); return;
@@ -1445,21 +1446,8 @@ window.addEventListener('load', ()=>{
     document.getElementById('loader').style.display='none';
     const saved = sessionStorage.getItem('kss_recs');
     if(saved){
-      try{
-        allRecs=JSON.parse(saved); activeIdx=allRecs.length-1;
-        // Re-fetch photoURL async then render
-        (async()=>{
-          if(allRecs.length && !allRecs[0].photoURL){
-            try{
-              const {ref,get} = window._fb;
-              const photoSnap = await get(ref(db,`artifacts/default-app-id/students/${allRecs[0].id}`));
-              const photoRec = photoSnap.val();
-              if(photoRec && photoRec.photoURL) allRecs.forEach(r=>{ r.photoURL=photoRec.photoURL; });
-            }catch(e){}
-          }
-          renderDash();
-        })();
-      }catch(e){ sessionStorage.removeItem('kss_recs'); }
+      try{ allRecs=JSON.parse(saved); activeIdx=allRecs.length-1; renderDash(); }
+      catch(e){ sessionStorage.removeItem('kss_recs'); }
     }
   });
 });
@@ -1561,17 +1549,6 @@ async function doLogin(){
 
     // sort oldest → newest
     found.sort((a,b)=>String(a['Term']||'').localeCompare(String(b['Term']||'')));
-
-    // Fetch photoURL from artifacts path (where birthv3 stores it) — match by Firebase key
-    try{
-      const {ref,get} = window._fb;
-      const photoSnap = await get(ref(db, `artifacts/default-app-id/students/${found[0].id}`));
-      const photoRec = photoSnap.val();
-      if(photoRec && photoRec.photoURL){
-        found.forEach(r=>{ r.photoURL = photoRec.photoURL; });
-      }
-    }catch(e){ /* silent fallback */ }
-
     allRecs  = found;
     activeIdx = found.length-1;
     sessionStorage.setItem('kss_recs', JSON.stringify(found));
@@ -1631,16 +1608,10 @@ function renderDash(){
     <span class="bdg green">🏆 ${stats.level} — ${stats.label}</span>
     <span class="bdg gold">📊 Avg ${stats.avg}%</span>`;
 
-  loadStudentImg(s['Official Student Name']||'', s['Grade']||'', s['photoURL']||'').then(res=>{
-    if(!res.ok) return;
-    const wAv = document.getElementById('w-av');
-    const pAv = document.getElementById('pill-av');
-    wAv.textContent = '';
-    pAv.textContent = '';
-    const mkImg = ()=>{ const i=new Image(); i.src=res.img.src; i.alt=first; return i; };
-    wAv.appendChild(mkImg());
-    pAv.appendChild(mkImg());
-  });
+  // Load student photo into both avatars using the live photo map
+  const studentId = s.id || '';
+  loadPhotoInto(document.getElementById('w-av'),   s['Official Student Name']||'', studentId);
+  loadPhotoInto(document.getElementById('pill-av'), s['Official Student Name']||'', studentId);
 
   renderTermTabs();
   renderStats(s, stats);
@@ -1803,6 +1774,76 @@ window.overlayClick = overlayClick;
 // ═══════════════════════════════════════════════════
 //  JSPDF — IMAGE LOADERS
 // ═══════════════════════════════════════════════════
+// ── Photo system (ported from Results.html) ──────────────────────────────
+const _dbPhotoMap     = {};   // normalisedName → photoURL
+const _dbPhotoMapById = {};   // firebaseKey / 'adm_'+assessNo → photoURL
+let   _dbPhotoReady   = false;
+
+function _subscribeDbPhotos(dbInst){
+  const {ref: fbRef, onValue} = window._fb;
+  const photosRef = fbRef(dbInst, `artifacts/default-app-id/students`);
+  onValue(photosRef, snap=>{
+    const data = snap.val() || {};
+    Object.keys(_dbPhotoMap).forEach(k=>delete _dbPhotoMap[k]);
+    Object.keys(_dbPhotoMapById).forEach(k=>delete _dbPhotoMapById[k]);
+    for(const [key, val] of Object.entries(data)){
+      if(val && val.photoURL){
+        const normName = (val['Official Student Name']||'').toLowerCase().trim();
+        if(normName) _dbPhotoMap[normName] = val.photoURL;
+        _dbPhotoMapById[key] = val.photoURL;
+        if(val['Assessment No'])
+          _dbPhotoMapById['adm_'+val['Assessment No']] = val.photoURL;
+      }
+    }
+    _dbPhotoReady = true;
+    // Live-refresh all rendered avatars already on screen
+    document.querySelectorAll('[data-photo-name]').forEach(el=>{
+      const n   = el.getAttribute('data-photo-name');
+      const sid = el.getAttribute('data-photo-id')||'';
+      const url = (sid && _dbPhotoMapById[sid]) || _dbPhotoMap[n] || '';
+      if(url) _applyPhoto(el, url);
+    });
+  });
+}
+
+function _applyPhoto(el, src){
+  if(!el || !src) return;
+  if(el.tagName==='IMG'){ if(el.src!==src) el.src=src; return; }
+  let img = el.querySelector('img');
+  if(!img){
+    img = document.createElement('img');
+    img.alt = el.getAttribute('data-photo-name')||'';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;';
+    el.textContent = '';
+    el.appendChild(img);
+  }
+  if(img.src!==src) img.src=src;
+}
+
+async function resolveStudentPhoto(name, studentId){
+  const normName = (name||'').toLowerCase().trim();
+  if(_dbPhotoReady){
+    const url = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
+    if(url) return url;
+  }
+  if(!_dbPhotoReady){
+    await new Promise(r=>setTimeout(r,600));
+    const url2 = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
+    if(url2) return url2;
+  }
+  return null; // keep initials fallback
+}
+
+function loadPhotoInto(el, name, studentId){
+  if(!el) return;
+  el.setAttribute('data-photo-name', (name||'').toLowerCase().trim());
+  el.setAttribute('data-photo-id',   studentId||'');
+  resolveStudentPhoto(name, studentId).then(src=>{
+    if(src && document.contains(el)) _applyPhoto(el, src);
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────
+
 function loadImg(src){
   return new Promise(resolve=>{
     const img = new Image();
@@ -1815,20 +1856,16 @@ function loadImg(src){
 }
 
 async function loadStudentImg(name, grade, photoURL){
-  // 1. Prefer photoURL stored in DB (base64 data URL uploaded via birthv3)
   if(photoURL && photoURL.trim()){
     const r = await loadImg(photoURL.trim());
     if(r.ok) return r;
   }
-  // 2. Try exact name in grade folder (legacy file-based fallback)
   const g = (grade||'').match(/^Grade\s*\d+/i)?.[0] || grade || '';
   const cleanName = (name||'').trim();
   const r2 = await loadImg(`./student_images/${g}/${cleanName}.jpg`);
   if(r2.ok) return r2;
-  // 3. URL-encoded variant
   const r3 = await loadImg(`./student_images/${g}/${encodeURIComponent(cleanName)}.jpg`);
   if(r3.ok) return r3;
-  // 4. Default fallback
   return loadImg('./student_images/default.jpg');
 }
 
@@ -2578,18 +2615,11 @@ function openShareModal(){
       </div>
     </div>`;
 
-  // Async: load student photo into the placeholder
-  loadStudentImg(studentName, rec['Grade']||'', photoURL).then(res=>{
+  // Async: load student photo into the placeholder using live photo map
+  resolveStudentPhoto(studentName, rec.id||'').then(src=>{
     const el = document.getElementById(photoId);
-    if(!el) return;
-    if(res.ok){
-      el.innerHTML='';
-      const img = new Image();
-      img.src = res.img.src;
-      img.style.cssText='width:100%;height:100%;object-fit:cover;';
-      el.appendChild(img);
-    }
-    // else keep initial letter
+    if(!el || !src) return;
+    _applyPhoto(el, src);
   });
 
   document.getElementById('share-modal').classList.add('on');
