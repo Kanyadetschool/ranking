@@ -916,7 +916,7 @@ async function generateStudentReportCard(student, includeWatermark = true) {
     doc.setFont(undefined, 'normal'); doc.setFontSize(9);
     const studentInfo = [
         [`Name: ${student['Official Student Name'] || 'N/A'}`, `Assessment No: ${student['Assessment No'] || 'N/A'}`],
-        [`UPI: ${student['UPI'] || 'N/A'}`, `Grade: ${student['Grade'] || 'N/A'}`],
+        [`UPI: ${student['UPI'] || 'N/A'}`, ` ${student['Grade'] || 'N/A'}`],
         [`Gender: ${student['Gender'] || 'N/A'}`, `Class: ${student['Class'] || 'N/A'}`]
     ];
     let infoY = yPos + 16;
@@ -1543,7 +1543,7 @@ function _drawCompactReportPage(doc, student, stats, studentImageData, logoRes, 
     doc.setFont(undefined, 'normal'); doc.setFontSize(9);
     const studentInfo = [
         [`Name: ${student['Official Student Name'] || 'N/A'}`, `Assessment No: ${student['Assessment No'] || 'N/A'}`],
-        [`UPI: ${student['UPI'] || 'N/A'}`, `Grade: ${student['Grade'] || 'N/A'}`],
+        [`UPI: ${student['UPI'] || 'N/A'}`, ` ${student['Grade'] || 'N/A'}`],
         [`Gender: ${student['Gender'] || 'N/A'}`, `Class: ${student['Class'] || 'N/A'}`]
     ];
     let infoY = yPos + 16;
