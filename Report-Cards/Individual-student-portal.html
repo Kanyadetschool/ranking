@@ -1779,32 +1779,7 @@ const _dbPhotoMap     = {};   // normalisedName → photoURL
 const _dbPhotoMapById = {};   // firebaseKey / 'adm_'+assessNo → photoURL
 let   _dbPhotoReady   = false;
 
-function _subscribeDbPhotos(dbInst){
-  const {ref: fbRef, onValue} = window._fb;
-  const photosRef = fbRef(dbInst, `artifacts/default-app-id/students`);
-  onValue(photosRef, snap=>{
-    const data = snap.val() || {};
-    Object.keys(_dbPhotoMap).forEach(k=>delete _dbPhotoMap[k]);
-    Object.keys(_dbPhotoMapById).forEach(k=>delete _dbPhotoMapById[k]);
-    for(const [key, val] of Object.entries(data)){
-      if(val && val.photoURL){
-        const normName = (val['Official Student Name']||'').toLowerCase().trim();
-        if(normName) _dbPhotoMap[normName] = val.photoURL;
-        _dbPhotoMapById[key] = val.photoURL;
-        if(val['Assessment No'])
-          _dbPhotoMapById['adm_'+val['Assessment No']] = val.photoURL;
-      }
-    }
-    _dbPhotoReady = true;
-    // Live-refresh all rendered avatars already on screen
-    document.querySelectorAll('[data-photo-name]').forEach(el=>{
-      const n   = el.getAttribute('data-photo-name');
-      const sid = el.getAttribute('data-photo-id')||'';
-      const url = (sid && _dbPhotoMapById[sid]) || _dbPhotoMap[n] || '';
-      if(url) _applyPhoto(el, url);
-    });
-  });
-}
+function _subscribeDbPhotos(dbInst){ /* no-op — photos fetched per-student */ }
 
 function _applyPhoto(el, src){
   if(!el || !src) return;
@@ -1812,7 +1787,7 @@ function _applyPhoto(el, src){
   let img = el.querySelector('img');
   if(!img){
     img = document.createElement('img');
-    img.alt = el.getAttribute('data-photo-name')||'';
+    img.alt  = el.getAttribute('data-photo-name')||'';
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;';
     el.textContent = '';
     el.appendChild(img);
@@ -1820,29 +1795,39 @@ function _applyPhoto(el, src){
   if(img.src!==src) img.src=src;
 }
 
-async function resolveStudentPhoto(name, studentId){
+function loadPhotoInto(el, name, studentId){
+  if(!el || !studentId) return;
   const normName = (name||'').toLowerCase().trim();
-  if(_dbPhotoReady){
-    const url = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
-    if(url) return url;
-  }
-  if(!_dbPhotoReady){
-    await new Promise(r=>setTimeout(r,600));
-    const url2 = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
-    if(url2) return url2;
-  }
-  return null; // keep initials fallback
+  el.setAttribute('data-photo-name', normName);
+  el.setAttribute('data-photo-id',   studentId);
+  const {ref: fbRef, get} = window._fb;
+  get(fbRef(db, `artifacts/default-app-id/students/${studentId}`)).then(snap=>{
+    const val = snap.val();
+    if(val && val.photoURL){
+      _dbPhotoMap[normName]      = val.photoURL;
+      _dbPhotoMapById[studentId] = val.photoURL;
+      document.querySelectorAll(`[data-photo-id="${studentId}"]`).forEach(e=>_applyPhoto(e, val.photoURL));
+    }
+  }).catch(()=>{});
 }
 
-function loadPhotoInto(el, name, studentId){
-  if(!el) return;
-  el.setAttribute('data-photo-name', (name||'').toLowerCase().trim());
-  el.setAttribute('data-photo-id',   studentId||'');
-  resolveStudentPhoto(name, studentId).then(src=>{
-    if(src && document.contains(el)) _applyPhoto(el, src);
-  });
+async function resolveStudentPhoto(name, studentId){
+  const normName = (name||'').toLowerCase().trim();
+  const cached = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
+  if(cached) return cached;
+  if(!studentId) return null;
+  try{
+    const {ref: fbRef, get} = window._fb;
+    const snap = await get(fbRef(db, `artifacts/default-app-id/students/${studentId}`));
+    const val = snap.val();
+    if(val && val.photoURL){
+      _dbPhotoMap[normName]      = val.photoURL;
+      _dbPhotoMapById[studentId] = val.photoURL;
+      return val.photoURL;
+    }
+  }catch(e){}
+  return null;
 }
-// ─────────────────────────────────────────────────────────────────────────
 
 function loadImg(src){
   return new Promise(resolve=>{
