@@ -1609,10 +1609,9 @@ function renderDash(){
     <span class="bdg gold">📊 Avg ${stats.avg}%</span>`;
 
   // Load student photo into both avatars using the live photo map
-  const studentId = s.id || '';
-  const assessNo  = String(s['Assessment No']||'').trim();
-  loadPhotoInto(document.getElementById('w-av'),    s['Official Student Name']||'', studentId, assessNo);
-  loadPhotoInto(document.getElementById('pill-av'), s['Official Student Name']||'', studentId, assessNo);
+  const assessNo = String(s['Assessment No']||'').trim();
+  loadPhotoInto(document.getElementById('w-av'),    s['Official Student Name']||'', assessNo);
+  loadPhotoInto(document.getElementById('pill-av'), s['Official Student Name']||'', assessNo);
 
   renderTermTabs();
   renderStats(s, stats);
@@ -1780,7 +1779,29 @@ const _dbPhotoMap     = {};   // normalisedName → photoURL
 const _dbPhotoMapById = {};   // firebaseKey / 'adm_'+assessNo → photoURL
 let   _dbPhotoReady   = false;
 
-function _subscribeDbPhotos(dbInst){ /* no-op — photos fetched per-student */ }
+function _subscribeDbPhotos(dbInst){
+  const {ref: fbRef, onValue} = window._fb;
+  onValue(fbRef(dbInst, 'artifacts/default-app-id/students'), snap=>{
+    const data = snap.val() || {};
+    for(const [key, val] of Object.entries(data)){
+      if(val && val.photoURL){
+        const normName = (val['Official Student Name']||'').toLowerCase().trim();
+        if(normName) _dbPhotoMap[normName] = val.photoURL;
+        _dbPhotoMapById[key] = val.photoURL;
+        if(val['Assessment No'])
+          _dbPhotoMapById['adm_'+String(val['Assessment No']).trim()] = val.photoURL;
+      }
+    }
+    _dbPhotoReady = true;
+    // Refresh any avatars already on screen
+    document.querySelectorAll('[data-photo-name]').forEach(el=>{
+      const n   = el.getAttribute('data-photo-name');
+      const sid = el.getAttribute('data-photo-id')||'';
+      const url = (sid && _dbPhotoMapById['adm_'+sid]) || _dbPhotoMapById[sid] || _dbPhotoMap[n] || '';
+      if(url) _applyPhoto(el, url);
+    });
+  });
+}
 
 function _applyPhoto(el, src){
   if(!el || !src) return;
@@ -1796,62 +1817,36 @@ function _applyPhoto(el, src){
   if(img.src!==src) img.src=src;
 }
 
-function loadPhotoInto(el, name, studentId, assessNo){
+function loadPhotoInto(el, name, assessNo){
   if(!el) return;
   const normName = (name||'').toLowerCase().trim();
+  const key = String(assessNo||'').trim();
   el.setAttribute('data-photo-name', normName);
-  el.setAttribute('data-photo-id',   assessNo||studentId||'');
+  el.setAttribute('data-photo-id',   key);
 
-  // Check cache first
-  const cacheKey = assessNo||studentId||'';
-  if(cacheKey && _dbPhotoMapById[cacheKey]){
-    _applyPhoto(el, _dbPhotoMapById[cacheKey]);
+  // Try cache first
+  const cached = (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName];
+  if(cached){ _applyPhoto(el, cached); return; }
+
+  // DB not ready yet — wait for onValue to fire (it will auto-refresh via querySelectorAll)
+  // Also try directly if we have a key
+  if(key && _dbPhotoReady){
+    // already checked cache, no photo exists
     return;
   }
-  if(normName && _dbPhotoMap[normName]){
-    _applyPhoto(el, _dbPhotoMap[normName]);
-    return;
-  }
-
-  if(!assessNo) return;
-
-  const {ref: fbRef, get, query, orderByChild, equalTo} = window._fb;
-  // Query artifacts by Assessment No — much smaller than full scan
-  get(query(fbRef(db, 'artifacts/default-app-id/students'), orderByChild('Assessment No'), equalTo(assessNo)))
-    .then(snap=>{
-      if(!snap.exists()) return;
-      snap.forEach(child=>{
-        const val = child.val();
-        if(val && val.photoURL){
-          _dbPhotoMap[normName]   = val.photoURL;
-          _dbPhotoMapById[cacheKey] = val.photoURL;
-          document.querySelectorAll(`[data-photo-id="${cacheKey}"]`).forEach(e=>_applyPhoto(e, val.photoURL));
-        }
-      });
-    }).catch(()=>{});
 }
 
-async function resolveStudentPhoto(name, studentId, assessNo){
+async function resolveStudentPhoto(name, assessNo){
   const normName = (name||'').toLowerCase().trim();
-  const cacheKey = assessNo||studentId||'';
-  const cached = (cacheKey && _dbPhotoMapById[cacheKey]) || _dbPhotoMap[normName];
-  if(cached) return cached;
-  if(!assessNo) return null;
-  try{
-    const {ref: fbRef, get, query, orderByChild, equalTo} = window._fb;
-    const snap = await get(query(fbRef(db,'artifacts/default-app-id/students'), orderByChild('Assessment No'), equalTo(assessNo)));
-    if(snap.exists()){
-      let url = null;
-      snap.forEach(child=>{ const v=child.val(); if(v&&v.photoURL) url=v.photoURL; });
-      if(url){
-        _dbPhotoMap[normName]    = url;
-        _dbPhotoMapById[cacheKey] = url;
-        return url;
-      }
-    }
-  }catch(e){}
-  return null;
+  const key = String(assessNo||'').trim();
+  if(_dbPhotoReady){
+    return (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName] || null;
+  }
+  // Wait for subscription to populate
+  await new Promise(r=>setTimeout(r,1500));
+  return (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName] || null;
 }
+
 
 function loadImg(src){
   return new Promise(resolve=>{
@@ -2625,7 +2620,7 @@ function openShareModal(){
     </div>`;
 
   // Async: load student photo into the placeholder using live photo map
-  resolveStudentPhoto(studentName, rec.id||'', String(rec['Assessment No']||'').trim()).then(src=>{
+  resolveStudentPhoto(studentName, String(rec['Assessment No']||'').trim()).then(src=>{
     const el = document.getElementById(photoId);
     if(!el || !src) return;
     _applyPhoto(el, src);
