@@ -7,7 +7,36 @@
     <link rel="stylesheet" href="./css/style.css">
     <link rel="stylesheet" href="./css/toggle.css">
     <link rel="shortcut icon" href="./default001.jpg" type="image/x-icon">
-        <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* ── Student photo avatar in table ── */
+        .stu-av-cell {
+            width: 48px; padding: 4px 6px !important;
+            text-align: center; vertical-align: middle;
+        }
+        .stu-av {
+            width: 40px; height: 40px; border-radius: 50%;
+            object-fit: cover; border: 2px solid #2980b9;
+            background: #e8f4fd;
+            display: block; margin: 0 auto;
+            font-size: 13px; font-weight: 700; color: #2980b9;
+            line-height: 40px; text-align: center;
+            overflow: hidden;
+        }
+        .stu-av img {
+            width: 100%; height: 100%;
+            object-fit: cover; border-radius: 50%;
+            display: block;
+        }
+        /* Report card photo area */
+        .rc-photo-wrap {
+            width: 72px; height: 88px;
+            border: 2px solid #2980b9; border-radius: 6px;
+            overflow: hidden; background: #eaf4fb;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .rc-photo-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    </style>
 
   
 </head>
@@ -176,6 +205,7 @@
                     <thead>
                         <tr>
                         <th>SN</th>
+                        <th>Photo</th>
                         <th>Grade</th>
                             <th>Student Name</th>
                             <th>Assessment No</th>
@@ -237,5 +267,250 @@
 
     <!-- Your Application Script -->
     <script src="./js/Termly-ReportsRmks.js"></script>
+
+    <script>
+    /* ══════════════════════════════════════════════════════════════════════
+       STUDENT PHOTO SYSTEM — DB-first
+       Reads photoURL from artifacts/${sanitizedAppId}/students (birthv3 path)
+       Falls back to ./student_images/{grade}/{name}.jpg
+    ══════════════════════════════════════════════════════════════════════ */
+
+    // ── Shared photo maps (populated by _subscribeDbPhotos) ────────────────
+    window._dbPhotoMap     = {};   // normName  → photoURL/base64
+    window._dbPhotoMapById = {};   // firebaseKey / "adm_"+assessNo → photoURL
+    window._dbPhotoReady   = false;
+
+    // Subscribe to artifacts DB where birthv3 stores student photos
+    window._subscribeDbPhotos = function(dbInst, sanitizedId, refFn, onValueFn) {
+        if (!dbInst || !sanitizedId) return;
+        const photosRef = refFn(dbInst, `artifacts/${sanitizedId}/students`);
+        onValueFn(photosRef, snap => {
+            const data = snap.val() || {};
+            // Clear old entries
+            Object.keys(window._dbPhotoMap).forEach(k => delete window._dbPhotoMap[k]);
+            Object.keys(window._dbPhotoMapById).forEach(k => delete window._dbPhotoMapById[k]);
+            for (const [key, val] of Object.entries(data)) {
+                if (val && val.photoURL) {
+                    const normName = (val['Official Student Name'] || '').toLowerCase().trim();
+                    if (normName) window._dbPhotoMap[normName] = val.photoURL;
+                    window._dbPhotoMapById[key] = val.photoURL;
+                    if (val['Assessment No'])
+                        window._dbPhotoMapById['adm_' + String(val['Assessment No']).trim()] = val.photoURL;
+                }
+            }
+            window._dbPhotoReady = true;
+            // Live-refresh all avatar elements already on screen
+            document.querySelectorAll('[data-stu-photo-name]').forEach(el => {
+                const n   = el.getAttribute('data-stu-photo-name');
+                const sid = el.getAttribute('data-stu-photo-id') || '';
+                const url = (sid && window._dbPhotoMapById[sid]) || window._dbPhotoMap[n] || '';
+                if (url) _applyPhotoToEl(el, url);
+            });
+        });
+    };
+
+    function _applyPhotoToEl(el, src) {
+        if (!el || !src) return;
+        if (el.tagName === 'IMG') { el.src = src; return; }
+        let img = el.querySelector('img');
+        if (!img) {
+            img = document.createElement('img');
+            img.alt = ''; img.loading = 'lazy';
+            el.textContent = '';
+            el.appendChild(img);
+        }
+        if (img.src !== src) img.src = src;
+    }
+
+    // Resolve best photo for a student (DB → local file → default)
+    window._resolveStudentPhoto = async function(name, studentId, grade) {
+        const normName = (name || '').toLowerCase().trim();
+        // 1. DB photo
+        if (window._dbPhotoReady) {
+            const url = (studentId && window._dbPhotoMapById[studentId])
+                     || window._dbPhotoMap[normName];
+            if (url) return url;
+        }
+        // 2. Local file (mirrors existing loadStudentImage paths)
+        const g   = (grade || '').match(/Grade\s*\d+/i)?.[0] || grade || '';
+        const enc = encodeURIComponent((name || '').trim());
+        const paths = [
+            `./student_images/${g}/${(name||'').trim()}.jpg`,
+            `./student_images/${g}/${enc}.jpg`,
+            `./student_images/default.jpg`,
+        ];
+        for (const p of paths) {
+            const ok = await new Promise(res => {
+                const img = new Image();
+                const t = setTimeout(() => res(false), 2000);
+                img.onload  = () => { clearTimeout(t); res(true); };
+                img.onerror = () => { clearTimeout(t); res(false); };
+                img.src = p;
+            });
+            if (ok) return p;
+        }
+        // 3. DB retry after brief wait (not yet ready)
+        if (!window._dbPhotoReady) {
+            await new Promise(r => setTimeout(r, 500));
+            const url2 = (studentId && window._dbPhotoMapById[studentId])
+                      || window._dbPhotoMap[normName];
+            if (url2) return url2;
+        }
+        return './student_images/default.jpg';
+    };
+
+    // Render an avatar wrapper and async-load photo into it
+    window._makeStudentAvatarCell = function(name, studentId, assessNo, grade) {
+        const initials = (name || '?').split(' ').map(w => w[0] || '').join('')
+                          .toUpperCase().slice(0, 2) || '?';
+        const uid  = 'sav_' + Math.random().toString(36).slice(2, 8);
+        const norm = (name || '').toLowerCase().trim();
+        const sid  = studentId || ('adm_' + String(assessNo || '').trim());
+
+        // Schedule async photo load
+        requestAnimationFrame(() => {
+            window._resolveStudentPhoto(name, sid, grade).then(src => {
+                const el = document.getElementById(uid);
+                if (el && src) _applyPhotoToEl(el, src);
+            });
+        });
+
+        return `<div id="${uid}" class="stu-av"
+            data-stu-photo-name="${norm}"
+            data-stu-photo-id="${sid}"
+            title="${name || ''}">${initials}</div>`;
+    };
+
+    // ── Patch loadStudentImage in the external JS to be DB-first ────────────
+    // The external JS defines loadStudentImage as a module-scope function.
+    // We override window.loadStudentImage so the external JS picks it up if
+    // it uses the global, and also patch via _origLoadStudentImage.
+    (function _patchLoadStudentImage() {
+        const MAX_WAIT = 4000;
+        const start    = Date.now();
+        function tryPatch() {
+            if (typeof window.loadStudentImage === 'function') {
+                const _orig = window.loadStudentImage;
+                window.loadStudentImage = async function(studentName, grade, studentId) {
+                    const normName = (studentName || '').toLowerCase().trim();
+                    // 1. DB photo (instant if ready)
+                    if (window._dbPhotoReady) {
+                        const url = (studentId && window._dbPhotoMapById[studentId])
+                                 || window._dbPhotoMap[normName];
+                        if (url) {
+                            // Wrap in a loaded-img result matching the existing {loaded, img} shape
+                            return new Promise(resolve => {
+                                const img = new Image();
+                                img.crossOrigin = 'anonymous';
+                                const t = setTimeout(() => resolve({ loaded: false, img: null }), 3000);
+                                img.onload  = () => { clearTimeout(t); resolve({ loaded: true, img }); };
+                                img.onerror = () => { clearTimeout(t); resolve({ loaded: false, img: null }); };
+                                img.src = url;
+                            });
+                        }
+                    }
+                    // 2. Original local-file lookup
+                    return _orig.apply(this, arguments);
+                };
+                console.log('[PhotoPatch] loadStudentImage upgraded to DB-first.');
+                return;
+            }
+            if (Date.now() - start < MAX_WAIT) setTimeout(tryPatch, 80);
+        }
+        tryPatch();
+    })();
+
+    // ── Patch initializeAppAndSetListeners to wire _subscribeDbPhotos ───────
+    // We wait for the function to exist, then wrap it so after db is ready
+    // we also subscribe to the artifacts photo path.
+    (function _patchInitApp() {
+        const MAX_WAIT = 5000;
+        const start    = Date.now();
+        function tryPatch() {
+            if (typeof window.initializeAppAndSetListeners === 'function') {
+                const _orig = window.initializeAppAndSetListeners;
+                window.initializeAppAndSetListeners = function() {
+                    _orig.apply(this, arguments);
+                    // db and firebaseImports are now set — subscribe to photos
+                    setTimeout(() => {
+                        try {
+                            const { ref: fbRef, onValue: fbOnValue } = window.firebaseImports || {};
+                            const dbInst = window.db;
+                            const sanId  = window.sanitizedAppId;
+                            if (fbRef && fbOnValue && dbInst && sanId) {
+                                window._subscribeDbPhotos(dbInst, sanId, fbRef, fbOnValue);
+                            }
+                        } catch(e) { console.warn('[PhotoPatch] Could not subscribe:', e); }
+                    }, 300);
+                };
+                return;
+            }
+            if (Date.now() - start < MAX_WAIT) setTimeout(tryPatch, 80);
+        }
+        tryPatch();
+    })();
+
+    // ── Patch renderPage (the table row renderer) to insert Photo cell ───────
+    // renderPage is defined in the external JS. We wrap it to inject a photo
+    // cell (index 1, after SN) into every rendered row.
+    (function _patchRenderPage() {
+        const MAX_WAIT = 5000;
+        const start    = Date.now();
+        function tryPatch() {
+            if (typeof window.renderPage === 'function') {
+                const _orig = window.renderPage;
+                window.renderPage = function() {
+                    _orig.apply(this, arguments);
+
+                    // After original renders rows, inject photo cells
+                    const tbody = document.querySelector('#missing-data-table tbody');
+                    if (!tbody) return;
+
+                    tbody.querySelectorAll('tr').forEach(row => {
+                        // Skip "no students found" placeholder rows (has colSpan)
+                        const firstCell = row.cells[0];
+                        if (!firstCell || firstCell.colSpan > 1) return;
+                        // Skip if photo cell already injected (has stu-av-cell class)
+                        if (row.cells[1] && row.cells[1].classList.contains('stu-av-cell')) return;
+
+                        // Gather student info from data attributes on the row
+                        const sid   = row.dataset.studentId || '';
+                        // Name is in cell[2] (after our new photo cell it will shift, but
+                        // before injection it's still in the original positions)
+                        const name  = row.cells[2]?.textContent?.trim() || '';
+                        const grade = row.cells[1]?.textContent?.trim() || '';
+                        const assessNo = row.cells[3]?.textContent?.trim() || '';
+
+                        // Create photo cell and insert at position 1
+                        const photoCell = document.createElement('td');
+                        photoCell.classList.add('stu-av-cell');
+                        photoCell.innerHTML = window._makeStudentAvatarCell(name, sid, assessNo, grade);
+
+                        // Insert after cell[0] (SN)
+                        row.insertBefore(photoCell, row.cells[1]);
+                    });
+                };
+                console.log('[PhotoPatch] renderPage patched with photo cells.');
+                return;
+            }
+            if (Date.now() - start < MAX_WAIT) setTimeout(tryPatch, 80);
+        }
+        tryPatch();
+    })();
+
+    // ── Fix "no students" empty-state colspan (7 → 8 after adding Photo col) ─
+    // MutationObserver catches when the external JS inserts the empty-state row
+    (function _fixColspan() {
+        const tbody = document.querySelector('#missing-data-table tbody');
+        if (!tbody) return;
+        const observer = new MutationObserver(() => {
+            tbody.querySelectorAll('td[colspan="7"]').forEach(td => {
+                td.colSpan = 8;
+            });
+        });
+        observer.observe(tbody, { childList: true, subtree: true });
+    })();
+
+    </script>
 </body>
 </html>
