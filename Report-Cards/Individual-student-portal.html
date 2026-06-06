@@ -1444,7 +1444,27 @@ window.addEventListener('load', ()=>{
     }
     document.getElementById('loader').style.display='none';
     const saved = sessionStorage.getItem('kss_recs');
-    if(saved){ try{ allRecs=JSON.parse(saved); activeIdx=allRecs.length-1; renderDash(); }catch(e){ sessionStorage.removeItem('kss_recs'); } }
+    if(saved){
+      try{
+        allRecs=JSON.parse(saved); activeIdx=allRecs.length-1;
+        // Re-fetch photoURL async then render
+        (async()=>{
+          if(allRecs.length && !allRecs[0].photoURL){
+            const aNo = String(allRecs[0]['Assessment No']||'').trim();
+            try{
+              const {ref,get} = window._fb;
+              const photoSnap = await get(ref(db,'artifacts/default-app-id/students'));
+              const photoData = photoSnap.val();
+              if(photoData){
+                const photoRec = Object.values(photoData).find(r=>String(r['Assessment No']||'').trim()===aNo);
+                if(photoRec && photoRec.photoURL) allRecs.forEach(r=>{ r.photoURL=photoRec.photoURL; });
+              }
+            }catch(e){}
+          }
+          renderDash();
+        })();
+      }catch(e){ sessionStorage.removeItem('kss_recs'); }
+    }
   });
 });
 
@@ -1545,6 +1565,23 @@ async function doLogin(){
 
     // sort oldest → newest
     found.sort((a,b)=>String(a['Term']||'').localeCompare(String(b['Term']||'')));
+
+    // Fetch photoURL from artifacts path (where birthv3 stores it)
+    try{
+      const PHOTO_PATH = 'artifacts/default-app-id/students';
+      const photoSnap = await get(ref(db, PHOTO_PATH));
+      const photoData = photoSnap.val();
+      if(photoData){
+        // Find student record by Assessment No match
+        const photoRec = Object.values(photoData).find(r=>
+          String(r['Assessment No']||'').trim() === aNo
+        );
+        if(photoRec && photoRec.photoURL){
+          found.forEach(r=>{ r.photoURL = photoRec.photoURL; });
+        }
+      }
+    }catch(e){ /* photo fetch failed silently — avatars will use fallback */ }
+
     allRecs  = found;
     activeIdx = found.length-1;
     sessionStorage.setItem('kss_recs', JSON.stringify(found));
