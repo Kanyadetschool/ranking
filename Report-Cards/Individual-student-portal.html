@@ -1780,31 +1780,43 @@ const _dbPhotoMapById = {};   // firebaseKey / 'adm_'+assessNo → photoURL
 let   _dbPhotoReady   = false;
 
 function _subscribeDbPhotos(dbInst){
+  console.log('[PHOTO] _subscribeDbPhotos called, db:', !!dbInst);
   const {ref: fbRef, onValue} = window._fb;
-  onValue(fbRef(dbInst, 'artifacts/default-app-id/students'), snap=>{
+  const path = 'artifacts/default-app-id/students';
+  console.log('[PHOTO] subscribing to:', path);
+  onValue(fbRef(dbInst, path), snap=>{
     const data = snap.val() || {};
+    const keys = Object.keys(data);
+    console.log('[PHOTO] onValue fired, records count:', keys.length);
     for(const [key, val] of Object.entries(data)){
       if(val && val.photoURL){
         const normName = (val['Official Student Name']||'').toLowerCase().trim();
+        const aNo = String(val['Assessment No']||'').trim();
+        console.log('[PHOTO] found photo for:', normName, '| adm:', aNo, '| key:', key, '| photoURL length:', val.photoURL.length);
         if(normName) _dbPhotoMap[normName] = val.photoURL;
         _dbPhotoMapById[key] = val.photoURL;
-        if(val['Assessment No'])
-          _dbPhotoMapById['adm_'+String(val['Assessment No']).trim()] = val.photoURL;
+        if(aNo) _dbPhotoMapById['adm_'+aNo] = val.photoURL;
       }
     }
     _dbPhotoReady = true;
+    console.log('[PHOTO] map ready. _dbPhotoMap keys:', Object.keys(_dbPhotoMap));
+    console.log('[PHOTO] _dbPhotoMapById keys:', Object.keys(_dbPhotoMapById));
     // Refresh any avatars already on screen
     document.querySelectorAll('[data-photo-name]').forEach(el=>{
       const n   = el.getAttribute('data-photo-name');
       const sid = el.getAttribute('data-photo-id')||'';
-      const url = (sid && _dbPhotoMapById['adm_'+sid]) || _dbPhotoMapById[sid] || _dbPhotoMap[n] || '';
+      const url = (sid && (_dbPhotoMapById['adm_'+sid] || _dbPhotoMapById[sid])) || _dbPhotoMap[n] || '';
+      console.log('[PHOTO] refreshing el data-photo-name='+n+' data-photo-id='+sid+' url found:', !!url);
       if(url) _applyPhoto(el, url);
     });
+  }, err=>{
+    console.error('[PHOTO] onValue error:', err);
   });
 }
 
 function _applyPhoto(el, src){
   if(!el || !src) return;
+  console.log('[PHOTO] _applyPhoto, el.id:', el.id||el.className, 'src length:', src.length);
   if(el.tagName==='IMG'){ if(el.src!==src) el.src=src; return; }
   let img = el.querySelector('img');
   if(!img){
@@ -1821,30 +1833,28 @@ function loadPhotoInto(el, name, assessNo){
   if(!el) return;
   const normName = (name||'').toLowerCase().trim();
   const key = String(assessNo||'').trim();
+  console.log('[PHOTO] loadPhotoInto name:', normName, 'assessNo:', key);
   el.setAttribute('data-photo-name', normName);
   el.setAttribute('data-photo-id',   key);
 
-  // Try cache first
   const cached = (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName];
+  console.log('[PHOTO] cache hit:', !!cached, '| _dbPhotoReady:', _dbPhotoReady);
   if(cached){ _applyPhoto(el, cached); return; }
-
-  // DB not ready yet — wait for onValue to fire (it will auto-refresh via querySelectorAll)
-  // Also try directly if we have a key
-  if(key && _dbPhotoReady){
-    // already checked cache, no photo exists
-    return;
-  }
 }
 
 async function resolveStudentPhoto(name, assessNo){
   const normName = (name||'').toLowerCase().trim();
   const key = String(assessNo||'').trim();
+  console.log('[PHOTO] resolveStudentPhoto name:', normName, 'assessNo:', key, '_dbPhotoReady:', _dbPhotoReady);
   if(_dbPhotoReady){
-    return (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName] || null;
+    const url = (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName] || null;
+    console.log('[PHOTO] resolved (ready):', !!url);
+    return url;
   }
-  // Wait for subscription to populate
   await new Promise(r=>setTimeout(r,1500));
-  return (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName] || null;
+  const url2 = (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName] || null;
+  console.log('[PHOTO] resolved (after wait):', !!url2);
+  return url2;
 }
 
 
