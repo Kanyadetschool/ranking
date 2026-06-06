@@ -1488,7 +1488,10 @@ function calcStats(rec){
   const total = scores.reduce((a,b)=>a+b,0);
   const avg   = total/scores.length;
   const g     = gradeInfo(avg);
+  const totalPts = subjects.reduce((a,s)=>{ const p=parseFloat(gradeInfo(rec[s]).pts); return a+(isNaN(p)?0:p); },0);
+  const maxPts   = scores.length * 8;
   return {total:total.toFixed(1), avg:avg.toFixed(1), pts:g.pts,
+          totalPts:totalPts.toFixed(1), maxPts,
           level:g.level, label:g.label, cls:g.cls, assessed:scores.length, max:scores.length*100, subjects};
 }
 
@@ -1607,7 +1610,7 @@ function renderDash(){
     const pAv = document.getElementById('pill-av');
     wAv.textContent = '';
     pAv.textContent = '';
-    const mkImg = (r)=>{ const i=new Image(); i.src=res.img.src; i.alt=first; return i; };
+    const mkImg = ()=>{ const i=new Image(); i.src=res.img.src; i.alt=first; return i; };
     wAv.appendChild(mkImg());
     pAv.appendChild(mkImg());
   });
@@ -1638,7 +1641,7 @@ function renderStats(s, stats){
     <div class="stat-card"><div class="si">∑</div>
       <div class="sv" style="color:#f39c12">${stats.total}</div><div class="sl">Total Marks</div></div>
     <div class="stat-card"><div class="si">🏅</div>
-      <div class="sv" style="color:#58d68d">${stats.pts}</div><div class="sl">Avg Points</div></div>
+      <div class="sv" style="color:#58d68d;font-size:16px;">${stats.totalPts}<span style="font-size:11px;color:#8db4cc;font-weight:500"> / ${stats.maxPts}</span></div><div class="sl">Total Points</div></div>
     <div class="stat-card"><div class="si">📈</div>
       <div class="sv" style="font-size:16px;padding-top:4px;color:${lvColor(stats.cls)}">${stats.level}</div>
       <div class="sl">${stats.label}</div></div>
@@ -1669,7 +1672,7 @@ function renderTable(s, stats){
   const tr2 = document.createElement('tr'); tr2.className='totals-row';
   tr2.innerHTML = `<td colspan="2" style="color:var(--text)">TOTAL / AVERAGE</td>
     <td><span class="sp s-ee2">${stats.total} / ${stats.max}</span></td>
-    <td><code style="font-family:'JetBrains Mono',monospace;color:#f39c12;font-size:11.5px">${stats.pts}</code></td>
+    <td><code style="font-family:'JetBrains Mono',monospace;color:#f39c12;font-size:11.5px">${stats.totalPts} / ${stats.maxPts}</code></td>
     <td><span class="lt ${lc}">${stats.level}</span></td>
     <td style="font-size:11.5px;color:var(--text)">${stats.avg}% · ${stats.label}</td>`;
   tb.appendChild(tr2);
@@ -1730,7 +1733,7 @@ function buildPreviewHTML(rec){
         <tr class="rc-total-row">
           <td colspan="2">TOTAL / AVERAGE</td>
           <td style="text-align:center">${stats.total} / ${stats.max}</td>
-          <td style="text-align:center">${stats.pts}</td>
+          <td style="text-align:center">${stats.totalPts} / ${stats.maxPts}</td>
           <td>${stats.label} (${stats.level}) &mdash; Avg: ${stats.avg}%</td>
         </tr>
       </tbody>
@@ -1741,7 +1744,7 @@ function buildPreviewHTML(rec){
       <div class="rc-sg">
         <div class="rc-si"><div class="lbl">Total Marks</div><div class="val">${stats.total} / ${stats.max}</div></div>
         <div class="rc-si"><div class="lbl">Average Score</div><div class="val">${stats.avg}%</div></div>
-        <div class="rc-si"><div class="lbl">Avg Points</div><div class="val">${stats.pts}</div></div>
+        <div class="rc-si"><div class="lbl">Total Points</div><div class="val">${stats.totalPts} / ${stats.maxPts}</div></div>
         <div class="rc-si"><div class="lbl">Level</div><div class="val">${stats.level}</div></div>
         <div class="rc-si"><div class="lbl">Description</div><div class="val" style="font-size:12px">${stats.label}</div></div>
         <div class="rc-si"><div class="lbl">Subjects</div><div class="val">${stats.assessed}</div></div>
@@ -1790,18 +1793,15 @@ async function loadStudentImg(name, grade, photoURL){
     const r = await loadImg(photoURL.trim());
     if(r.ok) return r;
   }
-
   // 2. Try exact name in grade folder (legacy file-based fallback)
   const g = (grade||'').match(/^Grade\s*\d+/i)?.[0] || grade || '';
   const cleanName = (name||'').trim();
   const r2 = await loadImg(`./student_images/${g}/${cleanName}.jpg`);
   if(r2.ok) return r2;
-
-  // 3. Try URL-encoded name
+  // 3. URL-encoded variant
   const r3 = await loadImg(`./student_images/${g}/${encodeURIComponent(cleanName)}.jpg`);
   if(r3.ok) return r3;
-
-  // 4. Final fallback: default.jpg
+  // 4. Default fallback
   return loadImg('./student_images/default.jpg');
 }
 
@@ -1905,7 +1905,7 @@ async function drawPage(doc, rec, logoRes){
 
   const summaryRows = [
     [`Total Marks: ${stats.total} / ${stats.max}`, `Average: ${stats.avg}%`],
-    [`Avg Points: ${stats.pts}`,                    `Subjects Assessed: ${stats.assessed}`],
+    [`Total Points: ${stats.totalPts} / ${stats.maxPts}`,          `Subjects Assessed: ${stats.assessed}`],
     [`LEVEL: ${stats.label} (${stats.level})`,      `Position: ${rec['Position']||'N/A'}`],
   ];
   let sumY = yPos+16;
@@ -2498,6 +2498,19 @@ function openShareModal(){
   const color = avg>=75?'#27ae60':avg>=58?'#f39c12':avg>=41?'#e67e22':'#e74c3c';
   const topSubjs = getSubjects(rec).map(s=>({s,v:parseFloat(rec[s])})).filter(x=>!isNaN(x.v)).sort((a,b)=>b.v-a.v).slice(0,3);
 
+  // Logo: use real image, fall back to emoji
+  const logoSrc = (()=>{ const i=document.querySelector('#brand-logo-wrap img'); return i?i.src:''; })();
+  const logoHtml = logoSrc
+    ? `<img src="${logoSrc}" style="width:36px;height:36px;border-radius:9px;object-fit:cover;" crossorigin="anonymous">`
+    : `<div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#2980b9,#1a5276);display:flex;align-items:center;justify-content:center;font-size:18px;">🏫</div>`;
+
+  // Student photo: prefer DB photoURL, fall back to ./student_images/, then initial
+  const photoURL = rec['photoURL']||'';
+  const studentName = rec['Official Student Name']||'Student';
+  const initial = studentName.trim()[0]||'?';
+  // We'll inject a placeholder and swap in the image async after render
+  const photoId = 'sc-student-photo-'+Date.now();
+
   document.getElementById('share-card-preview').innerHTML = `
     <div id="actual-share-card" style="
       background:linear-gradient(135deg,#0c1929 0%,#152638 60%,#1a3045 100%);
@@ -2506,14 +2519,17 @@ function openShareModal(){
     ">
       <div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:${color}18;"></div>
       <div style="position:absolute;bottom:-30px;left:-30px;width:100px;height:100px;border-radius:50%;background:rgba(41,128,185,.12);"></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
-        <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#2980b9,#1a5276);display:flex;align-items:center;justify-content:center;font-size:18px;">🏫</div>
-        <div>
-          <div style="font-size:13px;font-weight:800;line-height:1.1;">Kanyadet PRI &amp; Junior School</div>
-          <div style="font-size:10px;color:#8db4cc;">Student Performance Card</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${logoHtml}
+          <div>
+            <div style="font-size:13px;font-weight:800;line-height:1.1;">Kanyadet PRI &amp; Junior School</div>
+            <div style="font-size:10px;color:#8db4cc;">Student Performance Card</div>
+          </div>
         </div>
+        <div id="${photoId}" style="width:52px;height:52px;border-radius:50%;border:2px solid ${color}88;overflow:hidden;background:#1a3045;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:${color};flex-shrink:0;">${initial}</div>
       </div>
-      <div style="font-size:15px;font-weight:800;margin-bottom:2px;">${rec['Official Student Name']||'Student'}</div>
+      <div style="font-size:15px;font-weight:800;margin-bottom:2px;">${studentName}</div>
       <div style="font-size:10.5px;color:#8db4cc;margin-bottom:14px;">${gShort(rec['Grade'])} &nbsp;·&nbsp; ${cleanTerm(rec['Term'])} &nbsp;·&nbsp; ${new Date().getFullYear()}</div>
       <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:14px;">
         <div>
@@ -2524,6 +2540,7 @@ function openShareModal(){
           <div style="font-size:14px;font-weight:800;color:${color};">${stats.level}</div>
           <div style="font-size:10px;color:#8db4cc;">${stats.label}</div>
           <div style="font-size:11px;color:#e4f0fb;margin-top:2px;">Position: ${rec['Position']||'N/A'}</div>
+          <div style="font-size:11px;color:#e4f0fb;margin-top:1px;">Points: ${stats.totalPts} / ${stats.maxPts} pts</div>
         </div>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;">
@@ -2533,6 +2550,21 @@ function openShareModal(){
         📅 Generated ${new Date().toLocaleDateString()} &nbsp;·&nbsp; Kanyadet Student Portal &nbsp;·&nbsp; Provisional
       </div>
     </div>`;
+
+  // Async: load student photo into the placeholder
+  loadStudentImg(studentName, rec['Grade']||'', photoURL).then(res=>{
+    const el = document.getElementById(photoId);
+    if(!el) return;
+    if(res.ok){
+      el.innerHTML='';
+      const img = new Image();
+      img.src = res.img.src;
+      img.style.cssText='width:100%;height:100%;object-fit:cover;';
+      el.appendChild(img);
+    }
+    // else keep initial letter
+  });
+
   document.getElementById('share-modal').classList.add('on');
 }
 
@@ -2560,9 +2592,8 @@ function saveShareCard(){
       notify('❌ Image save failed — try again.','error');
     });
   } else {
-    // Fallback: copy share text
     const rec=allRecs[activeIdx]; const st=calcStats(rec);
-    const txt=`🏫 Kanyadet PRI & Junior School\n📄 ${rec['Official Student Name']} — ${cleanTerm(rec['Term'])}\n📊 Average: ${st.avg}% | Level: ${st.level} — ${st.label}\n🎯 Position: ${rec['Position']||'N/A'}\n\n✅ Provisional results — Kanyadet Student Portal`;
+    const txt=`🏫 Kanyadet PRI & Junior School\n📄 ${rec['Official Student Name']} — ${cleanTerm(rec['Term'])}\n📊 Average: ${st.avg}% | Total: ${st.total}/${st.max} | Level: ${st.level} — ${st.label}\n🎯 Position: ${rec['Position']||'N/A'}\n\n✅ Provisional results — Kanyadet Student Portal`;
     navigator.clipboard.writeText(txt).then(()=>notify('📋 Results text copied!','info',4000));
   }
 }
