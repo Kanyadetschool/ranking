@@ -5439,7 +5439,7 @@ function renderTopStudents(){
       ${_rkAv}
       <div style="flex:1;min-width:0">
         <div class="rank-name" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['Official Student Name']||'—'}${termInfo}</div>
-        <div class="rank-sub">${r['Grade']||'N/A'} · Adm: ${r['Assessment No']||'N/A'}</div>
+        <div class="rank-sub">${r['Grade']||'N/A'} · Assessment No ${r['Assessment No']||'N/A'}</div>
       </div>
       <div class="rank-score" style="color:${color}">${st.avg}%</div>
       <span class="gp ${gradePillClass(st.cls)}">${st.level}</span>
@@ -6154,7 +6154,7 @@ function viewStudent(id){
       <div>
         <div class="student-meta">
           <div class="s-name">${rec['Official Student Name']||'—'}</div>
-          <div class="s-detail">UPI: ${rec['UPI']||'N/A'} · Adm: ${rec['Assessment No']||'N/A'} · ${rec['Gender']||'N/A'}</div>
+          <div class="s-detail">UPI: ${rec['UPI']||'N/A'} · Assessment No ${rec['Assessment No']||'N/A'} · ${rec['Gender']||'N/A'}</div>
         </div>
         <div class="badge-row">
           <span class="bdg blue">📚 ${rec['Grade']||rec['Term']||'N/A'}</span>
@@ -7553,7 +7553,7 @@ async function bulkGeneratePDF(){
     doc.text('KANYADET PRI & JUNIOR SCHOOL',textX,10,{align:'center'});
     doc.setFontSize(9);doc.setFont(undefined,'normal');
     doc.text(`STUDENT PERFORMANCE REPORT`,textX,17,{align:'center'});
-    doc.setFontSize(7);doc.text(`${rec['Official Student Name']||'N/A'} | ${rec['Grade']||'N/A'} | Adm: ${rec['Assessment No']||'N/A'}`,textX,24,{align:'center'});
+    doc.setFontSize(7);doc.text(`${rec['Official Student Name']||'N/A'} | ${rec['Grade']||'N/A'} | Assessment No ${rec['Assessment No']||'N/A'}`,textX,24,{align:'center'});
     doc.setTextColor(0,0,0);
     const tableData=subjects.map(s=>{ const v=parseFloat(rec[s]);const g=gradeInfo(v);return[s,isNaN(v)?'N/A':v,g.pts,g.level]; });
     doc.autoTable({head:[['Subject','Score','Pts','Level']],body:tableData,startY:35,margin:{left:10,right:10},styles:{fontSize:7.5,cellPadding:3},headStyles:{fillColor:[41,128,185],textColor:[255,255,255]},});
@@ -7691,7 +7691,7 @@ function openRecordsModal(masterId){
   const adm  = entry['Assessment No'] || 'N/A';
 
   document.getElementById('rec-modal-name').textContent = name;
-  document.getElementById('rec-modal-sub').textContent  = 'Adm: ' + adm + ' · ' + allRecs.length + ' record' + (allRecs.length===1?'':'s');
+  document.getElementById('rec-modal-sub').textContent  = 'Assessment No ' + adm + ' · ' + allRecs.length + ' record' + (allRecs.length===1?'':'s');
   // Set initials instantly, load photo async
   const recAvEl=document.getElementById('rec-modal-av');
   if(recAvEl){
@@ -7949,7 +7949,7 @@ function runSmartSearch(q){
       ${_srAv}
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;font-weight:700;color:var(--text)">${best['Official Student Name']||'—'}</div>
-        <div style="font-size:10px;color:var(--text3)">${best['Grade']||'N/A'} · Adm: ${best['Assessment No']||'N/A'} · ${all.length} record${all.length>1?'s':''}</div>
+        <div style="font-size:10px;color:var(--text3)">${best['Grade']||'N/A'} · Assessment No ${best['Assessment No']||'N/A'} · ${all.length} record${all.length>1?'s':''}</div>
       </div>
       <div style="font-weight:800;font-family:'JetBrains Mono',monospace;color:${color};font-size:13px">${st.avg}%</div>
       <span class="gp ${gradePillClass(st.cls)}">${st.level}</span>
@@ -12696,7 +12696,7 @@ function generateWhatsAppText(student) {
         `📋 *Student Report — ${termLabel}*`,
         ``,
         `👤 *${student['Official Student Name'] || 'N/A'}*`,
-        `🆔 Adm: ${student['Assessment No'] || 'N/A'}  |   ${student['Grade'] || 'N/A'}`,
+        `🆔 Assessment No ${student['Assessment No'] || 'N/A'}  |   ${student['Grade'] || 'N/A'}`,
         ``,
         `📚 *ACADEMIC PERFORMANCE*`,
         ...lines,
