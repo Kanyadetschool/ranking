@@ -4,11 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanyadet School — Student Portal</title>
-<script src="./image-popup.js"></script>
 
-    <link rel="stylesheet" href="./css/swalOnly.css">
-        <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
-                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
                       
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -1288,19 +1284,19 @@ body::before{
 </div>
 
 <!-- jsPDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="console.warn('jsPDF CDN failed')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" onerror="console.warn('autotable CDN failed')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" onerror="console.warn('html2canvas CDN failed')"></script>
 <!-- Chart.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" onerror="console.warn('Chart.js CDN failed')"></script>
 
 <!-- Firebase -->
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, get, onValue, query, orderByChild, equalTo }  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
   import { getStorage, ref as sRef, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
-  import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, onValue, query, orderByChild, equalTo, getStorage, sRef, getDownloadURL, getAuth, signInAnonymously };
+  import { getAuth, signInAnonymously, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, onValue, query, orderByChild, equalTo, getAuth, signInAnonymously, signOut };
 </script>
 
 <script>
@@ -1377,7 +1373,6 @@ const REMARKS_DB = [
 //  STATE
 // ═══════════════════════════════════════════════════
 let db;
-let storage;
 let allRecs = [];   // all term records for this student
 let activeIdx = 0;  // currently selected term
 
@@ -1435,10 +1430,9 @@ window.addEventListener('load', ()=>{
   tryLoadLogo();
   waitFB(()=>{
     try{
-      const {initializeApp,getApps,getDatabase,getStorage} = window._fb;
+      const {initializeApp,getApps,getDatabase} = window._fb;
       const app = getApps().length===0 ? initializeApp(FB_CONFIG) : getApps()[0];
       db = getDatabase(app);
-      storage = getStorage(app);
       // Sign in anonymously so Firebase rules allow reading artifacts/
       const { getAuth, signInAnonymously } = window._fb;
       (async()=>{ try{ await signInAnonymously(getAuth(app)); }catch(e){ console.warn('Anon auth:',e.message); } _subscribeDbPhotos(db); })();
@@ -1502,9 +1496,23 @@ function calcStats(rec){
           level:g.level, label:g.label, cls:g.cls, assessed:scores.length, max:scores.length*100, subjects};
 }
 
-function getRemark(avg){
+function _deterministicIdx(seed, len){
+  // Simple string hash → stable index; same student+term always gets same remark
+  let h = 0;
+  for(let i=0;i<seed.length;i++){ h = (Math.imul(31,h) + seed.charCodeAt(i)) | 0; }
+  return Math.abs(h) % len;
+}
+
+function getRemark(avg, rec){
   const a = parseFloat(avg);
-  for(const r of REMARKS_DB) if(a>=r.min && a<=r.max) return r.list[Math.floor(Math.random()*r.list.length)];
+  // Build a stable seed from Assessment No + Term so the same student+term always gets the same remark
+  const seed = rec ? String(rec['Assessment No']||'') + String(rec['Term']||'') : '';
+  for(const r of REMARKS_DB){
+    if(a>=r.min && a<=r.max){
+      const idx = seed ? _deterministicIdx(seed, r.list.length) : 0;
+      return r.list[idx];
+    }
+  }
   return "Keep working hard and striving for excellence.";
 }
 
@@ -1532,17 +1540,20 @@ async function doLogin(){
   const btn = document.getElementById('login-btn-txt');
   btn.textContent = '🔄 Searching…';
   try{
-    const {ref,get} = window._fb;
-    const snap = await get(ref(db, DB_PATH));
+    const {ref, query: fbQuery, orderByChild, equalTo, get} = window._fb;
+    const q = fbQuery(ref(db, DB_PATH), orderByChild('Assessment No'), equalTo(aNo));
+    const snap = await get(q);
     const data = snap.val();
-    if(!data){ showErr('No records found. Contact school admin.'); btn.textContent='🚀 View My Results'; return; }
+    if(!data){ showErr('No records found. Check your Assessment Number.'); btn.textContent='🚀 View My Results'; return; }
 
     const found = [];
     for(const key in data){
       const s = data[key];
-      if(String(s['Assessment No']||'').trim() !== aNo) continue;
-      const parts = String(s['Official Student Name']||'').toLowerCase().split(/\s+/);
-      if(parts.some(p=>p===name)) found.push({id:key,...s});
+      // Normalise: lowercase, strip hyphens/punctuation, split on whitespace
+      const normalize = str => String(str||'').toLowerCase().replace(/[-']/g,' ').trim();
+      const parts = normalize(s['Official Student Name']).split(/\s+/).filter(Boolean);
+      const input = normalize(name);
+      if(parts.some(p=>p.startsWith(input)||input.startsWith(p))) found.push({id:key,...s});
     }
 
     if(found.length===0){
@@ -1550,8 +1561,14 @@ async function doLogin(){
       btn.textContent='🚀 View My Results'; return;
     }
 
-    // sort oldest → newest
-    found.sort((a,b)=>String(a['Term']||'').localeCompare(String(b['Term']||'')));
+    // Sort terms by year then term number (robust against naming inconsistencies)
+    function termSortKey(t){
+      const s = String(t['Term']||'');
+      const year  = (s.match(/\b(20\d\d)\b/)||[])[1] || '0000';
+      const tnum  = (s.match(/\bterm[-\s]*(\d)/i)||[])[1] || '0';
+      return year + tnum;
+    }
+    found.sort((a,b)=>termSortKey(a).localeCompare(termSortKey(b)));
     allRecs  = found;
     activeIdx = found.length-1;
     sessionStorage.setItem('kss_recs', JSON.stringify(found));
@@ -1571,6 +1588,11 @@ document.addEventListener('keydown', e=>{ if(e.key==='Enter' && !document.getEle
 function doSignOut(){
   sessionStorage.removeItem('kss_recs');
   allRecs=[]; activeIdx=0;
+  // Also sign out the anonymous Firebase session
+  try{
+    const { getAuth, signOut } = window._fb;
+    signOut(getAuth()).catch(()=>{});
+  }catch(e){}
   document.getElementById('dashboard').classList.remove('on');
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('user-pill').classList.remove('on');
@@ -1619,7 +1641,7 @@ function renderDash(){
   renderTermTabs();
   renderStats(s, stats);
   renderTable(s, stats);
-  document.getElementById('remark-txt').textContent = getRemark(stats.avg);
+  document.getElementById('remark-txt').textContent = getRemark(stats.avg, s);
 }
 
 function renderTermTabs(){
@@ -1696,15 +1718,7 @@ function buildPreviewHTML(rec){
   const stats = calcStats(rec);
   const subjects = getSubjects(rec);
   const termLabel = cleanTerm(rec['Term']);
-  const remark = getRemark(stats.avg);
-
-  const subjectRows = subjects.map((subj,i)=>{
-    const score=rec[subj], num=parseFloat(score), g=gradeInfo(score);
-    return `<tr>
-      <td>${i+1}</td><td>${subj}</td>
-      <td style="text-align:center;font-weight:700;font-family:monospace">${isNaN(num)?'N/A':num}</td>
-      <td style="text-align:center">${g.pts}</td>
-      <td>${g.label} <strong>(${g.level})</strong></td>
+  const remark = getRemark(stats.avg, rec);
     </tr>`;
   }).join('');
 
@@ -1991,9 +2005,7 @@ async function drawPage(doc, rec, logoRes){
   yPos = yPos+42;
   doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.setTextColor(0,0,0);
   doc.text('CLASS TEACHER REMARKS', 20, yPos);
-  const remark = getRemark(stats.avg);
-  doc.setFont(undefined,'normal'); doc.setFontSize(9);
-  doc.setDrawColor(200,200,200);
+  const remark = getRemark(stats.avg, rec);
   const remarkLines = doc.splitTextToSize(remark, pageWidth-40);
   let remY = yPos+6;
   remarkLines.forEach(line=>{ doc.text(line,20,remY); remY+=5; });
@@ -2264,6 +2276,7 @@ function renderCharts(rec){
   trendCard.style.display='';
   const tLabels = allRecs.map(r=>cleanTerm(r['Term']));
   const tData   = allRecs.map(r=>{ const st=calcStats(r); return parseFloat(st.avg)||0; });
+  const tColors = tData.map((_,i)=>i===activeIdx?'#e67e22':'#f39c12');
   const tCtx = document.getElementById('chart-trend').getContext('2d');
   if(trendChart){ trendChart.destroy(); trendChart=null; }
   trendChart = new Chart(tCtx,{
@@ -2278,21 +2291,57 @@ function renderCharts(rec){
         borderWidth:2.5,
         fill:true,
         tension:0.38,
-        pointBackgroundColor:tData.map((_,i)=>i===activeIdx?'#e67e22':'#f39c12'),
-        pointRadius:tData.map((_,i)=>i===activeIdx?6:4),
+        pointBackgroundColor:tColors,
+        pointRadius:tData.map((_,i)=>i===activeIdx?7:4),
         pointBorderColor:'#fff',
-        pointBorderWidth:1.5,
+        pointBorderWidth:2,
       }]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Avg: ${ctx.raw}%`}}},
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          label:ctx=>`Avg: ${ctx.raw}%`,
+          afterLabel:ctx=>{
+            const g=gradeInfo(ctx.raw);
+            return `${g.level} — ${g.label}`;
+          }
+        }}
+      },
       scales:{
         x:{ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}},
         y:{min:0,max:100,ticks:{color:textColor,font:{size:9},callback:v=>v+'%'},grid:{color:gridColor}},
       }
     }
   });
+
+  // Progress summary strip below trend chart
+  const first=tData[0], last=tData[tData.length-1];
+  const delta=(last-first).toFixed(1);
+  const arrow=delta>0?'▲':delta<0?'▼':'→';
+  const aColor=delta>0?'#27ae60':delta<0?'#e74c3c':'#5dade2';
+  const best=Math.max(...tData), worst=Math.min(...tData);
+  let strip = document.getElementById('trend-strip');
+  if(!strip){
+    strip=document.createElement('div');
+    strip.id='trend-strip';
+    strip.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:10px;color:var(--text2);';
+    trendCard.appendChild(strip);
+  }
+  strip.innerHTML=`
+    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
+      <span style="color:${aColor};font-weight:800">${arrow} ${delta>0?'+':''}${delta}%</span> overall change
+    </span>
+    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
+      🏆 Best: <strong>${best}%</strong>
+    </span>
+    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
+      📌 Lowest: <strong>${worst}%</strong>
+    </span>
+    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
+      📊 ${allRecs.length} term${allRecs.length>1?'s':''} tracked
+    </span>`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -2532,9 +2581,12 @@ function renderStudyTips(s){
     body.innerHTML = `<div style="padding:10px 0;font-size:12px;color:var(--text2)">🌟 Excellent! All subjects are performing well. Keep up the great work!</div>`;
     return;
   }
+  const studentSeed = String(s['Assessment No']||'') + String(s['Term']||'');
   body.innerHTML = needsWork.map(({sub,v})=>{
     const tips = TIPS_DB[sub]||['Keep practising this subject consistently.'];
-    const tip = tips[Math.floor(Math.random()*tips.length)];
+    // Stable tip selection: hash of (student seed + subject name)
+    const tipIdx = Math.abs(_deterministicIdx(studentSeed + sub, tips.length));
+    const tip = tips[tipIdx];
     const bg = barColor(v); const g = gradeInfo(v);
     return `<div class="tip-item">
       <div style="min-width:130px">
@@ -2667,7 +2719,6 @@ function closeShareModal(){ document.getElementById('share-modal').classList.rem
 window.openShareModal=openShareModal; window.saveShareCard=saveShareCard; window.closeShareModal=closeShareModal;
 
 // ─── Escape also closes new modals ───
-const _origKeydown = document.onkeydown;
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){
     if(document.getElementById('scale-modal').classList.contains('on')){ closeScaleModal(); return; }
@@ -2680,7 +2731,101 @@ document.addEventListener('keydown', e=>{
 });
 
 </script>
-<script src="./image-popup.js"></script>
+<script>
+// ═══════════════════════════════════════════════════
+//  IMAGE POPUP / LIGHTBOX  (inlined — was image-popup.js)
+// ═══════════════════════════════════════════════════
+(function(){
+  // Inject overlay styles
+  const style = document.createElement('style');
+  style.textContent = `
+    #img-popup-overlay{
+      display:none;position:fixed;inset:0;z-index:99999;
+      background:rgba(0,0,0,.82);backdrop-filter:blur(6px);
+      align-items:center;justify-content:center;cursor:zoom-out;
+    }
+    #img-popup-overlay.on{display:flex;}
+    #img-popup-overlay img{
+      max-width:88vw;max-height:88vh;
+      border-radius:14px;
+      box-shadow:0 24px 80px rgba(0,0,0,.7);
+      object-fit:contain;
+      animation:imgPopIn .22s cubic-bezier(.34,1.56,.64,1);
+      cursor:default;
+    }
+    @keyframes imgPopIn{from{transform:scale(.82);opacity:0}to{transform:scale(1);opacity:1}}
+    #img-popup-close{
+      position:fixed;top:18px;right:22px;
+      background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);
+      color:#fff;border-radius:50%;width:38px;height:38px;
+      font-size:18px;line-height:1;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;
+      transition:background .18s;z-index:100000;
+    }
+    #img-popup-close:hover{background:rgba(255,255,255,.22);}
+    .img-zoomable{cursor:zoom-in!important;}
+  `;
+  document.head.appendChild(style);
+
+  // Build overlay DOM
+  const overlay = document.createElement('div');
+  overlay.id = 'img-popup-overlay';
+  const closeBtn = document.createElement('button');
+  closeBtn.id = 'img-popup-close';
+  closeBtn.textContent = '✕';
+  closeBtn.title = 'Close (Esc)';
+  const popImg = document.createElement('img');
+  popImg.alt = 'Photo';
+  overlay.appendChild(closeBtn);
+  overlay.appendChild(popImg);
+  document.body.appendChild(overlay);
+
+  function open(src, alt){
+    popImg.src = src;
+    if(alt) popImg.alt = alt;
+    overlay.classList.add('on');
+    document.body.style.overflow = 'hidden';
+  }
+  function close(){
+    overlay.classList.remove('on');
+    document.body.style.overflow = '';
+    setTimeout(()=>{ popImg.src=''; }, 300);
+  }
+
+  closeBtn.addEventListener('click', e=>{ e.stopPropagation(); close(); });
+  overlay.addEventListener('click', close);
+  popImg.addEventListener('click', e=>e.stopPropagation());
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && overlay.classList.contains('on')) close(); });
+
+  // Auto-attach to any <img> inside avatar / photo containers, now and on DOM mutations
+  function attachToImg(img){
+    if(img._popupAttached) return;
+    img._popupAttached = true;
+    img.classList.add('img-zoomable');
+    img.addEventListener('click', ()=>{ if(img.src && !img.src.endsWith('#')) open(img.src, img.alt); });
+  }
+
+  function scanAndAttach(){
+    document.querySelectorAll('.w-av img, .u-av img, #img-popup-overlay img').forEach(img=>{
+      if(img.id !== 'img-popup-overlay img') attachToImg(img);
+    });
+    // Also attach to any img directly inside .u-av or .w-av containers
+    document.querySelectorAll('.w-av, .u-av').forEach(el=>{
+      el.querySelectorAll('img').forEach(img=>attachToImg(img));
+    });
+  }
+
+  // Run on load and watch for dynamically added photos
+  document.addEventListener('DOMContentLoaded', scanAndAttach);
+  window.addEventListener('load', scanAndAttach);
+  const mo = new MutationObserver(scanAndAttach);
+  mo.observe(document.body, {childList:true, subtree:true});
+
+  // Expose globally in case other code calls it
+  window.openImagePopup = open;
+  window.closeImagePopup = close;
+})();
+</script>
 
 </body>
 </html>
