@@ -4,6 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanyadet School — Student Portal</title>
+<meta name="theme-color" content="#0c1929">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Kanyadet Portal">
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('./sw.js')
+      .then(r => console.log('SW registered:', r.scope))
+      .catch(e => console.warn('SW registration failed:', e));
+  });
+}
+</script>
+
 
                       
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -996,6 +1010,110 @@ body::before{
   .act-btns{width:100%;}
   .btn{flex:1;justify-content:center;}
 }
+
+/* ════════════════════════════════════════════
+   AVATAR LOADING SPINNER
+════════════════════════════════════════════ */
+.av-loading{position:relative;}
+.av-loading::after{
+  content:'';
+  position:absolute;inset:-3px;
+  border-radius:inherit;
+  border:2.5px solid transparent;
+  border-top-color:var(--blue-lt);
+  border-right-color:rgba(93,173,226,.3);
+  animation:avSpin .75s linear infinite;
+  pointer-events:none;
+}
+@keyframes avSpin{to{transform:rotate(360deg)}}
+
+/* ════════════════════════════════════════════
+   OFFLINE BANNER
+════════════════════════════════════════════ */
+#offline-banner{
+  display:none;position:fixed;top:0;left:0;right:0;z-index:99000;
+  background:linear-gradient(90deg,#e67e22,#d35400);
+  color:#fff;font-size:12px;font-weight:700;
+  text-align:center;padding:7px 16px;
+  letter-spacing:.02em;
+  animation:bannerIn .3s ease;
+  box-shadow:0 2px 12px rgba(230,126,34,.4);
+}
+#offline-banner.on{display:block;}
+@keyframes bannerIn{from{transform:translateY(-100%)}to{transform:translateY(0)}}
+
+/* ════════════════════════════════════════════
+   NETWORK QUALITY PILL (topbar)
+════════════════════════════════════════════ */
+#net-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:10px;font-weight:700;
+  padding:3px 9px;border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--surface2);
+  color:var(--text2);
+  transition:var(--transition);
+  white-space:nowrap;
+}
+#net-pill .net-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:#27ae60;
+  transition:background .4s;
+  flex-shrink:0;
+}
+#net-pill.slow .net-dot{background:#f39c12;animation:netPulse 1.2s ease-in-out infinite;}
+#net-pill.offline .net-dot{background:#e74c3c;}
+@keyframes netPulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ════════════════════════════════════════════
+   OFFLINE LOGIN NOTICE
+════════════════════════════════════════════ */
+#offline-login-notice{
+  display:none;
+  background:rgba(230,126,34,.1);
+  border:1px solid rgba(230,126,34,.35);
+  border-left:3px solid var(--orange);
+  border-radius:var(--radius-sm);
+  padding:10px 13px;
+  color:var(--orange);
+  font-size:11.5px;font-weight:600;
+  margin-bottom:14px;line-height:1.6;
+}
+#offline-login-notice.on{display:block;}
+
+/* ════════════════════════════════════════════
+   PWA INSTALL PROMPT
+════════════════════════════════════════════ */
+#install-prompt{
+  display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
+  z-index:8500;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-lg);
+  padding:14px 20px;
+  box-shadow:0 12px 40px rgba(0,0,0,.35);
+  display:none;align-items:center;gap:14px;
+  max-width:360px;width:calc(100vw - 32px);
+  animation:promptIn .4s cubic-bezier(.34,1.56,.64,1);
+}
+#install-prompt.on{display:flex;}
+@keyframes promptIn{from{transform:translateX(-50%) translateY(80px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+.install-icon{font-size:28px;flex-shrink:0;}
+.install-txt .install-title{font-size:13px;font-weight:800;color:var(--text);}
+.install-txt .install-sub{font-size:11px;color:var(--text2);margin-top:2px;}
+.install-actions{display:flex;gap:7px;margin-top:8px;}
+.install-btn{padding:6px 14px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;transition:var(--transition);}
+.install-btn.primary{background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;}
+.install-btn.secondary{background:transparent;border:1.5px solid var(--border);color:var(--text2);}
+
+/* ════════════════════════════════════════════
+   CACHED DATA BADGE
+════════════════════════════════════════════ */
+.cached-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  background:rgba(230,126,34,.12);border:1px solid rgba(230,126,34,.3);
+  color:#e67e22;border-radius:10px;padding:1px 8px;font-size:9.5px;font-weight:700;
+}
 </style>
 </head>
 <body>
@@ -1008,6 +1126,24 @@ body::before{
 </div>
 
 <!-- PARTICLES -->
+<!-- ── OFFLINE BANNER ── -->
+<div id="offline-banner">
+  📡 You are offline — showing cached results. Changes won't save until you reconnect.
+</div>
+
+<!-- ── PWA INSTALL PROMPT ── -->
+<div id="install-prompt">
+  <div class="install-icon">📲</div>
+  <div class="install-txt">
+    <div class="install-title">Add to Home Screen</div>
+    <div class="install-sub">Access your results anytime, even offline.</div>
+    <div class="install-actions">
+      <button class="install-btn primary" onclick="doInstall()">Install App</button>
+      <button class="install-btn secondary" onclick="dismissInstall()">Not now</button>
+    </div>
+  </div>
+</div>
+
 <div class="particles" id="particles"></div>
 <div id="notif-area"></div>
 
@@ -1024,6 +1160,7 @@ body::before{
   </div>
   <div class="topbar-right">
     <!-- theme toggle -->
+    <span id="net-pill" title="Network status"><span class="net-dot"></span><span id="net-label">Online</span></span>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
       <span class="theme-icon moon">🌙</span>
       <span class="theme-icon sun">☀️</span>
@@ -1050,6 +1187,7 @@ body::before{
     <div class="login-card">
       <h2>🔐 Student Sign In</h2>
       <div class="err-msg" id="err-msg"></div>
+      <div id="offline-login-notice">📵 You're offline. <strong>Previous results</strong> can still be viewed — sign in with the same Assessment Number to load cached data.</div>
       <div class="fg">
         <label>Assessment Number</label>
         <div class="iw">
@@ -1719,6 +1857,14 @@ function buildPreviewHTML(rec){
   const subjects = getSubjects(rec);
   const termLabel = cleanTerm(rec['Term']);
   const remark = getRemark(stats.avg, rec);
+
+  const subjectRows = subjects.map((subj,i)=>{
+    const score=rec[subj], num=parseFloat(score), g=gradeInfo(score);
+    return `<tr>
+      <td>${i+1}</td><td>${subj}</td>
+      <td style="text-align:center;font-weight:700;font-family:monospace">${isNaN(num)?'N/A':num}</td>
+      <td style="text-align:center">${g.pts}</td>
+      <td>${g.label} <strong>(${g.level})</strong></td>
     </tr>`;
   }).join('');
 
@@ -2825,6 +2971,183 @@ document.addEventListener('keydown', e=>{
   window.openImagePopup = open;
   window.closeImagePopup = close;
 })();
+</script>
+
+
+<script>
+// ═══════════════════════════════════════════════════
+//  NETWORK QUALITY & OFFLINE DETECTION
+// ═══════════════════════════════════════════════════
+(function(){
+  const banner  = document.getElementById('offline-banner');
+  const pill    = document.getElementById('net-pill');
+  const pillLbl = document.getElementById('net-label');
+  const notice  = document.getElementById('offline-login-notice');
+
+  function setNetState(state, label){
+    pill.className = '';
+    if(state !== 'online') pill.classList.add(state);
+    pillLbl.textContent = label;
+    banner.classList.toggle('on', state === 'offline');
+    if(notice) notice.classList.toggle('on', state !== 'online');
+    // Push topbar down by banner height when offline
+    document.querySelector('.top-bar').style.marginTop = state === 'offline' ? '38px' : '';
+  }
+
+  function checkConnection(){
+    if(!navigator.onLine){ setNetState('offline','Offline'); return; }
+    const conn = navigator.connection;
+    if(conn){
+      const type = conn.effectiveType; // '4g','3g','2g','slow-2g'
+      if(type === 'slow-2g' || type === '2g'){
+        setNetState('slow', 'Slow network');
+      } else if(type === '3g'){
+        setNetState('slow', '3G');
+      } else {
+        setNetState('online', 'Online');
+      }
+    } else {
+      setNetState('online', 'Online');
+    }
+  }
+
+  window.addEventListener('online',  checkConnection);
+  window.addEventListener('offline', checkConnection);
+  if(navigator.connection) navigator.connection.addEventListener('change', checkConnection);
+  checkConnection();
+
+  // Expose for offline login use
+  window._isOffline = () => !navigator.onLine;
+})();
+
+// ═══════════════════════════════════════════════════
+//  AVATAR SPINNER — show while photo is loading
+// ═══════════════════════════════════════════════════
+(function(){
+  // Patch _applyPhoto to add/remove spinner class
+  const _orig = window._applyPhoto || null;
+
+  function patchApplyPhoto(){
+    if(!window._applyPhoto){ setTimeout(patchApplyPhoto, 100); return; }
+    const orig = window._applyPhoto;
+    window._applyPhoto = function(el, src){
+      if(!el || !src) return;
+      // Start spinner
+      el.classList.add('av-loading');
+      // Call original to inject the img
+      orig(el, src);
+      // Find the img (may have just been created)
+      const img = el.tagName === 'IMG' ? el : el.querySelector('img');
+      if(img){
+        const finish = () => el.classList.remove('av-loading');
+        if(img.complete && img.naturalWidth > 0){
+          finish();
+        } else {
+          img.addEventListener('load',  finish, {once:true});
+          img.addEventListener('error', finish, {once:true});
+        }
+      } else {
+        // Fallback: remove spinner after 3s
+        setTimeout(()=>el.classList.remove('av-loading'), 3000);
+      }
+    };
+  }
+  patchApplyPhoto();
+
+  // Also add spinner to avatars that have data-photo-name stamped on them
+  // (waiting for Firebase photo map to arrive)
+  const mo = new MutationObserver(muts => {
+    muts.forEach(m => m.addedNodes.forEach(n => {
+      if(n.nodeType !== 1) return;
+      const avs = n.classList && (n.classList.contains('w-av') || n.classList.contains('u-av'))
+        ? [n] : [...n.querySelectorAll('.w-av,.u-av')];
+      avs.forEach(av => {
+        if(av.getAttribute('data-photo-name') && !av.querySelector('img')){
+          av.classList.add('av-loading');
+        }
+      });
+    }));
+  });
+  mo.observe(document.body, {childList:true, subtree:true});
+})();
+
+// ═══════════════════════════════════════════════════
+//  OFFLINE LOGIN FALLBACK
+//  If offline and sessionStorage has records → skip Firebase, load cache
+// ═══════════════════════════════════════════════════
+(function(){
+  // Patch doLogin to intercept offline case
+  function patchLogin(){
+    if(typeof window.doLogin !== 'function'){ setTimeout(patchLogin, 100); return; }
+    const orig = window.doLogin;
+    window.doLogin = async function(){
+      if(navigator.onLine){ return orig(); }
+
+      // Offline path: try sessionStorage
+      const saved = sessionStorage.getItem('kss_recs');
+      if(saved){
+        try{
+          const recs = JSON.parse(saved);
+          const aNo  = document.getElementById('inp-asm').value.trim();
+          const name = document.getElementById('inp-name').value.trim().toLowerCase();
+          // Verify credentials match cached data
+          if(recs.length && (!aNo || String(recs[0]['Assessment No']||'').trim() === aNo)){
+            allRecs  = recs;
+            activeIdx = recs.length - 1;
+            notify('📦 Loaded <strong>cached results</strong> — you are offline.','info', 6000);
+            // Show cached badge in welcome card
+            setTimeout(()=>{
+              const br = document.getElementById('badge-row');
+              if(br && !br.querySelector('.cached-badge')){
+                br.insertAdjacentHTML('beforeend','<span class="cached-badge">📦 Cached</span>');
+              }
+            }, 500);
+            renderDash();
+            return;
+          }
+        }catch(e){}
+      }
+      // No cache match
+      showErr('📵 You are offline and no cached results were found. Please connect to the internet and try again.');
+    };
+  }
+  patchLogin();
+})();
+
+// ═══════════════════════════════════════════════════
+//  PWA INSTALL PROMPT
+// ═══════════════════════════════════════════════════
+let _deferredInstall = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _deferredInstall = e;
+  // Only show if not already installed and user hasn't dismissed
+  if(!localStorage.getItem('kss_install_dismissed')){
+    setTimeout(()=>{
+      document.getElementById('install-prompt').classList.add('on');
+    }, 4000);
+  }
+});
+function doInstall(){
+  document.getElementById('install-prompt').classList.remove('on');
+  if(_deferredInstall){
+    _deferredInstall.prompt();
+    _deferredInstall.userChoice.then(r=>{
+      if(r.outcome==='accepted') notify('✅ App installed! Find it on your home screen.','success',5000);
+      _deferredInstall = null;
+    });
+  }
+}
+function dismissInstall(){
+  document.getElementById('install-prompt').classList.remove('on');
+  localStorage.setItem('kss_install_dismissed','1');
+}
+window.doInstall   = doInstall;
+window.dismissInstall = dismissInstall;
+window.addEventListener('appinstalled', ()=>{
+  document.getElementById('install-prompt').classList.remove('on');
+  notify('📲 Portal installed on your device!','success',5000);
+});
 </script>
 
 </body>
