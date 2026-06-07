@@ -1299,7 +1299,8 @@ body::before{
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, get, onValue, query, orderByChild, equalTo }  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
   import { getStorage, ref as sRef, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, onValue, query, orderByChild, equalTo, getStorage, sRef, getDownloadURL };
+  import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, onValue, query, orderByChild, equalTo, getStorage, sRef, getDownloadURL, getAuth, signInAnonymously };
 </script>
 
 <script>
@@ -1438,7 +1439,9 @@ window.addEventListener('load', ()=>{
       const app = getApps().length===0 ? initializeApp(FB_CONFIG) : getApps()[0];
       db = getDatabase(app);
       storage = getStorage(app);
-      _subscribeDbPhotos(db); // start live photo map from artifacts DB
+      // Sign in anonymously so Firebase rules allow reading artifacts/
+      const { getAuth, signInAnonymously } = window._fb;
+      (async()=>{ try{ await signInAnonymously(getAuth(app)); }catch(e){ console.warn('Anon auth:',e.message); } _subscribeDbPhotos(db); })();
     }catch(e){
       document.getElementById('loader').style.display='none';
       showErr('Firebase init error: '+e.message); return;
