@@ -1883,6 +1883,8 @@ const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__f
 
 let db, auth, userId = null;
 let studentsData = [];
+let globalHeaders = [];
+let criticalForRow = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
 let studentsPerPage = 10;
 let tabulatorTable = null;
 let currentFilteredStudents = [];
@@ -2842,7 +2844,8 @@ function _openApp(user) {
     } else {
         // Already fetched — just re-render with existing data (after lock/unlock)
         if (window._studentsData) {
-            window._tabulatorTable?.replaceData(window._studentsData);
+            const _rd = window._studentsData;
+            window._tabulatorTable?.replaceData(typeof _buildRowData === 'function' ? _buildRowData(_rd) : _rd);
         }
     }
 }
@@ -2873,7 +2876,15 @@ const fetchStudents = () => {
         window._fbDb           = db;
         window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
         updateGradeFilter();
-        renderStudents(studentsData);
+        // First load → build table. Subsequent Firebase pushes → fast data swap only.
+        if (tabulatorTable && !renderStudents._forceRebuild) {
+            currentFilteredStudents = studentsData;
+            updateKPI(studentsData);
+            updateAnalytics(studentsData);
+            tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
+        } else {
+            renderStudents(studentsData);
+        }
         // ── Background badge check for Unmatched PDFs ──
         if (typeof window._recheckUnmatched === 'function') {
             // Debounce so only the final data snapshot triggers a check
@@ -3967,8 +3978,8 @@ const renderStudents = (students) => {
     (window._studentsData || studentsData).forEach(st =>
         Object.keys(st).forEach(k => { if (k !== 'id' && !k.startsWith('_')) globalKeys.add(k); })
     );
-    const globalHeaders = [...globalKeys];
-    const criticalForRow = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
+    globalHeaders = [...globalKeys];
+    // criticalForRow is module-scoped constant, no reassignment needed
 
     // ── Age calculation helper (DOB format: DD.MM.YY) ──
     const calcAge = (dobStr) => {
@@ -4005,6 +4016,16 @@ const renderStudents = (students) => {
         row._missingFields = criticalForRow.filter(f => (window.isMissingVal||((v)=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase())))(s[f]));
         return row;
     });
+
+    // ── Fast path: table already built → just swap data (no destroy/rebuild) ──
+    if (tabulatorTable && !renderStudents._forceRebuild) {
+        currentFilteredStudents = students;
+        updateKPI(students);
+        updateAnalytics(students);
+        tabulatorTable.replaceData(rowData);
+        return;
+    }
+    renderStudents._forceRebuild = false;
 
     if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
 
@@ -4103,7 +4124,7 @@ const renderStudents = (students) => {
 document.getElementById('tab-toggle-filters').addEventListener('click', function () {
     colFiltersVisible = !colFiltersVisible;
     this.classList.toggle('active', colFiltersVisible);
-    if (tabulatorTable) renderStudents(currentFilteredStudents);
+    if (tabulatorTable) { renderStudents._forceRebuild = true; renderStudents(currentFilteredStudents); }
 });
 document.getElementById('tab-toggle-group').addEventListener('click', function () {
     groupingEnabled = !groupingEnabled;
@@ -4155,7 +4176,7 @@ document.getElementById('tab-freeze-cols').addEventListener('click', function ()
         frozenColumn = null;
         nameColFrozen = false;
         document.getElementById('tab-freeze-cols').classList.remove('active');
-        renderStudents(currentFilteredStudents);
+        renderStudents._forceRebuild = true; renderStudents(currentFilteredStudents);
         menu.remove();
     });
     menu.appendChild(unfreezeItem);
@@ -4184,7 +4205,7 @@ document.getElementById('tab-freeze-cols').addEventListener('click', function ()
             frozenColumn = isFrozen ? null : field; // toggle off if already frozen
             nameColFrozen = frozenColumn === 'Official Student Name';
             document.getElementById('tab-freeze-cols').classList.toggle('active', frozenColumn !== null);
-            renderStudents(currentFilteredStudents);
+            renderStudents._forceRebuild = true; renderStudents(currentFilteredStudents);
             menu.remove();
         });
         menu.appendChild(item);
@@ -4218,7 +4239,7 @@ document.getElementById('tab-missing-filter').addEventListener('click', function
     const svgIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>`;
     if (missingFilterActive) {
         const _mv2=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a'].includes(String(v).trim().toLowerCase()));
-        const count = studentsData.filter(s => CRITICAL_ROW_FIELDS.some(f => _mv2(s[f]))).length;
+        const count = studentsData.filter(s => criticalForRow.some(f => _mv2(s[f]))).length;
         this.innerHTML = `${svgIcon} Missing (${count})`;
         // Show queue launch toast
         if (count > 0 && typeof showToast === 'function') {
@@ -4714,17 +4735,68 @@ studentsPerPageSelect.addEventListener('change', (e) => {
 });
 
 // ── SEARCH & GRADE FILTER ─────────────────────────────
-const CRITICAL_ROW_FIELDS = ['Assessment No', 'Official Student Name', 'Grade', 'Gender', 'UPI'];
+const CRITICAL_ROW_FIELDS = criticalForRow; // alias → module-scoped criticalForRow
+// ── Fast filter: update data without rebuilding table ────────
+const _buildRowData = (students) => {
+    // Uses module-scoped globalHeaders + criticalForRow (set by renderStudents on first load)
+    const headers = getOrderedHeaders(students);
+    const _mv = window.isMissingVal || ((v) => !v || String(v).trim() === '' ||
+        ['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
+    const _calcAge = (dobStr) => {
+        if (!dobStr || typeof dobStr !== 'string') return null;
+        const parts = dobStr.trim().split('.');
+        if (parts.length !== 3) return null;
+        const [dd, mm, yy] = parts.map(Number);
+        if (isNaN(dd) || isNaN(mm) || isNaN(yy)) return null;
+        const fullYear = yy <= 39 ? 2000 + yy : 1900 + yy;
+        const dob = new Date(fullYear, mm - 1, dd);
+        if (isNaN(dob.getTime())) return null;
+        const today = new Date();
+        let years = today.getFullYear() - dob.getFullYear();
+        let months = today.getMonth() - dob.getMonth();
+        if (today.getDate() < dob.getDate()) months--;
+        if (months < 0) { years--; months += 12; }
+        if (years < 0 || years >= 120) return null;
+        return { years, months };
+    };
+    return students.map(s => {
+        const row = { id: s.id, _actions: '', _img: '', photoURL: s.photoURL || '',
+            birthCertBase64: s.birthCertBase64 || '', birthCertName: s.birthCertName || '' };
+        headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
+        const ageObj = _calcAge(s['DOB'] ? String(s['DOB']) : '');
+        row._age = ageObj ? ageObj.years + (ageObj.months / 12) : null;
+        row._ageDisplay = ageObj ? `${ageObj.years} yr${ageObj.years !== 1 ? 's' : ''}, ${ageObj.months} mth${ageObj.months !== 1 ? 's' : ''}` : null;
+        const gh = globalHeaders.length ? globalHeaders : headers;
+        const filled = gh.filter(h => !_mv(s[h])).length;
+        row._compl = gh.length > 0 ? (filled / gh.length) * 100 : 100;
+        row._missingFields = criticalForRow.filter(f => _mv(s[f]));
+        return row;
+    });
+};
+
 const applyFilters = () => {
     const grade = gradeFilterSelect.value;
-    const term = searchInput.value.toLowerCase();
+    const term = searchInput.value.trim().toLowerCase();
+    const _mv = window.isMissingVal || ((v) => !v || String(v).trim() === '' || ['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
     let filtered = studentsData;
     if (grade) filtered = filtered.filter(s => s.Grade === grade);
     if (term) filtered = filtered.filter(s => Object.values(s).some(v => String(v).toLowerCase().includes(term)));
-    if (missingFilterActive) { const _mv=window.isMissingVal||(v=>!v||String(v).trim()===''||['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase())); filtered = filtered.filter(s => CRITICAL_ROW_FIELDS.some(f => _mv(s[f]))); }
-    renderStudents(filtered);
+    if (missingFilterActive) filtered = filtered.filter(s => criticalForRow.some(f => _mv(s[f])));
+    currentFilteredStudents = filtered;
+    updateKPI(filtered);
+    updateAnalytics(filtered);
+    if (tabulatorTable) {
+        tabulatorTable.replaceData(_buildRowData(filtered));
+    } else {
+        renderStudents(filtered);
+    }
 };
-searchInput.addEventListener('input', applyFilters);
+
+let _searchDebounceTimer = null;
+searchInput.addEventListener('input', () => {
+    clearTimeout(_searchDebounceTimer);
+    _searchDebounceTimer = setTimeout(applyFilters, 180);
+});
 gradeFilterSelect.addEventListener('change', applyFilters);
 
 // ── EDIT MODAL ────────────────────────────────────────
@@ -4776,7 +4848,7 @@ window._quickUploadPhoto = async function(id, input) {
         if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
         if (window._tabulatorTable) {
             const trow = window._tabulatorTable.getRow(id);
-            if (trow) trow.update({ photoURL: base64, _img: '', _actions: '' });
+            if (trow) trow.update({ photoURL: base64, _img: '' });
         }
         showToast('Photo saved ✓', 'success');
     } catch(err) {
@@ -4810,7 +4882,7 @@ window._quickUploadCert = async function(id, input) {
         }
         if (window._tabulatorTable) {
             const trow = window._tabulatorTable.getRow(id);
-            if (trow) trow.update({ _actions: '' });
+            // row update not needed — only KPI changes
         }
         showToast('Certificate saved ✓', 'success');
         if (typeof updateKPI === 'function') updateKPI(studentsData);
@@ -5370,9 +5442,9 @@ drawerSaveBtn.addEventListener('click', async () => {
         else if (typeof window._loadHistPanel === 'function') window._loadHistPanel();
         if (tabulatorTable) {
             const trow = tabulatorTable.getRow(drawerCurrentId);
-            if (trow) trow.update({ ...updatedData, _actions: '', _img: '' });
+            if (trow) trow.update({ ...updatedData });
         }
-        applyFilters();
+        updateKPI(currentFilteredStudents);
     } catch (e) {
         showModal(`Error updating: ${e.message}`);
     } finally {
@@ -6736,7 +6808,8 @@ $('bulk-batch-field-btn')?.addEventListener('click', async () => {
     // Update local data so UI reflects changes immediately
     if(window._studentsData){
         window._studentsData.forEach(s=>{if(sel.has(s.id))s[field]=value;});
-        window._tabulatorTable?.replaceData(window._studentsData.map(s=>s));
+        const _brd = typeof _buildRowData === 'function' ? _buildRowData(window._studentsData) : window._studentsData.map(s=>s);
+        window._tabulatorTable?.replaceData(_brd);
     }
     showMsg(`✓ "${field}" updated for ${sel.size} student${sel.size!==1?'s':''}. Changes saved to database.`);
 });
