@@ -1608,10 +1608,10 @@ function renderDash(){
     <span class="bdg green">🏆 ${stats.level} — ${stats.label}</span>
     <span class="bdg gold">📊 Avg ${stats.avg}%</span>`;
 
-  // Load student photo into both avatars using the live photo map
-  const assessNo = String(s['Assessment No']||'').trim();
-  loadPhotoInto(document.getElementById('w-av'),    s['Official Student Name']||'', assessNo);
-  loadPhotoInto(document.getElementById('pill-av'), s['Official Student Name']||'', assessNo);
+  // Photo: use 'adm_'+assessNo to match key in _dbPhotoMapById (same as Results.html)
+  const photoStudentId = 'adm_' + String(s['Assessment No']||'').trim();
+  loadPhotoInto(document.getElementById('w-av'),    s['Official Student Name']||'', photoStudentId);
+  loadPhotoInto(document.getElementById('pill-av'), s['Official Student Name']||'', photoStudentId);
 
   renderTermTabs();
   renderStats(s, stats);
@@ -1775,87 +1775,91 @@ window.overlayClick = overlayClick;
 //  JSPDF — IMAGE LOADERS
 // ═══════════════════════════════════════════════════
 // ── Photo system (ported from Results.html) ──────────────────────────────
-const _dbPhotoMap     = {};   // normalisedName → photoURL
-const _dbPhotoMapById = {};   // firebaseKey / 'adm_'+assessNo → photoURL
+// ── Photo system — exact port from Results.html ──────────────────────────
+const _dbPhotoMap     = {};
+const _dbPhotoMapById = {};
 let   _dbPhotoReady   = false;
+const _imgLoadCache   = {};
 
-function _subscribeDbPhotos(dbInst){
-  console.log('[PHOTO] _subscribeDbPhotos called, db:', !!dbInst);
+function _subscribeDbPhotos(dbInst) {
   const {ref: fbRef, onValue} = window._fb;
-  const path = 'artifacts/default-app-id/students';
-  console.log('[PHOTO] subscribing to:', path);
-  onValue(fbRef(dbInst, path), snap=>{
+  const photosRef = fbRef(dbInst, `artifacts/default-app-id/students`);
+  onValue(photosRef, snap => {
     const data = snap.val() || {};
-    const keys = Object.keys(data);
-    console.log('[PHOTO] onValue fired, records count:', keys.length);
-    for(const [key, val] of Object.entries(data)){
-      if(val && val.photoURL){
-        const normName = (val['Official Student Name']||'').toLowerCase().trim();
-        const aNo = String(val['Assessment No']||'').trim();
-        console.log('[PHOTO] found photo for:', normName, '| adm:', aNo, '| key:', key, '| photoURL length:', val.photoURL.length);
-        if(normName) _dbPhotoMap[normName] = val.photoURL;
+    Object.keys(_dbPhotoMap).forEach(k => delete _dbPhotoMap[k]);
+    Object.keys(_dbPhotoMapById).forEach(k => delete _dbPhotoMapById[k]);
+    for (const [key, val] of Object.entries(data)) {
+      if (val && val.photoURL) {
+        const normName = (val['Official Student Name'] || '').toLowerCase().trim();
+        if (normName) _dbPhotoMap[normName] = val.photoURL;
         _dbPhotoMapById[key] = val.photoURL;
-        if(aNo) _dbPhotoMapById['adm_'+aNo] = val.photoURL;
+        if (val['Assessment No'])
+          _dbPhotoMapById['adm_' + val['Assessment No']] = val.photoURL;
       }
     }
     _dbPhotoReady = true;
-    console.log('[PHOTO] map ready. _dbPhotoMap keys:', Object.keys(_dbPhotoMap));
-    console.log('[PHOTO] _dbPhotoMapById keys:', Object.keys(_dbPhotoMapById));
-    // Refresh any avatars already on screen
-    document.querySelectorAll('[data-photo-name]').forEach(el=>{
+    document.querySelectorAll('[data-photo-name]').forEach(el => {
       const n   = el.getAttribute('data-photo-name');
-      const sid = el.getAttribute('data-photo-id')||'';
-      const url = (sid && (_dbPhotoMapById['adm_'+sid] || _dbPhotoMapById[sid])) || _dbPhotoMap[n] || '';
-      console.log('[PHOTO] refreshing el data-photo-name='+n+' data-photo-id='+sid+' url found:', !!url);
-      if(url) _applyPhoto(el, url);
+      const sid = el.getAttribute('data-photo-id') || '';
+      const url = (sid && _dbPhotoMapById[sid]) || _dbPhotoMap[n] || '';
+      if (url) _applyPhoto(el, url);
     });
-  }, err=>{
-    console.error('[PHOTO] onValue error:', err);
   });
 }
 
-function _applyPhoto(el, src){
-  if(!el || !src) return;
-  console.log('[PHOTO] _applyPhoto, el.id:', el.id||el.className, 'src length:', src.length);
-  if(el.tagName==='IMG'){ if(el.src!==src) el.src=src; return; }
+function _applyPhoto(el, src) {
+  if (!el || !src) return;
+  if (el.tagName === 'IMG') { if (el.src !== src) el.src = src; return; }
   let img = el.querySelector('img');
-  if(!img){
+  if (!img) {
     img = document.createElement('img');
-    img.alt  = el.getAttribute('data-photo-name')||'';
+    img.alt  = el.getAttribute('data-photo-name') || '';
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;';
     el.textContent = '';
     el.appendChild(img);
   }
-  if(img.src!==src) img.src=src;
+  if (img.src !== src) img.src = src;
 }
 
-function loadPhotoInto(el, name, assessNo){
-  if(!el) return;
-  const normName = (name||'').toLowerCase().trim();
-  const key = String(assessNo||'').trim();
-  console.log('[PHOTO] loadPhotoInto name:', normName, 'assessNo:', key);
-  el.setAttribute('data-photo-name', normName);
-  el.setAttribute('data-photo-id',   key);
-
-  const cached = (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName];
-  console.log('[PHOTO] cache hit:', !!cached, '| _dbPhotoReady:', _dbPhotoReady);
-  if(cached){ _applyPhoto(el, cached); return; }
+function _tryLocalPhoto(name) {
+  return new Promise(resolve => {
+    const enc = encodeURIComponent((name || '').trim());
+    if (!enc) return resolve(null);
+    const src = `./student_images/${enc}.jpg`;
+    if (_imgLoadCache[src] !== undefined) return resolve(_imgLoadCache[src]);
+    const img = new Image();
+    const t   = setTimeout(() => { _imgLoadCache[src] = null; resolve(null); }, 2000);
+    img.onload  = () => { clearTimeout(t); _imgLoadCache[src] = src; resolve(src); };
+    img.onerror = () => { clearTimeout(t); _imgLoadCache[src] = null; resolve(null); };
+    img.src = src;
+  });
 }
 
-async function resolveStudentPhoto(name, assessNo){
-  const normName = (name||'').toLowerCase().trim();
-  const key = String(assessNo||'').trim();
-  console.log('[PHOTO] resolveStudentPhoto name:', normName, 'assessNo:', key, '_dbPhotoReady:', _dbPhotoReady);
-  if(_dbPhotoReady){
-    const url = (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName] || null;
-    console.log('[PHOTO] resolved (ready):', !!url);
-    return url;
+async function resolveStudentPhoto(name, studentId) {
+  const normName = (name || '').toLowerCase().trim();
+  if (_dbPhotoReady) {
+    const url = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
+    if (url) return url;
   }
-  await new Promise(r=>setTimeout(r,1500));
-  const url2 = (key && (_dbPhotoMapById['adm_'+key] || _dbPhotoMapById[key])) || _dbPhotoMap[normName] || null;
-  console.log('[PHOTO] resolved (after wait):', !!url2);
-  return url2;
+  const local = await _tryLocalPhoto(name);
+  if (local) return local;
+  if (!_dbPhotoReady) {
+    await new Promise(r => setTimeout(r, 400));
+    const url2 = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
+    if (url2) return url2;
+  }
+  return null;
 }
+
+function loadPhotoInto(el, name, studentId) {
+  if (!el) return;
+  el.setAttribute('data-photo-name', (name || '').toLowerCase().trim());
+  el.setAttribute('data-photo-id',   studentId || '');
+  resolveStudentPhoto(name, studentId).then(src => {
+    if (src && document.contains(el)) _applyPhoto(el, src);
+  });
+}
+// ─────────────────────────────────────────────────────────────────────────
 
 
 function loadImg(src){
@@ -2630,7 +2634,7 @@ function openShareModal(){
     </div>`;
 
   // Async: load student photo into the placeholder using live photo map
-  resolveStudentPhoto(studentName, String(rec['Assessment No']||'').trim()).then(src=>{
+  resolveStudentPhoto(studentName, 'adm_'+String(rec['Assessment No']||'').trim()).then(src=>{
     const el = document.getElementById(photoId);
     if(!el || !src) return;
     _applyPhoto(el, src);
