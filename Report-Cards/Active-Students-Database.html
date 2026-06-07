@@ -7908,9 +7908,20 @@ window._bulkExportZip = async function(){
     const withBC = students.filter(s => s.birthCertBase64);
     if (!withBC.length){ showToast('No birth certificates stored yet.','danger'); return; }
 
+    // Grade breakdown for confirm dialog
+    const _certGradeCounts = {};
+    withBC.forEach(s => {
+        const g = (s.Grade || 'No Grade').trim();
+        _certGradeCounts[g] = (_certGradeCounts[g] || 0) + 1;
+    });
+    const _certGradeList = Object.entries(_certGradeCounts)
+        .sort(([a],[b]) => a.localeCompare(b, undefined, {numeric: true}))
+        .map(([g, n]) => g + ' (' + n + ')')
+        .join(', ');
+
     const r = await window.openModal({
         icon:'info', title:'Export Birth Certificates as ZIP',
-        text: withBC.length+' certificates will be bundled into a ZIP file.',
+        text: withBC.length + ' certificates across ' + Object.keys(_certGradeCounts).length + ' grades will be bundled into grade folders.\n\nGrades: ' + _certGradeList,
         showCancelButton:true, confirmButtonText:'Export '+withBC.length+' Certs',
         cancelButtonText:'Cancel', confirmButtonColor:'primary'
     });
@@ -7933,7 +7944,7 @@ window._bulkExportZip = async function(){
             });
         }
         const zip = new window.JSZip();
-        const folder = zip.folder('birth_certificates');
+        // files placed directly into per-grade sub-folders (no outer wrapper)
         for (let i=0;i<withBC.length;i++){
             const s = withBC[i];
             pf.style.width = Math.round(i/withBC.length*85)+'%';
@@ -7941,10 +7952,12 @@ window._bulkExportZip = async function(){
             ps.textContent = s['Official Student Name']||s['Assessment No']||s.id||'';
             const raw = s.birthCertBase64;
             if (!raw) continue;
-            const data = raw.includes(',') ? raw.split(',')[1] : raw;
-            const grade = s.Grade ? s.Grade.replace(/[\/\\:*?"<>|]/g,'_')+'/' : '';
-            const name = (s.birthCertName||(s['Official Student Name']||s['Assessment No']||s.id||'cert').replace(/[\/\\:*?"<>|]/g,'_')+'.pdf');
-            folder.file(grade+name, data, {base64:true});
+            const data       = raw.includes(',') ? raw.split(',')[1] : raw;
+            const gradeLabel = (s.Grade || 'No Grade').replace(/[\/\\:*?"<>|]/g, '_').trim();
+            const assessNo   = (s['Assessment No'] || '').replace(/[\/\\:*?"<>|]/g, '_');
+            const baseName   = (s['Official Student Name'] || s['Assessment No'] || s.id || 'cert').replace(/[\/\\:*?"<>|]/g, '_');
+            const fileName   = s.birthCertName || (assessNo ? baseName + '_' + assessNo + '.pdf' : baseName + '.pdf');
+            zip.folder(gradeLabel).file(fileName, data, {base64:true});
         }
         pf.style.width='90%'; pl.textContent='Building ZIP…'; ps.textContent='';
         const blob = await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
@@ -7954,7 +7967,7 @@ window._bulkExportZip = async function(){
         a.href=url; a.download='birth_certificates_'+new Date().toISOString().split('T')[0]+'.zip'; a.click();
         setTimeout(()=>URL.revokeObjectURL(url),2000);
         setTimeout(()=>{ if(pm) pm.style.display='none'; },1000);
-        showToast('ZIP with '+withBC.length+' certificates downloaded!','success');
+        showToast('ZIP with '+withBC.length+' certificates ('+Object.keys(_certGradeCounts).length+' grade folders) downloaded!','success');
     } catch(err){
         if(pm) pm.style.display='none';
         showToast('ZIP export failed: '+err.message,'danger');
