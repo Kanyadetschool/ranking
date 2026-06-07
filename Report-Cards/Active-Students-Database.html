@@ -8140,10 +8140,10 @@ window._bulkExportZip = async function(){
             const raw = s.birthCertBase64;
             if (!raw) continue;
             const data       = raw.includes(',') ? raw.split(',')[1] : raw;
-            const gradeLabel = (s.Grade || 'No Grade').replace(/[\/\\:*?"<>|]/g, '_').trim();
-            const assessNo   = (s['Assessment No'] || '').replace(/[\/\\:*?"<>|]/g, '_');
-            const baseName   = (s['Official Student Name'] || s['Assessment No'] || s.id || 'cert').replace(/[\/\\:*?"<>|]/g, '_');
-            const fileName   = s.birthCertName || (assessNo ? baseName + '_' + assessNo + '.pdf' : baseName + '.pdf');
+            const gradeLabel = String(s.Grade || 'No Grade').replace(/[/\\:*?"<>|]/g, '_').trim();
+            const assessNo   = String(s['Assessment No'] ?? '').replace(/[/\\:*?"<>|]/g, '_');
+            const baseName   = String(s['Official Student Name'] || s['Assessment No'] || s.id || 'cert').replace(/[/\\:*?"<>|]/g, '_');
+            const fileName   = String(s.birthCertName || (assessNo ? baseName + '_' + assessNo + '.pdf' : baseName + '.pdf'));
             zip.folder(gradeLabel).file(fileName, data, {base64:true});
         }
         pf.style.width='90%'; pl.textContent='Building ZIP…'; ps.textContent='';
@@ -8243,16 +8243,16 @@ window._bulkExportPhotosZip = async function() {
             done++;
             const pct = Math.round((done / total) * 88);
             if (pf) pf.style.width = pct + '%';
-            const name = (student['Official Student Name'] || student['Assessment No'] || student.id || 'unknown')
+            const name = String(student['Official Student Name'] || student['Assessment No'] || student.id || 'unknown')
                 .replace(/[\/\\:*?"<>|]/g, '_').trim();
-            const grade = (student.Grade || 'No Grade').replace(/[\/\\:*?"<>|]/g, '_').trim();
+            const grade = String(student.Grade || 'No Grade').replace(/[/\\:*?"<>|]/g, '_').trim();
             if (pl) pl.textContent = `Adding ${done} of ${total}…`;
             if (ps) ps.textContent = `${grade} / ${name}`;
 
             try {
                 const { data, ext } = await toBase64Entry(student.photoURL);
                 // File path: Grade/Name_AssessmentNo.ext  (ensures uniqueness)
-                const assessNo = (student['Assessment No'] || '').replace(/[\/\\:*?"<>|]/g,'_');
+                const assessNo = String(student['Assessment No'] ?? '').replace(/[/\\:*?"<>|]/g,'_');
                 const filename = assessNo ? `${name}_${assessNo}.${ext}` : `${name}.${ext}`;
                 zip.folder(grade).file(filename, data, { base64: true });
             } catch(fetchErr) {
