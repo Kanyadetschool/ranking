@@ -1608,8 +1608,8 @@ function renderDash(){
     <span class="bdg green">🏆 ${stats.level} — ${stats.label}</span>
     <span class="bdg gold">📊 Avg ${stats.avg}%</span>`;
 
-  // Photo: use 'adm_'+assessNo to match key in _dbPhotoMapById (same as Results.html)
-  const photoStudentId = 'adm_' + String(s['Assessment No']||'').trim();
+  // Photo: match by Assessment No (slash replaced with _)
+  const photoStudentId = String(s['Assessment No']||'').trim().replace(/\//g,'_');
   loadPhotoInto(document.getElementById('w-av'),    s['Official Student Name']||'', photoStudentId);
   loadPhotoInto(document.getElementById('pill-av'), s['Official Student Name']||'', photoStudentId);
 
@@ -1783,8 +1783,7 @@ const _imgLoadCache   = {};
 
 function _subscribeDbPhotos(dbInst) {
   const {ref: fbRef, onValue} = window._fb;
-  const photosRef = fbRef(dbInst, `artifacts/default-app-id/students`);
-  onValue(photosRef, snap => {
+  onValue(fbRef(dbInst, 'artifacts/default-app-id/students'), snap => {
     const data = snap.val() || {};
     Object.keys(_dbPhotoMap).forEach(k => delete _dbPhotoMap[k]);
     Object.keys(_dbPhotoMapById).forEach(k => delete _dbPhotoMapById[k]);
@@ -1793,15 +1792,17 @@ function _subscribeDbPhotos(dbInst) {
         const normName = (val['Official Student Name'] || '').toLowerCase().trim();
         if (normName) _dbPhotoMap[normName] = val.photoURL;
         _dbPhotoMapById[key] = val.photoURL;
-        if (val['Assessment No'])
-          _dbPhotoMapById['adm_' + val['Assessment No']] = val.photoURL;
+        if (val['Assessment No']) {
+          _dbPhotoMapById[String(val['Assessment No']).replace(/\//g,'_')] = val.photoURL;
+        }
       }
     }
     _dbPhotoReady = true;
+    // Refresh any already-rendered avatars
     document.querySelectorAll('[data-photo-name]').forEach(el => {
       const n   = el.getAttribute('data-photo-name');
       const sid = el.getAttribute('data-photo-id') || '';
-      const url = (sid && _dbPhotoMapById[sid]) || _dbPhotoMap[n] || '';
+      const url = (sid && (_dbPhotoMapById[sid] || _dbPhotoMapById[sid.replace(/\//g,'_')])) || _dbPhotoMap[n] || '';
       if (url) _applyPhoto(el, url);
     });
   });
@@ -1821,43 +1822,29 @@ function _applyPhoto(el, src) {
   if (img.src !== src) img.src = src;
 }
 
-function _tryLocalPhoto(name) {
-  return new Promise(resolve => {
-    const enc = encodeURIComponent((name || '').trim());
-    if (!enc) return resolve(null);
-    const src = `./student_images/${enc}.jpg`;
-    if (_imgLoadCache[src] !== undefined) return resolve(_imgLoadCache[src]);
-    const img = new Image();
-    const t   = setTimeout(() => { _imgLoadCache[src] = null; resolve(null); }, 2000);
-    img.onload  = () => { clearTimeout(t); _imgLoadCache[src] = src; resolve(src); };
-    img.onerror = () => { clearTimeout(t); _imgLoadCache[src] = null; resolve(null); };
-    img.src = src;
-  });
+function loadPhotoInto(el, name, studentId) {
+  if (!el) return;
+  const normName = (name || '').toLowerCase().trim();
+  el.setAttribute('data-photo-name', normName);
+  el.setAttribute('data-photo-id',   studentId || '');
+  // If map already ready, apply immediately
+  if (_dbPhotoReady) {
+    const url = (studentId && (_dbPhotoMapById[studentId] || _dbPhotoMapById[studentId.replace(/\//g,'_')])) || _dbPhotoMap[normName] || '';
+    if (url) { _applyPhoto(el, url); return; }
+  }
+  // Otherwise element is stamped — onValue live-refresh will pick it up when ready
 }
 
 async function resolveStudentPhoto(name, studentId) {
   const normName = (name || '').toLowerCase().trim();
-  if (_dbPhotoReady) {
-    const url = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
-    if (url) return url;
-  }
-  const local = await _tryLocalPhoto(name);
-  if (local) return local;
-  if (!_dbPhotoReady) {
-    await new Promise(r => setTimeout(r, 400));
-    const url2 = (studentId && _dbPhotoMapById[studentId]) || _dbPhotoMap[normName];
-    if (url2) return url2;
+  const lookup = id => id && (_dbPhotoMapById[id] || _dbPhotoMapById[id.replace(/\//g,'_')]);
+  if (_dbPhotoReady) return lookup(studentId) || _dbPhotoMap[normName] || null;
+  // Wait for onValue to fire (poll briefly)
+  for (let i = 0; i < 10; i++) {
+    await new Promise(r => setTimeout(r, 300));
+    if (_dbPhotoReady) return lookup(studentId) || _dbPhotoMap[normName] || null;
   }
   return null;
-}
-
-function loadPhotoInto(el, name, studentId) {
-  if (!el) return;
-  el.setAttribute('data-photo-name', (name || '').toLowerCase().trim());
-  el.setAttribute('data-photo-id',   studentId || '');
-  resolveStudentPhoto(name, studentId).then(src => {
-    if (src && document.contains(el)) _applyPhoto(el, src);
-  });
 }
 // ─────────────────────────────────────────────────────────────────────────
 
@@ -2634,7 +2621,7 @@ function openShareModal(){
     </div>`;
 
   // Async: load student photo into the placeholder using live photo map
-  resolveStudentPhoto(studentName, 'adm_'+String(rec['Assessment No']||'').trim()).then(src=>{
+  resolveStudentPhoto(studentName, String(rec['Assessment No']||'').trim().replace(/\//g,'_')).then(src=>{
     const el = document.getElementById(photoId);
     if(!el || !src) return;
     _applyPhoto(el, src);
