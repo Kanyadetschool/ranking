@@ -286,6 +286,79 @@ body::before{
 .signout-btn:hover{background:rgba(231,76,60,.1);}
 .signout-btn.on{display:block;}
 
+/* ── SWITCH STUDENT BUTTON ── */
+.switch-student-btn{
+  display:none;
+  background:transparent;
+  border:1.5px solid var(--border-strong);
+  color:var(--blue-lt);
+  padding:6px 14px;border-radius:20px;
+  cursor:pointer;font-size:11px;font-family:'Plus Jakarta Sans',sans-serif;
+  font-weight:700;letter-spacing:.03em;
+  transition:var(--transition);white-space:nowrap;
+}
+.switch-student-btn:hover{background:rgba(93,173,226,.1);}
+.switch-student-btn.on{display:block;}
+[data-theme="light"] .switch-student-btn{border-color:rgba(41,128,185,.35);color:#1a5276;}
+[data-theme="light"] .switch-student-btn:hover{background:rgba(41,128,185,.07);}
+
+/* ── STUDENT SWITCHER DRAWER ── */
+#switcher-drawer{
+  position:sticky;top:64px;z-index:190;
+  max-height:0;overflow:hidden;
+  transition:max-height .38s cubic-bezier(.4,0,.2,1), box-shadow .38s;
+  background:var(--bg2);
+  border-bottom:1px solid var(--border);
+}
+#switcher-drawer.open{
+  max-height:220px;
+  box-shadow:0 6px 24px rgba(0,0,0,.18);
+}
+.sw-inner{padding:16px 22px 18px;max-width:1180px;margin:0 auto;}
+.sw-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.sw-title{font-size:13px;font-weight:800;color:var(--text);letter-spacing:.04em;text-transform:uppercase;}
+.sw-close{
+  background:none;border:1.5px solid var(--border);border-radius:50%;
+  width:26px;height:26px;display:flex;align-items:center;justify-content:center;
+  font-size:12px;cursor:pointer;color:var(--text2);
+  transition:var(--transition);
+}
+.sw-close:hover{border-color:#e74c3c;color:#e74c3c;}
+.sw-history{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;}
+.sw-history:empty{margin-bottom:0;}
+.sw-chip{
+  display:inline-flex;align-items:center;gap:5px;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:20px;padding:4px 12px 4px 8px;
+  font-size:11px;font-weight:700;color:var(--text2);
+  cursor:pointer;transition:var(--transition);
+}
+.sw-chip:hover{border-color:var(--blue-lt);color:var(--blue-lt);}
+.sw-chip-av{
+  width:18px;height:18px;border-radius:50%;
+  background:linear-gradient(135deg,var(--orange),var(--gold));
+  font-size:9px;font-weight:800;color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;overflow:hidden;
+}
+.sw-chip-av img{width:100%;height:100%;object-fit:cover;border-radius:50%;}
+.sw-row{display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap;}
+.sw-row .fg{margin-bottom:0;flex:1;}
+.sw-row .fg label{font-size:10px;font-weight:700;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.08em;display:block;}
+.sw-go-btn{
+  padding:12px 20px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));
+  border:none;border-radius:var(--radius-sm);
+  color:#fff;font-family:'Plus Jakarta Sans',sans-serif;
+  font-size:13px;font-weight:800;cursor:pointer;
+  transition:var(--transition);white-space:nowrap;
+  box-shadow:0 4px 14px rgba(41,128,185,.35);
+  flex-shrink:0;
+}
+.sw-go-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(41,128,185,.45);}
+[data-theme="light"] #switcher-drawer{background:#eaf2f9;border-bottom-color:rgba(41,128,185,.15);}
+[data-theme="light"] .sw-chip{background:#fff;border-color:rgba(41,128,185,.2);}
+
 /* ════════════════════════════════════════════
    LOGIN SCREEN
 ════════════════════════════════════════════ */
@@ -1284,6 +1357,7 @@ body::before{
         <div class="u-grade" id="pill-grade">–</div>
       </div>
     </div>
+    <button class="switch-student-btn" id="switch-student-btn" onclick="openSwitcher()">👤 Switch Student</button>
     <button class="signout-btn" id="signout-btn" onclick="doSignOut()">🚪 Sign Out</button>
   </div>
 </div>
@@ -1369,6 +1443,40 @@ body::before{
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- ── STUDENT SWITCHER DRAWER ── -->
+<div id="switcher-drawer">
+  <div class="sw-inner">
+    <div class="sw-hdr">
+      <div class="sw-title">👤 Switch Student</div>
+      <button class="sw-close" onclick="closeSwitcher()" aria-label="Close">✕</button>
+    </div>
+    <!-- Previously viewed students chips -->
+    <div id="sw-history" class="sw-history"></div>
+    <div class="sw-fields">
+      <div class="sw-row">
+        <div class="fg" style="flex:1;margin-bottom:0">
+          <label>Assessment Number</label>
+          <div class="iw">
+            <span class="ii">🔢</span>
+            <input type="text" id="sw-asm" placeholder="e.g. B000107226" autocomplete="off" spellcheck="false">
+          </div>
+        </div>
+        <div class="fg" style="flex:1;margin-bottom:0">
+          <label>Surname / Any Name</label>
+          <div class="iw">
+            <span class="ii">👤</span>
+            <input type="text" id="sw-name" placeholder="e.g. Awino" autocomplete="on" spellcheck="on">
+          </div>
+        </div>
+        <button class="sw-go-btn" onclick="doSwitch()">
+          <span id="sw-go-txt">Go →</span>
+        </button>
+      </div>
+      <div class="err-msg" id="sw-err" style="margin-top:10px;margin-bottom:0"></div>
+    </div>
   </div>
 </div>
 
@@ -1932,11 +2040,13 @@ function doSignOut(){
   }catch(e){}
   _googleUser = null;
   _showStep1();
+  closeSwitcher();
 
   document.getElementById('dashboard').classList.remove('on');
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('user-pill').classList.remove('on');
   document.getElementById('signout-btn').classList.remove('on');
+  document.getElementById('switch-student-btn').classList.remove('on');
   document.getElementById('inp-asm').value='';
   document.getElementById('inp-name').value='';
   document.getElementById('pill-av').innerHTML = '?';
@@ -2048,6 +2158,100 @@ function _watchAuthState(app){
   });
 }
 
+// ═══════════════════════════════════════════════════
+//  STUDENT SWITCHER
+// ═══════════════════════════════════════════════════
+const SW_HISTORY_KEY = 'kss_sw_history';
+const SW_MAX = 6;
+
+function _swHistory(){
+  try{ return JSON.parse(localStorage.getItem(SW_HISTORY_KEY)||'[]'); }catch(e){ return []; }
+}
+function _swSaveHistory(h){ localStorage.setItem(SW_HISTORY_KEY, JSON.stringify(h.slice(0,SW_MAX))); }
+
+function _swAddToHistory(rec, photoUrl){
+  const name = rec['Official Student Name']||'Unknown';
+  const asm  = rec['Assessment No']||'';
+  if(!asm) return;
+  let h = _swHistory().filter(e=>e.asm !== asm);
+  h.unshift({name, asm, photoUrl:photoUrl||''});
+  _swSaveHistory(h);
+}
+
+function openSwitcher(){
+  document.getElementById('switcher-drawer').classList.add('open');
+  _renderSwHistory();
+  setTimeout(()=>document.getElementById('sw-asm').focus(), 200);
+}
+window.openSwitcher = openSwitcher;
+
+function closeSwitcher(){
+  document.getElementById('switcher-drawer').classList.remove('open');
+  document.getElementById('sw-asm').value  = '';
+  document.getElementById('sw-name').value = '';
+  const e = document.getElementById('sw-err'); if(e) e.classList.remove('on');
+}
+window.closeSwitcher = closeSwitcher;
+
+function _renderSwHistory(){
+  const hist = _swHistory();
+  const el   = document.getElementById('sw-history');
+  el.innerHTML = '';
+  hist.forEach(entry=>{
+    const chip = document.createElement('button');
+    chip.className = 'sw-chip';
+    const avHtml = entry.photoUrl
+      ? `<div class="sw-chip-av"><img src="${entry.photoUrl}" alt=""></div>`
+      : `<div class="sw-chip-av">${(entry.name[0]||'?').toUpperCase()}</div>`;
+    chip.innerHTML = `${avHtml}<span>${entry.name.split(' ').slice(0,2).join(' ')}</span>`;
+    chip.title = `${entry.name} · ${entry.asm}`;
+    chip.onclick = ()=>{ document.getElementById('sw-asm').value=entry.asm; document.getElementById('sw-name').value=entry.name.split(' ')[0]; doSwitch(); };
+    el.appendChild(chip);
+  });
+}
+
+async function doSwitch(){
+  const aNo  = document.getElementById('sw-asm').value.trim();
+  const name = document.getElementById('sw-name').value.trim().toLowerCase();
+  const errEl = document.getElementById('sw-err');
+  errEl.classList.remove('on');
+  if(!aNo||!name){ errEl.textContent='❌ Fill in both fields.'; errEl.classList.add('on'); return; }
+
+  const btn = document.getElementById('sw-go-txt');
+  btn.textContent = '🔄…';
+
+  try{
+    const {ref, query:fbQuery, orderByChild, equalTo, get} = window._fb;
+    const q = fbQuery(ref(db, DB_PATH), orderByChild('Assessment No'), equalTo(aNo));
+    const snap = await Promise.race([get(q), new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timed out.')),12000))]);
+    const data = snap.val();
+    if(!data){ errEl.textContent='❌ No records found.'; errEl.classList.add('on'); btn.textContent='Go →'; return; }
+    const found=[];
+    for(const key in data){
+      const s=data[key];
+      const norm=str=>String(str||'').toLowerCase().replace(/[-']/g,' ').trim();
+      const parts=norm(s['Official Student Name']).split(/\s+/).filter(Boolean);
+      const input=norm(name);
+      if(parts.some(p=>p.startsWith(input)||input.startsWith(p))) found.push({id:key,...s});
+    }
+    if(!found.length){ errEl.textContent='❌ Name not matched.'; errEl.classList.add('on'); btn.textContent='Go →'; return; }
+    found.sort((a,b)=>{ const k=t=>{ const s=String(t['Term']||''); return ((s.match(/\b(20\d\d)\b/)||[])[1]||'0000')+((s.match(/\bterm[-\s]*(\d)/i)||[])[1]||'0'); }; return k(a).localeCompare(k(b)); });
+    allRecs=found; activeIdx=found.length-1;
+    sessionStorage.setItem('kss_recs', JSON.stringify(found));
+    _swAddToHistory(found[0], '');
+    closeSwitcher();
+    notify(`✅ Switched to <strong>${found[0]['Official Student Name']}</strong>.`,'success');
+    renderDash();
+  }catch(err){ errEl.textContent='❌ '+err.message; errEl.classList.add('on'); }
+  btn.textContent='Go →';
+}
+window.doSwitch = doSwitch;
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter' && document.getElementById('switcher-drawer').classList.contains('open')) doSwitch();
+  if(e.key==='Escape' && document.getElementById('switcher-drawer').classList.contains('open')) closeSwitcher();
+});
+
 
 function renderDash(){
   const s     = allRecs[activeIdx];
@@ -2061,6 +2265,7 @@ function renderDash(){
   document.getElementById('dashboard').classList.add('on');
   document.getElementById('user-pill').classList.add('on');
   document.getElementById('signout-btn').classList.add('on');
+  document.getElementById('switch-student-btn').classList.add('on');
 
   // Set initial text fallback while photo loads
   document.getElementById('pill-av').textContent    = first[0]||'?';
@@ -2080,6 +2285,12 @@ function renderDash(){
   const photoStudentId = String(s['Assessment No']||'').trim().replace(/\//g,'_');
   loadPhotoInto(document.getElementById('w-av'),    s['Official Student Name']||'', photoStudentId);
   loadPhotoInto(document.getElementById('pill-av'), s['Official Student Name']||'', photoStudentId);
+
+  // Update switcher history once photo resolves
+  setTimeout(()=>{
+    const img = document.getElementById('w-av').querySelector('img');
+    _swAddToHistory(s, img ? img.src : '');
+  }, 2000);
 
   renderTermTabs();
   renderStats(s, stats);
