@@ -4,21 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanyadet School — Student Portal</title>
-<meta name="theme-color" content="#0c1929">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Kanyadet Portal">
-<script>
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=>{
-    navigator.serviceWorker.register('./sw.js')
-      .then(r => console.log('SW registered:', r.scope))
-      .catch(e => console.warn('SW registration failed:', e));
-  });
-}
-</script>
+<script src="./image-popup.js"></script>
 
-
+    <link rel="stylesheet" href="./css/swalOnly.css">
+        <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet">
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
                       
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -1010,110 +1000,6 @@ body::before{
   .act-btns{width:100%;}
   .btn{flex:1;justify-content:center;}
 }
-
-/* ════════════════════════════════════════════
-   AVATAR LOADING SPINNER
-════════════════════════════════════════════ */
-.av-loading{position:relative;}
-.av-loading::after{
-  content:'';
-  position:absolute;inset:-3px;
-  border-radius:inherit;
-  border:2.5px solid transparent;
-  border-top-color:var(--blue-lt);
-  border-right-color:rgba(93,173,226,.3);
-  animation:avSpin .75s linear infinite;
-  pointer-events:none;
-}
-@keyframes avSpin{to{transform:rotate(360deg)}}
-
-/* ════════════════════════════════════════════
-   OFFLINE BANNER
-════════════════════════════════════════════ */
-#offline-banner{
-  display:none;position:fixed;top:0;left:0;right:0;z-index:99000;
-  background:linear-gradient(90deg,#e67e22,#d35400);
-  color:#fff;font-size:12px;font-weight:700;
-  text-align:center;padding:7px 16px;
-  letter-spacing:.02em;
-  animation:bannerIn .3s ease;
-  box-shadow:0 2px 12px rgba(230,126,34,.4);
-}
-#offline-banner.on{display:block;}
-@keyframes bannerIn{from{transform:translateY(-100%)}to{transform:translateY(0)}}
-
-/* ════════════════════════════════════════════
-   NETWORK QUALITY PILL (topbar)
-════════════════════════════════════════════ */
-#net-pill{
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:10px;font-weight:700;
-  padding:3px 9px;border-radius:12px;
-  border:1px solid var(--border);
-  background:var(--surface2);
-  color:var(--text2);
-  transition:var(--transition);
-  white-space:nowrap;
-}
-#net-pill .net-dot{
-  width:7px;height:7px;border-radius:50%;
-  background:#27ae60;
-  transition:background .4s;
-  flex-shrink:0;
-}
-#net-pill.slow .net-dot{background:#f39c12;animation:netPulse 1.2s ease-in-out infinite;}
-#net-pill.offline .net-dot{background:#e74c3c;}
-@keyframes netPulse{0%,100%{opacity:1}50%{opacity:.35}}
-
-/* ════════════════════════════════════════════
-   OFFLINE LOGIN NOTICE
-════════════════════════════════════════════ */
-#offline-login-notice{
-  display:none;
-  background:rgba(230,126,34,.1);
-  border:1px solid rgba(230,126,34,.35);
-  border-left:3px solid var(--orange);
-  border-radius:var(--radius-sm);
-  padding:10px 13px;
-  color:var(--orange);
-  font-size:11.5px;font-weight:600;
-  margin-bottom:14px;line-height:1.6;
-}
-#offline-login-notice.on{display:block;}
-
-/* ════════════════════════════════════════════
-   PWA INSTALL PROMPT
-════════════════════════════════════════════ */
-#install-prompt{
-  display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-  z-index:8500;
-  background:var(--surface);
-  border:1px solid var(--border-strong);
-  border-radius:var(--radius-lg);
-  padding:14px 20px;
-  box-shadow:0 12px 40px rgba(0,0,0,.35);
-  display:none;align-items:center;gap:14px;
-  max-width:360px;width:calc(100vw - 32px);
-  animation:promptIn .4s cubic-bezier(.34,1.56,.64,1);
-}
-#install-prompt.on{display:flex;}
-@keyframes promptIn{from{transform:translateX(-50%) translateY(80px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
-.install-icon{font-size:28px;flex-shrink:0;}
-.install-txt .install-title{font-size:13px;font-weight:800;color:var(--text);}
-.install-txt .install-sub{font-size:11px;color:var(--text2);margin-top:2px;}
-.install-actions{display:flex;gap:7px;margin-top:8px;}
-.install-btn{padding:6px 14px;border-radius:20px;border:none;cursor:pointer;font-size:12px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;transition:var(--transition);}
-.install-btn.primary{background:linear-gradient(135deg,var(--blue),var(--blue-dk));color:#fff;}
-.install-btn.secondary{background:transparent;border:1.5px solid var(--border);color:var(--text2);}
-
-/* ════════════════════════════════════════════
-   CACHED DATA BADGE
-════════════════════════════════════════════ */
-.cached-badge{
-  display:inline-flex;align-items:center;gap:4px;
-  background:rgba(230,126,34,.12);border:1px solid rgba(230,126,34,.3);
-  color:#e67e22;border-radius:10px;padding:1px 8px;font-size:9.5px;font-weight:700;
-}
 </style>
 </head>
 <body>
@@ -1126,24 +1012,6 @@ body::before{
 </div>
 
 <!-- PARTICLES -->
-<!-- ── OFFLINE BANNER ── -->
-<div id="offline-banner">
-  📡 You are offline — showing cached results. Changes won't save until you reconnect.
-</div>
-
-<!-- ── PWA INSTALL PROMPT ── -->
-<div id="install-prompt">
-  <div class="install-icon">📲</div>
-  <div class="install-txt">
-    <div class="install-title">Add to Home Screen</div>
-    <div class="install-sub">Access your results anytime, even offline.</div>
-    <div class="install-actions">
-      <button class="install-btn primary" onclick="doInstall()">Install App</button>
-      <button class="install-btn secondary" onclick="dismissInstall()">Not now</button>
-    </div>
-  </div>
-</div>
-
 <div class="particles" id="particles"></div>
 <div id="notif-area"></div>
 
@@ -1160,7 +1028,6 @@ body::before{
   </div>
   <div class="topbar-right">
     <!-- theme toggle -->
-    <span id="net-pill" title="Network status"><span class="net-dot"></span><span id="net-label">Online</span></span>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode" aria-label="Toggle theme">
       <span class="theme-icon moon">🌙</span>
       <span class="theme-icon sun">☀️</span>
@@ -1187,7 +1054,6 @@ body::before{
     <div class="login-card">
       <h2>🔐 Student Sign In</h2>
       <div class="err-msg" id="err-msg"></div>
-      <div id="offline-login-notice">📵 You're offline. <strong>Previous results</strong> can still be viewed — sign in with the same Assessment Number to load cached data.</div>
       <div class="fg">
         <label>Assessment Number</label>
         <div class="iw">
@@ -1422,19 +1288,19 @@ body::before{
 </div>
 
 <!-- jsPDF -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" onerror="console.warn('jsPDF CDN failed')"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js" onerror="console.warn('autotable CDN failed')"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" onerror="console.warn('html2canvas CDN failed')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <!-- Chart.js -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" onerror="console.warn('Chart.js CDN failed')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <!-- Firebase -->
 <script type="module">
   import { initializeApp, getApps } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
   import { getDatabase, ref, get, onValue, query, orderByChild, equalTo }  from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
   import { getStorage, ref as sRef, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js';
-  import { getAuth, signInAnonymously, signOut } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
-  window._fb = { initializeApp, getApps, getDatabase, ref, get, onValue, query, orderByChild, equalTo, getAuth, signInAnonymously, signOut };
+  import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+  window._fb = { initializeApp, getApps, getDatabase, ref, get, onValue, query, orderByChild, equalTo, getStorage, sRef, getDownloadURL, getAuth, signInAnonymously };
 </script>
 
 <script>
@@ -1511,6 +1377,7 @@ const REMARKS_DB = [
 //  STATE
 // ═══════════════════════════════════════════════════
 let db;
+let storage;
 let allRecs = [];   // all term records for this student
 let activeIdx = 0;  // currently selected term
 
@@ -1568,9 +1435,10 @@ window.addEventListener('load', ()=>{
   tryLoadLogo();
   waitFB(()=>{
     try{
-      const {initializeApp,getApps,getDatabase} = window._fb;
+      const {initializeApp,getApps,getDatabase,getStorage} = window._fb;
       const app = getApps().length===0 ? initializeApp(FB_CONFIG) : getApps()[0];
       db = getDatabase(app);
+      storage = getStorage(app);
       // Sign in anonymously so Firebase rules allow reading artifacts/
       const { getAuth, signInAnonymously } = window._fb;
       (async()=>{ try{ await signInAnonymously(getAuth(app)); }catch(e){ console.warn('Anon auth:',e.message); } _subscribeDbPhotos(db); })();
@@ -1634,23 +1502,9 @@ function calcStats(rec){
           level:g.level, label:g.label, cls:g.cls, assessed:scores.length, max:scores.length*100, subjects};
 }
 
-function _deterministicIdx(seed, len){
-  // Simple string hash → stable index; same student+term always gets same remark
-  let h = 0;
-  for(let i=0;i<seed.length;i++){ h = (Math.imul(31,h) + seed.charCodeAt(i)) | 0; }
-  return Math.abs(h) % len;
-}
-
-function getRemark(avg, rec){
+function getRemark(avg){
   const a = parseFloat(avg);
-  // Build a stable seed from Assessment No + Term so the same student+term always gets the same remark
-  const seed = rec ? String(rec['Assessment No']||'') + String(rec['Term']||'') : '';
-  for(const r of REMARKS_DB){
-    if(a>=r.min && a<=r.max){
-      const idx = seed ? _deterministicIdx(seed, r.list.length) : 0;
-      return r.list[idx];
-    }
-  }
+  for(const r of REMARKS_DB) if(a>=r.min && a<=r.max) return r.list[Math.floor(Math.random()*r.list.length)];
   return "Keep working hard and striving for excellence.";
 }
 
@@ -1678,20 +1532,17 @@ async function doLogin(){
   const btn = document.getElementById('login-btn-txt');
   btn.textContent = '🔄 Searching…';
   try{
-    const {ref, query: fbQuery, orderByChild, equalTo, get} = window._fb;
-    const q = fbQuery(ref(db, DB_PATH), orderByChild('Assessment No'), equalTo(aNo));
-    const snap = await get(q);
+    const {ref,get} = window._fb;
+    const snap = await get(ref(db, DB_PATH));
     const data = snap.val();
-    if(!data){ showErr('No records found. Check your Assessment Number.'); btn.textContent='🚀 View My Results'; return; }
+    if(!data){ showErr('No records found. Contact school admin.'); btn.textContent='🚀 View My Results'; return; }
 
     const found = [];
     for(const key in data){
       const s = data[key];
-      // Normalise: lowercase, strip hyphens/punctuation, split on whitespace
-      const normalize = str => String(str||'').toLowerCase().replace(/[-']/g,' ').trim();
-      const parts = normalize(s['Official Student Name']).split(/\s+/).filter(Boolean);
-      const input = normalize(name);
-      if(parts.some(p=>p.startsWith(input)||input.startsWith(p))) found.push({id:key,...s});
+      if(String(s['Assessment No']||'').trim() !== aNo) continue;
+      const parts = String(s['Official Student Name']||'').toLowerCase().split(/\s+/);
+      if(parts.some(p=>p===name)) found.push({id:key,...s});
     }
 
     if(found.length===0){
@@ -1699,14 +1550,8 @@ async function doLogin(){
       btn.textContent='🚀 View My Results'; return;
     }
 
-    // Sort terms by year then term number (robust against naming inconsistencies)
-    function termSortKey(t){
-      const s = String(t['Term']||'');
-      const year  = (s.match(/\b(20\d\d)\b/)||[])[1] || '0000';
-      const tnum  = (s.match(/\bterm[-\s]*(\d)/i)||[])[1] || '0';
-      return year + tnum;
-    }
-    found.sort((a,b)=>termSortKey(a).localeCompare(termSortKey(b)));
+    // sort oldest → newest
+    found.sort((a,b)=>String(a['Term']||'').localeCompare(String(b['Term']||'')));
     allRecs  = found;
     activeIdx = found.length-1;
     sessionStorage.setItem('kss_recs', JSON.stringify(found));
@@ -1726,11 +1571,6 @@ document.addEventListener('keydown', e=>{ if(e.key==='Enter' && !document.getEle
 function doSignOut(){
   sessionStorage.removeItem('kss_recs');
   allRecs=[]; activeIdx=0;
-  // Also sign out the anonymous Firebase session
-  try{
-    const { getAuth, signOut } = window._fb;
-    signOut(getAuth()).catch(()=>{});
-  }catch(e){}
   document.getElementById('dashboard').classList.remove('on');
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('user-pill').classList.remove('on');
@@ -1779,7 +1619,7 @@ function renderDash(){
   renderTermTabs();
   renderStats(s, stats);
   renderTable(s, stats);
-  document.getElementById('remark-txt').textContent = getRemark(stats.avg, s);
+  document.getElementById('remark-txt').textContent = getRemark(stats.avg);
 }
 
 function renderTermTabs(){
@@ -1856,7 +1696,7 @@ function buildPreviewHTML(rec){
   const stats = calcStats(rec);
   const subjects = getSubjects(rec);
   const termLabel = cleanTerm(rec['Term']);
-  const remark = getRemark(stats.avg, rec);
+  const remark = getRemark(stats.avg);
 
   const subjectRows = subjects.map((subj,i)=>{
     const score=rec[subj], num=parseFloat(score), g=gradeInfo(score);
@@ -2151,7 +1991,9 @@ async function drawPage(doc, rec, logoRes){
   yPos = yPos+42;
   doc.setFont(undefined,'bold'); doc.setFontSize(10); doc.setTextColor(0,0,0);
   doc.text('CLASS TEACHER REMARKS', 20, yPos);
-  const remark = getRemark(stats.avg, rec);
+  const remark = getRemark(stats.avg);
+  doc.setFont(undefined,'normal'); doc.setFontSize(9);
+  doc.setDrawColor(200,200,200);
   const remarkLines = doc.splitTextToSize(remark, pageWidth-40);
   let remY = yPos+6;
   remarkLines.forEach(line=>{ doc.text(line,20,remY); remY+=5; });
@@ -2422,7 +2264,6 @@ function renderCharts(rec){
   trendCard.style.display='';
   const tLabels = allRecs.map(r=>cleanTerm(r['Term']));
   const tData   = allRecs.map(r=>{ const st=calcStats(r); return parseFloat(st.avg)||0; });
-  const tColors = tData.map((_,i)=>i===activeIdx?'#e67e22':'#f39c12');
   const tCtx = document.getElementById('chart-trend').getContext('2d');
   if(trendChart){ trendChart.destroy(); trendChart=null; }
   trendChart = new Chart(tCtx,{
@@ -2437,57 +2278,21 @@ function renderCharts(rec){
         borderWidth:2.5,
         fill:true,
         tension:0.38,
-        pointBackgroundColor:tColors,
-        pointRadius:tData.map((_,i)=>i===activeIdx?7:4),
+        pointBackgroundColor:tData.map((_,i)=>i===activeIdx?'#e67e22':'#f39c12'),
+        pointRadius:tData.map((_,i)=>i===activeIdx?6:4),
         pointBorderColor:'#fff',
-        pointBorderWidth:2,
+        pointBorderWidth:1.5,
       }]
     },
     options:{
       responsive:true,maintainAspectRatio:false,
-      plugins:{
-        legend:{display:false},
-        tooltip:{callbacks:{
-          label:ctx=>`Avg: ${ctx.raw}%`,
-          afterLabel:ctx=>{
-            const g=gradeInfo(ctx.raw);
-            return `${g.level} — ${g.label}`;
-          }
-        }}
-      },
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Avg: ${ctx.raw}%`}}},
       scales:{
         x:{ticks:{color:textColor,font:{size:9}},grid:{color:gridColor}},
         y:{min:0,max:100,ticks:{color:textColor,font:{size:9},callback:v=>v+'%'},grid:{color:gridColor}},
       }
     }
   });
-
-  // Progress summary strip below trend chart
-  const first=tData[0], last=tData[tData.length-1];
-  const delta=(last-first).toFixed(1);
-  const arrow=delta>0?'▲':delta<0?'▼':'→';
-  const aColor=delta>0?'#27ae60':delta<0?'#e74c3c':'#5dade2';
-  const best=Math.max(...tData), worst=Math.min(...tData);
-  let strip = document.getElementById('trend-strip');
-  if(!strip){
-    strip=document.createElement('div');
-    strip.id='trend-strip';
-    strip.style.cssText='display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;font-size:10px;color:var(--text2);';
-    trendCard.appendChild(strip);
-  }
-  strip.innerHTML=`
-    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
-      <span style="color:${aColor};font-weight:800">${arrow} ${delta>0?'+':''}${delta}%</span> overall change
-    </span>
-    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
-      🏆 Best: <strong>${best}%</strong>
-    </span>
-    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
-      📌 Lowest: <strong>${worst}%</strong>
-    </span>
-    <span style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:3px 10px;">
-      📊 ${allRecs.length} term${allRecs.length>1?'s':''} tracked
-    </span>`;
 }
 
 // ═══════════════════════════════════════════════════
@@ -2727,12 +2532,9 @@ function renderStudyTips(s){
     body.innerHTML = `<div style="padding:10px 0;font-size:12px;color:var(--text2)">🌟 Excellent! All subjects are performing well. Keep up the great work!</div>`;
     return;
   }
-  const studentSeed = String(s['Assessment No']||'') + String(s['Term']||'');
   body.innerHTML = needsWork.map(({sub,v})=>{
     const tips = TIPS_DB[sub]||['Keep practising this subject consistently.'];
-    // Stable tip selection: hash of (student seed + subject name)
-    const tipIdx = Math.abs(_deterministicIdx(studentSeed + sub, tips.length));
-    const tip = tips[tipIdx];
+    const tip = tips[Math.floor(Math.random()*tips.length)];
     const bg = barColor(v); const g = gradeInfo(v);
     return `<div class="tip-item">
       <div style="min-width:130px">
@@ -2865,6 +2667,7 @@ function closeShareModal(){ document.getElementById('share-modal').classList.rem
 window.openShareModal=openShareModal; window.saveShareCard=saveShareCard; window.closeShareModal=closeShareModal;
 
 // ─── Escape also closes new modals ───
+const _origKeydown = document.onkeydown;
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape'){
     if(document.getElementById('scale-modal').classList.contains('on')){ closeScaleModal(); return; }
@@ -2877,278 +2680,7 @@ document.addEventListener('keydown', e=>{
 });
 
 </script>
-<script>
-// ═══════════════════════════════════════════════════
-//  IMAGE POPUP / LIGHTBOX  (inlined — was image-popup.js)
-// ═══════════════════════════════════════════════════
-(function(){
-  // Inject overlay styles
-  const style = document.createElement('style');
-  style.textContent = `
-    #img-popup-overlay{
-      display:none;position:fixed;inset:0;z-index:99999;
-      background:rgba(0,0,0,.82);backdrop-filter:blur(6px);
-      align-items:center;justify-content:center;cursor:zoom-out;
-    }
-    #img-popup-overlay.on{display:flex;}
-    #img-popup-overlay img{
-      max-width:88vw;max-height:88vh;
-      border-radius:14px;
-      box-shadow:0 24px 80px rgba(0,0,0,.7);
-      object-fit:contain;
-      animation:imgPopIn .22s cubic-bezier(.34,1.56,.64,1);
-      cursor:default;
-    }
-    @keyframes imgPopIn{from{transform:scale(.82);opacity:0}to{transform:scale(1);opacity:1}}
-    #img-popup-close{
-      position:fixed;top:18px;right:22px;
-      background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.25);
-      color:#fff;border-radius:50%;width:38px;height:38px;
-      font-size:18px;line-height:1;cursor:pointer;
-      display:flex;align-items:center;justify-content:center;
-      transition:background .18s;z-index:100000;
-    }
-    #img-popup-close:hover{background:rgba(255,255,255,.22);}
-    .img-zoomable{cursor:zoom-in!important;}
-  `;
-  document.head.appendChild(style);
-
-  // Build overlay DOM
-  const overlay = document.createElement('div');
-  overlay.id = 'img-popup-overlay';
-  const closeBtn = document.createElement('button');
-  closeBtn.id = 'img-popup-close';
-  closeBtn.textContent = '✕';
-  closeBtn.title = 'Close (Esc)';
-  const popImg = document.createElement('img');
-  popImg.alt = 'Photo';
-  overlay.appendChild(closeBtn);
-  overlay.appendChild(popImg);
-  document.body.appendChild(overlay);
-
-  function open(src, alt){
-    popImg.src = src;
-    if(alt) popImg.alt = alt;
-    overlay.classList.add('on');
-    document.body.style.overflow = 'hidden';
-  }
-  function close(){
-    overlay.classList.remove('on');
-    document.body.style.overflow = '';
-    setTimeout(()=>{ popImg.src=''; }, 300);
-  }
-
-  closeBtn.addEventListener('click', e=>{ e.stopPropagation(); close(); });
-  overlay.addEventListener('click', close);
-  popImg.addEventListener('click', e=>e.stopPropagation());
-  document.addEventListener('keydown', e=>{ if(e.key==='Escape' && overlay.classList.contains('on')) close(); });
-
-  // Auto-attach to any <img> inside avatar / photo containers, now and on DOM mutations
-  function attachToImg(img){
-    if(img._popupAttached) return;
-    img._popupAttached = true;
-    img.classList.add('img-zoomable');
-    img.addEventListener('click', ()=>{ if(img.src && !img.src.endsWith('#')) open(img.src, img.alt); });
-  }
-
-  function scanAndAttach(){
-    document.querySelectorAll('.w-av img, .u-av img, #img-popup-overlay img').forEach(img=>{
-      if(img.id !== 'img-popup-overlay img') attachToImg(img);
-    });
-    // Also attach to any img directly inside .u-av or .w-av containers
-    document.querySelectorAll('.w-av, .u-av').forEach(el=>{
-      el.querySelectorAll('img').forEach(img=>attachToImg(img));
-    });
-  }
-
-  // Run on load and watch for dynamically added photos
-  document.addEventListener('DOMContentLoaded', scanAndAttach);
-  window.addEventListener('load', scanAndAttach);
-  const mo = new MutationObserver(scanAndAttach);
-  mo.observe(document.body, {childList:true, subtree:true});
-
-  // Expose globally in case other code calls it
-  window.openImagePopup = open;
-  window.closeImagePopup = close;
-})();
-</script>
-
-
-<script>
-// ═══════════════════════════════════════════════════
-//  NETWORK QUALITY & OFFLINE DETECTION
-// ═══════════════════════════════════════════════════
-(function(){
-  const banner  = document.getElementById('offline-banner');
-  const pill    = document.getElementById('net-pill');
-  const pillLbl = document.getElementById('net-label');
-  const notice  = document.getElementById('offline-login-notice');
-
-  function setNetState(state, label){
-    pill.className = '';
-    if(state !== 'online') pill.classList.add(state);
-    pillLbl.textContent = label;
-    banner.classList.toggle('on', state === 'offline');
-    if(notice) notice.classList.toggle('on', state !== 'online');
-    // Push topbar down by banner height when offline
-    document.querySelector('.top-bar').style.marginTop = state === 'offline' ? '38px' : '';
-  }
-
-  function checkConnection(){
-    if(!navigator.onLine){ setNetState('offline','Offline'); return; }
-    const conn = navigator.connection;
-    if(conn){
-      const type = conn.effectiveType; // '4g','3g','2g','slow-2g'
-      if(type === 'slow-2g' || type === '2g'){
-        setNetState('slow', 'Slow network');
-      } else if(type === '3g'){
-        setNetState('slow', '3G');
-      } else {
-        setNetState('online', 'Online');
-      }
-    } else {
-      setNetState('online', 'Online');
-    }
-  }
-
-  window.addEventListener('online',  checkConnection);
-  window.addEventListener('offline', checkConnection);
-  if(navigator.connection) navigator.connection.addEventListener('change', checkConnection);
-  checkConnection();
-
-  // Expose for offline login use
-  window._isOffline = () => !navigator.onLine;
-})();
-
-// ═══════════════════════════════════════════════════
-//  AVATAR SPINNER — show while photo is loading
-// ═══════════════════════════════════════════════════
-(function(){
-  // Patch _applyPhoto to add/remove spinner class
-  const _orig = window._applyPhoto || null;
-
-  function patchApplyPhoto(){
-    if(!window._applyPhoto){ setTimeout(patchApplyPhoto, 100); return; }
-    const orig = window._applyPhoto;
-    window._applyPhoto = function(el, src){
-      if(!el || !src) return;
-      // Start spinner
-      el.classList.add('av-loading');
-      // Call original to inject the img
-      orig(el, src);
-      // Find the img (may have just been created)
-      const img = el.tagName === 'IMG' ? el : el.querySelector('img');
-      if(img){
-        const finish = () => el.classList.remove('av-loading');
-        if(img.complete && img.naturalWidth > 0){
-          finish();
-        } else {
-          img.addEventListener('load',  finish, {once:true});
-          img.addEventListener('error', finish, {once:true});
-        }
-      } else {
-        // Fallback: remove spinner after 3s
-        setTimeout(()=>el.classList.remove('av-loading'), 3000);
-      }
-    };
-  }
-  patchApplyPhoto();
-
-  // Also add spinner to avatars that have data-photo-name stamped on them
-  // (waiting for Firebase photo map to arrive)
-  const mo = new MutationObserver(muts => {
-    muts.forEach(m => m.addedNodes.forEach(n => {
-      if(n.nodeType !== 1) return;
-      const avs = n.classList && (n.classList.contains('w-av') || n.classList.contains('u-av'))
-        ? [n] : [...n.querySelectorAll('.w-av,.u-av')];
-      avs.forEach(av => {
-        if(av.getAttribute('data-photo-name') && !av.querySelector('img')){
-          av.classList.add('av-loading');
-        }
-      });
-    }));
-  });
-  mo.observe(document.body, {childList:true, subtree:true});
-})();
-
-// ═══════════════════════════════════════════════════
-//  OFFLINE LOGIN FALLBACK
-//  If offline and sessionStorage has records → skip Firebase, load cache
-// ═══════════════════════════════════════════════════
-(function(){
-  // Patch doLogin to intercept offline case
-  function patchLogin(){
-    if(typeof window.doLogin !== 'function'){ setTimeout(patchLogin, 100); return; }
-    const orig = window.doLogin;
-    window.doLogin = async function(){
-      if(navigator.onLine){ return orig(); }
-
-      // Offline path: try sessionStorage
-      const saved = sessionStorage.getItem('kss_recs');
-      if(saved){
-        try{
-          const recs = JSON.parse(saved);
-          const aNo  = document.getElementById('inp-asm').value.trim();
-          const name = document.getElementById('inp-name').value.trim().toLowerCase();
-          // Verify credentials match cached data
-          if(recs.length && (!aNo || String(recs[0]['Assessment No']||'').trim() === aNo)){
-            allRecs  = recs;
-            activeIdx = recs.length - 1;
-            notify('📦 Loaded <strong>cached results</strong> — you are offline.','info', 6000);
-            // Show cached badge in welcome card
-            setTimeout(()=>{
-              const br = document.getElementById('badge-row');
-              if(br && !br.querySelector('.cached-badge')){
-                br.insertAdjacentHTML('beforeend','<span class="cached-badge">📦 Cached</span>');
-              }
-            }, 500);
-            renderDash();
-            return;
-          }
-        }catch(e){}
-      }
-      // No cache match
-      showErr('📵 You are offline and no cached results were found. Please connect to the internet and try again.');
-    };
-  }
-  patchLogin();
-})();
-
-// ═══════════════════════════════════════════════════
-//  PWA INSTALL PROMPT
-// ═══════════════════════════════════════════════════
-let _deferredInstall = null;
-window.addEventListener('beforeinstallprompt', e => {
-  e.preventDefault();
-  _deferredInstall = e;
-  // Only show if not already installed and user hasn't dismissed
-  if(!localStorage.getItem('kss_install_dismissed')){
-    setTimeout(()=>{
-      document.getElementById('install-prompt').classList.add('on');
-    }, 4000);
-  }
-});
-function doInstall(){
-  document.getElementById('install-prompt').classList.remove('on');
-  if(_deferredInstall){
-    _deferredInstall.prompt();
-    _deferredInstall.userChoice.then(r=>{
-      if(r.outcome==='accepted') notify('✅ App installed! Find it on your home screen.','success',5000);
-      _deferredInstall = null;
-    });
-  }
-}
-function dismissInstall(){
-  document.getElementById('install-prompt').classList.remove('on');
-  localStorage.setItem('kss_install_dismissed','1');
-}
-window.doInstall   = doInstall;
-window.dismissInstall = dismissInstall;
-window.addEventListener('appinstalled', ()=>{
-  document.getElementById('install-prompt').classList.remove('on');
-  notify('📲 Portal installed on your device!','success',5000);
-});
-</script>
+<script src="./image-popup.js"></script>
 
 </body>
 </html>
