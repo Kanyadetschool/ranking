@@ -3519,11 +3519,8 @@ let _kpiLastHash = '';
 const _updateKPIImmediate = (students) => {
     const total = students.length;
     if (!total) { kpiGrid.innerHTML = ''; kpiGrid.style.display = 'none'; _kpiLastHash=''; return; }
-    // Skip full rebuild if counts haven't changed
-    const male0  = students.filter(s=>(s.Gender||'').toLowerCase()==='male').length;
-    const fem0   = students.filter(s=>(s.Gender||'').toLowerCase()==='female').length;
-    const pdf0   = students.filter(s=>s._pdfHref).length;
-    const qHash  = `${total}|${male0}|${fem0}|${pdf0}`;
+    // Skip full rebuild if student count unchanged and cards already rendered
+    const qHash = String(total) + '|' + (students[0] ? (students[0].Grade||'') + (students[0].id||'') : '');
     if (qHash === _kpiLastHash && kpiGrid.children.length === 5) return;
     _kpiLastHash = qHash;
 
@@ -4082,9 +4079,8 @@ const renderStudents = (students) => {
     renderStudents._forceRebuild = false;
     _rowCache.clear(); // column defs changed — stale cache no longer valid
 
-    // Defer KPI + analytics until after table paints — don't block first render
-    const _ric = window.requestIdleCallback || ((fn) => setTimeout(fn, 80));
-    _ric(() => { updateKPI(students); updateAnalytics(students); });
+    updateKPI(students);
+    updateAnalytics(students);
 
     if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
 
