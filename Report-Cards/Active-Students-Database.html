@@ -2862,24 +2862,21 @@ function _softUnlock() {
 // ── FETCH STUDENTS ────────────────────────────────────
 const fetchStudents = () => {
     const studentsRef = ref(db, `artifacts/${sanitizedAppId}/students`);
-    let _fbRenderTimer = null;
-    let _fbPendingData = null;
-    let _isFirstLoad   = true;
-    let _fbLastCount   = -1;
-
-    const _applySnapshot = (rawData) => {
-        const newCount = rawData ? Object.keys(rawData).length : 0;
-        studentsData = rawData
-            ? Object.entries(rawData)
+    onValue(studentsRef, (snapshot) => {
+        const data = snapshot.val();
+        studentsData = data
+            ? Object.entries(data)
                 .map(([id, val]) => ({ id, ...val }))
                 .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
             : [];
-        window._studentsData     = studentsData;
-        window._tabulatorTable   = tabulatorTable;
+        // ── Expose to feature modules ──
+        window._studentsData   = studentsData;
+        window._tabulatorTable = tabulatorTable;
         window._selectedStudents = selectedStudents;
-        window._fbDb             = db;
-        window._fbSDK            = { ref, set, get, update, remove, signOut: () => signOut(auth) };
+        window._fbDb           = db;
+        window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
         updateGradeFilter();
+        // First load → build table. Subsequent Firebase pushes → fast data swap only.
         if (tabulatorTable && !renderStudents._forceRebuild) {
             currentFilteredStudents = studentsData;
             updateKPI(studentsData);
@@ -2888,24 +2885,13 @@ const fetchStudents = () => {
         } else {
             renderStudents(studentsData);
         }
+        // ── Background badge check for Unmatched PDFs ──
         if (typeof window._recheckUnmatched === 'function') {
+            // Debounce so only the final data snapshot triggers a check
             clearTimeout(window._unmatchedBadgeDebounce);
-            window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 1200);
+            window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 800);
         }
-    };
-
-    onValue(studentsRef, (snapshot) => {
-        const raw = snapshot.val();
-        if (_isFirstLoad) {
-            // First load: render immediately so table appears fast
-            _isFirstLoad = false;
-            _applySnapshot(raw);
-            return;
-        }
-        // Subsequent pushes (photo/cert uploads etc): debounce to avoid rapid re-renders
-        _fbPendingData = raw;
-        clearTimeout(_fbRenderTimer);
-        _fbRenderTimer = setTimeout(() => _applySnapshot(_fbPendingData), 300);
+        
     }, (error) => {
         showModal(`Error fetching data: ${error.message}`);
         
@@ -2931,19 +2917,12 @@ const updateGradeFilter = () => {
 };
 
 // ── ORDERED HEADERS ───────────────────────────────────
-let _headersCache = null;
-let _headersCacheKey = '';
 const getOrderedHeaders = (students) => {
-    // Cache key: student count + first student's key fingerprint (fast proxy for schema change)
-    const cacheKey = students.length + '|' + (students[0] ? Object.keys(students[0]).sort().join(',') : '');
-    if (_headersCache && _headersCacheKey === cacheKey) return _headersCache;
     const allKeys = new Set();
     students.forEach(s => Object.keys(s).forEach(k => allKeys.add(k)));
     const priority = ['Grade', 'Assessment No', 'Official Student Name', 'UPI', 'Gender'];
     const others = Array.from(allKeys).filter(k => k !== 'id' && !priority.includes(k)).sort();
-    _headersCache = [...priority.filter(k => allKeys.has(k)), ...others];
-    _headersCacheKey = cacheKey;
-    return _headersCache;
+    return [...priority.filter(k => allKeys.has(k)), ...others];
 };
 
 // ── KPI CARDS ─────────────────────────────────────────
@@ -3513,31 +3492,24 @@ function _buildPdfDrawer(students) {
         </div>`;
 }
 
-let _kpiDebounceTimer = null;
-let _kpiPendingStudents = null;
-let _kpiLastHash = '';
-const _updateKPIImmediate = (students) => {
+const updateKPI = (students) => {
     const total = students.length;
-    if (!total) { kpiGrid.innerHTML = ''; kpiGrid.style.display = 'none'; _kpiLastHash=''; return; }
-    // Skip full rebuild if student count unchanged and cards already rendered
-    const qHash = String(total) + '|' + (students[0] ? (students[0].Grade||'') + (students[0].id||'') : '');
-    if (qHash === _kpiLastHash && kpiGrid.children.length === 5) return;
-    _kpiLastHash = qHash;
+    if (!total) { kpiGrid.innerHTML = ''; kpiGrid.style.display = 'none'; return; }
 
-    // Single-pass core counts + quality score
+    // Core counts
     const gradeMap = {};
+    students.forEach(s => { const g = s.Grade||'?'; gradeMap[g]=(gradeMap[g]||0)+1; });
+    const grades = Object.keys(gradeMap).filter(g=>g!=='?').length;
+    const male   = students.filter(s=>(s.Gender||'').toLowerCase()==='male').length;
+    const female = students.filter(s=>(s.Gender||'').toLowerCase()==='female').length;
+    const unspecGender = total - male - female;
+
+    // Data quality score (weighted)
     const fields = ['Official Student Name','Grade','Gender','Assessment No','UPI','DOB'];
     const weights = [2, 2, 1, 2, 1, 1];
     const maxScore = weights.reduce((a,b)=>a+b,0);
-    let male = 0, female = 0, totalScore = 0;
-    students.forEach(s => {
-        const g = s.Grade||'?'; gradeMap[g]=(gradeMap[g]||0)+1;
-        const gen = (s.Gender||'').toLowerCase();
-        if (gen === 'male') male++; else if (gen === 'female') female++;
-        fields.forEach((f,i) => { if(s[f]) totalScore += weights[i]; });
-    });
-    const grades = Object.keys(gradeMap).filter(g=>g!=='?').length;
-    const unspecGender = total - male - female;
+    let totalScore = 0;
+    students.forEach(s => fields.forEach((f,i) => { if(s[f]) totalScore += weights[i]; }));
     const qualityPct = Math.round(totalScore / (total * maxScore) * 100);
     const qualityClass = qualityPct >= 85 ? 'up' : qualityPct >= 60 ? 'warn' : 'down';
     const qualityLabel = qualityPct >= 85 ? '✦ Excellent' : qualityPct >= 60 ? '⚠ Fair' : '✕ Poor';
@@ -3659,9 +3631,12 @@ const _updateKPIImmediate = (students) => {
 
     // 2. Gender drawer
     const genderDist = {};
+    students.forEach(s => { const g=(s.Gender||'').trim()||'Not Set'; genderDist[g]=(genderDist[g]||0)+1; });
+    const genderEntries = Object.entries(genderDist).sort((a,b)=>b[1]-a[1]);
+    const genderMax = genderEntries.length ? genderEntries[0][1] : 1;
+    // Per-grade gender split
     const gradeGenderMap = {};
     students.forEach(s => {
-        const g=(s.Gender||'').trim()||'Not Set'; genderDist[g]=(genderDist[g]||0)+1;
         if (!s.Grade) return;
         if (!gradeGenderMap[s.Grade]) gradeGenderMap[s.Grade] = {m:0,f:0,o:0};
         const g=(s.Gender||'').toLowerCase();
@@ -3758,23 +3733,8 @@ const _updateKPIImmediate = (students) => {
     setTimeout(() => _bgScanPdfs(students), 800);
 };
 
-// Debounced wrapper — batches rapid calls (filter typing, Firebase pushes) into one render
-const updateKPI = (students) => {
-    _kpiPendingStudents = students;
-    clearTimeout(_kpiDebounceTimer);
-    _kpiDebounceTimer = setTimeout(() => {
-        if (_kpiPendingStudents) _updateKPIImmediate(_kpiPendingStudents);
-    }, 120);
-};
-
 // ── SMART ANALYTICS ─────────────────────────────────────
-let _analyticsDebounceTimer = null;
-let _analyticsPending = null;
-let _analyticsLastHash = '';
-const _updateAnalyticsImmediate = (students) => {
-    const _aHash = students.length + '|' + (students[0] ? (students[0].Grade||'') : '');
-    if (_aHash === _analyticsLastHash && statsSection.children.length) return;
-    _analyticsLastHash = _aHash;
+const updateAnalytics = (students) => {
     if (!students || students.length === 0) { statsSection.innerHTML = ''; return; }
     const total = students.length;
 
@@ -3870,15 +3830,6 @@ const _updateAnalyticsImmediate = (students) => {
     </div>`;
 };
 
-// Debounced wrapper for analytics
-const updateAnalytics = (students) => {
-    _analyticsPending = students;
-    clearTimeout(_analyticsDebounceTimer);
-    _analyticsDebounceTimer = setTimeout(() => {
-        if (_analyticsPending) _updateAnalyticsImmediate(_analyticsPending);
-    }, 150);
-};
-
 // ── UPDATE COUNT BADGE ────────────────────────────────
 const updateCountBadge = () => {
     if (!tabulatorTable) return;
@@ -3891,6 +3842,8 @@ const updateCountBadge = () => {
 // ── RENDER (TABULATOR) ────────────────────────────────
 const renderStudents = (students) => {
     currentFilteredStudents = students;
+    updateKPI(students);
+    updateAnalytics(students);
 
     const headers = getOrderedHeaders(students);
     const priorityFirst = ['Grade', 'Assessment No', 'Official Student Name'];
@@ -4022,14 +3975,12 @@ const renderStudents = (students) => {
         }))
     ];
 
-    // Compute completeness per student using the full global schema (cached via headers)
-    if (!globalHeaders.length || globalHeaders.length !== headers.length) {
-        const globalKeys = new Set();
-        (window._studentsData || studentsData).forEach(st =>
-            Object.keys(st).forEach(k => { if (k !== 'id' && !k.startsWith('_')) globalKeys.add(k); })
-        );
-        globalHeaders = [...globalKeys];
-    }
+    // Compute completeness per student using the full global schema
+    const globalKeys = new Set();
+    (window._studentsData || studentsData).forEach(st =>
+        Object.keys(st).forEach(k => { if (k !== 'id' && !k.startsWith('_')) globalKeys.add(k); })
+    );
+    globalHeaders = [...globalKeys];
     // criticalForRow is module-scoped constant, no reassignment needed
 
     // ── Age calculation helper (DOB format: DD.MM.YY) ──
@@ -4077,10 +4028,6 @@ const renderStudents = (students) => {
         return;
     }
     renderStudents._forceRebuild = false;
-    _rowCache.clear(); // column defs changed — stale cache no longer valid
-
-    updateKPI(students);
-    updateAnalytics(students);
 
     if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
 
@@ -4792,14 +4739,6 @@ studentsPerPageSelect.addEventListener('change', (e) => {
 // ── SEARCH & GRADE FILTER ─────────────────────────────
 const CRITICAL_ROW_FIELDS = criticalForRow; // alias → module-scoped criticalForRow
 // ── Fast filter: update data without rebuilding table ────────
-// Row cache: skip recomputing rows whose data hash hasn't changed
-const _rowCache = new Map(); // id → { hash, rowData }
-const _hashStudent = (s) => {
-    // Ultra-cheap hash: only fields that affect display (skip blobs and internal fields)
-    return (s['Official Student Name']||'') + '|' + (s['Assessment No']||'') + '|' +
-           (s.Grade||'') + '|' + (s.Gender||'') + '|' + (s.UPI||'') + '|' +
-           (s.DOB||'') + '|' + (s['Class']||'') + '|' + Object.keys(s).length;
-};
 const _buildRowData = (students) => {
     // Uses module-scoped globalHeaders + criticalForRow (set by renderStudents on first load)
     const headers = getOrderedHeaders(students);
@@ -4823,16 +4762,6 @@ const _buildRowData = (students) => {
         return { years, months };
     };
     return students.map(s => {
-        const hash = _hashStudent(s);
-        const cached = _rowCache.get(s.id);
-        if (cached && cached.hash === hash) {
-            // Data unchanged — reuse cached row but update photo/cert refs
-            const r = cached.row;
-            r.photoURL        = s.photoURL || '';
-            r.birthCertBase64 = s.birthCertBase64 || '';
-            r.birthCertName   = s.birthCertName || '';
-            return r;
-        }
         const row = { id: s.id, _actions: '', _img: '', photoURL: s.photoURL || '',
             birthCertBase64: s.birthCertBase64 || '', birthCertName: s.birthCertName || '' };
         headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
@@ -4843,7 +4772,6 @@ const _buildRowData = (students) => {
         const filled = gh.filter(h => !_mv(s[h])).length;
         row._compl = gh.length > 0 ? (filled / gh.length) * 100 : 100;
         row._missingFields = criticalForRow.filter(f => _mv(s[f]));
-        _rowCache.set(s.id, { hash, row });
         return row;
     });
 };
@@ -5514,7 +5442,6 @@ drawerSaveBtn.addEventListener('click', async () => {
         // Refresh history panel if it's open
         if (typeof loadHistPanel === 'function') loadHistPanel();
         else if (typeof window._loadHistPanel === 'function') window._loadHistPanel();
-        _rowCache.delete(drawerCurrentId); // invalidate cached row
         if (tabulatorTable) {
             const trow = tabulatorTable.getRow(drawerCurrentId);
             if (trow) trow.update({ ...updatedData });
