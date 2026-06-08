@@ -1306,66 +1306,63 @@
 <div id="pdf-modal-backdrop" class="modal-backdrop hidden" style="align-items:stretch;justify-content:stretch;padding:0;">
     <div style="position:relative;width:100%;height:100%;display:flex;flex-direction:column;background:var(--surface);overflow:hidden;">
 
-        <!-- Header bar -->
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1.25rem;flex-shrink:0;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.08);">
-            <div style="display:flex;align-items:center;gap:.85rem;min-width:0;">
-                <img id="pdf-modal-student-image" class="modal-student-image" src="" alt="" onerror="this.src='./student_images/default.jpg'" style="width:40px;height:40px;border-radius:8px;border:2px solid rgba(255,255,255,.2);">
-                <div style="min-width:0;">
-                    <div id="pdf-modal-student-name" style="font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-                    <div style="font-size:.72rem;color:rgba(255,255,255,.5);">Birth Certificate</div>
-                </div>
+        <!-- Single combined header: avatar · name · | · grade▾ · ◀ student ▶ · | · ◀ page ▶ · rotate · zoom · | · ↓ · × -->
+        <div id="pdf-toolbar" style="display:flex;align-items:center;gap:.35rem;flex-shrink:0;background:var(--navy);border-bottom:1px solid rgba(255,255,255,.1);padding:.45rem .75rem;flex-wrap:nowrap;overflow-x:auto;">
+            <!-- Avatar + name -->
+            <img id="pdf-modal-student-image" class="modal-student-image" src="" alt="" onerror="this.src='./student_images/default.jpg'" style="width:32px;height:32px;flex-shrink:0;border-radius:6px;border:2px solid rgba(255,255,255,.2);">
+            <div style="min-width:0;flex-shrink:1;max-width:160px;">
+                <div id="pdf-modal-student-name" style="font-family:'Playfair Display',serif;font-size:.82rem;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.2;"></div>
+                <div style="font-size:.62rem;color:rgba(255,255,255,.4);line-height:1;white-space:nowrap;">Birth Certificate</div>
             </div>
-            <button id="close-pdf-modal-btn" title="Close" style="width:36px;height:36px;flex-shrink:0;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
-        </div>
-
-        <!-- Grade filter + student navigation bar -->
-        <div id="pdf-nav-bar" style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;background:#1a2e50;border-bottom:1px solid rgba(255,255,255,.08);padding:.4rem .85rem;">
-            <select id="pdf-nav-grade" style="padding:.3rem .55rem;border:1px solid rgba(255,255,255,.2);border-radius:6px;font-size:.76rem;font-weight:600;font-family:'DM Sans',sans-serif;background:#243860;color:#fff;outline:none;cursor:pointer;max-width:130px;">
+            <div style="width:1px;height:24px;background:rgba(255,255,255,.15);flex-shrink:0;margin:0 .1rem;"></div>
+            <!-- Grade filter -->
+            <select id="pdf-nav-grade" style="padding:.22rem .4rem;border:1px solid rgba(255,255,255,.18);border-radius:5px;font-size:.72rem;font-weight:600;font-family:'DM Sans',sans-serif;background:rgba(255,255,255,.09);color:#fff;outline:none;cursor:pointer;flex-shrink:0;max-width:100px;">
                 <option value="">All grades</option>
             </select>
-            <div style="display:flex;align-items:center;gap:.3rem;margin-left:auto;">
-                <button id="pdf-nav-prev" title="Previous student in grade" style="width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
-                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-                </button>
-                <span id="pdf-nav-counter" style="font-size:.73rem;font-weight:700;color:rgba(255,255,255,.7);min-width:52px;text-align:center;white-space:nowrap;">— / —</span>
-                <button id="pdf-nav-next" title="Next student in grade" style="width:28px;height:28px;border-radius:6px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.08)'">
-                    <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- Toolbar -->
-        <div id="pdf-toolbar" style="display:flex;align-items:center;gap:.45rem;flex-shrink:0;background:var(--surface2);border-bottom:1px solid var(--border);padding:.45rem 1rem;">
-            <button id="pdf-prev-btn" title="Previous page" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+            <!-- Student prev / counter / next -->
+            <button id="pdf-nav-prev" title="Previous student" style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">
+                <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             </button>
-            <span id="pdf-page-info" style="font-size:.8rem;font-weight:600;color:var(--navy);white-space:nowrap;min-width:60px;text-align:center;">— / —</span>
-            <button id="pdf-next-btn" title="Next page" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+            <span id="pdf-nav-counter" style="font-size:.7rem;font-weight:700;color:rgba(255,255,255,.65);white-space:nowrap;min-width:30px;text-align:center;">—/—</span>
+            <button id="pdf-nav-next" title="Next student" style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">
+                <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </button>
-            <div style="width:1px;height:22px;background:var(--border);margin:0 .15rem;"></div>
-            <button id="pdf-rotate-ccw" title="Rotate counter-clockwise" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg>
+            <div style="width:1px;height:24px;background:rgba(255,255,255,.15);flex-shrink:0;margin:0 .1rem;"></div>
+            <!-- Page prev / info / next -->
+            <button id="pdf-prev-btn" title="Previous page" style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">
+                <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
             </button>
-            <button id="pdf-rotate-cw" title="Rotate clockwise" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;">
-                <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3"/></svg>
+            <span id="pdf-page-info" style="font-size:.7rem;font-weight:700;color:rgba(255,255,255,.65);white-space:nowrap;min-width:30px;text-align:center;">—/—</span>
+            <button id="pdf-next-btn" title="Next page" style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">
+                <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
             </button>
-            <span id="pdf-rotation-badge" style="font-size:.72rem;font-weight:700;color:var(--slate);min-width:28px;">0°</span>
-            <div style="width:1px;height:22px;background:var(--border);margin:0 .15rem;"></div>
-            <a id="pdf-download-link" href="#" download style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;" title="Download PDF">
-                <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
+            <div style="width:1px;height:24px;background:rgba(255,255,255,.15);flex-shrink:0;margin:0 .1rem;"></div>
+            <!-- Rotate -->
+            <button id="pdf-rotate-ccw" title="Rotate CCW" style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg>
+            </button>
+            <button id="pdf-rotate-cw" title="Rotate CW" style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">
+                <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 15l6-6m0 0l-6-6m6 6H9a6 6 0 000 12h3"/></svg>
+            </button>
+            <span id="pdf-rotation-badge" style="font-size:.68rem;font-weight:700;color:rgba(255,255,255,.55);min-width:24px;white-space:nowrap;">0°</span>
+            <div style="width:1px;height:24px;background:rgba(255,255,255,.15);flex-shrink:0;margin:0 .1rem;"></div>
+            <!-- Zoom -->
+            <button id="pdf-zoom-out" title="Zoom out (-)" style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;line-height:1;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">−</button>
+            <span id="pdf-zoom-level" style="font-size:.7rem;font-weight:700;color:rgba(255,255,255,.65);min-width:34px;text-align:center;user-select:none;white-space:nowrap;">100%</span>
+            <button id="pdf-zoom-in" title="Zoom in (+)" style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1rem;font-weight:700;line-height:1;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">+</button>
+            <button id="pdf-zoom-reset" title="Fit to screen" style="height:24px;padding:0 .45rem;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;font-size:.65rem;font-weight:700;font-family:'DM Sans',sans-serif;white-space:nowrap;" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">FIT</button>
+            <!-- Download + spinner -->
+            <a id="pdf-download-link" href="#" download style="width:24px;height:24px;flex-shrink:0;border-radius:5px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.07);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;text-decoration:none;" title="Download PDF" onmouseover="this.style.background='rgba(255,255,255,.18)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 4v11"/></svg>
             </a>
-            <span id="pdf-loading-spinner" style="display:none;margin-left:.4rem;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--navy-lt)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
+            <span id="pdf-loading-spinner" style="display:none;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,.6)" stroke-width="2.5" style="animation:um-spin .8s linear infinite;"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>
             </span>
-            <div style="width:1px;height:22px;background:var(--border);margin:0 .15rem;"></div>
-            <!-- Zoom Controls -->
-            <button id="pdf-zoom-out" title="Zoom out (-)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;line-height:1;">−</button>
-            <span id="pdf-zoom-level" style="font-size:.78rem;font-weight:700;color:var(--navy);min-width:40px;text-align:center;user-select:none;">100%</span>
-            <button id="pdf-zoom-in" title="Zoom in (+)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:700;line-height:1;">+</button>
-            <button id="pdf-zoom-reset" title="Reset zoom (0)" style="width:30px;height:30px;border-radius:6px;border:1px solid var(--border);background:var(--surface);color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.65rem;font-weight:700;">FIT</button>
+            <!-- Spacer + close -->
+            <div style="flex:1;min-width:.25rem;"></div>
+            <button id="close-pdf-modal-btn" title="Close" style="width:28px;height:28px;flex-shrink:0;border-radius:50%;background:var(--danger);color:#fff;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
         </div>
 
         <!-- Canvas area — takes all remaining vertical space -->
