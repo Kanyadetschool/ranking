@@ -1265,7 +1265,7 @@
 </div>
 
 <!-- Export modal -->
-<div id="print-modal" class="modal-backdrop hidden" style="z-index:9700;">
+<div id="print-modal" class="modal-backdrop hidden">
     <div class="modal-box">
         <div class="modal-title">Export Options</div>
         <p id="export-context-info" style="text-align:center;font-size:.85rem;color:var(--navy-lt);font-weight:600;margin-bottom:1rem;"></p>
@@ -1374,7 +1374,7 @@
 </div>
 
 <!-- PDF SEARCH MODAL (universal modal style) -->
-<div id="pdf-search-panel" style="display:none;position:fixed;inset:0;z-index:9500;background:rgba(13,31,53,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+<div id="pdf-search-panel" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(13,31,53,.55);backdrop-filter:blur(4px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
     <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:520px;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);margin:1rem;">
         <!-- Header -->
         <div style="padding:1rem 1.25rem .875rem;border-bottom:1px solid var(--border);background:var(--navy);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
@@ -1467,7 +1467,7 @@
   </div>
 </div>
 
-<div id="unmatched-pdfs-modal" style="display:none;position:fixed;inset:0;z-index:9600;background:rgba(13,31,53,.6);backdrop-filter:blur(5px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
+<div id="unmatched-pdfs-modal" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(13,31,53,.6);backdrop-filter:blur(5px);align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;">
     <div style="background:var(--surface);border-radius:var(--radius-lg);box-shadow:var(--shadow-lg);width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border);margin:1rem;">
         <!-- Header -->
         <div style="padding:1rem 1.25rem .875rem;border-bottom:1px solid var(--border);background:var(--navy);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;border-radius:var(--radius-lg) var(--radius-lg) 0 0;">
@@ -2862,22 +2862,21 @@ function _softUnlock() {
 // ── FETCH STUDENTS ────────────────────────────────────
 const fetchStudents = () => {
     const studentsRef = ref(db, `artifacts/${sanitizedAppId}/students`);
-    let _fbRenderTimer = null;
-    let _fbPendingData = null;
-    let _isFirstLoad   = true;
-
-    const _applySnapshot = (rawData) => {
-        studentsData = rawData
-            ? Object.entries(rawData)
+    onValue(studentsRef, (snapshot) => {
+        const data = snapshot.val();
+        studentsData = data
+            ? Object.entries(data)
                 .map(([id, val]) => ({ id, ...val }))
                 .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
             : [];
-        window._studentsData     = studentsData;
-        window._tabulatorTable   = tabulatorTable;
+        // ── Expose to feature modules ──
+        window._studentsData   = studentsData;
+        window._tabulatorTable = tabulatorTable;
         window._selectedStudents = selectedStudents;
-        window._fbDb             = db;
-        window._fbSDK            = { ref, set, get, update, remove, signOut: () => signOut(auth) };
+        window._fbDb           = db;
+        window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
         updateGradeFilter();
+        // First load → build table. Subsequent Firebase pushes → fast data swap only.
         if (tabulatorTable && !renderStudents._forceRebuild) {
             currentFilteredStudents = studentsData;
             updateKPI(studentsData);
@@ -2886,24 +2885,13 @@ const fetchStudents = () => {
         } else {
             renderStudents(studentsData);
         }
+        // ── Background badge check for Unmatched PDFs ──
         if (typeof window._recheckUnmatched === 'function') {
+            // Debounce so only the final data snapshot triggers a check
             clearTimeout(window._unmatchedBadgeDebounce);
-            window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 1200);
+            window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 800);
         }
-    };
-
-    onValue(studentsRef, (snapshot) => {
-        const raw = snapshot.val();
-        if (_isFirstLoad) {
-            // First load: render immediately so table appears fast
-            _isFirstLoad = false;
-            _applySnapshot(raw);
-            return;
-        }
-        // Subsequent pushes (photo/cert uploads etc): debounce to avoid rapid re-renders
-        _fbPendingData = raw;
-        clearTimeout(_fbRenderTimer);
-        _fbRenderTimer = setTimeout(() => _applySnapshot(_fbPendingData), 300);
+        
     }, (error) => {
         showModal(`Error fetching data: ${error.message}`);
         
@@ -3183,7 +3171,7 @@ function _buildKpiModalHTML(id, students) {
         heroRingSVG = ring(pdfPct, 88, 10, 'rgba(255,255,255,.15)', cfg.ring, `${pdfPct}%`, 'coverage');
         const gradePdfMap={};
         students.forEach(s=>{ if(s._pdfHref&&s.Grade) gradePdfMap[s.Grade]=(gradePdfMap[s.Grade]||0)+1; });
-        footerExtra = `<button onclick="window._closeKpiModal&&window._closeKpiModal();window._openPdfSearchPanel()" class="btn btn-outline btn-sm">Open PDF Browser</button>
+        footerExtra = `<button onclick="window._openPdfSearchPanel()" class="btn btn-outline btn-sm">Open PDF Browser</button>
             <button onclick="window._bgPdfScanDone=false;_bgScanPdfs(window._studentsData||[])" class="btn btn-outline btn-sm">Re-scan</button>`;
         bodyHTML = `
             ${scanning?`<div class="kpi-warn-insight">
@@ -3310,9 +3298,7 @@ function _toggleKpiDrawer(id) {
         _kpiActiveDrawer = null;
         modal.removeEventListener('click', _bdClose);
         document.removeEventListener('keydown', _escClose);
-        window._closeKpiModal = null; // clear after close
     };
-    window._closeKpiModal = _closeKpiModal; // expose globally
     box.querySelector('#um-kpi-close-btn')?.addEventListener('click', _closeKpiModal);
     box.querySelector('#um-kpi-close-btn2')?.addEventListener('click', _closeKpiModal);
     const _bdClose  = (e) => { if (e.target === modal) _closeKpiModal(); };
@@ -3499,14 +3485,12 @@ function _buildPdfDrawer(students) {
             }).join('')}
         </div>
         <div style="margin-top:1rem;display:flex;gap:.5rem;">
-            <button onclick="window._closeKpiModal&&window._closeKpiModal();window._openPdfSearchPanel()" class="btn btn-outline btn-sm">Open PDF Browser</button>
+            <button onclick="window._openPdfSearchPanel()" class="btn btn-outline btn-sm">Open PDF Browser</button>
             <button onclick="window._bgPdfScanDone=false;_bgScanPdfs(window._studentsData||[])" class="btn btn-outline btn-sm">Re-scan PDFs</button>
         </div>`;
 }
 
-let _kpiDebounceTimer = null;
-let _kpiPendingStudents = null;
-const _updateKPIImmediate = (students) => {
+const updateKPI = (students) => {
     const total = students.length;
     if (!total) { kpiGrid.innerHTML = ''; kpiGrid.style.display = 'none'; return; }
 
@@ -3747,19 +3731,8 @@ const _updateKPIImmediate = (students) => {
     setTimeout(() => _bgScanPdfs(students), 800);
 };
 
-// Debounced wrapper — batches rapid calls (filter typing, Firebase pushes) into one render
-const updateKPI = (students) => {
-    _kpiPendingStudents = students;
-    clearTimeout(_kpiDebounceTimer);
-    _kpiDebounceTimer = setTimeout(() => {
-        if (_kpiPendingStudents) _updateKPIImmediate(_kpiPendingStudents);
-    }, 120);
-};
-
 // ── SMART ANALYTICS ─────────────────────────────────────
-let _analyticsDebounceTimer = null;
-let _analyticsPending = null;
-const _updateAnalyticsImmediate = (students) => {
+const updateAnalytics = (students) => {
     if (!students || students.length === 0) { statsSection.innerHTML = ''; return; }
     const total = students.length;
 
@@ -3855,15 +3828,6 @@ const _updateAnalyticsImmediate = (students) => {
     </div>`;
 };
 
-// Debounced wrapper for analytics
-const updateAnalytics = (students) => {
-    _analyticsPending = students;
-    clearTimeout(_analyticsDebounceTimer);
-    _analyticsDebounceTimer = setTimeout(() => {
-        if (_analyticsPending) _updateAnalyticsImmediate(_analyticsPending);
-    }, 150);
-};
-
 // ── UPDATE COUNT BADGE ────────────────────────────────
 const updateCountBadge = () => {
     if (!tabulatorTable) return;
@@ -3876,6 +3840,8 @@ const updateCountBadge = () => {
 // ── RENDER (TABULATOR) ────────────────────────────────
 const renderStudents = (students) => {
     currentFilteredStudents = students;
+    updateKPI(students);
+    updateAnalytics(students);
 
     const headers = getOrderedHeaders(students);
     const priorityFirst = ['Grade', 'Assessment No', 'Official Student Name'];
@@ -4060,10 +4026,6 @@ const renderStudents = (students) => {
         return;
     }
     renderStudents._forceRebuild = false;
-    _rowCache.clear(); // column defs changed — stale cache no longer valid
-
-    updateKPI(students);
-    updateAnalytics(students);
 
     if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
 
@@ -4775,16 +4737,6 @@ studentsPerPageSelect.addEventListener('change', (e) => {
 // ── SEARCH & GRADE FILTER ─────────────────────────────
 const CRITICAL_ROW_FIELDS = criticalForRow; // alias → module-scoped criticalForRow
 // ── Fast filter: update data without rebuilding table ────────
-// Row cache: skip recomputing rows whose data hash hasn't changed
-const _rowCache = new Map(); // id → { hash, rowData }
-const _hashStudent = (s) => {
-    // Cheap hash: JSON of all scalar fields (excludes large base64 blobs)
-    const h = {};
-    for (const k of Object.keys(s)) {
-        if (k !== 'photoURL' && k !== 'birthCertBase64' && k !== '_pdfHref') h[k] = s[k];
-    }
-    return JSON.stringify(h);
-};
 const _buildRowData = (students) => {
     // Uses module-scoped globalHeaders + criticalForRow (set by renderStudents on first load)
     const headers = getOrderedHeaders(students);
@@ -4808,16 +4760,6 @@ const _buildRowData = (students) => {
         return { years, months };
     };
     return students.map(s => {
-        const hash = _hashStudent(s);
-        const cached = _rowCache.get(s.id);
-        if (cached && cached.hash === hash) {
-            // Data unchanged — reuse cached row but update photo/cert refs
-            const r = cached.row;
-            r.photoURL        = s.photoURL || '';
-            r.birthCertBase64 = s.birthCertBase64 || '';
-            r.birthCertName   = s.birthCertName || '';
-            return r;
-        }
         const row = { id: s.id, _actions: '', _img: '', photoURL: s.photoURL || '',
             birthCertBase64: s.birthCertBase64 || '', birthCertName: s.birthCertName || '' };
         headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
@@ -4828,7 +4770,6 @@ const _buildRowData = (students) => {
         const filled = gh.filter(h => !_mv(s[h])).length;
         row._compl = gh.length > 0 ? (filled / gh.length) * 100 : 100;
         row._missingFields = criticalForRow.filter(f => _mv(s[f]));
-        _rowCache.set(s.id, { hash, row });
         return row;
     });
 };
@@ -5499,7 +5440,6 @@ drawerSaveBtn.addEventListener('click', async () => {
         // Refresh history panel if it's open
         if (typeof loadHistPanel === 'function') loadHistPanel();
         else if (typeof window._loadHistPanel === 'function') window._loadHistPanel();
-        _rowCache.delete(drawerCurrentId); // invalidate cached row
         if (tabulatorTable) {
             const trow = tabulatorTable.getRow(drawerCurrentId);
             if (trow) trow.update({ ...updatedData });
