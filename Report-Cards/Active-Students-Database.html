@@ -150,7 +150,7 @@
         .signin-card .btn { width: 100%; justify-content: center; padding: .8rem 1.5rem; font-size: .92rem; border-radius: 10px; margin-bottom: .6rem; }
 
         /* CARDS */
-        .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
+        .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: 0 1px 4px rgba(13,31,53,.07); border: 1px solid var(--border); overflow: hidden; }
         /* Student records table card: restore overflow so Tabulator can scroll horizontally */
         .card.table-card { overflow: visible; }
         .card.table-card > .toolbar { border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; }
@@ -3853,7 +3853,7 @@ const renderStudents = (students) => {
         {
             // ── Actions + inline checkbox column ──
             title: '<span style="display:inline-flex;align-items:center;gap:.5rem;"><input type="checkbox" id="tab-select-all-chk" style="width:15px;height:15px;accent-color:var(--gold);cursor:pointer;" title="Select / deselect all visible rows"> Actions</span>',
-            field: '_actions', frozen: frozenColumn === '_actions', headerSort: false, resizable: true, width: 255,
+            field: '_actions', frozen: true, headerSort: false, resizable: true, width: 255,
             headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
@@ -3890,7 +3890,7 @@ const renderStudents = (students) => {
             },
         },
         {
-            title: 'Photo', field: '_img', frozen: frozenColumn === '_img', headerSort: false, resizable: true, width: 60, headerFilter: false,
+            title: 'Photo', field: '_img', frozen: true, headerSort: false, resizable: true, width: 60, headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
                 const photoURL = d.photoURL || '';
@@ -3900,7 +3900,8 @@ const renderStudents = (students) => {
                 // Skip full re-render if src hasn't changed (virtual scroll recycle optimisation)
                 let img = el.querySelector('img.student-img');
                 if (img && img.dataset.src === src) return img.outerHTML;
-                return `<img src="${src}" data-src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';this.dataset.src=this.src;" style="cursor:pointer;" title="Click to view photo">`;
+                // Use data-lazysrc so IntersectionObserver swaps in real src only when row is visible
+                return `<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazysrc="${src}" data-src="${src}" class="student-img student-image" style="cursor:pointer;background:var(--surface3);" title="Click to view photo">`;
             }
         },
         {
@@ -4050,24 +4051,26 @@ const renderStudents = (students) => {
         paginationCounter: 'rows',
         paginationButtonCount: 5,
         columnDefaults: { headerSortTristate: true },
+        rowHeight: 44,
         renderVertical: 'virtual',
         renderDelay: 30,
+        headerFilterLiveFilterDelay: 300,
         selectable: true,
         selectableRangeMode: 'click',
-        movableColumns: true,
+        movableColumns: false,
         groupBy: groupingEnabled ? 'Grade' : '',
         groupHeader: (value, count) =>
             `<span style="font-weight:700">${value || 'No Grade'}</span>&nbsp;<span style="font-size:.74rem;opacity:.7">${count} student${count !== 1 ? 's' : ''}</span>`,
         groupToggleElement: 'header',
         groupStartOpen: true,
-        clipboard: true,
+        clipboard: false,
         clipboardCopyRowRange: 'selected',
         clipboardCopyStyled: false,
-        // Highlight entire row if student has missing critical fields
+        // rowFormatter: missing border — data pre-computed as _hasMissing in _buildRowData
         rowFormatter: (row) => {
-            const missing = row.getData()._missingFields || [];
-            if (missing.length) row.getElement().classList.add('row-has-missing');
-            else row.getElement().classList.remove('row-has-missing');
+            const el = row.getElement();
+            if (row.getData()._hasMissing) el.classList.add('row-has-missing');
+            else el.classList.remove('row-has-missing');
         },
         rowClick: (e, row) => {
             if (e.target.closest('.action-wrap') || e.target.tagName === 'INPUT') return;
@@ -4132,6 +4135,50 @@ const renderStudents = (students) => {
         });
     });
 };
+
+// ── LAZY PHOTO LOADER (IntersectionObserver) ──────────
+// Watches for .student-image elements with data-lazysrc and swaps in the real src
+// only when the row scrolls into the viewport. Dramatically reduces base64 decode cost.
+(function _initLazyPhotos() {
+    if (!('IntersectionObserver' in window)) {
+        // Fallback: just load all immediately
+        document.querySelectorAll('img[data-lazysrc]').forEach(img => {
+            img.src = img.dataset.lazysrc;
+            img.onerror = () => { img.src = './student_images/default.jpg'; };
+        });
+        return;
+    }
+    const io = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (!entry.isIntersecting) return;
+            const img = entry.target;
+            const lazySrc = img.dataset.lazysrc;
+            if (lazySrc && img.src !== lazySrc) {
+                img.src = lazySrc;
+                img.onerror = () => { img.src = './student_images/default.jpg'; };
+            }
+            io.unobserve(img);
+        });
+    }, { root: document.querySelector('#tabulator-table .tabulator-tableholder'), rootMargin: '120px' });
+
+    // Observe existing images + any added by Tabulator's virtual scroll
+    const observeAll = () => {
+        document.querySelectorAll('img.student-image[data-lazysrc]').forEach(img => {
+            if (!img.dataset.lazyObserved) {
+                img.dataset.lazyObserved = '1';
+                io.observe(img);
+            }
+        });
+    };
+    // Re-observe after each Tabulator render cycle
+    window._lazyPhotoObserveAll = observeAll;
+    // MutationObserver to catch new rows added by virtual scroll
+    const mo = new MutationObserver(observeAll);
+    const holder = document.querySelector('#tabulator-table');
+    if (holder) mo.observe(holder, { childList: true, subtree: true });
+    observeAll();
+})();
+
 
 // ── TABULATOR TOOLBAR WIRING ──────────────────────────
 document.getElementById('tab-toggle-filters').addEventListener('click', function () {
@@ -4783,6 +4830,7 @@ const _buildRowData = (students) => {
         const filled = gh.filter(h => !_mv(s[h])).length;
         row._compl = gh.length > 0 ? (filled / gh.length) * 100 : 100;
         row._missingFields = criticalForRow.filter(f => _mv(s[f]));
+        row._hasMissing = row._missingFields.length > 0;
         return row;
     });
 };
