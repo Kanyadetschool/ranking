@@ -157,6 +157,9 @@
         .card.table-card > #tabulator-table { border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow: hidden; }
         /* Force Tabulator inner scroll to work on mobile */
         #tabulator-table .tabulator-tableholder { overflow-x: auto !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
+        /* Isolate scroll layer so row repaints don't cascade up */
+        #tabulator-table .tabulator-table { contain: layout style; }
+        #tabulator-table .tabulator-row { contain: layout style; }
         .card-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 1rem; background: var(--surface); }
         .card-title { font-size: .92rem; font-weight: 700; color: var(--navy); display: flex; align-items: center; gap: .55rem; }
         .card-icon { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; background: var(--navy); color: #fff; flex-shrink: 0; }
@@ -211,7 +214,7 @@
         #tabulator-table .tabulator-col-title { color: rgba(255,255,255,.9) !important; font-weight: 600 !important; font-size: .73rem !important; letter-spacing: .04em; }
         #tabulator-table .tabulator-col .tabulator-col-sorter .tabulator-arrow { border-bottom-color: rgba(255,255,255,.5) !important; }
         #tabulator-table .tabulator-col.tabulator-col-sorter-element .tabulator-col-sorter .tabulator-arrow { border-bottom-color: var(--gold) !important; }
-        #tabulator-table .tabulator-row { border-bottom: 1px solid var(--border) !important; transition: background .1s; cursor: pointer; }
+        #tabulator-table .tabulator-row { border-bottom: 1px solid var(--border) !important; cursor: pointer; }
         #tabulator-table .tabulator-row:nth-child(even) { background: var(--surface2) !important; }
         #tabulator-table .tabulator-row:hover { background: #e8effa !important; }
         #tabulator-table .tabulator-row.tabulator-selected { background: var(--gold-dim) !important; }
@@ -3890,10 +3893,14 @@ const renderStudents = (students) => {
             title: 'Photo', field: '_img', frozen: frozenColumn === '_img', headerSort: false, resizable: true, width: 60, headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
-                const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
                 const photoURL = d.photoURL || '';
+                const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
                 const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
-                return `<img src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg'" style="cursor:pointer;" title="Click to view photo">`;
+                const el = cell.getElement();
+                // Skip full re-render if src hasn't changed (virtual scroll recycle optimisation)
+                let img = el.querySelector('img.student-img');
+                if (img && img.dataset.src === src) return img.outerHTML;
+                return `<img src="${src}" data-src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';this.dataset.src=this.src;" style="cursor:pointer;" title="Click to view photo">`;
             }
         },
         {
@@ -4043,6 +4050,8 @@ const renderStudents = (students) => {
         paginationCounter: 'rows',
         paginationButtonCount: 5,
         columnDefaults: { headerSortTristate: true },
+        renderVertical: 'virtual',
+        renderDelay: 30,
         selectable: true,
         selectableRangeMode: 'click',
         movableColumns: true,
@@ -4109,13 +4118,17 @@ const renderStudents = (students) => {
                 allChk.checked = visibleRows.length > 0 && rows.length >= visibleRows.length;
                 allChk.indeterminate = rows.length > 0 && rows.length < visibleRows.length;
             }
-            // Sync individual row checkboxes
-            tabulatorTable.getRows().forEach(row => {
-                const cell = row.getCell('_actions');
-                if (!cell) return;
-                const chk = cell.getElement() && cell.getElement().querySelector('.action-row-check');
-                if (chk) chk.checked = row.isSelected();
-            });
+            // Sync individual row checkboxes — only touch rendered cells, skip DOM query when nothing selected
+            if (count === 0) {
+                // fast path: uncheck all visible checkboxes
+                document.querySelectorAll('.action-row-check').forEach(chk => { chk.checked = false; });
+            } else {
+                tabulatorTable.getRows('active').forEach(row => {
+                    const el = row.getElement();
+                    const chk = el && el.querySelector('.action-row-check');
+                    if (chk) chk.checked = row.isSelected();
+                });
+            }
         });
     });
 };
