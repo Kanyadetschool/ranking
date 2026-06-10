@@ -263,6 +263,23 @@
         /* spotlight hover */
         .spotlight-result:hover, .spotlight-result.sp-hover { background: var(--surface2); }
 
+        /* ── Inline table search dropdown ── */
+        #table-search-wrap { position: relative; flex: 1; min-width: 160px; max-width: 340px; }
+        #table-search-wrap svg.search-icon { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--slate-lt); pointer-events: none; z-index: 1; }
+        #search-input { padding-left: 2.1rem; width: 100%; }
+        #table-search-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--navy-lt); border-radius: 10px; box-shadow: 0 8px 32px rgba(13,31,53,.18); z-index: 500; overflow: hidden; display: none; max-height: 320px; overflow-y: auto; }
+        #table-search-dropdown.open { display: block; }
+        .tsd-result { display: flex; align-items: center; gap: .65rem; padding: .55rem .85rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
+        .tsd-result:last-child { border-bottom: none; }
+        .tsd-result:hover, .tsd-result.tsd-hover { background: var(--surface2); }
+        .tsd-result-avatar { width: 30px; height: 30px; border-radius: 6px; object-fit: cover; flex-shrink: 0; background: var(--surface3); border: 1px solid var(--border); }
+        .tsd-result-name { font-weight: 600; font-size: .83rem; color: var(--navy); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .tsd-result-meta { font-size: .72rem; color: var(--slate); margin-top: .05rem; }
+        .tsd-result mark { background: rgba(240,165,0,.35); color: var(--navy); border-radius: 2px; padding: 0 1px; font-style: normal; }
+        .tsd-empty { padding: .85rem 1rem; text-align: center; color: var(--slate-lt); font-size: .82rem; }
+        .tsd-footer { padding: .4rem .85rem; font-size: .7rem; color: var(--slate-lt); border-top: 1px solid var(--border); background: var(--surface2); display: flex; gap: .75rem; }
+        #search-input.tsd-active { border-color: var(--navy-lt) !important; box-shadow: 0 0 0 3px rgba(30,64,128,.1); border-bottom-left-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+
         /* STUDENT IMAGE in table */
         .student-img { width: 34px; height: 34px; border-radius: 8px; object-fit: cover; border: 2px solid var(--border); display: block; }
 
@@ -1074,9 +1091,10 @@
             <!-- Main Toolbar: Search + Grade + Rows -->
             <div class="toolbar" style="flex-wrap:wrap;row-gap:.5rem;">
                 <div class="toolbar-title" style="flex-shrink:0;">Student Records</div>
-                <div class="search-wrap" style="flex:1;min-width:160px;max-width:340px;">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input id="search-input" type="text" placeholder="Search students…" onfocus="this.select()">
+                <div id="table-search-wrap">
+                    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input id="search-input" type="text" placeholder="Search students…" autocomplete="off">
+                    <div id="table-search-dropdown"></div>
                 </div>
                 <select id="grade-filter-select" style="width:auto;padding:.45rem .75rem;min-width:120px;flex-shrink:0;">
                     <option value="">All Grades</option>
@@ -4804,23 +4822,114 @@ const _buildSearchCache = (students) => {
     });
 };
 
-const applyFilters = () => {
-    const grade = gradeFilterSelect.value;
-    const term = searchInput.value.trim().toLowerCase();
-    const _mv = window.isMissingVal || ((v) => !v || String(v).trim() === '' || ['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
-    let filtered = studentsData;
-    if (grade) filtered = filtered.filter(s => s.Grade === grade);
-    // Use pre-built cache string — one .includes() per student instead of scanning every field
-    if (term) filtered = filtered.filter(s => (s._searchCache || '').includes(term));
-    if (missingFilterActive) filtered = filtered.filter(s => criticalForRow.some(f => _mv(s[f])));
+// ── Table-search dropdown (live results, table only updates on select) ────────
+const _tsd = document.getElementById('table-search-dropdown');
+let _tsdHoverIdx = -1;
+let _tsdResults  = [];
+
+const _hlTsd = (text, q) => {
+    if (!q) return String(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    const safe = String(text||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return safe.replace(new RegExp('(' + q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi'), '<mark>$1</mark>');
+};
+
+const _tsdRender = (hits, term) => {
+    _tsdResults = hits;
+    _tsdHoverIdx = -1;
+    if (!hits.length) {
+        _tsd.innerHTML = `<div class="tsd-empty">No students match "<strong>${term}</strong>"</div>`;
+    } else {
+        _tsd.innerHTML = hits.map((s, i) => {
+            const name  = s['Official Student Name'] || '';
+            const grade = s.Grade || '';
+            const assNo = s['Assessment No'] || '';
+            const photo = s.photoURL || '';
+            const imgSrc = photo ? photo : `./student_images/${encodeURIComponent(name)}.jpg`;
+            return `<div class="tsd-result" data-idx="${i}"
+                onmouseenter="this.classList.add('tsd-hover')" onmouseleave="this.classList.remove('tsd-hover')"
+                onclick="window._tsdSelect(${i})">
+                <img class="tsd-result-avatar" src="${imgSrc}" onerror="this.src='./student_images/default.jpg'">
+                <div style="flex:1;min-width:0;">
+                    <div class="tsd-result-name">${_hlTsd(name, term)}</div>
+                    <div class="tsd-result-meta">${_hlTsd(grade, term)}${grade && assNo ? ' · ' : ''}${_hlTsd(assNo, term)}</div>
+                </div>
+            </div>`;
+        }).join('') +
+        `<div class="tsd-footer"><span>↑↓ navigate</span><span>Enter select</span><span>Esc clear</span></div>`;
+    }
+    _tsd.classList.add('open');
+    searchInput.classList.add('tsd-active');
+};
+
+const _tsdClose = () => {
+    _tsd.classList.remove('open');
+    searchInput.classList.remove('tsd-active');
+    _tsdHoverIdx = -1;
+};
+
+// Called when user picks a result — only NOW update table + KPI
+window._tsdSelect = (idx) => {
+    const s = _tsdResults[idx];
+    if (!s) return;
+    _tsdClose();
+    searchInput.value = s['Official Student Name'] || s['Assessment No'] || '';
+    const filtered = [s];
     currentFilteredStudents = filtered;
-    // Table update is immediate — fast path only
     if (tabulatorTable) {
         tabulatorTable.replaceData(_buildRowData(filtered));
     } else {
         renderStudents(filtered);
     }
-    // KPI + analytics on a longer debounce so they don't block typing
+    clearTimeout(_kpiAnalyticsTimer);
+    _kpiAnalyticsTimer = setTimeout(() => {
+        updateKPI(filtered);
+        updateAnalytics(filtered);
+    }, 600);
+};
+
+// Keyboard navigation
+searchInput.addEventListener('keydown', (e) => {
+    if (!_tsd.classList.contains('open')) return;
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _tsdHoverIdx = Math.min(_tsdHoverIdx + 1, _tsdResults.length - 1);
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _tsdHoverIdx = Math.max(_tsdHoverIdx - 1, 0);
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (_tsdHoverIdx >= 0) window._tsdSelect(_tsdHoverIdx);
+        else if (_tsdResults.length === 1) window._tsdSelect(0);
+        return;
+    } else if (e.key === 'Escape') {
+        e.preventDefault();
+        _tsdClose();
+        searchInput.value = '';
+        applyFilters();
+        return;
+    } else { return; }
+    _tsd.querySelectorAll('.tsd-result').forEach((el, i) => el.classList.toggle('tsd-hover', i === _tsdHoverIdx));
+});
+
+// Close dropdown on outside click
+document.addEventListener('mousedown', (e) => {
+    if (!document.getElementById('table-search-wrap')?.contains(e.target)) _tsdClose();
+});
+
+const applyFilters = () => {
+    const grade = gradeFilterSelect.value;
+    const term  = searchInput.value.trim().toLowerCase();
+    const _mv = window.isMissingVal || ((v) => !v || String(v).trim() === '' || ['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
+    let filtered = studentsData;
+    if (grade) filtered = filtered.filter(s => s.Grade === grade);
+    if (term)  filtered = filtered.filter(s => (s._searchCache || '').includes(term));
+    if (missingFilterActive) filtered = filtered.filter(s => criticalForRow.some(f => _mv(s[f])));
+    currentFilteredStudents = filtered;
+    if (tabulatorTable) {
+        tabulatorTable.replaceData(_buildRowData(filtered));
+    } else {
+        renderStudents(filtered);
+    }
     clearTimeout(_kpiAnalyticsTimer);
     _kpiAnalyticsTimer = setTimeout(() => {
         updateKPI(filtered);
@@ -4830,11 +4939,16 @@ const applyFilters = () => {
 
 let _searchDebounceTimer = null;
 let _kpiAnalyticsTimer   = null;
+
 searchInput.addEventListener('input', () => {
-    clearTimeout(_searchDebounceTimer);
-    _searchDebounceTimer = setTimeout(applyFilters, 300);
+    const term = searchInput.value.trim().toLowerCase();
+    if (!term) { _tsdClose(); applyFilters(); return; }
+    // Live dropdown — no table/KPI update while typing
+    const hits = (studentsData || []).filter(s => (s._searchCache || '').includes(term)).slice(0, 10);
+    _tsdRender(hits, term);
 });
-gradeFilterSelect.addEventListener('change', applyFilters);
+
+gradeFilterSelect.addEventListener('change', () => { _tsdClose(); applyFilters(); });
 
 // ── EDIT MODAL ────────────────────────────────────────
 const editDrawer = document.getElementById('edit-drawer-overlay');
