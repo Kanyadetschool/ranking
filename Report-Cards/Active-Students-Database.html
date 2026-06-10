@@ -2878,13 +2878,20 @@ const fetchStudents = () => {
         window._selectedStudents = selectedStudents;
         window._fbDb           = db;
         window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
+        // Build per-student search cache so applyFilters() doesn't scan every field on every keystroke
+        if (typeof _buildSearchCache === 'function') _buildSearchCache(studentsData);
         updateGradeFilter();
-        // First load → build table. Subsequent Firebase pushes → fast data swap only.
+        // First load → build table. Subsequent Firebase pushes → re-apply active filter so
+        // the user's current search/grade selection is preserved (not silently reset).
         if (tabulatorTable && !renderStudents._forceRebuild) {
-            currentFilteredStudents = studentsData;
-            updateKPI(studentsData);
-            updateAnalytics(studentsData);
-            tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
+            if (typeof applyFilters === 'function') {
+                applyFilters();
+            } else {
+                currentFilteredStudents = studentsData;
+                updateKPI(studentsData);
+                updateAnalytics(studentsData);
+                tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
+            }
         } else {
             renderStudents(studentsData);
         }
@@ -3599,7 +3606,8 @@ const updateKPI = (students) => {
     kpiGrid.style.display = 'grid';
     if (typeof window._updateDbSizeMonitor === 'function') window._updateDbSizeMonitor(students);
 
-    // ── Pre-build all drawer contents ──────────────────────
+    // ── Pre-build drawer contents — only for the drawer that is currently open ──
+    // Skipping hidden drawers saves 4 DOM mutations + string builds on every KPI update.
     const GRADE_COLORS = ['#1565b0','#1976d2','#1e88e5','#42a5f5','#64b5f6','#90caf9','#bbdefb','#e3f2fd','#0d47a1','#0288d1'];
     const GENDER_COLORS = { 'Male':'#1565b0','male':'#1565b0','Female':'#a855f7','female':'#a855f7','Not Set':'#94a3b8','Other':'#06b6d4' };
     const classDist = {};
@@ -3611,7 +3619,7 @@ const updateKPI = (students) => {
     const totalMax = gradeSorted.length ? gradeSorted[0][1] : 1;
     const avgSize = grades > 0 ? Math.round(total/grades) : 0;
     const smallestGrade = gradeSorted[gradeSorted.length-1];
-    document.getElementById('kpi-drawer-students-inner').innerHTML = `
+    if (_kpiActiveDrawer === 'students') { document.getElementById('kpi-drawer-students-inner').innerHTML = `
         <div class="kpi-drawer-header"><span>Student Enrollment Breakdown</span><span class="kpi-badge up">${total} total</span></div>
         <div class="kpi-drawer-grid">
             <div class="kpi-drawer-mini"><div class="dm-val">${total}</div><div class="dm-label">Total enrolled</div></div>
@@ -3628,7 +3636,7 @@ const updateKPI = (students) => {
         ${classEntries.length ? `<div class="kpi-drawer-section">
             <div class="kpi-drawer-section-title">Students by graduation year</div>
             ${_kpiBarRows(classEntries, classMax, (_,i)=>GRADE_COLORS[classEntries.findIndex(([g])=>g===_)%GRADE_COLORS.length])}
-        </div>` : ''}`;
+        </div>` : ''}`; }
 
     // 2. Gender drawer
     const genderDist = {};
@@ -3645,7 +3653,7 @@ const updateKPI = (students) => {
         else if (g==='female') gradeGenderMap[s.Grade].f++;
         else gradeGenderMap[s.Grade].o++;
     });
-    document.getElementById('kpi-drawer-gender-inner').innerHTML = `
+    if (_kpiActiveDrawer === 'gender') { document.getElementById('kpi-drawer-gender-inner').innerHTML = `
         <div class="kpi-drawer-header"><span>Gender Distribution</span><span class="kpi-badge ${genderClass}">${genderLabel}</span></div>
         <div class="kpi-drawer-grid">
             <div class="kpi-drawer-mini"><div class="dm-val" style="color:#1565b0">${male}</div><div class="dm-label">Male</div><div class="dm-sub">${malePct}% of total</div></div>
@@ -3672,7 +3680,7 @@ const updateKPI = (students) => {
                 <span style="display:flex;align-items:center;gap:.3rem;"><span style="width:10px;height:10px;border-radius:2px;background:#1565b0;display:inline-block;"></span>Male</span>
                 <span style="display:flex;align-items:center;gap:.3rem;"><span style="width:10px;height:10px;border-radius:2px;background:#a855f7;display:inline-block;"></span>Female</span>
             </div>
-        </div>`;
+        </div>`; }
 
     // 3. Data Quality drawer
     const missingMap = {};
@@ -3682,7 +3690,7 @@ const updateKPI = (students) => {
     });
     const missingEntries = Object.entries(missingMap).sort((a,b)=>b[1]-a[1]);
     const completeStudents = students.filter(s=>fields.every(f=>s[f])).length;
-    document.getElementById('kpi-drawer-quality-inner').innerHTML = `
+    if (_kpiActiveDrawer === 'quality') { document.getElementById('kpi-drawer-quality-inner').innerHTML = `
         <div class="kpi-drawer-header"><span>Data Completeness Analysis</span><span class="kpi-badge ${qualityClass}">${qualityLabel}</span></div>
         <div class="kpi-drawer-grid">
             <div class="kpi-drawer-mini"><div class="dm-val" style="color:#059669">${qualityPct}%</div><div class="dm-label">Quality score</div><div class="dm-sub">weighted by field importance</div></div>
@@ -3707,13 +3715,13 @@ const updateKPI = (students) => {
                     <div class="dist-bar-track"><div class="dist-bar-fill" style="width:${pct}%;background:${col};"></div></div>
                 </div>`;
             }).join('')}
-        </div>`;
+        </div>`; }
 
     // 4. PDF drawer
-    _buildPdfDrawer(students);
+    if (_kpiActiveDrawer === 'pdf') { _buildPdfDrawer(students); }
 
     // 5. Class Size drawer
-    document.getElementById('kpi-drawer-classsize-inner').innerHTML = `
+    if (_kpiActiveDrawer === 'classsize') { document.getElementById('kpi-drawer-classsize-inner').innerHTML = `
         <div class="kpi-drawer-header"><span>Class Size & Year Distribution</span><span class="kpi-badge up">${grades} grades</span></div>
         <div class="kpi-drawer-grid">
             <div class="kpi-drawer-mini"><div class="dm-val">${avgSize}</div><div class="dm-label">Average size</div><div class="dm-sub">per grade</div></div>
@@ -3728,7 +3736,7 @@ const updateKPI = (students) => {
         ${classEntries.length ? `<div class="kpi-drawer-section">
             <div class="kpi-drawer-section-title">Students by graduation year (Class of)</div>
             ${_kpiBarRows(classEntries, classMax, k=>GRADE_COLORS[classEntries.findIndex(([g])=>g===k)%GRADE_COLORS.length])}
-        </div>` : ''}`;
+        </div>` : ''}`; }
 
     // Trigger background PDF scan once after first render
     setTimeout(() => _bgScanPdfs(students), 800);
@@ -4787,28 +4795,44 @@ const _buildRowData = (students) => {
     });
 };
 
+// ── Search-cache builder — called once after data loads, not on every keypress ──
+const _buildSearchCache = (students) => {
+    students.forEach(s => {
+        s._searchCache = Object.values(s)
+            .filter(v => v !== null && v !== undefined && typeof v !== 'object')
+            .join(' ').toLowerCase();
+    });
+};
+
 const applyFilters = () => {
     const grade = gradeFilterSelect.value;
     const term = searchInput.value.trim().toLowerCase();
     const _mv = window.isMissingVal || ((v) => !v || String(v).trim() === '' || ['---','--','-','na','n/a','none','null','undefined','0','unknown','?'].includes(String(v).trim().toLowerCase()));
     let filtered = studentsData;
     if (grade) filtered = filtered.filter(s => s.Grade === grade);
-    if (term) filtered = filtered.filter(s => Object.values(s).some(v => String(v).toLowerCase().includes(term)));
+    // Use pre-built cache string — one .includes() per student instead of scanning every field
+    if (term) filtered = filtered.filter(s => (s._searchCache || '').includes(term));
     if (missingFilterActive) filtered = filtered.filter(s => criticalForRow.some(f => _mv(s[f])));
     currentFilteredStudents = filtered;
-    updateKPI(filtered);
-    updateAnalytics(filtered);
+    // Table update is immediate — fast path only
     if (tabulatorTable) {
         tabulatorTable.replaceData(_buildRowData(filtered));
     } else {
         renderStudents(filtered);
     }
+    // KPI + analytics on a longer debounce so they don't block typing
+    clearTimeout(_kpiAnalyticsTimer);
+    _kpiAnalyticsTimer = setTimeout(() => {
+        updateKPI(filtered);
+        updateAnalytics(filtered);
+    }, 600);
 };
 
 let _searchDebounceTimer = null;
+let _kpiAnalyticsTimer   = null;
 searchInput.addEventListener('input', () => {
     clearTimeout(_searchDebounceTimer);
-    _searchDebounceTimer = setTimeout(applyFilters, 180);
+    _searchDebounceTimer = setTimeout(applyFilters, 300);
 });
 gradeFilterSelect.addEventListener('change', applyFilters);
 
