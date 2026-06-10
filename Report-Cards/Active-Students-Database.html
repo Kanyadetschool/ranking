@@ -699,42 +699,50 @@
         @keyframes ut-out { from { opacity:1;transform:none; } to { opacity:0;transform:translateX(24px); } }
         /* ── SPLASH SCREEN (MySafaricom-style) ──────────────────────────── */
         #splash-screen {
-            position: fixed; inset: 0; z-index: 9999;
+            position: fixed; inset: 0; z-index: 99999;
             background: #f4f6fa;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 1.25rem;
+            gap: 1.1rem;
             opacity: 1;
-            transition: opacity .45s ease, visibility .45s ease;
+            transition: opacity .5s ease, visibility .5s ease;
         }
         body:not(.splash-dismissed) { overflow: hidden; }
         #splash-screen.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
         .splash-logo-ring {
             width: 90px; height: 90px; border-radius: 50%;
-            background: rgba(13,31,53,.12);
+            background: rgba(13,31,53,.08);
             border: 2px solid rgba(240,165,0,.5);
             display: flex; align-items: center; justify-content: center;
             animation: splash-pulse 1.8s ease-in-out infinite;
-            box-shadow: 0 8px 32px rgba(13,31,53,.15);
+            box-shadow: 0 8px 32px rgba(13,31,53,.12);
         }
         @keyframes splash-pulse {
-            0%, 100% { box-shadow: 0 8px 32px rgba(13,31,53,.15), 0 0 0 0 rgba(240,165,0,.4); }
-            50%       { box-shadow: 0 8px 32px rgba(13,31,53,.15), 0 0 0 18px rgba(240,165,0,0); }
+            0%, 100% { box-shadow: 0 8px 32px rgba(13,31,53,.12), 0 0 0 0 rgba(240,165,0,.35); }
+            50%       { box-shadow: 0 8px 32px rgba(13,31,53,.12), 0 0 0 16px rgba(240,165,0,0); }
         }
         .splash-logo-img { width: 56px; height: 56px; object-fit: contain; filter: drop-shadow(0 2px 8px rgba(13,31,53,.3)); }
         .splash-logo-fallback {
             width: 56px; height: 56px; border-radius: 50%;
             background: var(--gold); display: flex; align-items: center; justify-content: center;
         }
-        .splash-title { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 800; color: var(--navy); letter-spacing: .01em; text-shadow: 0 1px 4px rgba(255,255,255,.6); }
-        .splash-sub { font-size: .75rem; color: var(--slate); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; margin-top: -.5rem; }
-        .splash-bar-wrap { width: 120px; height: 3px; background: rgba(13,31,53,.12); border-radius: 2px; overflow: hidden; margin-top: .5rem; }
-        .splash-bar { height: 100%; background: var(--gold); border-radius: 2px; animation: splash-bar 1.6s ease-in-out infinite; }
-        @keyframes splash-bar { 0%{width:0;margin-left:0} 50%{width:100%;margin-left:0} 100%{width:0;margin-left:100%} }
+        .splash-title { font-family: 'Playfair Display', serif; font-size: 1.35rem; font-weight: 800; color: var(--navy); letter-spacing: .01em; }
+        .splash-sub { font-size: .72rem; color: var(--slate); font-weight: 500; letter-spacing: .1em; text-transform: uppercase; margin-top: -.4rem; }
+        /* Progress bar track */
+        .splash-bar-wrap { width: 200px; height: 4px; background: rgba(13,31,53,.1); border-radius: 4px; overflow: hidden; }
+        #splash-progress-bar { height: 100%; width: 0%; background: var(--gold); border-radius: 4px; transition: width .4s cubic-bezier(.4,0,.2,1); }
+        /* Stage label */
+        #splash-stage-label { font-size: .72rem; color: var(--slate); font-weight: 500; min-height: 1.1em; letter-spacing: .02em; }
+        /* Stage dots */
+        #splash-stages { display: flex; gap: .5rem; align-items: center; margin-top: .1rem; }
+        .sp-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(13,31,53,.15); transition: background .3s, transform .3s; }
+        .sp-dot.done  { background: var(--gold); }
+        .sp-dot.active { background: var(--navy-lt); transform: scale(1.35); }
+        .sp-dot.error  { background: var(--danger); }
     </style>
 </head>
 <body class="user-logged-out">
 
-<!-- ── SPLASH SCREEN (MySafaricom-style) ─────────────────────────────── -->
+<!-- ── SPLASH SCREEN ─────────────────────────────────────────────────────── -->
 <div id="splash-screen">
     <div class="splash-logo-ring">
         <img src="./imgs/logo.png" alt="Logo" class="splash-logo-img"
@@ -745,7 +753,15 @@
     </div>
     <div class="splash-title">Kanyadet Pri & Junior School</div>
     <div class="splash-sub">Active Students Database</div>
-    <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+    <div class="splash-bar-wrap"><div id="splash-progress-bar"></div></div>
+    <div id="splash-stage-label">Initialising…</div>
+    <div id="splash-stages">
+        <div class="sp-dot active" id="sp-dot-0" title="App initialising"></div>
+        <div class="sp-dot"       id="sp-dot-1" title="Connecting to Firebase"></div>
+        <div class="sp-dot"       id="sp-dot-2" title="Verifying identity"></div>
+        <div class="sp-dot"       id="sp-dot-3" title="Loading student records"></div>
+        <div class="sp-dot"       id="sp-dot-4" title="Building table"></div>
+    </div>
 </div>
 
 <!-- Bulk Action Toolbar -->
@@ -2438,29 +2454,84 @@ window._firebaseOnValue = onValue;
 
 
 // ── SPLASH SCREEN ─────────────────────────────────────
-const _splashEl = document.getElementById('splash-screen');
+const _splashEl    = document.getElementById('splash-screen');
+const _splashBar   = document.getElementById('splash-progress-bar');
+const _splashLabel = document.getElementById('splash-stage-label');
 const _splashStart = Date.now();
+
+// ── Staged progress engine ─────────────────────────────
+// 5 stages: 0 Init · 1 Firebase · 2 Auth · 3 Data · 4 Table
+// Each stage advances the bar and updates label + dots.
+const _SP_STAGES = [
+    { pct:  8, label: 'Initialising app…' },
+    { pct: 28, label: 'Connecting to Firebase…' },
+    { pct: 50, label: 'Verifying identity…' },
+    { pct: 72, label: 'Loading student records…' },
+    { pct: 92, label: 'Building table…' },
+];
+let _splashStage = 0;
+let _splashReady = false;   // true once data+table are done
+let _splashDismissRequested = false;
+
+function _splashStep(stageIdx, overrideLabel) {
+    if (!_splashEl || _splashEl.classList.contains('hidden')) return;
+    _splashStage = stageIdx;
+    const s = _SP_STAGES[stageIdx] || _SP_STAGES[_SP_STAGES.length - 1];
+    if (_splashBar)   _splashBar.style.width   = s.pct + '%';
+    if (_splashLabel) _splashLabel.textContent  = overrideLabel || s.label;
+    // Update dots
+    for (let i = 0; i < 5; i++) {
+        const d = document.getElementById('sp-dot-' + i);
+        if (!d) continue;
+        d.className = 'sp-dot ' + (i < stageIdx ? 'done' : i === stageIdx ? 'active' : '');
+    }
+}
+
+function _splashError(msg) {
+    if (_splashLabel) _splashLabel.textContent = msg || 'Error loading data';
+    if (_splashBar)   _splashBar.style.background = 'var(--danger)';
+    for (let i = 0; i < 5; i++) {
+        const d = document.getElementById('sp-dot-' + i);
+        if (d && d.classList.contains('active')) d.className = 'sp-dot error';
+    }
+}
+
 function _dismissSplash(cb) {
     if (!_splashEl || _splashEl.classList.contains('hidden')) {
         document.body.classList.add('splash-dismissed');
         cb && cb();
         return;
     }
-    const elapsed = Date.now() - _splashStart;
-    const delay = Math.max(0, 1200 - elapsed);
+    // Fill bar to 100% before fading
+    if (_splashBar)   _splashBar.style.width = '100%';
+    if (_splashLabel) _splashLabel.textContent = 'Ready ✓';
+    for (let i = 0; i < 5; i++) {
+        const d = document.getElementById('sp-dot-' + i);
+        if (d) d.className = 'sp-dot done';
+    }
     setTimeout(() => {
         _splashEl.classList.add('hidden');
         document.body.classList.add('splash-dismissed');
         cb && cb();
-    }, delay);
+    }, 380);
 }
-// Hard failsafe: force dismiss after 6s if auth never resolves
+
+// Stage 0 fires immediately on script parse
+_splashStep(0);
+
+// Stage 1 fires after Firebase SDK is ready (next tick)
+setTimeout(() => _splashStep(1), 60);
+
+// Hard failsafe — force dismiss after 10 s if auth/data never resolve
 setTimeout(() => {
     if (_splashEl && !_splashEl.classList.contains('hidden')) {
-        _firstAuthCheck = false;
-        _dismissSplash(() => _showSignInUI());
+        _splashError('Taking too long — please reload');
+        setTimeout(() => {
+            _firstAuthCheck = false;
+            _dismissSplash(() => _showSignInUI());
+        }, 2000);
     }
-}, 6000);
+}, 10000);
 
 // ── MULTI-ACCOUNT PASSKEY STORE ──────────────────────
 // Storage: localStorage['ksd_passkeys'] = JSON map of { email: { credId, uid } }
@@ -2630,6 +2701,7 @@ let _firstAuthCheck = true;
 onAuthStateChanged(auth, async (user) => {
     if (_firstAuthCheck) {
         _firstAuthCheck = false;
+        _splashStep(2); // Auth resolved
         if (!user) {
             // No active session — decide what to show after splash
             _dismissSplash(() => {
@@ -2652,8 +2724,7 @@ onAuthStateChanged(auth, async (user) => {
             });
             return;
         }
-        // No passkey, session alive — just open the app
-        _dismissSplash();
+        // No passkey, session alive — data will dismiss splash via fetchStudents
     }
 
     if (user) {
