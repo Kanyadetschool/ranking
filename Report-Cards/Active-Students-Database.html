@@ -153,7 +153,7 @@
         .card { background: var(--surface); border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); overflow: hidden; }
         /* Student records table card: restore overflow so Tabulator can scroll horizontally */
         .card.table-card { overflow: visible; }
-        .card.table-card > .toolbar { border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: hidden; }
+        .card.table-card > .toolbar { border-radius: var(--radius-lg) var(--radius-lg) 0 0; overflow: visible; }
         .card.table-card > #tabulator-table { border-radius: 0 0 var(--radius-lg) var(--radius-lg); overflow: hidden; }
         /* Force Tabulator inner scroll to work on mobile */
         #tabulator-table .tabulator-tableholder { overflow-x: auto !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
@@ -264,10 +264,10 @@
         .spotlight-result:hover, .spotlight-result.sp-hover { background: var(--surface2); }
 
         /* ── Inline table search dropdown ── */
-        #table-search-wrap { position: relative; flex: 1; min-width: 160px; max-width: 340px; }
+        #table-search-wrap { position: relative; flex: 1; min-width: 160px; max-width: 340px; overflow: visible; }
         #table-search-wrap svg.search-icon { position: absolute; left: .7rem; top: 50%; transform: translateY(-50%); color: var(--slate-lt); pointer-events: none; z-index: 1; }
         #search-input { padding-left: 2.1rem; width: 100%; }
-        #table-search-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--navy-lt); border-radius: 10px; box-shadow: 0 8px 32px rgba(13,31,53,.18); z-index: 500; overflow: hidden; display: none; max-height: 320px; overflow-y: auto; }
+        #table-search-dropdown { position: absolute; top: calc(100% + 4px); left: 0; right: 0; background: var(--surface); border: 1.5px solid var(--navy-lt); border-radius: 10px; box-shadow: 0 8px 32px rgba(13,31,53,.18); z-index: 9999; overflow: hidden; display: none; max-height: 320px; overflow-y: auto; }
         #table-search-dropdown.open { display: block; }
         .tsd-result { display: flex; align-items: center; gap: .65rem; padding: .55rem .85rem; cursor: pointer; border-bottom: 1px solid var(--border); transition: background .1s; }
         .tsd-result:last-child { border-bottom: none; }
