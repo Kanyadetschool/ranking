@@ -2522,13 +2522,12 @@ _splashStep(0);
 // Stage 1 fires after Firebase SDK is ready (next tick)
 setTimeout(() => _splashStep(1), 60);
 
-// Hard failsafe — force dismiss after 10 s if auth/data never resolve
-setTimeout(() => {
+// Hard failsafe — cancelled as soon as splash is dismissed normally
+let _splashFailsafeTimer = setTimeout(() => {
     if (_splashEl && !_splashEl.classList.contains('hidden')) {
         _splashError('Taking too long — please reload');
         setTimeout(() => {
             _firstAuthCheck = false;
-            // Only show sign-in if no active session; otherwise just dismiss
             if (auth.currentUser) {
                 _dismissSplash();
             } else {
@@ -2536,7 +2535,13 @@ setTimeout(() => {
             }
         }, 2000);
     }
-}, 10000);
+}, 20000);
+// Patch _dismissSplash to cancel failsafe the moment splash hides
+const _origDismiss = _dismissSplash;
+_dismissSplash = function(cb) {
+    clearTimeout(_splashFailsafeTimer);
+    _origDismiss(cb);
+};
 
 // ── MULTI-ACCOUNT PASSKEY STORE ──────────────────────
 // Storage: localStorage['ksd_passkeys'] = JSON map of { email: { credId, uid } }
@@ -2952,7 +2957,6 @@ function _softUnlock() {
     _isLocked = false;
     const user = auth.currentUser;
     if (user) {
-        // If splash is somehow still up (very fast biometric), dismiss it cleanly
         if (_splashEl && !_splashEl.classList.contains('hidden')) {
             _dismissSplash(() => { _openApp(user); showToast('Fingerprint verified — welcome back!', 'success', 3000); });
         } else {
@@ -5008,6 +5012,14 @@ searchInput.addEventListener('keydown', (e) => {
         return;
     } else { return; }
     _tsd.querySelectorAll('.tsd-result').forEach((el, i) => el.classList.toggle('tsd-hover', i === _tsdHoverIdx));
+});
+
+// Auto-clear on focus for fast typing
+searchInput.addEventListener('focus', () => {
+    searchInput.select();
+    searchInput.value = '';
+    _tsdClose();
+    applyFilters();
 });
 
 // Close dropdown on outside click
