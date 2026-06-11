@@ -2307,7 +2307,7 @@ const pdfModalStudentGrade = document.getElementById('pdf-modal-student-grade');
 
     function _getStudentsWithCerts() {
         return (window._studentsData || []).filter(s =>
-            s.birthCertBase64 && typeof s.birthCertBase64 === 'string' && s.birthCertBase64.length > 10
+            (window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64) && typeof (window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64) === 'string' && (window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length > 10
         );
     }
 
@@ -2341,7 +2341,7 @@ const pdfModalStudentGrade = document.getElementById('pdf-modal-student-grade');
         const s = _navList[idx];
         _updateCounter();
         const name = s['Official Student Name'] || s['Assessment No'] || '';
-        window._openPdfDirect(s.birthCertBase64, name);
+        window._openPdfDirect(window._getCert ? window._getCert(s.id) : s.birthCertBase64, name);
     }
 
     gradeSelect.addEventListener('change', () => {
@@ -2974,9 +2974,19 @@ const fetchStudents = async () => {
     try {
         const snapshot = await get(studentsRef);
         const data = snapshot.val();
+        // ── Blob separation: strip photoURL + birthCertBase64 into a
+        //    separate cache so they don't sit in 500 JS objects in memory.
+        //    All code that reads student.photoURL falls back to _blobCache.
+        if (!window._blobCache) window._blobCache = {};
         studentsData = data
             ? Object.entries(data)
-                .map(([id, val]) => ({ id, ...val }))
+                .map(([id, val]) => {
+                    // Move blobs out of the record
+                    if (val.photoURL)        { window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL        = val.photoURL; }
+                    if (val.birthCertBase64) { window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = val.birthCertBase64; }
+                    const { photoURL, birthCertBase64, ...rest } = val;
+                    return { id, ...rest };
+                })
                 .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
             : [];
 
@@ -2992,7 +3002,14 @@ const fetchStudents = async () => {
         window._fbDb           = db;
         window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
         // Build per-student search cache so applyFilters() doesn't scan every field on every keystroke
-        if (typeof _buildSearchCache === 'function') _buildSearchCache(studentsData);
+        // Run search cache build during idle time — doesn't block table render
+        if (typeof _buildSearchCache === 'function') {
+            if (typeof requestIdleCallback !== 'undefined') {
+                requestIdleCallback(() => _buildSearchCache(studentsData), { timeout: 5000 });
+            } else {
+                setTimeout(() => _buildSearchCache(studentsData), 500);
+            }
+        }
         updateGradeFilter();
         if (tabulatorTable && !renderStudents._forceRebuild) {
             if (typeof applyFilters === 'function') {
@@ -3016,7 +3033,14 @@ const fetchStudents = async () => {
         // ── Background badge check for Unmatched PDFs ──
         if (typeof window._recheckUnmatched === 'function') {
             clearTimeout(window._unmatchedBadgeDebounce);
-            window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 800);
+            window._unmatchedBadgeDebounce = setTimeout(() => {
+                if (!window._recheckUnmatched) return;
+                if (typeof requestIdleCallback !== 'undefined') {
+                    requestIdleCallback(() => window._recheckUnmatched && window._recheckUnmatched(), { timeout: 4000 });
+                } else {
+                    window._recheckUnmatched();
+                }
+            }, 800);
         }
     } catch (error) {
         _splashError('Data error: ' + error.message);
@@ -3026,6 +3050,14 @@ const fetchStudents = async () => {
 
 // Expose manual refresh so post-save calls can reload without a full page reload
 window._refreshStudents = fetchStudents;
+
+// ── Blob cache accessor: returns photoURL for a student id ──
+// All feature code should use this instead of student.photoURL directly.
+window._getPhoto = (id) => (window._blobCache && window._blobCache[id]?.photoURL) || '';
+window._getCert  = (id) => (window._blobCache && window._blobCache[id]?.birthCertBase64) || '';
+// Update blob cache when a photo is saved (without needing a full re-fetch)
+window._setPhoto = (id, base64) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL = base64; };
+window._setCert  = (id, base64, name) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = base64; if (name) window._blobCache[id].birthCertName = name; };
 
 // ── GRADE FILTER ──────────────────────────────────────
 const updateGradeFilter = () => {
@@ -3563,7 +3595,7 @@ async function _bgScanPdfs(students) {
 
     // Always apply birthCertBase64 as fallback — works even with no server
     students.forEach(s => {
-        if (!s._pdfHref && s.birthCertBase64) {
+        if (!s._pdfHref && (window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64)) {
             s._pdfHref = s.birthCertBase64; // data: URL — viewer handles it directly
         }
     });
@@ -3711,7 +3743,7 @@ const updateKPI = (students) => {
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
         <div class="kpi-sub">${pdfLabel}</div>
         <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
-        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
+        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
         ${expandHint}
     </div>
     <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
@@ -4021,8 +4053,7 @@ const renderStudents = (students) => {
             formatter: (cell) => {
                 const d = cell.getRow().getData();
                 // Look up blob from master array — never stored in row
-                const rec = (window._studentsData || []).find(s => s.id === d.id);
-                const photoURL = rec?.photoURL || '';
+                const photoURL = (window._blobCache && window._blobCache[d.id]?.photoURL) || '';
                 const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
                 const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
                 const el = cell.getElement();
@@ -4137,7 +4168,7 @@ const renderStudents = (students) => {
     };
 
     const rowData = students.map(s => {
-        const row = { id: s.id, _actions: '', _img: '', photoURL: s.photoURL || '' };
+        const row = { id: s.id, _actions: '', _img: '', photoURL: '' }; // photoURL served from _blobCache via formatter
         headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
         // Computed age from DOB field
         const ageObj = calcAge(s['DOB']);
@@ -4903,8 +4934,8 @@ const _buildRowData = (students) => {
     return students.map(s => {
         // ── BLOBS NEVER enter Tabulator rows — formatters look up studentsData by id ──
         const row = { id: s.id, _actions: '', _img: '',
-            _hasPhoto: !!(s.photoURL && s.photoURL.length > 10),
-            _hasCert:  !!(s.birthCertBase64 && s.birthCertBase64.length > 10),
+            _hasPhoto: !!(window._blobCache?.[s.id]?.photoURL?.length > 10 || (s.photoURL && s.photoURL.length > 10)),
+            _hasCert:  !!(window._blobCache?.[s.id]?.birthCertBase64?.length > 10 || (s.birthCertBase64 && s.birthCertBase64.length > 10)),
             _certName: s.birthCertName || '' };
         headers.forEach(h => {
             if (h === 'photoURL' || h === 'birthCertBase64' || h === 'birthCertName') return;
@@ -4951,7 +4982,7 @@ const _tsdRender = (hits, term) => {
             const name  = s['Official Student Name'] || '';
             const grade = s.Grade || '';
             const assNo = s['Assessment No'] || '';
-            const photo = s.photoURL || '';
+            const photo = (window._blobCache?.[s.id]?.photoURL) || '';
             const imgSrc = photo ? photo : `./student_images/${encodeURIComponent(name)}.jpg`;
             return `<div class="tsd-result" data-idx="${i}"
                 onmouseenter="this.classList.add('tsd-hover')" onmouseleave="this.classList.remove('tsd-hover')"
@@ -5130,8 +5161,9 @@ window._quickUploadPhoto = async function(id, input) {
         const base64 = await window._compressImageToLimit(file);
         const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${id}`);
         await update(studentRef, { photoURL: base64 });
+        if (typeof window._setPhoto === 'function') window._setPhoto(id, base64);
         const idx = studentsData.findIndex(s => s.id === id);
-        if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
+        if (idx !== -1) { window._studentsData = studentsData; }
         if (window._tabulatorTable) {
             const trow = window._tabulatorTable.getRow(id);
             if (trow) trow.update({ _hasPhoto: true, _img: '' });
@@ -5160,10 +5192,10 @@ window._quickUploadCert = async function(id, input) {
         });
         const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${id}`);
         await update(studentRef, { birthCertBase64: base64, birthCertName: file.name });
+        if (typeof window._setCert === 'function') window._setCert(id, base64, file.name);
         const idx = studentsData.findIndex(s => s.id === id);
         if (idx !== -1) {
-            studentsData[idx].birthCertBase64 = base64;
-            studentsData[idx].birthCertName = file.name;
+            // blobs live in _blobCache; only keep _pdfHref hint on the row
             if (!studentsData[idx]._pdfHref) studentsData[idx]._pdfHref = base64;
             window._studentsData = studentsData;
         }
@@ -5187,7 +5219,7 @@ window._editRow = (id) => {
     drawerStudentLabel.textContent = name || student['Assessment No'] || id;
 
     // Avatar in header: prefer stored photoURL, fall back to static path
-    const storedPhoto = student['photoURL'] || '';
+    const storedPhoto = (window._blobCache?.[id]?.photoURL) || student['photoURL'] || '';
     drawerAvatar.src = storedPhoto || (name ? `./student_images/${encodeURIComponent(name)}.jpg` : './student_images/default.jpg');
 
     // Build full schema from ALL students so fields missing on THIS student still appear
@@ -5243,8 +5275,8 @@ window._editRow = (id) => {
 
         <!-- ── Birth Certificate Upload Zone ── -->
         ${(() => {
-            const bc = student.birthCertBase64 || '';
-            const bcName = student.birthCertName || '';
+            const bc = (window._getCert ? window._getCert(id) : '') || student.birthCertBase64 || '';
+            const bcName = (window._blobCache?.[id]?.birthCertName) || student.birthCertName || '';
             const hasBC = !!bc;
             return `<div class="bc-upload-zone" id="bc-upload-zone">
             <div class="bc-icon-wrap ${hasBC ? 'has-file' : ''}" id="bc-icon-wrap" title="${hasBC ? 'Click to view certificate' : ''}">
@@ -5402,7 +5434,8 @@ window._editRow = (id) => {
             const studentRef2 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
             await update(studentRef2, { photoURL: '' });
             const idx2 = studentsData.findIndex(s => s.id === drawerCurrentId);
-            if (idx2 !== -1) { studentsData[idx2].photoURL = ''; window._studentsData = studentsData; }
+            if (idx2 !== -1) { window._studentsData = studentsData; }
+            if (typeof window._setPhoto === 'function') window._setPhoto(id, '');
             if (tabulatorTable) {
                 const trow2 = tabulatorTable.getRow(drawerCurrentId);
                 if (trow2) trow2.update({ _hasPhoto: false, _img: '' });
@@ -5464,14 +5497,15 @@ window._editRow = (id) => {
     };
 
     // Render thumb on open if cert exists
-    const existingBC = student.birthCertBase64 || '';
+    const existingBC = (window._getCert ? window._getCert(id) : '') || student.birthCertBase64 || '';
     if (existingBC) renderBcThumb(existingBC);
 
     // Click on icon wrap opens viewer if cert exists
     bcIconWrap?.addEventListener('click', () => {
         const s = studentsData.find(s => s.id === drawerCurrentId);
-        if (s?.birthCertBase64 && typeof window._openPdfDirect === 'function') {
-            window._openPdfDirect(s.birthCertBase64, s['Official Student Name'] || 'Birth Certificate');
+        const _bc5491 = (window._getCert ? window._getCert(s?.id) : '') || s?.birthCertBase64 || '';
+        if (_bc5491 && typeof window._openPdfDirect === 'function') {
+            window._openPdfDirect(_bc5491, s['Official Student Name'] || 'Birth Certificate');
         }
     });
 
@@ -5488,11 +5522,11 @@ window._editRow = (id) => {
 
         const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
         await update(studentRef, { birthCertBase64: base64, birthCertName: filename });
+        if (typeof window._setCert === 'function') window._setCert(id, base64, filename);
 
         const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
         if (idx !== -1) {
-            studentsData[idx].birthCertBase64 = base64;
-            studentsData[idx].birthCertName   = filename;
+            // blobs live in _blobCache now; studentsData row has no blob fields
             if (!studentsData[idx]._pdfHref) studentsData[idx]._pdfHref = base64;
             window._studentsData = studentsData;
         }
@@ -5622,17 +5656,19 @@ window._editRow = (id) => {
     const wireBC = () => {
         drawerBody.querySelector('#bc-view-btn')?.addEventListener('click', () => {
             const s = studentsData.find(s => s.id === drawerCurrentId);
-            if (!s?.birthCertBase64) return;
+            const _bcOpen = (window._getCert ? window._getCert(s?.id) : '') || s?.birthCertBase64 || '';
+            if (!_bcOpen) return;
             if (typeof window._openPdfDirect === 'function') {
-                window._openPdfDirect(s.birthCertBase64, s['Official Student Name'] || 'Birth Certificate');
+                window._openPdfDirect(_bcOpen, s['Official Student Name'] || 'Birth Certificate');
             }
         });
         drawerBody.querySelector('#bc-download-btn')?.addEventListener('click', () => {
             const s = studentsData.find(s => s.id === drawerCurrentId);
-            if (!s?.birthCertBase64) return;
+            const _bcDl2 = (window._getCert ? window._getCert(drawerCurrentId) : '') || s?.birthCertBase64 || '';
+            if (!_bcDl2) return;
             const a = document.createElement('a');
-            a.href = s.birthCertBase64;
-            a.download = s.birthCertName || 'birth_certificate.pdf';
+            a.href = _bcDl2;
+            a.download = (window._blobCache?.[drawerCurrentId]?.birthCertName) || s?.birthCertName || 'birth_certificate.pdf';
             a.click();
         });
         drawerBody.querySelector('#bc-remove-btn')?.addEventListener('click', async () => {
@@ -5647,8 +5683,7 @@ window._editRow = (id) => {
                 await update(studentRef3, { birthCertBase64: '', birthCertName: '' });
                 const idx3 = studentsData.findIndex(s => s.id === drawerCurrentId);
                 if (idx3 !== -1) {
-                    studentsData[idx3].birthCertBase64 = '';
-                    studentsData[idx3].birthCertName = '';
+                    if (typeof window._setCert === 'function') window._setCert(studentsData[idx3].id, '', '');
                     if (studentsData[idx3]._pdfHref?.startsWith('data:')) studentsData[idx3]._pdfHref = '';
                     window._studentsData = studentsData;
                 }
@@ -7850,7 +7885,15 @@ setTimeout(() => {
         let lastLen = -1;
         setInterval(() => {
             const cur = (window._studentsData || []).length;
-            if (cur !== lastLen) { lastLen = cur; runCheck(false); }
+            if (cur !== lastLen) {
+                lastLen = cur;
+                // Yield to UI thread before running the check
+                if (typeof requestIdleCallback !== 'undefined') {
+                    requestIdleCallback(() => runCheck(false), { timeout: 3000 });
+                } else {
+                    setTimeout(() => runCheck(false), 200);
+                }
+            }
         }, 5000);
 
         // 2️⃣ GitHub server poll: re-fetch the file list every 3 minutes
@@ -8433,7 +8476,7 @@ setTimeout(() => {
 // ── #4 Bulk Export ZIP ────────────────────────────
 window._bulkExportZip = async function(){
     const students = window._studentsData || [];
-    const withBC = students.filter(s => s.birthCertBase64);
+    const withBC = students.filter(s => window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64);
     if (!withBC.length){ showToast('No birth certificates stored yet.','danger'); return; }
 
     // Grade breakdown for confirm dialog
@@ -8478,13 +8521,13 @@ window._bulkExportZip = async function(){
             pf.style.width = Math.round(i/withBC.length*85)+'%';
             pl.textContent = 'Adding '+(i+1)+' of '+withBC.length+'…';
             ps.textContent = s['Official Student Name']||s['Assessment No']||s.id||'';
-            const raw = s.birthCertBase64;
+            const raw = (window._blobCache?.[s.id]?.birthCertBase64) || s.birthCertBase64;
             if (!raw) continue;
             const data       = raw.includes(',') ? raw.split(',')[1] : raw;
             const gradeLabel = String(s.Grade || 'No Grade').replace(/[/\\:*?"<>|]/g, '_').trim();
             const assessNo   = String(s['Assessment No'] ?? '').replace(/[/\\:*?"<>|]/g, '_');
             const baseName   = String(s['Official Student Name'] || s['Assessment No'] || s.id || 'cert').replace(/[/\\:*?"<>|]/g, '_');
-            const fileName   = String(s.birthCertName || (assessNo ? baseName + '_' + assessNo + '.pdf' : baseName + '.pdf'));
+            const fileName   = String((window._blobCache?.[s.id]?.birthCertName) || s.birthCertName || (assessNo ? baseName + '_' + assessNo + '.pdf' : baseName + '.pdf'));
             zip.folder(gradeLabel).file(fileName, data, {base64:true});
         }
         pf.style.width='90%'; pl.textContent='Building ZIP…'; ps.textContent='';
@@ -8507,7 +8550,7 @@ window._bulkExportPhotosZip = async function() {
     const students = window._studentsData || [];
 
     // Collect students that have a photo (base64 or external URL)
-    const withPhoto = students.filter(s => s.photoURL && s.photoURL.trim() !== '');
+    const withPhoto = students.filter(s => { const p = window._blobCache?.[s.id]?.photoURL || s.photoURL || ''; return p.trim() !== ''; });
     const total = withPhoto.length;
 
     if (!total) {
@@ -8591,7 +8634,7 @@ window._bulkExportPhotosZip = async function() {
             if (ps) ps.textContent = `${grade} / ${name}`;
 
             try {
-                const { data, ext } = await toBase64Entry(student.photoURL);
+                const { data, ext } = await toBase64Entry((window._blobCache?.[student.id]?.photoURL) || student.photoURL || '');
                 // File path: Grade/Name_AssessmentNo.ext  (ensures uniqueness)
                 const assessNo = String(student['Assessment No'] ?? '').replace(/[/\\:*?"<>|]/g,'_');
                 const filename = assessNo ? `${name}_${assessNo}.${ext}` : `${name}.${ext}`;
