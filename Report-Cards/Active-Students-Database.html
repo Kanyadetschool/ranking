@@ -2447,10 +2447,9 @@ auth = getAuth(app);
 // Ensure session survives page reloads (default, but set explicitly for passkey flow)
 setPersistence(auth, browserLocalPersistence).catch(() => {});
 
-// Expose Firebase handles for the Unmatched PDFs realtime listener
-window._firebaseDB      = db;
-window._firebaseRef     = ref;
-window._firebaseOnValue = onValue;
+// Expose Firebase handles for feature modules
+window._firebaseDB  = db;
+window._firebaseRef = ref;
 
 
 // ── SPLASH SCREEN ─────────────────────────────────────
@@ -2967,10 +2966,13 @@ function _softUnlock() {
 }
 
 // ── FETCH STUDENTS ────────────────────────────────────
-const fetchStudents = () => {
+// Uses one-time get() instead of onValue() to avoid continuous listener
+// overhead that causes lag with 500+ records. Call fetchStudents() or
+// window._refreshStudents() to reload data on demand.
+const fetchStudents = async () => {
     const studentsRef = ref(db, `artifacts/${sanitizedAppId}/students`);
-    let _fetchFirst = true;
-    onValue(studentsRef, (snapshot) => {
+    try {
+        const snapshot = await get(studentsRef);
         const data = snapshot.val();
         studentsData = data
             ? Object.entries(data)
@@ -2979,7 +2981,7 @@ const fetchStudents = () => {
             : [];
 
         // Stage 3: records received
-        if (_fetchFirst && _splashEl && !_splashEl.classList.contains('hidden')) {
+        if (_splashEl && !_splashEl.classList.contains('hidden')) {
             _splashStep(3, `Loading ${studentsData.length} records…`);
         }
 
@@ -2992,8 +2994,6 @@ const fetchStudents = () => {
         // Build per-student search cache so applyFilters() doesn't scan every field on every keystroke
         if (typeof _buildSearchCache === 'function') _buildSearchCache(studentsData);
         updateGradeFilter();
-        // First load → build table. Subsequent Firebase pushes → re-apply active filter so
-        // the user's current search/grade selection is preserved (not silently reset).
         if (tabulatorTable && !renderStudents._forceRebuild) {
             if (typeof applyFilters === 'function') {
                 applyFilters();
@@ -3007,27 +3007,25 @@ const fetchStudents = () => {
             renderStudents(studentsData);
         }
 
-        // Stage 4: table built → dismiss splash (first load only)
-        if (_fetchFirst) {
-            _fetchFirst = false;
-            if (_splashEl && !_splashEl.classList.contains('hidden')) {
-                _splashStep(4, 'Building table…');
-                setTimeout(() => _dismissSplash(), 480);
-            }
+        // Stage 4: table built → dismiss splash
+        if (_splashEl && !_splashEl.classList.contains('hidden')) {
+            _splashStep(4, 'Building table…');
+            setTimeout(() => _dismissSplash(), 480);
         }
 
         // ── Background badge check for Unmatched PDFs ──
         if (typeof window._recheckUnmatched === 'function') {
-            // Debounce so only the final data snapshot triggers a check
             clearTimeout(window._unmatchedBadgeDebounce);
             window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 800);
         }
-        
-    }, (error) => {
+    } catch (error) {
         _splashError('Data error: ' + error.message);
         setTimeout(() => _dismissSplash(() => showModal(`Error fetching data: ${error.message}`)), 1800);
-    });
+    }
 };
+
+// Expose manual refresh so post-save calls can reload without a full page reload
+window._refreshStudents = fetchStudents;
 
 // ── GRADE FILTER ──────────────────────────────────────
 const updateGradeFilter = () => {
@@ -7839,33 +7837,21 @@ setTimeout(() => {
         _checking = false;
     }
 
-    /* ── Firebase realtime listener ───────────────────────── */
-    // Subscribe once to the students node; every onValue fires runCheck().
+    /* ── No realtime listener — use _studentsData poll instead ─ */
+    // Avoid attaching a second Firebase listener (causes double reads + lag).
+    // _studentsData is already kept current by fetchStudents() / _refreshStudents().
     let _listenerAttached = false;
     function attachRealtimeListener() {
         if (_listenerAttached) return;
         _listenerAttached = true;
 
-        // 1️⃣ Firebase: recheck matches whenever student records change
-        try {
-            const dbRef   = window._firebaseDB;
-            const onValFn = window._firebaseOnValue;
-            const refFn   = window._firebaseRef;
-            if (dbRef && onValFn && refFn) {
-                const studentsRef = refFn(dbRef, 'students');
-                onValFn(studentsRef, () => {
-                    clearTimeout(window._unmatchedDebounce);
-                    window._unmatchedDebounce = setTimeout(() => runCheck(false), 400);
-                });
-            } else {
-                // Fallback: poll _studentsData length every 3 s
-                let lastLen = -1;
-                setInterval(() => {
-                    const cur = (window._studentsData || []).length;
-                    if (cur !== lastLen) { lastLen = cur; runCheck(false); }
-                }, 3000);
-            }
-        } catch(_) {}
+        // Poll _studentsData length every 5 s so unmatched badge stays in sync
+        // after manual refreshes without the cost of a persistent socket.
+        let lastLen = -1;
+        setInterval(() => {
+            const cur = (window._studentsData || []).length;
+            if (cur !== lastLen) { lastLen = cur; runCheck(false); }
+        }, 5000);
 
         // 2️⃣ GitHub server poll: re-fetch the file list every 3 minutes
         // so newly uploaded PDFs are detected automatically without a manual re-scan.
