@@ -3988,8 +3988,8 @@ const renderStudents = (students) => {
                 const d = cell.getRow().getData();
                 const row = cell.getRow();
                 const isSelected = row.isSelected ? row.isSelected() : false;
-                const hasPhoto = !!(d.photoURL && typeof d.photoURL === 'string' && d.photoURL.length > 10);
-                const hasCert  = !!(d.birthCertBase64 && typeof d.birthCertBase64 === 'string' && d.birthCertBase64.length > 10);
+                const hasPhoto = !!d._hasPhoto;
+                const hasCert  = !!d._hasCert;
                 return `<div class="action-wrap" style="display:flex;align-items:center;gap:.3rem;flex-wrap:nowrap;">
                     <input type="checkbox" class="action-row-check" ${isSelected ? 'checked' : ''} title="Select row"
                         onclick="(function(e){e.stopPropagation();var r=window._tabulatorTable&&window._tabulatorTable.getRow('${d.id}');if(r)r.toggleSelect();e.target.checked=r&&r.isSelected?r.isSelected():e.target.checked;})(event)">
@@ -4022,11 +4022,12 @@ const renderStudents = (students) => {
             title: 'Photo', field: '_img', frozen: frozenColumn === '_img', headerSort: false, resizable: true, width: 60, headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
-                const photoURL = d.photoURL || '';
+                // Look up blob from master array — never stored in row
+                const rec = (window._studentsData || []).find(s => s.id === d.id);
+                const photoURL = rec?.photoURL || '';
                 const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
                 const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
                 const el = cell.getElement();
-                // Skip full re-render if src hasn't changed (virtual scroll recycle optimisation)
                 let img = el.querySelector('img.student-img');
                 if (img && img.dataset.src === src) return img.outerHTML;
                 return `<img src="${src}" data-src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';this.dataset.src=this.src;" style="cursor:pointer;" title="Click to view photo">`;
@@ -4902,9 +4903,15 @@ const _buildRowData = (students) => {
         return { years, months };
     };
     return students.map(s => {
-        const row = { id: s.id, _actions: '', _img: '', photoURL: s.photoURL || '',
-            birthCertBase64: s.birthCertBase64 || '', birthCertName: s.birthCertName || '' };
-        headers.forEach(h => { row[h] = s[h] !== undefined ? s[h] : ''; });
+        // ── BLOBS NEVER enter Tabulator rows — formatters look up studentsData by id ──
+        const row = { id: s.id, _actions: '', _img: '',
+            _hasPhoto: !!(s.photoURL && s.photoURL.length > 10),
+            _hasCert:  !!(s.birthCertBase64 && s.birthCertBase64.length > 10),
+            _certName: s.birthCertName || '' };
+        headers.forEach(h => {
+            if (h === 'photoURL' || h === 'birthCertBase64' || h === 'birthCertName') return;
+            row[h] = s[h] !== undefined ? s[h] : '';
+        });
         const ageObj = _calcAge(s['DOB'] ? String(s['DOB']) : '');
         row._age = ageObj ? ageObj.years + (ageObj.months / 12) : null;
         row._ageDisplay = ageObj ? `${ageObj.years} yr${ageObj.years !== 1 ? 's' : ''}, ${ageObj.months} mth${ageObj.months !== 1 ? 's' : ''}` : null;
@@ -5129,7 +5136,7 @@ window._quickUploadPhoto = async function(id, input) {
         if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
         if (window._tabulatorTable) {
             const trow = window._tabulatorTable.getRow(id);
-            if (trow) trow.update({ photoURL: base64, _img: '' });
+            if (trow) trow.update({ _hasPhoto: true, _img: '' });
         }
         const kb = Math.round(base64.length / 1024);
         showToast(`Photo saved ✓ (${kb} KB)`, 'success');
@@ -5164,7 +5171,7 @@ window._quickUploadCert = async function(id, input) {
         }
         if (window._tabulatorTable) {
             const trow = window._tabulatorTable.getRow(id);
-            // row update not needed — only KPI changes
+            if (trow) trow.update({ _hasCert: true, _certName: file.name });
         }
         showToast('Certificate saved ✓', 'success');
         if (typeof updateKPI === 'function') updateKPI(studentsData);
@@ -5353,10 +5360,10 @@ window._editRow = (id) => {
             const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
 
-            // Live table update — pass photoURL so formatter renders immediately
+            // Live table update — flag only, blob stays in studentsData
             if (tabulatorTable) {
                 const trow = tabulatorTable.getRow(drawerCurrentId);
-                if (trow) trow.update({ photoURL: base64, _img: '' });
+                if (trow) trow.update({ _hasPhoto: true, _img: '' });
             }
 
             progressFill.style.width = '100%';
@@ -5400,7 +5407,7 @@ window._editRow = (id) => {
             if (idx2 !== -1) { studentsData[idx2].photoURL = ''; window._studentsData = studentsData; }
             if (tabulatorTable) {
                 const trow2 = tabulatorTable.getRow(drawerCurrentId);
-                if (trow2) trow2.update({ photoURL: '', _img: '' });
+                if (trow2) trow2.update({ _hasPhoto: false, _img: '' });
             }
             previewImg.src = '';
             drawerAvatar.src = './student_images/default.jpg';
@@ -5647,6 +5654,11 @@ window._editRow = (id) => {
                     if (studentsData[idx3]._pdfHref?.startsWith('data:')) studentsData[idx3]._pdfHref = '';
                     window._studentsData = studentsData;
                 }
+                // Update table flag
+                if (window._tabulatorTable) {
+                    const trow3 = window._tabulatorTable.getRow(drawerCurrentId);
+                    if (trow3) trow3.update({ _hasCert: false, _certName: '' });
+                }
                 bcIconWrap.classList.remove('has-file');
                 drawerBody.querySelector('#bc-thumb-canvas')?.remove();
                 drawerBody.querySelector('.bc-thumb-overlay')?.remove();
@@ -5700,7 +5712,11 @@ drawerSaveBtn.addEventListener('click', async () => {
             } catch(_) {}
         }
         const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
-        if (idx !== -1) { studentsData[idx] = { id: drawerCurrentId, ...updatedData }; window._studentsData = studentsData; }
+        if (idx !== -1) {
+            // Merge field edits — preserve blobs already on the record
+            studentsData[idx] = { ...studentsData[idx], ...updatedData };
+            window._studentsData = studentsData;
+        }
         closeDrawer();
         showModal('Student record updated successfully!');
         // Refresh history panel if it's open
