@@ -1898,7 +1898,7 @@ document.addEventListener('click', function(e) {
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, set, onValue, remove, update, get, onChildAdded, onChildChanged, onChildRemoved, query, orderByChild, limitToFirst } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, onValue, remove, update, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 
 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -2921,9 +2921,6 @@ function _openApp(user) {
     // Fetch students — guard against double-fetch when called multiple times
     if (!_appAlreadyOpen) {
         _appAlreadyOpen = true;
-        // Expose SDK globals here — previously set inside onValue callback
-        window._fbDb  = db;
-        window._fbSDK = { ref, set, get, update, remove, signOut: () => signOut(auth) };
         fetchStudents();
 
         // ONE-TIME MIGRATION: move auditLog → AuditLog
@@ -2970,125 +2967,66 @@ function _softUnlock() {
 }
 
 // ── FETCH STUDENTS ────────────────────────────────────
-// FIREBASE RULES — add .indexOn to firebase.json or the console for fast
-// server-side filtering (eliminates full-node downloads for grade queries):
-//
-//   "rules": {
-//     "artifacts": {
-//       "$appId": {
-//         "students": {
-//           ".indexOn": ["Grade", "Assessment No", "Official Student Name"]
-//         }
-//       }
-//     }
-//   }
-//
-// Uses granular child listeners instead of onValue on the full node.
-// At 1000+ students this means only the changed record is re-downloaded
-// on each save — not the entire dataset.
 const fetchStudents = () => {
     const studentsRef = ref(db, `artifacts/${sanitizedAppId}/students`);
     let _fetchFirst = true;
-    let _initialLoadDone = false;
+    onValue(studentsRef, (snapshot) => {
+        const data = snapshot.val();
+        studentsData = data
+            ? Object.entries(data)
+                .map(([id, val]) => ({ id, ...val }))
+                .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
+            : [];
 
-    // Debounced re-render — batches rapid onChildAdded calls on first load
-    // into a single replaceData instead of 1000 individual row insertions.
-    let _renderTimer = null;
-    const _scheduleRender = () => {
-        clearTimeout(_renderTimer);
-        _renderTimer = setTimeout(() => {
-            studentsData.sort((a, b) =>
-                (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity));
-            window._studentsData = studentsData;
-            if (typeof _buildSearchCache === 'function') _buildSearchCache(studentsData);
-            updateGradeFilter();
-            if (tabulatorTable && !renderStudents._forceRebuild) {
-                if (typeof applyFilters === 'function') applyFilters();
-                else tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
+        // Stage 3: records received
+        if (_fetchFirst && _splashEl && !_splashEl.classList.contains('hidden')) {
+            _splashStep(3, `Loading ${studentsData.length} records…`);
+        }
+
+        // ── Expose to feature modules ──
+        window._studentsData   = studentsData;
+        window._tabulatorTable = tabulatorTable;
+        window._selectedStudents = selectedStudents;
+        window._fbDb           = db;
+        window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
+        // Build per-student search cache so applyFilters() doesn't scan every field on every keystroke
+        if (typeof _buildSearchCache === 'function') _buildSearchCache(studentsData);
+        updateGradeFilter();
+        // First load → build table. Subsequent Firebase pushes → re-apply active filter so
+        // the user's current search/grade selection is preserved (not silently reset).
+        if (tabulatorTable && !renderStudents._forceRebuild) {
+            if (typeof applyFilters === 'function') {
+                applyFilters();
             } else {
-                renderStudents(studentsData);
+                currentFilteredStudents = studentsData;
+                updateKPI(studentsData);
+                updateAnalytics(studentsData);
+                tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
             }
-            if (_fetchFirst) {
-                _fetchFirst = false;
-                if (_splashEl && !_splashEl.classList.contains('hidden')) {
-                    _splashStep(4, 'Building table…');
-                    setTimeout(() => _dismissSplash(), 480);
-                }
-            }
-            clearTimeout(window._unmatchedBadgeDebounce);
-            window._unmatchedBadgeDebounce = setTimeout(() =>
-                window._recheckUnmatched && window._recheckUnmatched(), 800);
-        }, _initialLoadDone ? 0 : 120);  // batch initial adds; instant for live updates
-    };
+        } else {
+            renderStudents(studentsData);
+        }
 
-    // ── Initial add: fires once per existing record on connect ──
-    onChildAdded(studentsRef, (snap) => {
-        const s = { id: snap.key, ...snap.val() };
-        if (!studentsData.find(x => x.id === s.id)) studentsData.push(s);
+        // Stage 4: table built → dismiss splash (first load only)
         if (_fetchFirst) {
-            // Splash stage 3: update count label as records stream in
+            _fetchFirst = false;
             if (_splashEl && !_splashEl.classList.contains('hidden')) {
-                _splashStep(3, `Loading ${studentsData.length} records…`);
+                _splashStep(4, 'Building table…');
+                setTimeout(() => _dismissSplash(), 480);
             }
         }
-        _scheduleRender();
+
+        // ── Background badge check for Unmatched PDFs ──
+        if (typeof window._recheckUnmatched === 'function') {
+            // Debounce so only the final data snapshot triggers a check
+            clearTimeout(window._unmatchedBadgeDebounce);
+            window._unmatchedBadgeDebounce = setTimeout(() => window._recheckUnmatched && window._recheckUnmatched(), 800);
+        }
+        
     }, (error) => {
         _splashError('Data error: ' + error.message);
         setTimeout(() => _dismissSplash(() => showModal(`Error fetching data: ${error.message}`)), 1800);
     });
-
-    // ── Live update: one record changed ──
-    onChildChanged(studentsRef, (snap) => {
-        _initialLoadDone = true;
-        const idx = studentsData.findIndex(s => s.id === snap.key);
-        const updated = { id: snap.key, ...snap.val() };
-        if (idx !== -1) {
-            // Preserve computed fields (_pdfHref, _searchCache, _age*)
-            studentsData[idx] = { ...studentsData[idx], ...updated };
-        } else {
-            studentsData.push(updated);
-        }
-        window._studentsData = studentsData;
-        // Rebuild search cache for this one record only
-        if (typeof _buildSearchCache === 'function') _buildSearchCache(studentsData);
-        // Update Tabulator row directly — no full replaceData
-        if (window._tabulatorTable) {
-            const trow = window._tabulatorTable.getRow(snap.key);
-            if (trow) {
-                const rowPatch = _buildRowData ? _buildRowData([studentsData[idx !== -1 ? idx : studentsData.length - 1]])[0] : updated;
-                trow.update(rowPatch);
-            } else {
-                // Row not in current filter view — just update KPI
-                clearTimeout(_kpiAnalyticsTimer);
-                _kpiAnalyticsTimer = setTimeout(() => {
-                    updateKPI(currentFilteredStudents);
-                    updateAnalytics(currentFilteredStudents);
-                }, 600);
-            }
-        }
-        clearTimeout(window._unmatchedBadgeDebounce);
-        window._unmatchedBadgeDebounce = setTimeout(() =>
-            window._recheckUnmatched && window._recheckUnmatched(), 800);
-    });
-
-    // ── Live delete: one record removed ──
-    onChildRemoved(studentsRef, (snap) => {
-        _initialLoadDone = true;
-        studentsData = studentsData.filter(s => s.id !== snap.key);
-        window._studentsData = studentsData;
-        if (window._tabulatorTable) window._tabulatorTable.deleteRow(snap.key);
-        clearTimeout(_kpiAnalyticsTimer);
-        _kpiAnalyticsTimer = setTimeout(() => {
-            updateKPI(currentFilteredStudents);
-            updateAnalytics(currentFilteredStudents);
-        }, 600);
-    });
-
-    // Mark initial load complete after all onChildAdded have fired
-    // Firebase guarantees all existing children fire before any onChildChanged
-    onValue(ref(db, `artifacts/${sanitizedAppId}/students`), () => {
-        if (!_initialLoadDone) _initialLoadDone = true;
-    }, { onlyOnce: true });
 };
 
 // ── GRADE FILTER ──────────────────────────────────────
@@ -4243,8 +4181,7 @@ const renderStudents = (students) => {
         paginationButtonCount: 5,
         columnDefaults: { headerSortTristate: true },
         renderVertical: 'virtual',
-        renderVerticalBuffer: 160,  // rows pre-rendered above/below viewport — smoother fast scroll
-        renderDelay: 20,            // ms before re-rendering after scroll stops
+        renderDelay: 30,
         selectable: true,
         selectableRangeMode: 'click',
         movableColumns: true,
@@ -5124,12 +5061,9 @@ let _kpiAnalyticsTimer   = null;
 searchInput.addEventListener('input', () => {
     const term = searchInput.value.trim().toLowerCase();
     if (!term) { _tsdClose(); applyFilters(); return; }
-    // Live dropdown — instant, no table rebuild while typing
+    // Live dropdown — no table/KPI update while typing
     const hits = (studentsData || []).filter(s => (s._searchCache || '').includes(term)).slice(0, 10);
     _tsdRender(hits, term);
-    // Debounce table/KPI update — avoids replaceData on every keystroke at 1000+ rows
-    clearTimeout(_searchDebounceTimer);
-    _searchDebounceTimer = setTimeout(() => applyFilters(), 200);
 });
 
 gradeFilterSelect.addEventListener('change', () => { _tsdClose(); applyFilters(); });
