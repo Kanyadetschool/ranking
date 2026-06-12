@@ -2397,7 +2397,7 @@ export const openLocalPDF = (assessmentNo, studentName) => {
     const pdfName = studentName || assessmentNo;
     pdfModalStudentName.textContent = pdfName;
     const studentRecord = (window._studentsData || studentsData || []).find(s => s['Official Student Name'] === studentName || s['Assessment No'] === assessmentNo);
-    pdfModalStudentImage.src = studentRecord?.photoURL || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
+    pdfModalStudentImage.src = (window._blobCache?.[studentRecord?.id]?.photoURL) || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     if (pdfModalStudentGrade) pdfModalStudentGrade.textContent = studentRecord?.Grade || '';
     const _pdfBase = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}`;
     // Show modal FIRST so the container has real dimensions, then load
@@ -2417,7 +2417,7 @@ window._openPdfDirect = (url, studentName) => {
     const name = studentName || (url.startsWith('data:') ? 'birth_certificate' : decodeURIComponent(url.split('/').pop()).replace(/\.pdf$/i, ''));
     pdfModalStudentName.textContent = name;
     const studentRecord2 = (window._studentsData || studentsData || []).find(s => s['Official Student Name'] === studentName);
-    pdfModalStudentImage.src = studentRecord2?.photoURL || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
+    pdfModalStudentImage.src = (window._blobCache?.[studentRecord2?.id]?.photoURL) || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     if (pdfModalStudentGrade) pdfModalStudentGrade.textContent = studentRecord2?.Grade || '';
     // Set download filename — for base64 use student name, for server URL use filename
     const dlLink2 = document.getElementById('pdf-download-link');
@@ -2974,17 +2974,24 @@ const fetchStudents = async () => {
     try {
         const snapshot = await get(studentsRef);
         const data = snapshot.val();
-        // ── Blob separation: strip photoURL + birthCertBase64 into a
-        //    separate cache so they don't sit in 500 JS objects in memory.
-        //    All code that reads student.photoURL falls back to _blobCache.
+        // ── Blobs now live in separate Firebase nodes (studentPhotos / studentCerts).
+        //    Student records are text-only after migration. _blobCache is populated
+        //    lazily when a student drawer opens — never on page load.
         if (!window._blobCache) window._blobCache = {};
         studentsData = data
             ? Object.entries(data)
                 .map(([id, val]) => {
-                    // Move blobs out of the record
-                    if (val.photoURL)        { window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL        = val.photoURL; }
-                    if (val.birthCertBase64) { window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = val.birthCertBase64; }
-                    const { photoURL, birthCertBase64, ...rest } = val;
+                    // Guard: if old un-migrated blobs still exist, strip & cache them
+                    if (val.photoURL && val.photoURL.length > 10) {
+                        window._blobCache[id] = window._blobCache[id] || {};
+                        window._blobCache[id].photoURL = val.photoURL;
+                    }
+                    if (val.birthCertBase64 && val.birthCertBase64.length > 10) {
+                        window._blobCache[id] = window._blobCache[id] || {};
+                        window._blobCache[id].birthCertBase64 = val.birthCertBase64;
+                        window._blobCache[id].birthCertName   = val.birthCertName || '';
+                    }
+                    const { photoURL, birthCertBase64, birthCertName, ...rest } = val;
                     return { id, ...rest };
                 })
                 .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
@@ -3058,6 +3065,43 @@ window._getCert  = (id) => (window._blobCache && window._blobCache[id]?.birthCer
 // Update blob cache when a photo is saved (without needing a full re-fetch)
 window._setPhoto = (id, base64) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL = base64; };
 window._setCert  = (id, base64, name) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = base64; if (name) window._blobCache[id].birthCertName = name; };
+
+// ── Lazy blob loader — fetches photo + cert for ONE student from separate nodes ──
+// Called when a student drawer opens. Result cached in _blobCache so subsequent
+// opens are instant. No blobs are loaded on page load.
+window._loadBlobsForStudent = async (id) => {
+    if (!id) return;
+    if (!window._blobCache) window._blobCache = {};
+    const cached = window._blobCache[id];
+    // Already loaded (even if empty string — don't re-fetch)
+    if (cached && '_loaded' in cached) return;
+
+    window._blobCache[id] = window._blobCache[id] || {};
+
+    const sanitized = sanitizedAppId;
+    const [photoSnap, certSnap] = await Promise.all([
+        get(ref(db, `artifacts/${sanitized}/studentPhotos/${id}`)).catch(() => null),
+        get(ref(db, `artifacts/${sanitized}/studentCerts/${id}`)).catch(() => null),
+    ]);
+
+    if (photoSnap?.exists()) {
+        const d = photoSnap.val();
+        window._blobCache[id].photoURL = d.photoURL || '';
+    } else {
+        window._blobCache[id].photoURL = window._blobCache[id].photoURL || '';
+    }
+
+    if (certSnap?.exists()) {
+        const d = certSnap.val();
+        window._blobCache[id].birthCertBase64 = d.birthCertBase64 || '';
+        window._blobCache[id].birthCertName   = d.birthCertName   || '';
+    } else {
+        window._blobCache[id].birthCertBase64 = window._blobCache[id].birthCertBase64 || '';
+        window._blobCache[id].birthCertName   = window._blobCache[id].birthCertName   || '';
+    }
+
+    window._blobCache[id]._loaded = true; // mark as fetched
+};
 
 // ── GRADE FILTER ──────────────────────────────────────
 const updateGradeFilter = () => {
@@ -5159,8 +5203,8 @@ window._quickUploadPhoto = async function(id, input) {
     showToast('Compressing photo…', 'info');
     try {
         const base64 = await window._compressImageToLimit(file);
-        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${id}`);
-        await update(studentRef, { photoURL: base64 });
+        await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${id}`), { photoURL: base64 });
+        await update(ref(db, `artifacts/${sanitizedAppId}/students/${id}`), { photoURL: null });
         if (typeof window._setPhoto === 'function') window._setPhoto(id, base64);
         const idx = studentsData.findIndex(s => s.id === id);
         if (idx !== -1) { window._studentsData = studentsData; }
@@ -5190,8 +5234,13 @@ window._quickUploadCert = async function(id, input) {
             r.onerror = () => rej(new Error('Could not read file'));
             r.readAsDataURL(file);
         });
-        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${id}`);
-        await update(studentRef, { birthCertBase64: base64, birthCertName: file.name });
+        // Write cert to its own node (separate from student text record)
+        await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${id}`), {
+            birthCertBase64: base64,
+            birthCertName: file.name
+        });
+        // Also null-out any legacy field on the student record
+        await update(ref(db, `artifacts/${sanitizedAppId}/students/${id}`), { birthCertBase64: null, birthCertName: null });
         if (typeof window._setCert === 'function') window._setCert(id, base64, file.name);
         const idx = studentsData.findIndex(s => s.id === id);
         if (idx !== -1) {
@@ -5210,7 +5259,7 @@ window._quickUploadCert = async function(id, input) {
     }
 };
 
-window._editRow = (id) => {
+window._editRow = async (id) => {
     const student = studentsData.find(s => s.id === id);
     if (!student) return;
     drawerCurrentId = id;
@@ -5218,8 +5267,17 @@ window._editRow = (id) => {
     const name = student['Official Student Name'] || '';
     drawerStudentLabel.textContent = name || student['Assessment No'] || id;
 
+    // Show drawer immediately with spinner avatar, then load blobs
+    drawerAvatar.src = './student_images/default.jpg';
+    if (drawerEl) drawerEl.classList.add('open');
+
+    // Lazy-load photo + cert from separate Firebase nodes (cached after first open)
+    if (typeof window._loadBlobsForStudent === 'function') {
+        await window._loadBlobsForStudent(id);
+    }
+
     // Avatar in header: prefer stored photoURL, fall back to static path
-    const storedPhoto = (window._blobCache?.[id]?.photoURL) || student['photoURL'] || '';
+    const storedPhoto = (window._blobCache?.[id]?.photoURL) || '';
     drawerAvatar.src = storedPhoto || (name ? `./student_images/${encodeURIComponent(name)}.jpg` : './student_images/default.jpg');
 
     // Build full schema from ALL students so fields missing on THIS student still appear
@@ -5384,8 +5442,10 @@ window._editRow = (id) => {
             progressFill.style.width = '60%';
             progressLabel.textContent = 'Saving…';
 
-            const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-            await update(studentRef, { photoURL: base64 });
+            // Write photo to its own node (separate from student text record)
+            await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${drawerCurrentId}`), { photoURL: base64 });
+            // Null-out any legacy field on the student record
+            await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { photoURL: null });
 
             const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
@@ -5430,12 +5490,12 @@ window._editRow = (id) => {
         });
         if (!result.isConfirmed) return;
         try {
-            // Clear base64 from DB
-            const studentRef2 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-            await update(studentRef2, { photoURL: '' });
+            // Remove photo from its own node
+            await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${drawerCurrentId}`), { photoURL: '' });
+            await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { photoURL: null });
             const idx2 = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx2 !== -1) { window._studentsData = studentsData; }
-            if (typeof window._setPhoto === 'function') window._setPhoto(id, '');
+            if (typeof window._setPhoto === 'function') window._setPhoto(drawerCurrentId, '');
             if (tabulatorTable) {
                 const trow2 = tabulatorTable.getRow(drawerCurrentId);
                 if (trow2) trow2.update({ _hasPhoto: false, _img: '' });
@@ -5520,8 +5580,11 @@ window._editRow = (id) => {
         bcProgressFill.style.width = '60%';
         bcProgressLabel.textContent = 'Saving…';
 
-        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-        await update(studentRef, { birthCertBase64: base64, birthCertName: filename });
+        // Write cert to its own node
+        await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${drawerCurrentId}`), {
+            birthCertBase64: base64, birthCertName: filename
+        });
+        await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { birthCertBase64: null, birthCertName: null });
         if (typeof window._setCert === 'function') window._setCert(id, base64, filename);
 
         const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
@@ -5679,8 +5742,8 @@ window._editRow = (id) => {
             });
             if (!result.isConfirmed) return;
             try {
-                const studentRef3 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-                await update(studentRef3, { birthCertBase64: '', birthCertName: '' });
+                await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${drawerCurrentId}`), { birthCertBase64: '', birthCertName: '' });
+                await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { birthCertBase64: null, birthCertName: null });
                 const idx3 = studentsData.findIndex(s => s.id === drawerCurrentId);
                 if (idx3 !== -1) {
                     if (typeof window._setCert === 'function') window._setCert(studentsData[idx3].id, '', '');
