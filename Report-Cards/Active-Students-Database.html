@@ -5267,11 +5267,8 @@ window._editRow = async (id) => {
     const name = student['Official Student Name'] || '';
     drawerStudentLabel.textContent = name || student['Assessment No'] || id;
 
-    // Show drawer immediately with spinner avatar, then load blobs
-    drawerAvatar.src = './student_images/default.jpg';
-    if (drawerEl) drawerEl.classList.add('open');
-
     // Lazy-load photo + cert from separate Firebase nodes (cached after first open)
+    // Do this BEFORE building drawer HTML so photo/cert state is correct
     if (typeof window._loadBlobsForStudent === 'function') {
         await window._loadBlobsForStudent(id);
     }
