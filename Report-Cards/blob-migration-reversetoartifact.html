@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blob Migration (Reverse) — Kanyadet School</title>
+<style>
+  :root {
+    --navy: #1a2a4a; --gold: #c9a84c; --success: #059669;
+    --danger: #dc2626; --slate: #64748b; --bg: #f8fafc;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: var(--bg); color: #1e293b; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(0,0,0,.10); padding: 2rem; max-width: 560px; width: 100%; }
+  h1 { font-size: 1.25rem; font-weight: 800; color: var(--navy); margin-bottom: .25rem; }
+  .sub { font-size: .85rem; color: var(--slate); margin-bottom: 1.5rem; }
+  .info-box { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: .9rem 1rem; font-size: .83rem; line-height: 1.6; margin-bottom: 1.5rem; }
+  .info-box b { color: var(--navy); }
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .6rem 1.4rem; border-radius: 7px; font-size: .9rem; font-weight: 700; border: none; cursor: pointer; transition: opacity .15s; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .btn-primary { background: var(--navy); color: #fff; }
+  .btn-danger  { background: var(--danger); color: #fff; }
+  .btn-success { background: var(--success); color: #fff; }
+  #progress-wrap { display: none; margin: 1.2rem 0; }
+  .progress-track { background: #e2e8f0; border-radius: 99px; height: 10px; overflow: hidden; }
+  .progress-fill  { height: 100%; background: var(--gold); border-radius: 99px; transition: width .3s; width: 0%; }
+  #status { font-size: .83rem; color: var(--slate); margin-top: .5rem; min-height: 1.2em; }
+  #log { margin-top: 1.2rem; font-size: .78rem; font-family: monospace; max-height: 220px; overflow-y: auto; background: #f1f5f9; border-radius: 6px; padding: .7rem; display: none; }
+  .log-ok   { color: var(--success); }
+  .log-skip { color: var(--slate); }
+  .log-err  { color: var(--danger); }
+  .done-banner { display: none; background: #dcfce7; border: 1px solid #86efac; border-radius: 8px; padding: .9rem 1rem; font-size: .88rem; font-weight: 600; color: #166534; margin-top: 1.2rem; text-align: center; }
+  .warning-box { background: #fef9c3; border: 1px solid #fde047; border-radius: 8px; padding: .8rem 1rem; font-size: .82rem; margin-bottom: 1.2rem; }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>📦 Blob Migration Tool (Reverse)</h1>
+  <p class="sub">Kanyadet Active Students Database — one-time run</p>
+
+  <div class="info-box">
+    <b>What this does:</b><br>
+    Reads every entry in <code>studentPhotos</code> and <code>studentCerts</code>. For each one:<br>
+    1. Copies the blob (<code>photoURL</code> / <code>birthCertBase64</code> + <code>birthCertName</code>) back into the matching student record<br>
+    2. Removes the entry from the <code>studentPhotos</code> / <code>studentCerts</code> node<br><br>
+    After migration, student records are restored to their original inline-blob format.
+  </div>
+
+  <div class="warning-box">
+    ⚠️ <b>Run once only.</b> Keep this tab open until "Migration complete" appears. Do not use the main app while this is running.
+  </div>
+
+  <button class="btn btn-primary" id="start-btn" onclick="startMigration()">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+    Start Migration
+  </button>
+
+  <div id="progress-wrap">
+    <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    <div id="status">Initialising…</div>
+  </div>
+
+  <div id="log"></div>
+  <div class="done-banner" id="done-banner">✅ Migration complete — you can now use the updated app.</div>
+</div>
+
+<script type="module">
+import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, update, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getAuth, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, setPersistence, browserLocalPersistence }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyA_41WpdMjHJOU5s3gQ9aieIayZRvUoRLE",
+    authDomain: "kanyadet-school-admin.firebaseapp.com",
+    databaseURL: "https://kanyadet-school-admin-default-rtdb.firebaseio.com",
+    projectId: "kanyadet-school-admin",
+    storageBucket: "kanyadet-school-admin.firebasestorage.app",
+    messagingSenderId: "409708360032",
+    appId: "1:409708360032:web:a21d63e8cb5fa1ecabee05"
+};
+
+const app  = initializeApp(firebaseConfig);
+const db   = getDatabase(app);
+const auth = getAuth(app);
+
+// ── Derive sanitizedAppId the same way the main app does ──
+const rawAppId      = "1:409708360032:web:a21d63e8cb5fa1ecabee05";
+const sanitizedAppId = rawAppId.replace(/\./g, '_');
+
+const STUDENTS_PATH = `artifacts/${sanitizedAppId}/students`;
+const PHOTOS_PATH   = `artifacts/${sanitizedAppId}/studentPhotos`;
+const CERTS_PATH    = `artifacts/${sanitizedAppId}/studentCerts`;
+
+// ── UI helpers ──
+const $  = id => document.getElementById(id);
+const setProgress = (pct, msg) => {
+    $('progress-fill').style.width = pct + '%';
+    $('status').textContent = msg;
+};
+const log = (msg, cls='log-ok') => {
+    const el = $('log');
+    el.style.display = 'block';
+    el.innerHTML += `<div class="${cls}">${msg}</div>`;
+    el.scrollTop = el.scrollHeight;
+};
+
+// ── Ensure user is authenticated ──
+async function ensureAuth() {
+    return new Promise((resolve, reject) => {
+        setPersistence(auth, browserLocalPersistence).catch(() => {});
+        onAuthStateChanged(auth, async user => {
+            if (user) { resolve(user); return; }
+            try {
+                const provider = new GoogleAuthProvider();
+                const result   = await signInWithPopup(auth, provider);
+                resolve(result.user);
+            } catch(e) { reject(e); }
+        });
+    });
+}
+
+window.startMigration = async function() {
+    $('start-btn').disabled = true;
+    $('progress-wrap').style.display = 'block';
+    setProgress(2, 'Signing in…');
+
+    try {
+        const user = await ensureAuth();
+        log(`Signed in as ${user.email}`, 'log-ok');
+    } catch(e) {
+        setProgress(0, 'Sign-in failed: ' + e.message);
+        $('start-btn').disabled = false;
+        return;
+    }
+
+    setProgress(8, 'Fetching photo/cert records…');
+    const [photoSnap, certSnap] = await Promise.all([
+        get(ref(db, PHOTOS_PATH)),
+        get(ref(db, CERTS_PATH))
+    ]);
+
+    const photos = photoSnap.exists() ? photoSnap.val() : {};
+    const certs  = certSnap.exists()  ? certSnap.val()  : {};
+
+    const ids = Array.from(new Set([...Object.keys(photos), ...Object.keys(certs)]));
+    const total = ids.length;
+
+    if (total === 0) {
+        setProgress(100, 'No photo/cert records found.');
+        return;
+    }
+
+    log(`Found ${total} photo/cert records`);
+
+    let migrated = 0, skipped = 0, errors = 0;
+
+    for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        const pct = Math.round(10 + (i / total) * 85);
+        setProgress(pct, `Processing ${i + 1} / ${total} — ${id}`);
+
+        const photoEntry = photos[id];
+        const certEntry  = certs[id];
+
+        const hasPhoto = photoEntry && photoEntry.photoURL && photoEntry.photoURL.length > 10;
+        const hasCert  = certEntry && certEntry.birthCertBase64 && certEntry.birthCertBase64.length > 10;
+
+        if (!hasPhoto && !hasCert) {
+            skipped++;
+            continue;
+        }
+
+        try {
+            // 1. Write blobs back into the student record
+            const updates = {};
+            if (hasPhoto) { updates.photoURL = photoEntry.photoURL; }
+            if (hasCert) {
+                updates.birthCertBase64 = certEntry.birthCertBase64;
+                updates.birthCertName   = certEntry.birthCertName || `${id}.pdf`;
+            }
+            await update(ref(db, `${STUDENTS_PATH}/${id}`), updates);
+
+            // 2. Remove the entries from studentPhotos / studentCerts
+            const removals = [];
+            if (hasPhoto) removals.push(set(ref(db, `${PHOTOS_PATH}/${id}`), null));
+            if (hasCert)  removals.push(set(ref(db, `${CERTS_PATH}/${id}`), null));
+            await Promise.all(removals);
+
+            migrated++;
+            const parts = [];
+            if (hasPhoto) parts.push('photo');
+            if (hasCert)  parts.push('cert');
+            log(`✓ ${id} — restored ${parts.join(' + ')}`, 'log-ok');
+
+        } catch(e) {
+            errors++;
+            log(`✗ ${id} — ${e.message}`, 'log-err');
+        }
+
+        // Yield to UI every 10 records
+        if (i % 10 === 0) await new Promise(r => setTimeout(r, 0));
+    }
+
+    setProgress(100, `Done — ${migrated} migrated, ${skipped} had no blobs, ${errors} errors`);
+    log(`\nMigration complete. Migrated: ${migrated} | Skipped: ${skipped} | Errors: ${errors}`, 'log-ok');
+    $('done-banner').style.display = 'block';
+};
+</script>
+</body>
+</html>
