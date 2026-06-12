@@ -49,6 +49,9 @@
   <div class="warning-box">
     ⚠️ <b>Run once only.</b> Keep this tab open until "Migration complete" appears. Do not use the main app while this is running.
   </div>
+  <div class="info-box" style="background:#f0fdf4;border-color:#86efac;font-family:monospace;font-size:.8rem;" id="path-box">
+    Firebase path: loading…
+  </div>
 
   <button class="btn btn-primary" id="start-btn" onclick="startMigration()">
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
@@ -84,8 +87,10 @@ const app  = initializeApp(firebaseConfig);
 const db   = getDatabase(app);
 const auth = getAuth(app);
 
-// ── Derive sanitizedAppId the same way the main app does ──
-const rawAppId      = "1:409708360032:web:a21d63e8cb5fa1ecabee05";
+// ── Derive sanitizedAppId exactly as the main app does ──
+// Main app: appId = __app_id if defined, else 'default-app-id'
+// On GitHub Pages __app_id is undefined → sanitizedAppId = 'default-app-id'
+const rawAppId       = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 const sanitizedAppId = rawAppId.replace(/\./g, '_');
 
 const STUDENTS_PATH = `artifacts/${sanitizedAppId}/students`;
@@ -120,6 +125,14 @@ async function ensureAuth() {
     });
 }
 
+// Show resolved path on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const rawId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+    const sanId = rawId.replace(/\./g, '_');
+    const box = document.getElementById('path-box');
+    if (box) box.textContent = 'Firebase path: artifacts/' + sanId + '/studentPhotos , .../studentCerts';
+});
+
 window.startMigration = async function() {
     $('start-btn').disabled = true;
     $('progress-wrap').style.display = 'block';
@@ -135,6 +148,8 @@ window.startMigration = async function() {
     }
 
     setProgress(8, 'Fetching photo/cert records…');
+    log(`Reading from: ${PHOTOS_PATH} and ${CERTS_PATH}`, 'log-skip');
+
     const [photoSnap, certSnap] = await Promise.all([
         get(ref(db, PHOTOS_PATH)),
         get(ref(db, CERTS_PATH))
@@ -147,7 +162,10 @@ window.startMigration = async function() {
     const total = ids.length;
 
     if (total === 0) {
-        setProgress(100, 'No photo/cert records found.');
+        setProgress(0, 'No photo/cert records found.');
+        log('ERROR: No data at: ' + PHOTOS_PATH + ' or ' + CERTS_PATH, 'log-err');
+        log('Check that sanitizedAppId matches the main app. Open the main app, open DevTools console, type: window.sanitizedAppId', 'log-err');
+        $('start-btn').disabled = false;
         return;
     }
 
