@@ -3654,67 +3654,166 @@ async function _bgScanPdfs(students) {
 
 window._bgScanPdfs = _bgScanPdfs;
 
-// ── Background cert presence scan ──────────────────────────────────────────
-// Reads studentCerts node shallowly (keys only) to determine which students
-// have a birth cert stored in Firebase WITHOUT loading the full base64 blobs.
-// Populates _blobCache[id].birthCertBase64 with a truthy sentinel '__has_cert__'
-// so _hasCert in Tabulator rows and the KPI cert counter both work on first load.
+// ── Background cert presence scan ─────────────────────────────────────────
+// Reads studentCertPresence/{id}: true (written when certs are saved) to
+// determine which students have certs WITHOUT downloading blob data.
+// Falls back to scanning studentCerts keys via REST shallow=true if presence
+// node is empty (pre-existing data).
 window._bgScanCerts = async function(students) {
-    if (!students || !students.length) return;
-    if (window._bgCertScanDone) return;
+    if (!students || !students.length || window._bgCertScanDone) return;
+    if (!window._blobCache) window._blobCache = {};
+    let found = 0;
     try {
-        if (!sanitizedAppId || !db) return;
-
-        // Use Firebase REST API with shallow=true to get only child keys,
-        // avoiding downloading potentially large base64 cert blobs.
-        // db.app.options.databaseURL is the RTDB URL.
-        const dbUrl = db.app.options.databaseURL || db._repoInternal?.repoInfo_?.host;
-        if (!dbUrl) { console.warn('[CertScan] Could not determine DB URL'); return; }
-        const base = dbUrl.startsWith('http') ? dbUrl : `https://${dbUrl}`;
-        const url  = `${base.replace(/\/$/, '')}/artifacts/${encodeURIComponent(sanitizedAppId)}/studentCerts.json?shallow=true&auth=${await db.app.auth().currentUser?.getIdToken().catch(()=>'')}`;
-
-        const resp = await fetch(url).catch(() => null);
-        if (!resp || !resp.ok) return;
-        const certKeys = await resp.json(); // { id1: true, id2: true, ... }
-        if (!certKeys || typeof certKeys !== 'object') return;
-
-        if (!window._blobCache) window._blobCache = {};
-        let updated = 0;
-
-        Object.keys(certKeys).forEach(id => {
-            if (!window._blobCache[id]) window._blobCache[id] = {};
-            // Don't overwrite a fully-loaded cert blob (from drawer open)
-            if (!window._blobCache[id].birthCertBase64) {
-                window._blobCache[id].birthCertBase64 = '__has_cert__';
-            }
-            updated++;
-        });
-
-        if (!updated) return;
-
-        // Update _hasCert on Tabulator rows that now have certs
-        const tab = window._tabulatorTable;
-        if (tab) {
-            students.forEach(s => {
-                if (window._blobCache[s.id]?.birthCertBase64) {
-                    try {
-                        const trow = tab.getRow(s.id);
-                        if (trow) {
-                            const d = trow.getData();
-                            if (!d._hasCert) trow.update({ _hasCert: true });
-                        }
-                    } catch(_) {}
+        // ── Try presence node first (fast, maintained by save/delete ops) ──
+        const presSnap = await get(ref(db, `artifacts/${sanitizedAppId}/studentCertPresence`)).catch(() => null);
+        if (presSnap?.exists()) {
+            const presMap = presSnap.val() || {};
+            Object.keys(presMap).forEach(id => {
+                if (presMap[id]) {
+                    if (!window._blobCache[id]) window._blobCache[id] = {};
+                    if (!window._blobCache[id].birthCertBase64)
+                        window._blobCache[id].birthCertBase64 = '__has_cert__';
+                    found++;
                 }
             });
         }
 
-        // Refresh KPI to show correct cert count
-        if (typeof updateKPI === 'function') updateKPI(students);
+        // ── If presence node is empty, fall back to REST shallow scan ──
+        const newlyFound = {};
+        if (!found) {
+            try {
+                const dbUrl = (db.app.options.databaseURL || '').replace(/\/$/, '');
+                if (dbUrl) {
+                    const token = await firebase.auth().currentUser?.getIdToken().catch(() => '');
+                    const url = `${dbUrl}/artifacts/${encodeURIComponent(sanitizedAppId)}/studentCerts.json?shallow=true${token ? '&auth=' + token : ''}`;
+                    const resp = await fetch(url);
+                    if (resp.ok) {
+                        const keys = await resp.json(); // { id1: true, id2: true }
+                        if (keys && typeof keys === 'object') {
+                            Object.keys(keys).forEach(id => {
+                                if (!window._blobCache[id]) window._blobCache[id] = {};
+                                if (!window._blobCache[id].birthCertBase64)
+                                    window._blobCache[id].birthCertBase64 = '__has_cert__';
+                                newlyFound[id] = true;
+                                found++;
+                            });
+                            // Backfill presence node so future loads skip REST scan
+                            if (found) {
+                                update(ref(db, `artifacts/${sanitizedAppId}/studentCertPresence`), newlyFound).catch(() => {});
+                            }
+                        }
+                    }
+                }
+            } catch(_) {}
+        }
 
+        if (!found) { window._bgCertScanDone = true; return; }
+
+        // ── Update _hasCert on Tabulator rows ──
+        const tab = window._tabulatorTable;
+        if (tab) {
+            students.forEach(s => {
+                if (window._blobCache[s.id]?.birthCertBase64) {
+                    try { const r = tab.getRow(s.id); if (r && !r.getData()._hasCert) r.update({ _hasCert: true }); } catch(_) {}
+                }
+            });
+        }
+        if (typeof updateKPI === 'function') updateKPI(students);
         window._bgCertScanDone = true;
-        console.log(`[CertScan] ${updated} cert keys found`);
-    } catch(e) {
-        console.warn('[CertScan] failed:', e.message);
+        console.log(`[CertScan] ${found} certs`);
+    } catch(e) { console.warn('[CertScan]', e.message); }
+};
+
+// ── Background photo presence scan + lazy load ────────────────────────────
+// 1. REST shallow scan of studentPhotos → sets _hasPhoto on rows instantly
+// 2. IntersectionObserver loads actual photo blobs only for visible rows
+window._bgScanPhotos = async function(students) {
+    if (!students || !students.length || window._bgPhotoScanDone) return;
+    if (!window._blobCache) window._blobCache = {};
+    let photoIds = new Set();
+    try {
+        // ── REST shallow scan ──
+        const dbUrl = (db.app.options.databaseURL || '').replace(/\/$/, '');
+        if (dbUrl) {
+            const token = await firebase.auth().currentUser?.getIdToken().catch(() => '');
+            const url = `${dbUrl}/artifacts/${encodeURIComponent(sanitizedAppId)}/studentPhotos.json?shallow=true${token ? '&auth=' + token : ''}`;
+            const resp = await fetch(url);
+            if (resp.ok) {
+                const keys = await resp.json();
+                if (keys && typeof keys === 'object') {
+                    Object.keys(keys).forEach(id => {
+                        photoIds.add(id);
+                        if (!window._blobCache[id]) window._blobCache[id] = {};
+                        if (!window._blobCache[id].photoURL)
+                            window._blobCache[id].photoURL = '__has_photo__'; // sentinel
+                    });
+                }
+            }
+        }
+    } catch(_) {}
+
+    if (!photoIds.size) { window._bgPhotoScanDone = true; return; }
+
+    // ── Update _hasPhoto on Tabulator rows ──
+    const tab = window._tabulatorTable;
+    if (tab) {
+        students.forEach(s => {
+            if (photoIds.has(s.id)) {
+                try { const r = tab.getRow(s.id); if (r && !r.getData()._hasPhoto) r.update({ _hasPhoto: true, _img: '_t' + Date.now() }); } catch(_) {}
+            }
+        });
+    }
+    window._bgPhotoScanDone = true;
+
+    // ── IntersectionObserver: load real photo blob when cell scrolls into view ──
+    const loadPhotoBlob = async (id) => {
+        if (!id || window._blobCache[id]?.photoURL?.startsWith('data:') || window._blobCache[id]?._photoLoading) return;
+        if (!window._blobCache[id]) window._blobCache[id] = {};
+        window._blobCache[id]._photoLoading = true;
+        try {
+            const snap = await get(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${id}`)).catch(() => null);
+            if (snap?.exists()) {
+                const d = snap.val();
+                window._blobCache[id].photoURL = d.photoURL || '';
+                window._blobCache[id]._loaded = window._blobCache[id]._loaded; // keep existing _loaded flag
+                // Refresh Tabulator cell
+                if (window._tabulatorTable) {
+                    try { const r = window._tabulatorTable.getRow(id); if (r) r.update({ _img: '_t' + Date.now() }); } catch(_) {}
+                }
+            }
+        } catch(_) {}
+        window._blobCache[id]._photoLoading = false;
+    };
+
+    if (!window._photoObserver) {
+        window._photoObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) return;
+                const id = entry.target.dataset.id;
+                if (id && window._blobCache?.[id]?.photoURL === '__has_photo__') {
+                    loadPhotoBlob(id);
+                    window._photoObserver.unobserve(entry.target);
+                }
+            });
+        }, { rootMargin: '100px' });
+    }
+
+    // Observe all currently rendered student-img elements
+    const observeRenderedPhotos = () => {
+        document.querySelectorAll('img.student-img[data-id]').forEach(img => {
+            const id = img.dataset.id;
+            if (id && window._blobCache?.[id]?.photoURL === '__has_photo__') {
+                window._photoObserver.observe(img);
+            }
+        });
+    };
+    observeRenderedPhotos();
+
+    // Re-run observer attachment after Tabulator re-renders (e.g. scroll, filter, sort)
+    if (tab && !window._photoObserverHooked) {
+        window._photoObserverHooked = true;
+        tab.on('renderComplete', observeRenderedPhotos);
+        tab.on('dataLoaded', observeRenderedPhotos);
     }
 };
 
@@ -3852,7 +3951,7 @@ const updateKPI = (students) => {
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
         <div class="kpi-sub">${pdfLabel}</div>
         <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
-        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})${window._bgCertScanDone?'':' ⟳'}</span>`;})()}</div>
+        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';const scanning=!window._bgCertScanDone;return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})${scanning?' ⟳':''}</span>`;})()}</div>
         ${expandHint}
     </div>
     <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
@@ -4000,8 +4099,9 @@ const updateKPI = (students) => {
 
     // Trigger background PDF scan once after first render
     setTimeout(() => _bgScanPdfs(students), 800);
-    // Trigger background cert presence scan — populates _hasCert for all rows
-    setTimeout(() => window._bgScanCerts(students), 1200);
+    // Trigger background presence scans — populate _hasCert / _hasPhoto for all rows
+    setTimeout(() => window._bgScanCerts(students), 1000);
+    setTimeout(() => window._bgScanPhotos(students), 1400);
 };
 
 // ── SMART ANALYTICS ─────────────────────────────────────
@@ -4164,13 +4264,13 @@ const renderStudents = (students) => {
             formatter: (cell) => {
                 const d = cell.getRow().getData();
                 // Look up blob from master array — never stored in row
-                const photoURL = (window._blobCache && window._blobCache[d.id]?.photoURL) || '';
+                const cached = window._blobCache?.[d.id]?.photoURL || '';
+                // '__has_photo__' is a sentinel — real blob not loaded yet, use filesystem fallback
+                const photoURL = (cached && !cached.startsWith('__')) ? cached : '';
                 const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
                 const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
-                const el = cell.getElement();
-                let img = el.querySelector('img.student-img');
-                if (img && img.dataset.src === src) return img.outerHTML;
-                return `<img src="${src}" data-src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';this.dataset.src=this.src;" style="cursor:pointer;" title="Click to view photo">`;
+                // Always emit fresh img; data-id drives IntersectionObserver lazy loader
+                return `<img src="${src}" data-id="${d.id}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';" style="cursor:pointer;" title="Click to view photo">`;
             }
         },
         {
@@ -5045,7 +5145,7 @@ const _buildRowData = (students) => {
     return students.map(s => {
         // ── BLOBS NEVER enter Tabulator rows — formatters look up studentsData by id ──
         const row = { id: s.id, _actions: '', _img: '',
-            _hasPhoto: !!(window._blobCache?.[s.id]?.photoURL?.length > 10 || (s.photoURL && s.photoURL.length > 10)),
+            _hasPhoto: !!(window._blobCache?.[s.id]?.photoURL || (s.photoURL && s.photoURL.length > 10)),
             _hasCert:  !!(window._blobCache?.[s.id]?.birthCertBase64 || (s.birthCertBase64 && s.birthCertBase64.length > 10)),
             _certName: s.birthCertName || '' };
         headers.forEach(h => {
@@ -5277,7 +5377,7 @@ window._quickUploadPhoto = async function(id, input) {
         if (idx !== -1) { window._studentsData = studentsData; }
         if (window._tabulatorTable) {
             const trow = window._tabulatorTable.getRow(id);
-            if (trow) trow.update({ _hasPhoto: true, _img: '_ts_' + Date.now() });
+            if (trow) trow.update({ _hasPhoto: true, _img: '_t' + Date.now() });
         }
         const kb = Math.round(base64.length / 1024);
         showToast(`Photo saved ✓ (${kb} KB)`, 'success');
@@ -5306,6 +5406,8 @@ window._quickUploadCert = async function(id, input) {
             birthCertBase64: base64,
             birthCertName: file.name
         });
+        // Write presence sentinel (tiny, used by background scan on next load)
+        set(ref(db, `artifacts/${sanitizedAppId}/studentCertPresence/${id}`), true).catch(() => {});
         // Also null-out any legacy field on the student record
         await update(ref(db, `artifacts/${sanitizedAppId}/students/${id}`), { birthCertBase64: null, birthCertName: null });
         if (typeof window._setCert === 'function') window._setCert(id, base64, file.name);
@@ -5514,10 +5616,10 @@ window._editRow = async (id) => {
             const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
 
-            // Live table update — use timestamp on _img so Tabulator detects data change and re-renders the cell
+            // Live table update — use timestamp so Tabulator detects data change and re-renders photo cell
             if (tabulatorTable) {
                 const trow = tabulatorTable.getRow(drawerCurrentId);
-                if (trow) trow.update({ _hasPhoto: true, _img: '_ts_' + Date.now() });
+                if (trow) trow.update({ _hasPhoto: true, _img: '_t' + Date.now() });
             }
 
             progressFill.style.width = '100%';
@@ -5562,7 +5664,7 @@ window._editRow = async (id) => {
             if (typeof window._setPhoto === 'function') window._setPhoto(drawerCurrentId, '');
             if (tabulatorTable) {
                 const trow2 = tabulatorTable.getRow(drawerCurrentId);
-                if (trow2) trow2.update({ _hasPhoto: false, _img: '_ts_' + Date.now() });
+                if (trow2) trow2.update({ _hasPhoto: false, _img: '_t' + Date.now() });
             }
             previewImg.src = '';
             drawerAvatar.src = './student_images/default.jpg';
@@ -5648,6 +5750,8 @@ window._editRow = async (id) => {
         await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${drawerCurrentId}`), {
             birthCertBase64: base64, birthCertName: filename
         });
+        // Write presence sentinel
+        set(ref(db, `artifacts/${sanitizedAppId}/studentCertPresence/${drawerCurrentId}`), true).catch(() => {});
         await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { birthCertBase64: null, birthCertName: null });
         if (typeof window._setCert === 'function') window._setCert(id, base64, filename);
 
@@ -5691,10 +5795,9 @@ window._editRow = async (id) => {
         }
         showToast('Birth certificate saved', 'success');
         if (typeof updateKPI === 'function') updateKPI(studentsData);
-        // Update actions cell icon in Tabulator
+        // Update actions cell cert icon
         if (window._tabulatorTable) {
-            const _trow = window._tabulatorTable.getRow(drawerCurrentId);
-            if (_trow) _trow.update({ _hasCert: true });
+            try { const r = window._tabulatorTable.getRow(drawerCurrentId); if (r) r.update({ _hasCert: true }); } catch(_) {}
         }
     };
     window._saveBcBase64 = saveBcBase64;
@@ -5813,6 +5916,8 @@ window._editRow = async (id) => {
             try {
                 await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${drawerCurrentId}`), { birthCertBase64: '', birthCertName: '' });
                 await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { birthCertBase64: null, birthCertName: null });
+                // Remove presence sentinel
+                remove(ref(db, `artifacts/${sanitizedAppId}/studentCertPresence/${drawerCurrentId}`)).catch(() => {});
                 const idx3 = studentsData.findIndex(s => s.id === drawerCurrentId);
                 if (idx3 !== -1) {
                     if (typeof window._setCert === 'function') window._setCert(studentsData[idx3].id, '', '');
