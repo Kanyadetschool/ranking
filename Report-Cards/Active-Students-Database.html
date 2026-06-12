@@ -2752,10 +2752,6 @@ onAuthStateChanged(auth, async (user) => {
         dataSection.classList.add('hidden');
         
 
-        // Detach realtime listeners so they don't fire against a signed-out session
-        if (typeof _detachListeners === 'function') _detachListeners();
-        _appAlreadyOpen = false;
-        window._blobCache = {};
         studentsData = [];
         if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
         kpiGrid.style.display = 'none';
@@ -2969,216 +2965,97 @@ function _softUnlock() {
     }
 }
 
-// ── REALTIME LISTENERS ────────────────────────────────
-// _unsubStudents / _unsubPhotos hold the onValue() unsubscribe functions.
-// Both are detached on sign-out so no stale listeners survive across sessions.
-let _unsubStudents = null;
-let _unsubPhotos   = null;
-
-// Tear down both listeners (called on sign-out / onAuthStateChanged null branch)
-function _detachListeners() {
-    if (_unsubStudents) { try { _unsubStudents(); } catch(_) {} _unsubStudents = null; }
-    if (_unsubPhotos)   { try { _unsubPhotos();   } catch(_) {} _unsubPhotos   = null; }
-}
-window._detachListeners = _detachListeners;
-
-// ── Helper: refresh photo + action-icon cells for visible rows ──
-// Called after _blobCache is populated (bulk load or single-photo update).
-// Updates both the Photo column (_img) AND the _hasPhoto flag on the row
-// so the camera icon in the Actions column recolours green immediately.
-function _refreshPhotosInTable(changedIds) {
-    if (!tabulatorTable) return;
-    const rows = tabulatorTable.getRows('visible');
-    rows.forEach(row => {
-        const d = row.getData();
-        if (changedIds && !changedIds.has(d.id)) return;
-        const hasPhoto = !!(window._blobCache?.[d.id]?.photoURL?.length > 10);
-        if (hasPhoto !== !!d._hasPhoto) {
-            // row.update() re-renders the entire row (covers _img + _actions icons)
-            row.update({ _hasPhoto: hasPhoto });
-        } else {
-            // _hasPhoto unchanged — just repaint the photo cell
-            const cell = row.getCell('_img');
-            if (cell) {
-                const col = tabulatorTable.getColumn('_img');
-                if (col) cell.getElement().innerHTML = col.getDefinition().formatter(cell, {}, true);
-            }
-        }
-    });
-}
-window._refreshPhotosInTable = _refreshPhotosInTable;
-
-// ── fetchStudents: attaches realtime onValue on /students (text fields only) ──
-// Photos are loaded separately via _attachPhotosListener so the heavy base64
-// payload never blocks the initial table render.
-const fetchStudents = () => {
-    // Detach any previous listener (e.g. after re-login)
-    if (_unsubStudents) { try { _unsubStudents(); } catch(_) {} _unsubStudents = null; }
-
+// ── FETCH STUDENTS ────────────────────────────────────
+// Uses one-time get() instead of onValue() to avoid continuous listener
+// overhead that causes lag with 500+ records. Call fetchStudents() or
+// window._refreshStudents() to reload data on demand.
+const fetchStudents = async () => {
     const studentsRef = ref(db, `artifacts/${sanitizedAppId}/students`);
-    let _firstStudentsFire = true;
-
-    _unsubStudents = onValue(studentsRef, (snapshot) => {
-        try {
-            const data = snapshot.val();
-            if (!window._blobCache) window._blobCache = {};
-
-            studentsData = data
-                ? Object.entries(data)
-                    .map(([id, val]) => {
-                        // Guard: strip any old inline blobs into cache (pre-migration rows)
-                        if (val.photoURL && val.photoURL.length > 10) {
-                            window._blobCache[id] = window._blobCache[id] || {};
-                            window._blobCache[id].photoURL = val.photoURL;
-                        }
-                        if (val.birthCertBase64 && val.birthCertBase64.length > 10) {
-                            window._blobCache[id] = window._blobCache[id] || {};
-                            window._blobCache[id].birthCertBase64 = val.birthCertBase64;
-                            window._blobCache[id].birthCertName   = val.birthCertName || '';
-                        }
-                        const { photoURL, birthCertBase64, birthCertName, ...rest } = val;
-                        return { id, ...rest };
-                    })
-                    .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
-                : [];
-
-            // ── Expose to feature modules ──
-            window._studentsData     = studentsData;
-            window._tabulatorTable   = tabulatorTable;
-            window._selectedStudents = selectedStudents;
-            window._fbDb             = db;
-            window._fbSDK            = { ref, set, get, update, remove, signOut: () => signOut(auth) };
-
-            if (_firstStudentsFire) {
-                _firstStudentsFire = false;
-
-                // Stage 3: records received
-                if (_splashEl && !_splashEl.classList.contains('hidden')) {
-                    _splashStep(3, `Loading ${studentsData.length} records…`);
-                }
-
-                // Build search cache in idle time
-                if (typeof _buildSearchCache === 'function') {
-                    if (typeof requestIdleCallback !== 'undefined') {
-                        requestIdleCallback(() => _buildSearchCache(studentsData), { timeout: 5000 });
-                    } else {
-                        setTimeout(() => _buildSearchCache(studentsData), 500);
+    try {
+        const snapshot = await get(studentsRef);
+        const data = snapshot.val();
+        // ── Blobs now live in separate Firebase nodes (studentPhotos / studentCerts).
+        //    Student records are text-only after migration. _blobCache is populated
+        //    lazily when a student drawer opens — never on page load.
+        if (!window._blobCache) window._blobCache = {};
+        studentsData = data
+            ? Object.entries(data)
+                .map(([id, val]) => {
+                    // Guard: if old un-migrated blobs still exist, strip & cache them
+                    if (val.photoURL && val.photoURL.length > 10) {
+                        window._blobCache[id] = window._blobCache[id] || {};
+                        window._blobCache[id].photoURL = val.photoURL;
                     }
-                }
-
-                updateGradeFilter();
-                if (tabulatorTable && !renderStudents._forceRebuild) {
-                    if (typeof applyFilters === 'function') {
-                        applyFilters();
-                    } else {
-                        currentFilteredStudents = studentsData;
-                        updateKPI(studentsData);
-                        updateAnalytics(studentsData);
-                        tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
+                    if (val.birthCertBase64 && val.birthCertBase64.length > 10) {
+                        window._blobCache[id] = window._blobCache[id] || {};
+                        window._blobCache[id].birthCertBase64 = val.birthCertBase64;
+                        window._blobCache[id].birthCertName   = val.birthCertName || '';
                     }
-                } else {
-                    renderStudents(studentsData);
-                }
+                    const { photoURL, birthCertBase64, birthCertName, ...rest } = val;
+                    return { id, ...rest };
+                })
+                .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
+            : [];
 
-                // Stage 4: dismiss splash
-                if (_splashEl && !_splashEl.classList.contains('hidden')) {
-                    _splashStep(4, 'Building table…');
-                    setTimeout(() => _dismissSplash(), 480);
-                }
+        // Stage 3: records received
+        if (_splashEl && !_splashEl.classList.contains('hidden')) {
+            _splashStep(3, `Loading ${studentsData.length} records…`);
+        }
 
-                // ── Background badge check for Unmatched PDFs ──
-                if (typeof window._recheckUnmatched === 'function') {
-                    clearTimeout(window._unmatchedBadgeDebounce);
-                    window._unmatchedBadgeDebounce = setTimeout(() => {
-                        if (!window._recheckUnmatched) return;
-                        if (typeof requestIdleCallback !== 'undefined') {
-                            requestIdleCallback(() => window._recheckUnmatched && window._recheckUnmatched(), { timeout: 4000 });
-                        } else {
-                            window._recheckUnmatched();
-                        }
-                    }, 800);
-                }
-
-                // Attach photos listener AFTER table is built so first render is fast,
-                // then photos stream in and update cells individually.
-                _attachPhotosListener();
-
+        // ── Expose to feature modules ──
+        window._studentsData   = studentsData;
+        window._tabulatorTable = tabulatorTable;
+        window._selectedStudents = selectedStudents;
+        window._fbDb           = db;
+        window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
+        // Build per-student search cache so applyFilters() doesn't scan every field on every keystroke
+        // Run search cache build during idle time — doesn't block table render
+        if (typeof _buildSearchCache === 'function') {
+            if (typeof requestIdleCallback !== 'undefined') {
+                requestIdleCallback(() => _buildSearchCache(studentsData), { timeout: 5000 });
             } else {
-                // Subsequent fires = a record was added / edited / deleted in Firebase
-                if (typeof _buildSearchCache === 'function') _buildSearchCache(studentsData);
-                updateGradeFilter();
-                if (typeof applyFilters === 'function') {
-                    applyFilters();
-                } else {
-                    currentFilteredStudents = studentsData;
-                    updateKPI(studentsData);
-                    updateAnalytics(studentsData);
-                    if (tabulatorTable) tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
-                }
-            }
-        } catch (error) {
-            if (_firstStudentsFire) {
-                _splashError('Data error: ' + error.message);
-                setTimeout(() => _dismissSplash(() => showModal(`Error fetching data: ${error.message}`)), 1800);
-            } else {
-                console.error('[KSD] students listener error:', error);
+                setTimeout(() => _buildSearchCache(studentsData), 500);
             }
         }
-    }, (error) => {
+        updateGradeFilter();
+        if (tabulatorTable && !renderStudents._forceRebuild) {
+            if (typeof applyFilters === 'function') {
+                applyFilters();
+            } else {
+                currentFilteredStudents = studentsData;
+                updateKPI(studentsData);
+                updateAnalytics(studentsData);
+                tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
+            }
+        } else {
+            renderStudents(studentsData);
+        }
+
+        // Stage 4: table built → dismiss splash
+        if (_splashEl && !_splashEl.classList.contains('hidden')) {
+            _splashStep(4, 'Building table…');
+            setTimeout(() => _dismissSplash(), 480);
+        }
+
+        // ── Background badge check for Unmatched PDFs ──
+        if (typeof window._recheckUnmatched === 'function') {
+            clearTimeout(window._unmatchedBadgeDebounce);
+            window._unmatchedBadgeDebounce = setTimeout(() => {
+                if (!window._recheckUnmatched) return;
+                if (typeof requestIdleCallback !== 'undefined') {
+                    requestIdleCallback(() => window._recheckUnmatched && window._recheckUnmatched(), { timeout: 4000 });
+                } else {
+                    window._recheckUnmatched();
+                }
+            }, 800);
+        }
+    } catch (error) {
         _splashError('Data error: ' + error.message);
         setTimeout(() => _dismissSplash(() => showModal(`Error fetching data: ${error.message}`)), 1800);
-    });
+    }
 };
 
-// ── _attachPhotosListener: realtime onValue on /studentPhotos ──
-// Runs AFTER the table is built. Bulk-loads all photos into _blobCache,
-// then refreshes every visible row's photo cell. Subsequent fires handle
-// single-student photo saves (upload / delete) in real time.
-function _attachPhotosListener() {
-    if (_unsubPhotos) { try { _unsubPhotos(); } catch(_) {} _unsubPhotos = null; }
-
-    const photosRef = ref(db, `artifacts/${sanitizedAppId}/studentPhotos`);
-    let _firstPhotosFire = true;
-
-    _unsubPhotos = onValue(photosRef, (snapshot) => {
-        if (!window._blobCache) window._blobCache = {};
-        const data = snapshot.val();
-        const changedIds = new Set();
-
-        if (data) {
-            Object.entries(data).forEach(([id, val]) => {
-                const incoming = (val && val.photoURL) ? val.photoURL : '';
-                const existing = window._blobCache[id]?.photoURL || '';
-                // Only mark changed if the base64 actually differs
-                if (incoming !== existing) {
-                    window._blobCache[id] = window._blobCache[id] || {};
-                    window._blobCache[id].photoURL = incoming;
-                    // Mark drawer-fetch flag so _loadBlobsForStudent won't re-fetch
-                    // the photo portion (cert may still be unfetched — leave _loaded alone)
-                    changedIds.add(id);
-                }
-                // Always ensure the entry exists in cache
-                window._blobCache[id] = window._blobCache[id] || {};
-                if (!('photoURL' in window._blobCache[id])) window._blobCache[id].photoURL = incoming;
-            });
-        }
-
-        if (_firstPhotosFire) {
-            _firstPhotosFire = false;
-            // Bulk first load — refresh ALL visible rows at once
-            _refreshPhotosInTable(null /* null = refresh all */);
-        } else {
-            // Incremental update — only refresh rows whose photo actually changed
-            if (changedIds.size > 0) _refreshPhotosInTable(changedIds);
-        }
-    }, (err) => {
-        console.warn('[KSD] studentPhotos listener error:', err.message);
-    });
-}
-window._attachPhotosListener = _attachPhotosListener;
-
-// Expose manual refresh (kept for compatibility — realtime listener handles updates,
-// but explicit callers like post-import still work via this alias)
+// Expose manual refresh so post-save calls can reload without a full page reload
 window._refreshStudents = fetchStudents;
 
 // ── Blob cache accessor: returns photoURL for a student id ──
@@ -3189,32 +3066,41 @@ window._getCert  = (id) => (window._blobCache && window._blobCache[id]?.birthCer
 window._setPhoto = (id, base64) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL = base64; };
 window._setCert  = (id, base64, name) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = base64; if (name) window._blobCache[id].birthCertName = name; };
 
-// ── Lazy blob loader — fetches cert for ONE student on drawer open ──
-// Photo is already in _blobCache from the realtime studentPhotos listener,
-// so we only need to fetch the cert node here. Result cached so re-opens are instant.
+// ── Lazy blob loader — fetches photo + cert for ONE student from separate nodes ──
+// Called when a student drawer opens. Result cached in _blobCache so subsequent
+// opens are instant. No blobs are loaded on page load.
 window._loadBlobsForStudent = async (id) => {
     if (!id) return;
     if (!window._blobCache) window._blobCache = {};
-    window._blobCache[id] = window._blobCache[id] || {};
     const cached = window._blobCache[id];
+    // Already loaded (even if empty string — don't re-fetch)
+    if (cached && '_loaded' in cached) return;
 
-    // If cert already fetched (even if empty) skip the round-trip
-    if ('_certLoaded' in cached) return;
+    window._blobCache[id] = window._blobCache[id] || {};
 
     const sanitized = sanitizedAppId;
-    const certSnap = await get(ref(db, `artifacts/${sanitized}/studentCerts/${id}`)).catch(() => null);
+    const [photoSnap, certSnap] = await Promise.all([
+        get(ref(db, `artifacts/${sanitized}/studentPhotos/${id}`)).catch(() => null),
+        get(ref(db, `artifacts/${sanitized}/studentCerts/${id}`)).catch(() => null),
+    ]);
+
+    if (photoSnap?.exists()) {
+        const d = photoSnap.val();
+        window._blobCache[id].photoURL = d.photoURL || '';
+    } else {
+        window._blobCache[id].photoURL = window._blobCache[id].photoURL || '';
+    }
 
     if (certSnap?.exists()) {
         const d = certSnap.val();
-        cached.birthCertBase64 = d.birthCertBase64 || '';
-        cached.birthCertName   = d.birthCertName   || '';
+        window._blobCache[id].birthCertBase64 = d.birthCertBase64 || '';
+        window._blobCache[id].birthCertName   = d.birthCertName   || '';
     } else {
-        cached.birthCertBase64 = cached.birthCertBase64 || '';
-        cached.birthCertName   = cached.birthCertName   || '';
+        window._blobCache[id].birthCertBase64 = window._blobCache[id].birthCertBase64 || '';
+        window._blobCache[id].birthCertName   = window._blobCache[id].birthCertName   || '';
     }
 
-    cached._certLoaded = true;
-    cached._loaded     = true; // keep legacy compat flag
+    window._blobCache[id]._loaded = true; // mark as fetched
 };
 
 // ── GRADE FILTER ──────────────────────────────────────
@@ -3751,43 +3637,14 @@ async function _bgScanPdfs(students) {
         window._bgPdfScanDone = true;
     }
 
-    // ── Fetch ALL database birth certs in one read and apply as fallback ──
-    // This ensures the PDF Coverage KPI counts DB certs even before any drawer
-    // has been opened (previously relied on lazy _blobCache which was empty).
-    try {
-        const certsSnap = await get(ref(db, `artifacts/${sanitizedAppId}/studentCerts`)).catch(() => null);
-        if (certsSnap && certsSnap.exists()) {
-            certsSnap.forEach(childSnap => {
-                const id  = childSnap.key;
-                const val = childSnap.val();
-                const b64 = val?.birthCertBase64 || '';
-                if (!b64 || b64.length < 10) return;
-                // Populate _blobCache so drawer opens are instant
-                if (!window._blobCache) window._blobCache = {};
-                window._blobCache[id] = window._blobCache[id] || {};
-                if (!window._blobCache[id].birthCertBase64) {
-                    window._blobCache[id].birthCertBase64 = b64;
-                    window._blobCache[id].birthCertName   = val.birthCertName || '';
-                }
-                // Set _pdfHref on the student record if not already matched to server PDF
-                const student = students.find(s => s.id === id);
-                if (student && !student._pdfHref) {
-                    student._pdfHref = b64;
-                }
-            });
+    // Always apply birthCertBase64 as fallback — works even with no server
+    students.forEach(s => {
+        if (!s._pdfHref && (window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64)) {
+            s._pdfHref = s.birthCertBase64; // data: URL — viewer handles it directly
         }
-    } catch(_) {}
+    });
 
     if (!window._bgPdfScanDone) window._bgPdfScanDone = true;
-
-    // Refresh _hasCert on visible rows so the cert icon in Actions recolours
-    if (tabulatorTable) {
-        tabulatorTable.getRows('visible').forEach(row => {
-            const d = row.getData();
-            const hasCert = !!(window._blobCache?.[d.id]?.birthCertBase64?.length > 10);
-            if (hasCert !== !!d._hasCert) row.update({ _hasCert: hasCert });
-        });
-    }
 
     // Re-render KPI with updated PDF counts
     updateKPI(students);
@@ -3930,7 +3787,7 @@ const updateKPI = (students) => {
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
         <div class="kpi-sub">${pdfLabel}</div>
         <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
-        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>{const b=window._blobCache?.[s.id]?.birthCertBase64||'';return b.length>10;}).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
+        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
         ${expandHint}
     </div>
     <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
@@ -4239,18 +4096,14 @@ const renderStudents = (students) => {
             title: 'Photo', field: '_img', frozen: frozenColumn === '_img', headerSort: false, resizable: true, width: 60, headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
-                // Always read from _blobCache — never fall back to static files.
-                // If the photos listener hasn't fired yet the cell shows a grey
-                // placeholder; _refreshPhotosInTable() swaps it in once data arrives.
+                // Look up blob from master array — never stored in row
                 const photoURL = (window._blobCache && window._blobCache[d.id]?.photoURL) || '';
-                if (!photoURL) {
-                    // Grey avatar placeholder — no broken-image flicker, no 404 requests
-                    return `<div class="student-img" style="width:32px;height:32px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;" title="No photo"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='var(--slate-lt)' stroke-width='1.5'><path stroke-linecap='round' stroke-linejoin='round' d='M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z'/></svg></div>`;
-                }
+                const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
+                const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
                 const el = cell.getElement();
-                const existing = el.querySelector('img.student-img');
-                if (existing && existing.dataset.src === photoURL) return existing.outerHTML;
-                return `<img src="${photoURL}" data-src="${photoURL}" class="student-img student-image" onerror="this.parentElement.innerHTML=this.parentElement.innerHTML.replace(/<img[^>]*>/,'')" style="width:32px;height:32px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--border);" title="Click to view photo">`;
+                let img = el.querySelector('img.student-img');
+                if (img && img.dataset.src === src) return img.outerHTML;
+                return `<img src="${src}" data-src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';this.dataset.src=this.src;" style="cursor:pointer;" title="Click to view photo">`;
             }
         },
         {
