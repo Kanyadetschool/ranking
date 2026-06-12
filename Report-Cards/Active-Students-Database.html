@@ -3653,6 +3653,71 @@ async function _bgScanPdfs(students) {
 }
 
 window._bgScanPdfs = _bgScanPdfs;
+
+// ── Background cert presence scan ──────────────────────────────────────────
+// Reads studentCerts node shallowly (keys only) to determine which students
+// have a birth cert stored in Firebase WITHOUT loading the full base64 blobs.
+// Populates _blobCache[id].birthCertBase64 with a truthy sentinel '__has_cert__'
+// so _hasCert in Tabulator rows and the KPI cert counter both work on first load.
+window._bgScanCerts = async function(students) {
+    if (!students || !students.length) return;
+    if (window._bgCertScanDone) return;
+    try {
+        if (!sanitizedAppId || !db) return;
+
+        // Use Firebase REST API with shallow=true to get only child keys,
+        // avoiding downloading potentially large base64 cert blobs.
+        // db.app.options.databaseURL is the RTDB URL.
+        const dbUrl = db.app.options.databaseURL || db._repoInternal?.repoInfo_?.host;
+        if (!dbUrl) { console.warn('[CertScan] Could not determine DB URL'); return; }
+        const base = dbUrl.startsWith('http') ? dbUrl : `https://${dbUrl}`;
+        const url  = `${base.replace(/\/$/, '')}/artifacts/${encodeURIComponent(sanitizedAppId)}/studentCerts.json?shallow=true&auth=${await db.app.auth().currentUser?.getIdToken().catch(()=>'')}`;
+
+        const resp = await fetch(url).catch(() => null);
+        if (!resp || !resp.ok) return;
+        const certKeys = await resp.json(); // { id1: true, id2: true, ... }
+        if (!certKeys || typeof certKeys !== 'object') return;
+
+        if (!window._blobCache) window._blobCache = {};
+        let updated = 0;
+
+        Object.keys(certKeys).forEach(id => {
+            if (!window._blobCache[id]) window._blobCache[id] = {};
+            // Don't overwrite a fully-loaded cert blob (from drawer open)
+            if (!window._blobCache[id].birthCertBase64) {
+                window._blobCache[id].birthCertBase64 = '__has_cert__';
+            }
+            updated++;
+        });
+
+        if (!updated) return;
+
+        // Update _hasCert on Tabulator rows that now have certs
+        const tab = window._tabulatorTable;
+        if (tab) {
+            students.forEach(s => {
+                if (window._blobCache[s.id]?.birthCertBase64) {
+                    try {
+                        const trow = tab.getRow(s.id);
+                        if (trow) {
+                            const d = trow.getData();
+                            if (!d._hasCert) trow.update({ _hasCert: true });
+                        }
+                    } catch(_) {}
+                }
+            });
+        }
+
+        // Refresh KPI to show correct cert count
+        if (typeof updateKPI === 'function') updateKPI(students);
+
+        window._bgCertScanDone = true;
+        console.log(`[CertScan] ${updated} cert keys found`);
+    } catch(e) {
+        console.warn('[CertScan] failed:', e.message);
+    }
+};
+
 function _buildPdfDrawer(students) {
     const total = students.length;
     const withPdf = students.filter(s=>s._pdfHref).length;
@@ -3787,7 +3852,7 @@ const updateKPI = (students) => {
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
         <div class="kpi-sub">${pdfLabel}</div>
         <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
-        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
+        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})${window._bgCertScanDone?'':' ⟳'}</span>`;})()}</div>
         ${expandHint}
     </div>
     <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
@@ -3935,6 +4000,8 @@ const updateKPI = (students) => {
 
     // Trigger background PDF scan once after first render
     setTimeout(() => _bgScanPdfs(students), 800);
+    // Trigger background cert presence scan — populates _hasCert for all rows
+    setTimeout(() => window._bgScanCerts(students), 1200);
 };
 
 // ── SMART ANALYTICS ─────────────────────────────────────
@@ -4979,7 +5046,7 @@ const _buildRowData = (students) => {
         // ── BLOBS NEVER enter Tabulator rows — formatters look up studentsData by id ──
         const row = { id: s.id, _actions: '', _img: '',
             _hasPhoto: !!(window._blobCache?.[s.id]?.photoURL?.length > 10 || (s.photoURL && s.photoURL.length > 10)),
-            _hasCert:  !!(window._blobCache?.[s.id]?.birthCertBase64?.length > 10 || (s.birthCertBase64 && s.birthCertBase64.length > 10)),
+            _hasCert:  !!(window._blobCache?.[s.id]?.birthCertBase64 || (s.birthCertBase64 && s.birthCertBase64.length > 10)),
             _certName: s.birthCertName || '' };
         headers.forEach(h => {
             if (h === 'photoURL' || h === 'birthCertBase64' || h === 'birthCertName') return;
@@ -5210,7 +5277,7 @@ window._quickUploadPhoto = async function(id, input) {
         if (idx !== -1) { window._studentsData = studentsData; }
         if (window._tabulatorTable) {
             const trow = window._tabulatorTable.getRow(id);
-            if (trow) trow.update({ _hasPhoto: true, _img: '' });
+            if (trow) trow.update({ _hasPhoto: true, _img: '_ts_' + Date.now() });
         }
         const kb = Math.round(base64.length / 1024);
         showToast(`Photo saved ✓ (${kb} KB)`, 'success');
@@ -5447,10 +5514,10 @@ window._editRow = async (id) => {
             const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
 
-            // Live table update — flag only, blob stays in studentsData
+            // Live table update — use timestamp on _img so Tabulator detects data change and re-renders the cell
             if (tabulatorTable) {
                 const trow = tabulatorTable.getRow(drawerCurrentId);
-                if (trow) trow.update({ _hasPhoto: true, _img: '' });
+                if (trow) trow.update({ _hasPhoto: true, _img: '_ts_' + Date.now() });
             }
 
             progressFill.style.width = '100%';
@@ -5495,7 +5562,7 @@ window._editRow = async (id) => {
             if (typeof window._setPhoto === 'function') window._setPhoto(drawerCurrentId, '');
             if (tabulatorTable) {
                 const trow2 = tabulatorTable.getRow(drawerCurrentId);
-                if (trow2) trow2.update({ _hasPhoto: false, _img: '' });
+                if (trow2) trow2.update({ _hasPhoto: false, _img: '_ts_' + Date.now() });
             }
             previewImg.src = '';
             drawerAvatar.src = './student_images/default.jpg';
@@ -5624,6 +5691,11 @@ window._editRow = async (id) => {
         }
         showToast('Birth certificate saved', 'success');
         if (typeof updateKPI === 'function') updateKPI(studentsData);
+        // Update actions cell icon in Tabulator
+        if (window._tabulatorTable) {
+            const _trow = window._tabulatorTable.getRow(drawerCurrentId);
+            if (_trow) _trow.update({ _hasCert: true });
+        }
     };
     window._saveBcBase64 = saveBcBase64;
     window._drawerCurrentId = drawerCurrentId;
