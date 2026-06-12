@@ -2397,7 +2397,7 @@ export const openLocalPDF = (assessmentNo, studentName) => {
     const pdfName = studentName || assessmentNo;
     pdfModalStudentName.textContent = pdfName;
     const studentRecord = (window._studentsData || studentsData || []).find(s => s['Official Student Name'] === studentName || s['Assessment No'] === assessmentNo);
-    pdfModalStudentImage.src = (window._blobCache?.[studentRecord?.id]?.photoURL) || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
+    pdfModalStudentImage.src = studentRecord?.photoURL || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     if (pdfModalStudentGrade) pdfModalStudentGrade.textContent = studentRecord?.Grade || '';
     const _pdfBase = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}`;
     // Show modal FIRST so the container has real dimensions, then load
@@ -2417,7 +2417,7 @@ window._openPdfDirect = (url, studentName) => {
     const name = studentName || (url.startsWith('data:') ? 'birth_certificate' : decodeURIComponent(url.split('/').pop()).replace(/\.pdf$/i, ''));
     pdfModalStudentName.textContent = name;
     const studentRecord2 = (window._studentsData || studentsData || []).find(s => s['Official Student Name'] === studentName);
-    pdfModalStudentImage.src = (window._blobCache?.[studentRecord2?.id]?.photoURL) || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
+    pdfModalStudentImage.src = studentRecord2?.photoURL || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     if (pdfModalStudentGrade) pdfModalStudentGrade.textContent = studentRecord2?.Grade || '';
     // Set download filename — for base64 use student name, for server URL use filename
     const dlLink2 = document.getElementById('pdf-download-link');
@@ -2974,24 +2974,17 @@ const fetchStudents = async () => {
     try {
         const snapshot = await get(studentsRef);
         const data = snapshot.val();
-        // ── Blobs now live in separate Firebase nodes (studentPhotos / studentCerts).
-        //    Student records are text-only after migration. _blobCache is populated
-        //    lazily when a student drawer opens — never on page load.
+        // ── Blob separation: strip photoURL + birthCertBase64 into a
+        //    separate cache so they don't sit in 500 JS objects in memory.
+        //    All code that reads student.photoURL falls back to _blobCache.
         if (!window._blobCache) window._blobCache = {};
         studentsData = data
             ? Object.entries(data)
                 .map(([id, val]) => {
-                    // Guard: if old un-migrated blobs still exist, strip & cache them
-                    if (val.photoURL && val.photoURL.length > 10) {
-                        window._blobCache[id] = window._blobCache[id] || {};
-                        window._blobCache[id].photoURL = val.photoURL;
-                    }
-                    if (val.birthCertBase64 && val.birthCertBase64.length > 10) {
-                        window._blobCache[id] = window._blobCache[id] || {};
-                        window._blobCache[id].birthCertBase64 = val.birthCertBase64;
-                        window._blobCache[id].birthCertName   = val.birthCertName || '';
-                    }
-                    const { photoURL, birthCertBase64, birthCertName, ...rest } = val;
+                    // Move blobs out of the record
+                    if (val.photoURL)        { window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL        = val.photoURL; }
+                    if (val.birthCertBase64) { window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = val.birthCertBase64; }
+                    const { photoURL, birthCertBase64, ...rest } = val;
                     return { id, ...rest };
                 })
                 .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
@@ -3065,43 +3058,6 @@ window._getCert  = (id) => (window._blobCache && window._blobCache[id]?.birthCer
 // Update blob cache when a photo is saved (without needing a full re-fetch)
 window._setPhoto = (id, base64) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL = base64; };
 window._setCert  = (id, base64, name) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = base64; if (name) window._blobCache[id].birthCertName = name; };
-
-// ── Lazy blob loader — fetches photo + cert for ONE student from separate nodes ──
-// Called when a student drawer opens. Result cached in _blobCache so subsequent
-// opens are instant. No blobs are loaded on page load.
-window._loadBlobsForStudent = async (id) => {
-    if (!id) return;
-    if (!window._blobCache) window._blobCache = {};
-    const cached = window._blobCache[id];
-    // Already loaded (even if empty string — don't re-fetch)
-    if (cached && '_loaded' in cached) return;
-
-    window._blobCache[id] = window._blobCache[id] || {};
-
-    const sanitized = sanitizedAppId;
-    const [photoSnap, certSnap] = await Promise.all([
-        get(ref(db, `artifacts/${sanitized}/studentPhotos/${id}`)).catch(() => null),
-        get(ref(db, `artifacts/${sanitized}/studentCerts/${id}`)).catch(() => null),
-    ]);
-
-    if (photoSnap?.exists()) {
-        const d = photoSnap.val();
-        window._blobCache[id].photoURL = d.photoURL || '';
-    } else {
-        window._blobCache[id].photoURL = window._blobCache[id].photoURL || '';
-    }
-
-    if (certSnap?.exists()) {
-        const d = certSnap.val();
-        window._blobCache[id].birthCertBase64 = d.birthCertBase64 || '';
-        window._blobCache[id].birthCertName   = d.birthCertName   || '';
-    } else {
-        window._blobCache[id].birthCertBase64 = window._blobCache[id].birthCertBase64 || '';
-        window._blobCache[id].birthCertName   = window._blobCache[id].birthCertName   || '';
-    }
-
-    window._blobCache[id]._loaded = true; // mark as fetched
-};
 
 // ── GRADE FILTER ──────────────────────────────────────
 const updateGradeFilter = () => {
@@ -3653,71 +3609,6 @@ async function _bgScanPdfs(students) {
 }
 
 window._bgScanPdfs = _bgScanPdfs;
-
-// ── One-time hasCert backfill ──────────────────────────────────────────────
-// For students whose certs were uploaded BEFORE the hasCert flag was introduced,
-// this runs once per session: REST shallow-reads studentCerts keys (no blob data),
-// writes hasCert:true on each matching student record, updates studentsData + KPI.
-// On subsequent loads every student already has the flag so nothing is re-written.
-window._backfillHasCert = async function(students) {
-    if (!students || !students.length) return;
-    if (window._hasCertBackfillDone) return;
-    window._hasCertBackfillDone = true;
-
-    // Students already flagged — skip if all have the flag
-    const unflagged = students.filter(s => !s.hasCert);
-    if (!unflagged.length) return;
-
-    let certIds = null;
-    try {
-        // REST shallow=true returns { id1: true, id2: true, ... } without blob data
-        const dbUrl = (db.app.options.databaseURL || '').replace(/\/$/, '');
-        if (!dbUrl) return;
-        let token = '';
-        try { token = await firebase.auth().currentUser?.getIdToken() || ''; } catch(_) {}
-        const url = `${dbUrl}/artifacts/${encodeURIComponent(sanitizedAppId)}/studentCerts.json?shallow=true${token ? '&auth=' + token : ''}`;
-        const resp = await fetch(url, { cache: 'no-store' });
-        if (!resp.ok) return;
-        const raw = await resp.json();
-        if (!raw || typeof raw !== 'object') return;
-        certIds = new Set(Object.keys(raw));
-    } catch(e) {
-        console.warn('[hasCert backfill] REST failed:', e.message);
-        return;
-    }
-
-    if (!certIds.size) return;
-
-    // Write hasCert:true for every student that has a cert key but no flag yet
-    const writes = [];
-    unflagged.forEach(s => {
-        if (certIds.has(s.id)) {
-            writes.push(
-                update(ref(db, `artifacts/${sanitizedAppId}/students/${s.id}`), { hasCert: true })
-                    .then(() => { s.hasCert = true; })
-                    .catch(() => {})
-            );
-        }
-    });
-
-    if (!writes.length) return;
-    await Promise.all(writes);
-
-    window._studentsData = studentsData;
-
-    // Refresh Tabulator rows and KPI now that flags are set
-    const tab = window._tabulatorTable;
-    if (tab) {
-        students.forEach(s => {
-            if (s.hasCert) {
-                try { const r = tab.getRow(s.id); if (r && !r.getData()._hasCert) r.update({ _hasCert: true }); } catch(_) {}
-            }
-        });
-    }
-    if (typeof updateKPI === 'function') updateKPI(students);
-    console.log(`[hasCert backfill] wrote flag for ${writes.length} students`);
-};
-
 function _buildPdfDrawer(students) {
     const total = students.length;
     const withPdf = students.filter(s=>s._pdfHref).length;
@@ -3852,7 +3743,7 @@ const updateKPI = (students) => {
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
         <div class="kpi-sub">${pdfLabel}</div>
         <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
-        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>s.hasCert || window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
+        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
         ${expandHint}
     </div>
     <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
@@ -4000,8 +3891,6 @@ const updateKPI = (students) => {
 
     // Trigger background PDF scan once after first render
     setTimeout(() => _bgScanPdfs(students), 800);
-    // Backfill hasCert flag for students whose certs were saved before this flag existed
-    setTimeout(() => window._backfillHasCert(students), 1200);
 };
 
 // ── SMART ANALYTICS ─────────────────────────────────────
@@ -4163,11 +4052,14 @@ const renderStudents = (students) => {
             title: 'Photo', field: '_img', frozen: frozenColumn === '_img', headerSort: false, resizable: true, width: 60, headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
-                // Always read from _blobCache so a freshly-saved photo appears immediately.
+                // Look up blob from master array — never stored in row
                 const photoURL = (window._blobCache && window._blobCache[d.id]?.photoURL) || '';
                 const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
                 const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
-                return `<img src="${src}" data-id="${d.id}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';" style="cursor:pointer;" title="Click to view photo">`;
+                const el = cell.getElement();
+                let img = el.querySelector('img.student-img');
+                if (img && img.dataset.src === src) return img.outerHTML;
+                return `<img src="${src}" data-src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';this.dataset.src=this.src;" style="cursor:pointer;" title="Click to view photo">`;
             }
         },
         {
@@ -5043,7 +4935,7 @@ const _buildRowData = (students) => {
         // ── BLOBS NEVER enter Tabulator rows — formatters look up studentsData by id ──
         const row = { id: s.id, _actions: '', _img: '',
             _hasPhoto: !!(window._blobCache?.[s.id]?.photoURL?.length > 10 || (s.photoURL && s.photoURL.length > 10)),
-            _hasCert:  !!(s.hasCert || window._blobCache?.[s.id]?.birthCertBase64?.length > 10 || (s.birthCertBase64 && s.birthCertBase64.length > 10)),
+            _hasCert:  !!(window._blobCache?.[s.id]?.birthCertBase64?.length > 10 || (s.birthCertBase64 && s.birthCertBase64.length > 10)),
             _certName: s.birthCertName || '' };
         headers.forEach(h => {
             if (h === 'photoURL' || h === 'birthCertBase64' || h === 'birthCertName') return;
@@ -5267,14 +5159,14 @@ window._quickUploadPhoto = async function(id, input) {
     showToast('Compressing photo…', 'info');
     try {
         const base64 = await window._compressImageToLimit(file);
-        await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${id}`), { photoURL: base64 });
-        await update(ref(db, `artifacts/${sanitizedAppId}/students/${id}`), { photoURL: null });
+        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${id}`);
+        await update(studentRef, { photoURL: base64 });
         if (typeof window._setPhoto === 'function') window._setPhoto(id, base64);
         const idx = studentsData.findIndex(s => s.id === id);
         if (idx !== -1) { window._studentsData = studentsData; }
         if (window._tabulatorTable) {
             const trow = window._tabulatorTable.getRow(id);
-            if (trow) trow.update({ _hasPhoto: true, _img: '_r' + Date.now() });
+            if (trow) trow.update({ _hasPhoto: true, _img: '' });
         }
         const kb = Math.round(base64.length / 1024);
         showToast(`Photo saved ✓ (${kb} KB)`, 'success');
@@ -5298,17 +5190,11 @@ window._quickUploadCert = async function(id, input) {
             r.onerror = () => rej(new Error('Could not read file'));
             r.readAsDataURL(file);
         });
-        // Write cert to its own node (separate from student text record)
-        await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${id}`), {
-            birthCertBase64: base64,
-            birthCertName: file.name
-        });
-        // Also null-out any legacy field on the student record, and set hasCert flag
-        await update(ref(db, `artifacts/${sanitizedAppId}/students/${id}`), { birthCertBase64: null, birthCertName: null, hasCert: true });
+        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${id}`);
+        await update(studentRef, { birthCertBase64: base64, birthCertName: file.name });
         if (typeof window._setCert === 'function') window._setCert(id, base64, file.name);
         const idx = studentsData.findIndex(s => s.id === id);
         if (idx !== -1) {
-            studentsData[idx].hasCert = true;
             // blobs live in _blobCache; only keep _pdfHref hint on the row
             if (!studentsData[idx]._pdfHref) studentsData[idx]._pdfHref = base64;
             window._studentsData = studentsData;
@@ -5324,7 +5210,7 @@ window._quickUploadCert = async function(id, input) {
     }
 };
 
-window._editRow = async (id) => {
+window._editRow = (id) => {
     const student = studentsData.find(s => s.id === id);
     if (!student) return;
     drawerCurrentId = id;
@@ -5332,14 +5218,8 @@ window._editRow = async (id) => {
     const name = student['Official Student Name'] || '';
     drawerStudentLabel.textContent = name || student['Assessment No'] || id;
 
-    // Lazy-load photo + cert from separate Firebase nodes (cached after first open)
-    // Do this BEFORE building drawer HTML so photo/cert state is correct
-    if (typeof window._loadBlobsForStudent === 'function') {
-        await window._loadBlobsForStudent(id);
-    }
-
     // Avatar in header: prefer stored photoURL, fall back to static path
-    const storedPhoto = (window._blobCache?.[id]?.photoURL) || '';
+    const storedPhoto = (window._blobCache?.[id]?.photoURL) || student['photoURL'] || '';
     drawerAvatar.src = storedPhoto || (name ? `./student_images/${encodeURIComponent(name)}.jpg` : './student_images/default.jpg');
 
     // Build full schema from ALL students so fields missing on THIS student still appear
@@ -5504,23 +5384,16 @@ window._editRow = async (id) => {
             progressFill.style.width = '60%';
             progressLabel.textContent = 'Saving…';
 
-            // Write photo to its own node (separate from student text record)
-            await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${drawerCurrentId}`), { photoURL: base64 });
-            // Null-out any legacy field on the student record
-            await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { photoURL: null });
+            const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
+            await update(studentRef, { photoURL: base64 });
 
             const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
 
-            // Populate _blobCache BEFORE triggering Tabulator re-render so the
-            // photo formatter finds the real base64 when the cell is repainted.
-            if (typeof window._setPhoto === 'function') window._setPhoto(drawerCurrentId, base64);
-
-            // Force cell re-render: give _img a unique value so Tabulator detects
-            // a data change and re-runs the formatter (which reads from _blobCache).
+            // Live table update — flag only, blob stays in studentsData
             if (tabulatorTable) {
                 const trow = tabulatorTable.getRow(drawerCurrentId);
-                if (trow) trow.update({ _hasPhoto: true, _img: '_r' + Date.now() });
+                if (trow) trow.update({ _hasPhoto: true, _img: '' });
             }
 
             progressFill.style.width = '100%';
@@ -5557,15 +5430,15 @@ window._editRow = async (id) => {
         });
         if (!result.isConfirmed) return;
         try {
-            // Remove photo from its own node
-            await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${drawerCurrentId}`), { photoURL: '' });
-            await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { photoURL: null });
+            // Clear base64 from DB
+            const studentRef2 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
+            await update(studentRef2, { photoURL: '' });
             const idx2 = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx2 !== -1) { window._studentsData = studentsData; }
-            if (typeof window._setPhoto === 'function') window._setPhoto(drawerCurrentId, '');
+            if (typeof window._setPhoto === 'function') window._setPhoto(id, '');
             if (tabulatorTable) {
                 const trow2 = tabulatorTable.getRow(drawerCurrentId);
-                if (trow2) trow2.update({ _hasPhoto: false, _img: '_r' + Date.now() });
+                if (trow2) trow2.update({ _hasPhoto: false, _img: '' });
             }
             previewImg.src = '';
             drawerAvatar.src = './student_images/default.jpg';
@@ -5647,17 +5520,12 @@ window._editRow = async (id) => {
         bcProgressFill.style.width = '60%';
         bcProgressLabel.textContent = 'Saving…';
 
-        // Write cert to its own node
-        await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${drawerCurrentId}`), {
-            birthCertBase64: base64, birthCertName: filename
-        });
-        // Null-out legacy blob field, set hasCert flag for fast lookup on next load
-        await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { birthCertBase64: null, birthCertName: null, hasCert: true });
+        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
+        await update(studentRef, { birthCertBase64: base64, birthCertName: filename });
         if (typeof window._setCert === 'function') window._setCert(id, base64, filename);
 
         const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
         if (idx !== -1) {
-            studentsData[idx].hasCert = true;
             // blobs live in _blobCache now; studentsData row has no blob fields
             if (!studentsData[idx]._pdfHref) studentsData[idx]._pdfHref = base64;
             window._studentsData = studentsData;
@@ -5696,9 +5564,6 @@ window._editRow = async (id) => {
         }
         showToast('Birth certificate saved', 'success');
         if (typeof updateKPI === 'function') updateKPI(studentsData);
-        if (window._tabulatorTable) {
-            try { const r = window._tabulatorTable.getRow(drawerCurrentId); if (r) r.update({ _hasCert: true }); } catch(_) {}
-        }
     };
     window._saveBcBase64 = saveBcBase64;
     window._drawerCurrentId = drawerCurrentId;
@@ -5814,11 +5679,10 @@ window._editRow = async (id) => {
             });
             if (!result.isConfirmed) return;
             try {
-                await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${drawerCurrentId}`), { birthCertBase64: '', birthCertName: '' });
-                await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { birthCertBase64: null, birthCertName: null, hasCert: false });
+                const studentRef3 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
+                await update(studentRef3, { birthCertBase64: '', birthCertName: '' });
                 const idx3 = studentsData.findIndex(s => s.id === drawerCurrentId);
                 if (idx3 !== -1) {
-                    studentsData[idx3].hasCert = false;
                     if (typeof window._setCert === 'function') window._setCert(studentsData[idx3].id, '', '');
                     if (studentsData[idx3]._pdfHref?.startsWith('data:')) studentsData[idx3]._pdfHref = '';
                     window._studentsData = studentsData;
