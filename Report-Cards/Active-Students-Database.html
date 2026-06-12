@@ -2397,7 +2397,7 @@ export const openLocalPDF = (assessmentNo, studentName) => {
     const pdfName = studentName || assessmentNo;
     pdfModalStudentName.textContent = pdfName;
     const studentRecord = (window._studentsData || studentsData || []).find(s => s['Official Student Name'] === studentName || s['Assessment No'] === assessmentNo);
-    pdfModalStudentImage.src = studentRecord?.photoURL || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
+    pdfModalStudentImage.src = (window._blobCache?.[studentRecord?.id]?.photoURL) || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     if (pdfModalStudentGrade) pdfModalStudentGrade.textContent = studentRecord?.Grade || '';
     const _pdfBase = `${location.origin}${location.pathname.replace(/[^/]*$/, '')}student_pdfs/${encodeURIComponent(pdfName)}`;
     // Show modal FIRST so the container has real dimensions, then load
@@ -2417,7 +2417,7 @@ window._openPdfDirect = (url, studentName) => {
     const name = studentName || (url.startsWith('data:') ? 'birth_certificate' : decodeURIComponent(url.split('/').pop()).replace(/\.pdf$/i, ''));
     pdfModalStudentName.textContent = name;
     const studentRecord2 = (window._studentsData || studentsData || []).find(s => s['Official Student Name'] === studentName);
-    pdfModalStudentImage.src = studentRecord2?.photoURL || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
+    pdfModalStudentImage.src = (window._blobCache?.[studentRecord2?.id]?.photoURL) || `./student_images/${encodeURIComponent(studentName || 'default')}.jpg`;
     if (pdfModalStudentGrade) pdfModalStudentGrade.textContent = studentRecord2?.Grade || '';
     // Set download filename — for base64 use student name, for server URL use filename
     const dlLink2 = document.getElementById('pdf-download-link');
@@ -2752,6 +2752,10 @@ onAuthStateChanged(auth, async (user) => {
         dataSection.classList.add('hidden');
         
 
+        // Detach realtime listeners so they don't fire against a signed-out session
+        if (typeof _detachListeners === 'function') _detachListeners();
+        _appAlreadyOpen = false;
+        window._blobCache = {};
         studentsData = [];
         if (tabulatorTable) { tabulatorTable.destroy(); tabulatorTable = null; }
         kpiGrid.style.display = 'none';
@@ -2965,90 +2969,205 @@ function _softUnlock() {
     }
 }
 
-// ── FETCH STUDENTS ────────────────────────────────────
-// Uses one-time get() instead of onValue() to avoid continuous listener
-// overhead that causes lag with 500+ records. Call fetchStudents() or
-// window._refreshStudents() to reload data on demand.
-const fetchStudents = async () => {
+// ── REALTIME LISTENERS ────────────────────────────────
+// _unsubStudents / _unsubPhotos hold the onValue() unsubscribe functions.
+// Both are detached on sign-out so no stale listeners survive across sessions.
+let _unsubStudents = null;
+let _unsubPhotos   = null;
+
+// Tear down both listeners (called on sign-out / onAuthStateChanged null branch)
+function _detachListeners() {
+    if (_unsubStudents) { try { _unsubStudents(); } catch(_) {} _unsubStudents = null; }
+    if (_unsubPhotos)   { try { _unsubPhotos();   } catch(_) {} _unsubPhotos   = null; }
+}
+window._detachListeners = _detachListeners;
+
+// ── Helper: refresh photo cells for visible rows in the current Tabulator page ──
+// Called after _blobCache is populated (bulk load or single-photo update).
+// Lightweight — only touches DOM cells already rendered by virtual scroll.
+function _refreshPhotosInTable(changedIds) {
+    if (!tabulatorTable) return;
+    const rows = tabulatorTable.getRows('visible');
+    rows.forEach(row => {
+        const d = row.getData();
+        if (changedIds && !changedIds.has(d.id)) return;
+        const cell = row.getCell('_img');
+        if (cell) cell.getElement().innerHTML = tabulatorTable.getColumn('_img').getDefinition().formatter(cell, {}, true);
+    });
+}
+window._refreshPhotosInTable = _refreshPhotosInTable;
+
+// ── fetchStudents: attaches realtime onValue on /students (text fields only) ──
+// Photos are loaded separately via _attachPhotosListener so the heavy base64
+// payload never blocks the initial table render.
+const fetchStudents = () => {
+    // Detach any previous listener (e.g. after re-login)
+    if (_unsubStudents) { try { _unsubStudents(); } catch(_) {} _unsubStudents = null; }
+
     const studentsRef = ref(db, `artifacts/${sanitizedAppId}/students`);
-    try {
-        const snapshot = await get(studentsRef);
-        const data = snapshot.val();
-        // ── Blob separation: strip photoURL + birthCertBase64 into a
-        //    separate cache so they don't sit in 500 JS objects in memory.
-        //    All code that reads student.photoURL falls back to _blobCache.
-        if (!window._blobCache) window._blobCache = {};
-        studentsData = data
-            ? Object.entries(data)
-                .map(([id, val]) => {
-                    // Move blobs out of the record
-                    if (val.photoURL)        { window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL        = val.photoURL; }
-                    if (val.birthCertBase64) { window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = val.birthCertBase64; }
-                    const { photoURL, birthCertBase64, ...rest } = val;
-                    return { id, ...rest };
-                })
-                .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
-            : [];
+    let _firstStudentsFire = true;
 
-        // Stage 3: records received
-        if (_splashEl && !_splashEl.classList.contains('hidden')) {
-            _splashStep(3, `Loading ${studentsData.length} records…`);
-        }
+    _unsubStudents = onValue(studentsRef, (snapshot) => {
+        try {
+            const data = snapshot.val();
+            if (!window._blobCache) window._blobCache = {};
 
-        // ── Expose to feature modules ──
-        window._studentsData   = studentsData;
-        window._tabulatorTable = tabulatorTable;
-        window._selectedStudents = selectedStudents;
-        window._fbDb           = db;
-        window._fbSDK          = { ref, set, get, update, remove, signOut: () => signOut(auth) };
-        // Build per-student search cache so applyFilters() doesn't scan every field on every keystroke
-        // Run search cache build during idle time — doesn't block table render
-        if (typeof _buildSearchCache === 'function') {
-            if (typeof requestIdleCallback !== 'undefined') {
-                requestIdleCallback(() => _buildSearchCache(studentsData), { timeout: 5000 });
-            } else {
-                setTimeout(() => _buildSearchCache(studentsData), 500);
-            }
-        }
-        updateGradeFilter();
-        if (tabulatorTable && !renderStudents._forceRebuild) {
-            if (typeof applyFilters === 'function') {
-                applyFilters();
-            } else {
-                currentFilteredStudents = studentsData;
-                updateKPI(studentsData);
-                updateAnalytics(studentsData);
-                tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
-            }
-        } else {
-            renderStudents(studentsData);
-        }
+            studentsData = data
+                ? Object.entries(data)
+                    .map(([id, val]) => {
+                        // Guard: strip any old inline blobs into cache (pre-migration rows)
+                        if (val.photoURL && val.photoURL.length > 10) {
+                            window._blobCache[id] = window._blobCache[id] || {};
+                            window._blobCache[id].photoURL = val.photoURL;
+                        }
+                        if (val.birthCertBase64 && val.birthCertBase64.length > 10) {
+                            window._blobCache[id] = window._blobCache[id] || {};
+                            window._blobCache[id].birthCertBase64 = val.birthCertBase64;
+                            window._blobCache[id].birthCertName   = val.birthCertName || '';
+                        }
+                        const { photoURL, birthCertBase64, birthCertName, ...rest } = val;
+                        return { id, ...rest };
+                    })
+                    .sort((a, b) => (parseFloat(a['Assessment No']) || Infinity) - (parseFloat(b['Assessment No']) || Infinity))
+                : [];
 
-        // Stage 4: table built → dismiss splash
-        if (_splashEl && !_splashEl.classList.contains('hidden')) {
-            _splashStep(4, 'Building table…');
-            setTimeout(() => _dismissSplash(), 480);
-        }
+            // ── Expose to feature modules ──
+            window._studentsData     = studentsData;
+            window._tabulatorTable   = tabulatorTable;
+            window._selectedStudents = selectedStudents;
+            window._fbDb             = db;
+            window._fbSDK            = { ref, set, get, update, remove, signOut: () => signOut(auth) };
 
-        // ── Background badge check for Unmatched PDFs ──
-        if (typeof window._recheckUnmatched === 'function') {
-            clearTimeout(window._unmatchedBadgeDebounce);
-            window._unmatchedBadgeDebounce = setTimeout(() => {
-                if (!window._recheckUnmatched) return;
-                if (typeof requestIdleCallback !== 'undefined') {
-                    requestIdleCallback(() => window._recheckUnmatched && window._recheckUnmatched(), { timeout: 4000 });
-                } else {
-                    window._recheckUnmatched();
+            if (_firstStudentsFire) {
+                _firstStudentsFire = false;
+
+                // Stage 3: records received
+                if (_splashEl && !_splashEl.classList.contains('hidden')) {
+                    _splashStep(3, `Loading ${studentsData.length} records…`);
                 }
-            }, 800);
+
+                // Build search cache in idle time
+                if (typeof _buildSearchCache === 'function') {
+                    if (typeof requestIdleCallback !== 'undefined') {
+                        requestIdleCallback(() => _buildSearchCache(studentsData), { timeout: 5000 });
+                    } else {
+                        setTimeout(() => _buildSearchCache(studentsData), 500);
+                    }
+                }
+
+                updateGradeFilter();
+                if (tabulatorTable && !renderStudents._forceRebuild) {
+                    if (typeof applyFilters === 'function') {
+                        applyFilters();
+                    } else {
+                        currentFilteredStudents = studentsData;
+                        updateKPI(studentsData);
+                        updateAnalytics(studentsData);
+                        tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
+                    }
+                } else {
+                    renderStudents(studentsData);
+                }
+
+                // Stage 4: dismiss splash
+                if (_splashEl && !_splashEl.classList.contains('hidden')) {
+                    _splashStep(4, 'Building table…');
+                    setTimeout(() => _dismissSplash(), 480);
+                }
+
+                // ── Background badge check for Unmatched PDFs ──
+                if (typeof window._recheckUnmatched === 'function') {
+                    clearTimeout(window._unmatchedBadgeDebounce);
+                    window._unmatchedBadgeDebounce = setTimeout(() => {
+                        if (!window._recheckUnmatched) return;
+                        if (typeof requestIdleCallback !== 'undefined') {
+                            requestIdleCallback(() => window._recheckUnmatched && window._recheckUnmatched(), { timeout: 4000 });
+                        } else {
+                            window._recheckUnmatched();
+                        }
+                    }, 800);
+                }
+
+                // Attach photos listener AFTER table is built so first render is fast,
+                // then photos stream in and update cells individually.
+                _attachPhotosListener();
+
+            } else {
+                // Subsequent fires = a record was added / edited / deleted in Firebase
+                if (typeof _buildSearchCache === 'function') _buildSearchCache(studentsData);
+                updateGradeFilter();
+                if (typeof applyFilters === 'function') {
+                    applyFilters();
+                } else {
+                    currentFilteredStudents = studentsData;
+                    updateKPI(studentsData);
+                    updateAnalytics(studentsData);
+                    if (tabulatorTable) tabulatorTable.replaceData(_buildRowData ? _buildRowData(studentsData) : studentsData);
+                }
+            }
+        } catch (error) {
+            if (_firstStudentsFire) {
+                _splashError('Data error: ' + error.message);
+                setTimeout(() => _dismissSplash(() => showModal(`Error fetching data: ${error.message}`)), 1800);
+            } else {
+                console.error('[KSD] students listener error:', error);
+            }
         }
-    } catch (error) {
+    }, (error) => {
         _splashError('Data error: ' + error.message);
         setTimeout(() => _dismissSplash(() => showModal(`Error fetching data: ${error.message}`)), 1800);
-    }
+    });
 };
 
-// Expose manual refresh so post-save calls can reload without a full page reload
+// ── _attachPhotosListener: realtime onValue on /studentPhotos ──
+// Runs AFTER the table is built. Bulk-loads all photos into _blobCache,
+// then refreshes every visible row's photo cell. Subsequent fires handle
+// single-student photo saves (upload / delete) in real time.
+function _attachPhotosListener() {
+    if (_unsubPhotos) { try { _unsubPhotos(); } catch(_) {} _unsubPhotos = null; }
+
+    const photosRef = ref(db, `artifacts/${sanitizedAppId}/studentPhotos`);
+    let _firstPhotosFire = true;
+
+    _unsubPhotos = onValue(photosRef, (snapshot) => {
+        if (!window._blobCache) window._blobCache = {};
+        const data = snapshot.val();
+        const changedIds = new Set();
+
+        if (data) {
+            Object.entries(data).forEach(([id, val]) => {
+                const incoming = (val && val.photoURL) ? val.photoURL : '';
+                const existing = window._blobCache[id]?.photoURL || '';
+                // Only mark changed if the base64 actually differs
+                if (incoming !== existing) {
+                    window._blobCache[id] = window._blobCache[id] || {};
+                    window._blobCache[id].photoURL = incoming;
+                    // Mark drawer-fetch flag so _loadBlobsForStudent won't re-fetch
+                    // the photo portion (cert may still be unfetched — leave _loaded alone)
+                    changedIds.add(id);
+                }
+                // Always ensure the entry exists in cache
+                window._blobCache[id] = window._blobCache[id] || {};
+                if (!('photoURL' in window._blobCache[id])) window._blobCache[id].photoURL = incoming;
+            });
+        }
+
+        if (_firstPhotosFire) {
+            _firstPhotosFire = false;
+            // Bulk first load — refresh ALL visible rows at once
+            _refreshPhotosInTable(null /* null = refresh all */);
+        } else {
+            // Incremental update — only refresh rows whose photo actually changed
+            if (changedIds.size > 0) _refreshPhotosInTable(changedIds);
+        }
+    }, (err) => {
+        console.warn('[KSD] studentPhotos listener error:', err.message);
+    });
+}
+window._attachPhotosListener = _attachPhotosListener;
+
+// Expose manual refresh (kept for compatibility — realtime listener handles updates,
+// but explicit callers like post-import still work via this alias)
 window._refreshStudents = fetchStudents;
 
 // ── Blob cache accessor: returns photoURL for a student id ──
@@ -3058,6 +3177,34 @@ window._getCert  = (id) => (window._blobCache && window._blobCache[id]?.birthCer
 // Update blob cache when a photo is saved (without needing a full re-fetch)
 window._setPhoto = (id, base64) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].photoURL = base64; };
 window._setCert  = (id, base64, name) => { if (!window._blobCache) window._blobCache = {}; window._blobCache[id] = window._blobCache[id] || {}; window._blobCache[id].birthCertBase64 = base64; if (name) window._blobCache[id].birthCertName = name; };
+
+// ── Lazy blob loader — fetches cert for ONE student on drawer open ──
+// Photo is already in _blobCache from the realtime studentPhotos listener,
+// so we only need to fetch the cert node here. Result cached so re-opens are instant.
+window._loadBlobsForStudent = async (id) => {
+    if (!id) return;
+    if (!window._blobCache) window._blobCache = {};
+    window._blobCache[id] = window._blobCache[id] || {};
+    const cached = window._blobCache[id];
+
+    // If cert already fetched (even if empty) skip the round-trip
+    if ('_certLoaded' in cached) return;
+
+    const sanitized = sanitizedAppId;
+    const certSnap = await get(ref(db, `artifacts/${sanitized}/studentCerts/${id}`)).catch(() => null);
+
+    if (certSnap?.exists()) {
+        const d = certSnap.val();
+        cached.birthCertBase64 = d.birthCertBase64 || '';
+        cached.birthCertName   = d.birthCertName   || '';
+    } else {
+        cached.birthCertBase64 = cached.birthCertBase64 || '';
+        cached.birthCertName   = cached.birthCertName   || '';
+    }
+
+    cached._certLoaded = true;
+    cached._loaded     = true; // keep legacy compat flag
+};
 
 // ── GRADE FILTER ──────────────────────────────────────
 const updateGradeFilter = () => {
@@ -4052,14 +4199,18 @@ const renderStudents = (students) => {
             title: 'Photo', field: '_img', frozen: frozenColumn === '_img', headerSort: false, resizable: true, width: 60, headerFilter: false,
             formatter: (cell) => {
                 const d = cell.getRow().getData();
-                // Look up blob from master array — never stored in row
+                // Always read from _blobCache — never fall back to static files.
+                // If the photos listener hasn't fired yet the cell shows a grey
+                // placeholder; _refreshPhotosInTable() swaps it in once data arrives.
                 const photoURL = (window._blobCache && window._blobCache[d.id]?.photoURL) || '';
-                const name = d['Official Student Name'] ? encodeURIComponent(d['Official Student Name']) : '';
-                const src = photoURL || (name ? `./student_images/${name}.jpg` : './student_images/default.jpg');
+                if (!photoURL) {
+                    // Grey avatar placeholder — no broken-image flicker, no 404 requests
+                    return `<div class="student-img" style="width:32px;height:32px;border-radius:6px;background:var(--surface3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;" title="No photo"><svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24' stroke='var(--slate-lt)' stroke-width='1.5'><path stroke-linecap='round' stroke-linejoin='round' d='M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z'/></svg></div>`;
+                }
                 const el = cell.getElement();
-                let img = el.querySelector('img.student-img');
-                if (img && img.dataset.src === src) return img.outerHTML;
-                return `<img src="${src}" data-src="${src}" class="student-img student-image" onerror="this.src='./student_images/default.jpg';this.dataset.src=this.src;" style="cursor:pointer;" title="Click to view photo">`;
+                const existing = el.querySelector('img.student-img');
+                if (existing && existing.dataset.src === photoURL) return existing.outerHTML;
+                return `<img src="${photoURL}" data-src="${photoURL}" class="student-img student-image" onerror="this.parentElement.innerHTML=this.parentElement.innerHTML.replace(/<img[^>]*>/,'')" style="width:32px;height:32px;border-radius:6px;object-fit:cover;cursor:pointer;border:1px solid var(--border);" title="Click to view photo">`;
             }
         },
         {
@@ -5159,8 +5310,8 @@ window._quickUploadPhoto = async function(id, input) {
     showToast('Compressing photo…', 'info');
     try {
         const base64 = await window._compressImageToLimit(file);
-        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${id}`);
-        await update(studentRef, { photoURL: base64 });
+        await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${id}`), { photoURL: base64 });
+        await update(ref(db, `artifacts/${sanitizedAppId}/students/${id}`), { photoURL: null });
         if (typeof window._setPhoto === 'function') window._setPhoto(id, base64);
         const idx = studentsData.findIndex(s => s.id === id);
         if (idx !== -1) { window._studentsData = studentsData; }
@@ -5190,8 +5341,13 @@ window._quickUploadCert = async function(id, input) {
             r.onerror = () => rej(new Error('Could not read file'));
             r.readAsDataURL(file);
         });
-        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${id}`);
-        await update(studentRef, { birthCertBase64: base64, birthCertName: file.name });
+        // Write cert to its own node (separate from student text record)
+        await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${id}`), {
+            birthCertBase64: base64,
+            birthCertName: file.name
+        });
+        // Also null-out any legacy field on the student record
+        await update(ref(db, `artifacts/${sanitizedAppId}/students/${id}`), { birthCertBase64: null, birthCertName: null });
         if (typeof window._setCert === 'function') window._setCert(id, base64, file.name);
         const idx = studentsData.findIndex(s => s.id === id);
         if (idx !== -1) {
@@ -5210,7 +5366,7 @@ window._quickUploadCert = async function(id, input) {
     }
 };
 
-window._editRow = (id) => {
+window._editRow = async (id) => {
     const student = studentsData.find(s => s.id === id);
     if (!student) return;
     drawerCurrentId = id;
@@ -5218,8 +5374,14 @@ window._editRow = (id) => {
     const name = student['Official Student Name'] || '';
     drawerStudentLabel.textContent = name || student['Assessment No'] || id;
 
+    // Lazy-load photo + cert from separate Firebase nodes (cached after first open)
+    // Do this BEFORE building drawer HTML so photo/cert state is correct
+    if (typeof window._loadBlobsForStudent === 'function') {
+        await window._loadBlobsForStudent(id);
+    }
+
     // Avatar in header: prefer stored photoURL, fall back to static path
-    const storedPhoto = (window._blobCache?.[id]?.photoURL) || student['photoURL'] || '';
+    const storedPhoto = (window._blobCache?.[id]?.photoURL) || '';
     drawerAvatar.src = storedPhoto || (name ? `./student_images/${encodeURIComponent(name)}.jpg` : './student_images/default.jpg');
 
     // Build full schema from ALL students so fields missing on THIS student still appear
@@ -5384,8 +5546,10 @@ window._editRow = (id) => {
             progressFill.style.width = '60%';
             progressLabel.textContent = 'Saving…';
 
-            const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-            await update(studentRef, { photoURL: base64 });
+            // Write photo to its own node (separate from student text record)
+            await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${drawerCurrentId}`), { photoURL: base64 });
+            // Null-out any legacy field on the student record
+            await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { photoURL: null });
 
             const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx !== -1) { studentsData[idx].photoURL = base64; window._studentsData = studentsData; }
@@ -5430,12 +5594,12 @@ window._editRow = (id) => {
         });
         if (!result.isConfirmed) return;
         try {
-            // Clear base64 from DB
-            const studentRef2 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-            await update(studentRef2, { photoURL: '' });
+            // Remove photo from its own node
+            await set(ref(db, `artifacts/${sanitizedAppId}/studentPhotos/${drawerCurrentId}`), { photoURL: '' });
+            await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { photoURL: null });
             const idx2 = studentsData.findIndex(s => s.id === drawerCurrentId);
             if (idx2 !== -1) { window._studentsData = studentsData; }
-            if (typeof window._setPhoto === 'function') window._setPhoto(id, '');
+            if (typeof window._setPhoto === 'function') window._setPhoto(drawerCurrentId, '');
             if (tabulatorTable) {
                 const trow2 = tabulatorTable.getRow(drawerCurrentId);
                 if (trow2) trow2.update({ _hasPhoto: false, _img: '' });
@@ -5520,8 +5684,11 @@ window._editRow = (id) => {
         bcProgressFill.style.width = '60%';
         bcProgressLabel.textContent = 'Saving…';
 
-        const studentRef = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-        await update(studentRef, { birthCertBase64: base64, birthCertName: filename });
+        // Write cert to its own node
+        await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${drawerCurrentId}`), {
+            birthCertBase64: base64, birthCertName: filename
+        });
+        await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { birthCertBase64: null, birthCertName: null });
         if (typeof window._setCert === 'function') window._setCert(id, base64, filename);
 
         const idx = studentsData.findIndex(s => s.id === drawerCurrentId);
@@ -5679,8 +5846,8 @@ window._editRow = (id) => {
             });
             if (!result.isConfirmed) return;
             try {
-                const studentRef3 = ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`);
-                await update(studentRef3, { birthCertBase64: '', birthCertName: '' });
+                await set(ref(db, `artifacts/${sanitizedAppId}/studentCerts/${drawerCurrentId}`), { birthCertBase64: '', birthCertName: '' });
+                await update(ref(db, `artifacts/${sanitizedAppId}/students/${drawerCurrentId}`), { birthCertBase64: null, birthCertName: null });
                 const idx3 = studentsData.findIndex(s => s.id === drawerCurrentId);
                 if (idx3 !== -1) {
                     if (typeof window._setCert === 'function') window._setCert(studentsData[idx3].id, '', '');
