@@ -2982,17 +2982,28 @@ function _detachListeners() {
 }
 window._detachListeners = _detachListeners;
 
-// ── Helper: refresh photo cells for visible rows in the current Tabulator page ──
+// ── Helper: refresh photo + action-icon cells for visible rows ──
 // Called after _blobCache is populated (bulk load or single-photo update).
-// Lightweight — only touches DOM cells already rendered by virtual scroll.
+// Updates both the Photo column (_img) AND the _hasPhoto flag on the row
+// so the camera icon in the Actions column recolours green immediately.
 function _refreshPhotosInTable(changedIds) {
     if (!tabulatorTable) return;
     const rows = tabulatorTable.getRows('visible');
     rows.forEach(row => {
         const d = row.getData();
         if (changedIds && !changedIds.has(d.id)) return;
-        const cell = row.getCell('_img');
-        if (cell) cell.getElement().innerHTML = tabulatorTable.getColumn('_img').getDefinition().formatter(cell, {}, true);
+        const hasPhoto = !!(window._blobCache?.[d.id]?.photoURL?.length > 10);
+        if (hasPhoto !== !!d._hasPhoto) {
+            // row.update() re-renders the entire row (covers _img + _actions icons)
+            row.update({ _hasPhoto: hasPhoto });
+        } else {
+            // _hasPhoto unchanged — just repaint the photo cell
+            const cell = row.getCell('_img');
+            if (cell) {
+                const col = tabulatorTable.getColumn('_img');
+                if (col) cell.getElement().innerHTML = col.getDefinition().formatter(cell, {}, true);
+            }
+        }
     });
 }
 window._refreshPhotosInTable = _refreshPhotosInTable;
@@ -3740,14 +3751,43 @@ async function _bgScanPdfs(students) {
         window._bgPdfScanDone = true;
     }
 
-    // Always apply birthCertBase64 as fallback — works even with no server
-    students.forEach(s => {
-        if (!s._pdfHref && (window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64)) {
-            s._pdfHref = s.birthCertBase64; // data: URL — viewer handles it directly
+    // ── Fetch ALL database birth certs in one read and apply as fallback ──
+    // This ensures the PDF Coverage KPI counts DB certs even before any drawer
+    // has been opened (previously relied on lazy _blobCache which was empty).
+    try {
+        const certsSnap = await get(ref(db, `artifacts/${sanitizedAppId}/studentCerts`)).catch(() => null);
+        if (certsSnap && certsSnap.exists()) {
+            certsSnap.forEach(childSnap => {
+                const id  = childSnap.key;
+                const val = childSnap.val();
+                const b64 = val?.birthCertBase64 || '';
+                if (!b64 || b64.length < 10) return;
+                // Populate _blobCache so drawer opens are instant
+                if (!window._blobCache) window._blobCache = {};
+                window._blobCache[id] = window._blobCache[id] || {};
+                if (!window._blobCache[id].birthCertBase64) {
+                    window._blobCache[id].birthCertBase64 = b64;
+                    window._blobCache[id].birthCertName   = val.birthCertName || '';
+                }
+                // Set _pdfHref on the student record if not already matched to server PDF
+                const student = students.find(s => s.id === id);
+                if (student && !student._pdfHref) {
+                    student._pdfHref = b64;
+                }
+            });
         }
-    });
+    } catch(_) {}
 
     if (!window._bgPdfScanDone) window._bgPdfScanDone = true;
+
+    // Refresh _hasCert on visible rows so the cert icon in Actions recolours
+    if (tabulatorTable) {
+        tabulatorTable.getRows('visible').forEach(row => {
+            const d = row.getData();
+            const hasCert = !!(window._blobCache?.[d.id]?.birthCertBase64?.length > 10);
+            if (hasCert !== !!d._hasCert) row.update({ _hasCert: hasCert });
+        });
+    }
 
     // Re-render KPI with updated PDF counts
     updateKPI(students);
@@ -3890,7 +3930,7 @@ const updateKPI = (students) => {
         <div class="kpi-value">${pdfPct}<span style="font-size:1rem;font-weight:600;opacity:.6;">%</span></div>
         <div class="kpi-sub">${pdfLabel}</div>
         <div class="kpi-sub" style="margin-top:.3rem;"><div style="flex:1;height:5px;background:var(--surface3);border-radius:20px;overflow:hidden;"><div style="height:5px;width:${pdfPct}%;background:${pdfPct>=80?'#059669':pdfPct>=40?'#d97706':'#dc2626'};border-radius:20px;transition:width .5s ease;"></div></div><span class="kpi-badge ${pdfClass}">${withPdf} ready</span></div>
-        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>window._blobCache?.[s.id]?.birthCertBase64 || s.birthCertBase64).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
+        <div style="margin-top:.4rem;display:flex;align-items:center;gap:.35rem;font-size:.71rem;font-weight:700;">${(()=>{const w=students.filter(s=>{const b=window._blobCache?.[s.id]?.birthCertBase64||'';return b.length>10;}).length;const p=Math.round(w/total*100);const c=p>=80?'#059669':p>=40?'#d97706':'#dc2626';return `<span style="color:${c};">▣ ${p}%</span><span style="color:var(--slate-lt);font-weight:500;">certs (${w}/${total})</span>`;})()}</div>
         ${expandHint}
     </div>
     <div class="kpi-card" id="kpi-card-classsize" onclick="window._toggleKpiDrawer('classsize')" title="Click for class size details">
