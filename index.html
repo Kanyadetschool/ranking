@@ -3464,11 +3464,9 @@ window.addEventListener('load',()=>{
       });
       // Auth state is now handled by the passkey layer (_pkInit) below.
       // We only hide the loader here; the passkey onAuthStateChanged does the rest.
-      onAuthStateChanged(auth, async user=>{
-        SetupProgress.step(1,'done','Auth session verified','✓');
-        SetupProgress.step(2,'done','Database connected','✓');
-        // Passkey layer takes over — loader dismissed after data loads
-      });
+      // Auth step completion is handled by _pkInit / showApp below,
+      // after the passkey layer resolves. Do NOT step or hide loader here.
+      onAuthStateChanged(auth, async user=>{ /* passkey layer handles everything */ });
     }catch(e){
       notify('Firebase init error: '+e.message,'error');
       document.getElementById('loader').style.display='none';
@@ -3651,6 +3649,10 @@ function _softUnlock(user) {
     role: 'Admin', photoURL: user.photoURL || ''
   };
   document.getElementById('login-screen').classList.add('hidden');
+  // Biometric unlock succeeded — advance progress before opening app
+  SetupProgress.step(1,'done','Biometric auth verified','✓');
+  SetupProgress.step(2,'done','Database connected','✓');
+  SetupProgress.step(3,'active','Fetching records from Firebase…','…');
   _checkDisabledAndLogin(userData, auth, null);
 }
 
@@ -3769,6 +3771,9 @@ window.addEventListener('load', () => {
       }
 
       // No passkeys — open app directly (original behaviour)
+      SetupProgress.step(1,'done','Authenticated','✓');
+      SetupProgress.step(2,'done','Database connected','✓');
+      SetupProgress.step(3,'active','Fetching records from Firebase…','…');
       const userData = {
         user: user.email, uid: user.uid,
         name: user.displayName || (user.email||'').split('@')[0],
@@ -5406,7 +5411,10 @@ function loadAllData(){
   _firstLoad = true;
 
   try{
-    SetupProgress.step(3,'active','Fetching records from Firebase…','…');
+    // Step 3 is activated by the auth path before loadAllData is called.
+    // We only update the detail text here.
+    const detailEl3 = document.getElementById('ldp-d3');
+    if (detailEl3) detailEl3.textContent = 'Fetching records from Firebase…';
     const{ref,onValue}=window._fb;
     const dbRef = ref(db, DB_PATH);
 
@@ -5499,8 +5507,10 @@ function renderAll(){
   });
   // ── Bridge: sync allData into the Report Card JS system ──
   _bridgeReportCardSystem();
-  // ── Dismiss setup progress after first full render ──
-  if (typeof SetupProgress !== 'undefined') {
+  // ── Dismiss setup progress after FIRST full render only ──
+  if (typeof SetupProgress !== 'undefined' && !SetupProgress._dismissed) {
+    SetupProgress._dismissed = true;
+    SetupProgress.step(4,'done','Interface ready','✓');
     SetupProgress.done(allData ? allData.length : 0);
   }
 }
