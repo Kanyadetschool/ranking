@@ -686,12 +686,20 @@ function searchStudents(query) {
 function highlight(text, query, isPurple) {
   const safe = esc(text);
   if (!query) return safe;
-  const idx = text.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return safe;
+  const lowerText = text.toLowerCase();
+  const lowerQuery = query.toLowerCase();
+  if (!lowerQuery.length) return safe;
   const cls = isPurple ? 'class="purple-mark"' : '';
-  return esc(text.slice(0, idx)) +
-    `<mark ${cls}>` + esc(text.slice(idx, idx + query.length)) + '</mark>' +
-    esc(text.slice(idx + query.length));
+  let out = '';
+  let pos = 0;
+  let idx;
+  while ((idx = lowerText.indexOf(lowerQuery, pos)) !== -1) {
+    out += esc(text.slice(pos, idx));
+    out += `<mark ${cls}>` + esc(text.slice(idx, idx + query.length)) + '</mark>';
+    pos = idx + query.length;
+  }
+  out += esc(text.slice(pos));
+  return out;
 }
 
 function renderDropdown(pan, results, query) {
@@ -751,8 +759,6 @@ function selectStudent(pan, r) {
   notify(`Selected: ${r.name}`, 'success');
 }
 
-const searchDebounce = {};
-
 function initSearch(pan) {
   const inp      = document.getElementById(`${pan}-search-input`);
   const clearBtn = document.getElementById(`${pan}-search-clear`);
@@ -761,7 +767,6 @@ function initSearch(pan) {
   inp.addEventListener('input', () => {
     const q = inp.value.trim();
     clearBtn.classList.toggle('visible', q.length > 0);
-    clearTimeout(searchDebounce[pan]);
     if (!q) { closeDropdown(pan); return; }
 
     if (!searchCache.loaded) {
@@ -772,9 +777,8 @@ function initSearch(pan) {
       return;
     }
 
-    searchDebounce[pan] = setTimeout(() => {
-      renderDropdown(pan, searchStudents(q), q);
-    }, 120);
+    // Cache already loaded: filter instantly on every keystroke, no debounce.
+    renderDropdown(pan, searchStudents(q), q);
   });
 
   inp.addEventListener('focus', () => {
@@ -954,6 +958,10 @@ window.runPreview = async pan => {
 
     const tbody = document.getElementById(`${pan}-tbody`);
     const total = state[pan].preview.length;
+    const distinctCasings = new Set(state[pan].preview.map(x => x.storedVal));
+    if (distinctCasings.size > 1) {
+      notify(`⚠️ Matches use ${distinctCasings.size} different casings (${[...distinctCasings].map(v=>`"${v}"`).join(', ')}) — all will be unified to "${newVal}".`, '');
+    }
 
     if (!total) {
       document.getElementById(`${pan}-empty`).style.display = 'block';
@@ -1035,24 +1043,49 @@ window.runUpdate = async pan => {
   const logId = `${pan}-log`;
   document.getElementById(logId).innerHTML = '';
 
-  let ok=0, fail=0;
   addLog(logId, `Starting: "${oldVal}" → "${newVal}" [${label}]`, 'bold');
   addLog(logId, `${items.length} record(s) across ${[...new Set(items.map(x=>x.dbConfig.label))].join(', ')}`, 'info');
   addLog(logId, '─'.repeat(50), 'info');
 
-  for (const item of items) {
-    const { dbConfig, recordKey, record } = item;
+  // Build a single atomic multi-path update payload, plus an audit log entry per record.
+  const batch = {};
+  const auditTs = Date.now();
+  const auditUser = auth.currentUser.email || auth.currentUser.uid;
+
+  items.forEach((item, i) => {
+    const { dbConfig, recordKey, record, storedVal } = item;
     const path  = `${dbConfig.path}/${recordKey}`;
     const field = dbConfig[fieldKey];
-    const displayName = record[dbConfig.nameField] || recordKey;
-    try {
-      await update(ref(db), { [`${path}/${field}`]: newVal });
-      ok++;
-      addLog(logId, `✓ [${dbConfig.label}] ${displayName}  key:${recordKey}`, 'ok');
-    } catch(e) {
-      fail++;
-      addLog(logId, `✗ [${dbConfig.label}] ${displayName} — ${e.message}`, 'err');
-    }
+    batch[`${path}/${field}`] = newVal;
+
+    const auditKey = `audit_log/${auditTs}_${pan}_${i}`;
+    batch[auditKey] = {
+      timestamp: auditTs,
+      user: auditUser,
+      action: 'bulk_update',
+      field: label,
+      fieldKey: field,
+      dbLabel: dbConfig.label,
+      dbPath: dbConfig.path,
+      recordKey,
+      studentName: record[dbConfig.nameField] || '',
+      oldValue: storedVal,
+      newValue: newVal
+    };
+  });
+
+  let ok = 0, fail = 0;
+  try {
+    await update(ref(db), batch);
+    ok = items.length;
+    items.forEach(item => {
+      const displayName = item.record[item.dbConfig.nameField] || item.recordKey;
+      addLog(logId, `✓ [${item.dbConfig.label}] ${displayName}  key:${item.recordKey}`, 'ok');
+    });
+  } catch(e) {
+    fail = items.length;
+    addLog(logId, `✗ Atomic batch update failed — ${e.message}`, 'err');
+    addLog(logId, `No records were changed (all-or-nothing write).`, 'err');
   }
 
   addLog(logId, '─'.repeat(50), 'info');
@@ -1074,16 +1107,23 @@ window.runUpdate = async pan => {
     <div class="stat"><span class="stat-n fail">${fail}</span>Failed</div>
     <div class="stat"><span class="stat-n total">${items.length}</span>Total</div>`;
 
-  notify(allOk ? `✅ ${ok} record(s) updated!` : `⚠️ ${ok} updated, ${fail} failed.`, allOk ? 'success' : 'error');
+  notify(allOk ? `✅ ${ok} record(s) updated!` : `⚠️ ${fail} record(s) failed — nothing changed.`, allOk ? 'success' : 'error');
 
   // Invalidate cache so re-search shows fresh data
   searchCache.loaded = false; searchCache.records = [];
 
-  btnUpd.disabled = false; btnPrev.disabled = false;
-  iconUpd.className=''; iconUpd.textContent='⚡';
+  // Clear stale preview table/state — it's now out of date.
   state[pan].preview = [];
+  document.getElementById(`${pan}-preview-section`).classList.remove('on');
+  document.getElementById(`${pan}-tbody`).innerHTML = '';
+  document.getElementById(`${pan}-count-row`).innerHTML = '';
+  document.getElementById(`${pan}-empty`).style.display = 'none';
+
+  iconUpd.className=''; iconUpd.textContent='⚡';
+  btnPrev.disabled = false;
   btnUpd.disabled = true;
 };
+
 
 // ── Enter key shortcuts ───────────────────────────────────────
 document.addEventListener('keydown', e => {
