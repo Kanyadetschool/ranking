@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanyadet School — Results portal</title>
-<link rel="preload" as="image" href="https://kanyadetschool.github.io/ranking/Report-Cards/student_images/default.jpg">
-<link rel="dns-prefetch" href="https://kanyadetschool.github.io">
-<link rel="preconnect" href="https://kanyadetschool.github.io" crossorigin>
 <script src="./image-popup.js"></script>
 <link rel="icon" type="image/x-icon" href="./images/logo.png">
 
@@ -387,16 +384,118 @@ body::before{
 /* ══════════════════════════════════════════
    LOADER
 ══════════════════════════════════════════ */
+/* ══════════════════════════════════════════
+   SETUP PROGRESS SCREEN
+══════════════════════════════════════════ */
 #loader{
   position:fixed;inset:0;z-index:9999;background:var(--bg);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  padding:20px;
 }
-.ld-logo{font-size:48px;animation:ldPulse 1.6s ease-in-out infinite;}
+/* Phase 1: splash (brief logo pulse before progress appears) */
+#ld-splash{display:flex;flex-direction:column;align-items:center;gap:14px;transition:opacity .4s,transform .4s;}
+#ld-splash.hide{opacity:0;transform:translateY(-16px);pointer-events:none;}
+.ld-logo{font-size:52px;animation:ldPulse 1.6s ease-in-out infinite;}
 @keyframes ldPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.6;transform:scale(.9)}}
 .ld-bar{width:180px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
 .ld-fill{height:100%;background:linear-gradient(90deg,var(--blue),var(--blue-lt));border-radius:2px;animation:ldLoad 1.4s ease-in-out infinite;}
 @keyframes ldLoad{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}
 .ld-txt{font-size:12px;color:var(--text2);}
+
+/* Phase 2: setup progress card */
+#ld-progress{
+  display:none;flex-direction:column;align-items:center;gap:0;
+  width:min(420px,100%);
+  animation:ldProgIn .45s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes ldProgIn{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:none}}
+#ld-progress.visible{display:flex;}
+
+.ldp-logo{
+  width:72px;height:72px;border-radius:22px;flex-shrink:0;margin-bottom:22px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dk));
+  display:flex;align-items:center;justify-content:center;
+  font-size:36px;box-shadow:0 8px 32px var(--blue-glow);
+}
+.ldp-title{font-size:17px;font-weight:900;color:var(--text);margin-bottom:4px;text-align:center;}
+.ldp-subtitle{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin-bottom:28px;text-align:center;}
+
+/* Overall track */
+.ldp-track-wrap{width:100%;margin-bottom:28px;}
+.ldp-track-label{display:flex;justify-content:space-between;margin-bottom:8px;}
+.ldp-track-lbl{font-size:11px;font-weight:700;color:var(--text2);}
+.ldp-track-pct{font-size:11px;font-weight:800;color:var(--blue-lt);font-family:'JetBrains Mono',monospace;}
+.ldp-track{height:6px;background:var(--border);border-radius:3px;overflow:hidden;position:relative;}
+.ldp-track-fill{
+  height:100%;border-radius:3px;width:0%;
+  background:linear-gradient(90deg,var(--blue),var(--blue-lt),var(--teal));
+  background-size:200% 100%;
+  transition:width .5s cubic-bezier(.4,0,.2,1);
+  animation:ldpShimmer 2s linear infinite;
+}
+@keyframes ldpShimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* Steps list */
+.ldp-steps{width:100%;display:flex;flex-direction:column;gap:10px;}
+.ldp-step{
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px;border-radius:14px;
+  background:var(--surface2);border:1px solid var(--border);
+  transition:all .3s cubic-bezier(.4,0,.2,1);
+}
+.ldp-step.ldp-active{
+  background:linear-gradient(135deg,rgba(41,128,185,.12),rgba(41,128,185,.05));
+  border-color:rgba(41,128,185,.35);
+  transform:translateX(3px);
+}
+.ldp-step.ldp-done{
+  background:linear-gradient(135deg,rgba(39,174,96,.08),rgba(39,174,96,.03));
+  border-color:rgba(39,174,96,.25);
+}
+.ldp-step.ldp-error{
+  background:linear-gradient(135deg,rgba(231,76,60,.08),rgba(231,76,60,.03));
+  border-color:rgba(231,76,60,.3);
+}
+
+.ldp-step-icon{
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+  background:var(--surface3);border:1px solid var(--border);
+  transition:all .3s;
+}
+.ldp-step.ldp-active .ldp-step-icon{
+  background:rgba(41,128,185,.15);border-color:rgba(41,128,185,.3);
+  animation:ldpIconPulse 1s ease-in-out infinite;
+}
+.ldp-step.ldp-done .ldp-step-icon{background:rgba(39,174,96,.15);border-color:rgba(39,174,96,.3);}
+.ldp-step.ldp-error .ldp-step-icon{background:rgba(231,76,60,.12);border-color:rgba(231,76,60,.25);}
+@keyframes ldpIconPulse{0%,100%{box-shadow:0 0 0 0 rgba(41,128,185,.4)}50%{box-shadow:0 0 0 6px rgba(41,128,185,0)}}
+
+.ldp-step-body{flex:1;min-width:0;}
+.ldp-step-name{font-size:12px;font-weight:700;color:var(--text);}
+.ldp-step-detail{font-size:10px;color:var(--text3);margin-top:2px;transition:color .2s;}
+.ldp-step.ldp-active .ldp-step-detail{color:var(--blue-lt);}
+.ldp-step.ldp-done .ldp-step-detail{color:var(--green);}
+.ldp-step.ldp-error .ldp-step-detail{color:var(--red);}
+
+.ldp-step-badge{
+  font-size:10px;font-weight:800;padding:3px 9px;border-radius:8px;
+  flex-shrink:0;opacity:0;transition:opacity .3s;font-family:'JetBrains Mono',monospace;
+}
+.ldp-step.ldp-done .ldp-step-badge{opacity:1;background:rgba(39,174,96,.15);color:#4dbb77;border:1px solid rgba(39,174,96,.25);}
+.ldp-step.ldp-error .ldp-step-badge{opacity:1;background:rgba(231,76,60,.12);color:#e25b4b;border:1px solid rgba(231,76,60,.22);}
+.ldp-step.ldp-active .ldp-step-badge{opacity:1;background:rgba(41,128,185,.1);color:var(--blue-lt);border:1px solid rgba(41,128,185,.2);}
+
+/* spinner for active step */
+.ldp-spinner{
+  width:16px;height:16px;border-radius:50%;flex-shrink:0;
+  border:2px solid rgba(41,128,185,.2);border-top-color:var(--blue-lt);
+  animation:ldpSpin .7s linear infinite;
+  display:none;
+}
+.ldp-step.ldp-active .ldp-spinner{display:block;}
+.ldp-step.ldp-done .ldp-spinner,.ldp-step.ldp-error .ldp-spinner{display:none;}
+@keyframes ldpSpin{to{transform:rotate(360deg)}}
 
 /* ══════════════════════════════════════════
    NOTIFICATIONS
@@ -1263,11 +1362,87 @@ body.print-mode .kpi-val,.print-mode .card-title{color:#000!important}
 </head>
 <body>
 
-<!-- LOADER -->
+<!-- LOADER / SETUP PROGRESS -->
 <div id="loader">
-  <div class="ld-logo">🏫</div>
-  <div class="ld-bar"><div class="ld-fill"></div></div>
-  <div class="ld-txt">Initializing Results portal…</div>
+
+  <!-- Phase 1: splash (shown for ~600ms then fades into progress) -->
+  <div id="ld-splash">
+    <div class="ld-logo">&#x1F3EB;</div>
+    <div class="ld-bar"><div class="ld-fill"></div></div>
+    <div class="ld-txt">Kanyadet School &mdash; Results Portal</div>
+  </div>
+
+  <!-- Phase 2: staged setup progress -->
+  <div id="ld-progress">
+    <div class="ldp-logo">&#x1F3EB;</div>
+    <div class="ldp-title">Setting up Results Portal</div>
+    <div class="ldp-subtitle">Kanyadet Pri &amp; Junior School</div>
+
+    <!-- Overall progress track -->
+    <div class="ldp-track-wrap">
+      <div class="ldp-track-label">
+        <span class="ldp-track-lbl" id="ldp-current-label">Starting&hellip;</span>
+        <span class="ldp-track-pct" id="ldp-pct">0%</span>
+      </div>
+      <div class="ldp-track"><div class="ldp-track-fill" id="ldp-fill"></div></div>
+    </div>
+
+    <!-- Individual stages -->
+    <div class="ldp-steps" id="ldp-steps">
+
+      <div class="ldp-step" id="ldp-s0">
+        <div class="ldp-step-icon">&#x26A1;</div>
+        <div class="ldp-step-body">
+          <div class="ldp-step-name">Firebase SDK</div>
+          <div class="ldp-step-detail" id="ldp-d0">Loading Firebase modules&hellip;</div>
+        </div>
+        <div class="ldp-spinner"></div>
+        <div class="ldp-step-badge" id="ldp-b0">&mdash;</div>
+      </div>
+
+      <div class="ldp-step" id="ldp-s1">
+        <div class="ldp-step-icon">&#x1F510;</div>
+        <div class="ldp-step-body">
+          <div class="ldp-step-name">Authentication</div>
+          <div class="ldp-step-detail" id="ldp-d1">Checking session state&hellip;</div>
+        </div>
+        <div class="ldp-spinner"></div>
+        <div class="ldp-step-badge" id="ldp-b1">&mdash;</div>
+      </div>
+
+      <div class="ldp-step" id="ldp-s2">
+        <div class="ldp-step-icon">&#x1F5C4;&#xFE0F;</div>
+        <div class="ldp-step-body">
+          <div class="ldp-step-name">Database Connection</div>
+          <div class="ldp-step-detail" id="ldp-d2">Connecting to Realtime Database&hellip;</div>
+        </div>
+        <div class="ldp-spinner"></div>
+        <div class="ldp-step-badge" id="ldp-b2">&mdash;</div>
+      </div>
+
+      <div class="ldp-step" id="ldp-s3">
+        <div class="ldp-step-icon">&#x1F4E6;</div>
+        <div class="ldp-step-body">
+          <div class="ldp-step-name">Loading Student Data</div>
+          <div class="ldp-step-detail" id="ldp-d3">Fetching records from Firebase&hellip;</div>
+        </div>
+        <div class="ldp-spinner"></div>
+        <div class="ldp-step-badge" id="ldp-b3">&mdash;</div>
+      </div>
+
+      <div class="ldp-step" id="ldp-s4">
+        <div class="ldp-step-icon">&#x1F3A8;</div>
+        <div class="ldp-step-body">
+          <div class="ldp-step-name">Building Interface</div>
+          <div class="ldp-step-detail" id="ldp-d4">Rendering charts and tables&hellip;</div>
+        </div>
+        <div class="ldp-spinner"></div>
+        <div class="ldp-step-badge" id="ldp-b4">&mdash;</div>
+      </div>
+
+    </div>
+  </div>
+
 </div>
 
 <!-- NOTIFICATIONS -->
@@ -2717,16 +2892,6 @@ const _imgCache={};
 const _dbPhotoMap = {};   // { "john doe": "data:image/..." }
 const _dbPhotoMapById = {}; // { firebaseKey: "data:image/..." }
 let   _dbPhotoReady = false;
-const _dbPhotoPreloaded = new Set(); // URLs already kicked off for preload
-
-// Preload a photo URL into the browser's HTTP cache so any later
-// <img src="..."> referencing it paints instantly from cache.
-function _preloadPhoto(url){
-  if(!url || url.startsWith('data:') || _dbPhotoPreloaded.has(url)) return;
-  _dbPhotoPreloaded.add(url);
-  const img = new Image();
-  img.src = url;
-}
 
 // Called once Firebase is ready — subscribes to artifacts student photos
 function _subscribeDbPhotos(db, sanitizedAppId, refFn, onValueFn){
@@ -2743,17 +2908,13 @@ function _subscribeDbPhotos(db, sanitizedAppId, refFn, onValueFn){
                 _dbPhotoMapById[key] = val.photoURL;
                 // Also index by assessment no for quick lookup
                 if (val['Assessment No']) _dbPhotoMapById['adm_' + val['Assessment No']] = val.photoURL;
-                // Kick off preload immediately so the URL is in HTTP cache
-                // long before any <img> tag for this student is rendered.
-                _preloadPhoto(val.photoURL);
             }
         }
         _dbPhotoReady = true;
-        // Refresh all visible avatars that have a data-name or data-student-id attribute
-        document.querySelectorAll('.stu-av-wrap[data-photo-name], .stu-av-wrap[data-student-id]').forEach(el => {
-            const n = (el.getAttribute('data-photo-name')||'').toLowerCase().trim();
-            const sid = el.getAttribute('data-student-id')||'';
-            const url = (sid && _dbPhotoMapById[sid]) || (n && _dbPhotoMap[n]);
+        // Refresh all visible avatars that have a data-name attribute
+        document.querySelectorAll('.stu-av-wrap[data-photo-name]').forEach(el => {
+            const n = el.getAttribute('data-photo-name');
+            const url = _dbPhotoMap[n.toLowerCase().trim()];
             if (url) _applyPhotoToAvatar(el, url, n);
         });
     });
@@ -2784,50 +2945,14 @@ function _loadImg(src){
   });
 }
 
-// Default avatar — hosted image, cached after first load.
-// Single shared promise so 500 students with no photo only trigger one fetch.
-const _DEFAULT_AVATAR_URL = 'https://kanyadetschool.github.io/ranking/Report-Cards/student_images/default.jpg';
-
-// Preload immediately so the browser cache is warm before any avatar renders —
-// every <img src="${_DEFAULT_AVATAR_URL}"> on the page then paints instantly from cache.
-(function _preloadDefaultAvatar(){
-  const img = new Image();
-  img.src = _DEFAULT_AVATAR_URL;
-})();
-
-// Cache the default avatar result so it's only fetched once (not 500x)
-let _defaultAvatarPromise = null;
-function _getDefaultAvatar(){
-  if(!_defaultAvatarPromise) _defaultAvatarPromise = Promise.resolve(_DEFAULT_AVATAR_URL);
-  return _defaultAvatarPromise;
-}
-
 async function loadStudentPhoto(name, grade, studentId){
+  // 1. DB photo (uploaded via birthv3) — instant if ready
   const normName = (name||'').toLowerCase().trim();
-
-  // 1. DB photo (uploaded via birthv3) — instant, in-memory lookup.
-  //    If the DB map is ready, use it EXCLUSIVELY and skip slow file probing —
-  //    this is the only photo source that scales to hundreds of students.
   if (_dbPhotoReady) {
     if (studentId && _dbPhotoMapById[studentId]) return _dbPhotoMapById[studentId];
     if (normName && _dbPhotoMap[normName])       return _dbPhotoMap[normName];
-    // Not found in DB — go straight to the (cached, single-fetch) default avatar.
-    return await _getDefaultAvatar();
   }
-
-  // 2. DB not ready yet — wait briefly (max ~1s) for it rather than firing
-  //    a slow cascade of local file-path probes for every student.
-  for(let i=0;i<5 && !_dbPhotoReady;i++){
-    await new Promise(res => setTimeout(res, 200));
-  }
-  if (_dbPhotoReady) {
-    if (studentId && _dbPhotoMapById[studentId]) return _dbPhotoMapById[studentId];
-    if (normName && _dbPhotoMap[normName])       return _dbPhotoMap[normName];
-    return await _getDefaultAvatar();
-  }
-
-  // 3. DB still not ready (e.g. offline/Firebase failed) — fall back to
-  //    local file-path probing as a last resort.
+  // 2. Local file paths (existing behaviour)
   const g=(grade||'').match(/Grade\s*\d+/i)?.[0]||grade||'';
   const cleanName=(name||'').trim();
   const encGrade=encodeURIComponent(g);
@@ -2843,7 +2968,13 @@ async function loadStudentPhoto(name, grade, studentId){
     const src=await _loadImg(p);
     if(src) return src;
   }
-  return await _getDefaultAvatar();
+  // 3. Fallback: if DB not ready yet, wait up to 3s then retry
+  if (!_dbPhotoReady) {
+    await new Promise(res => setTimeout(res, 300));
+    if (studentId && _dbPhotoMapById[studentId]) return _dbPhotoMapById[studentId];
+    if (normName && _dbPhotoMap[normName])       return _dbPhotoMap[normName];
+  }
+  return await _loadImg('./Report-Cards/student_images/default.jpg');
 }
 
 // Build a photo avatar element and async-load the image
@@ -2864,31 +2995,6 @@ function makePhotoAvatar(name, grade, wrapClass, extraStyle='', studentId=''){
   });
   return html;
 }
-
-/* ══════════════════════════════════════════
-   FAST SYNCHRONOUS AVATAR — for paginated tables
-   Builds the avatar HTML in one shot from the in-memory
-   _dbPhotoMap / _dbPhotoMapById — NO promises, NO
-   requestAnimationFrame, NO per-row DOM lookups.
-   Falls back to initials (and keeps data-photo-name so
-   a later DB sync can still patch it in via
-   _subscribeDbPhotos's live-refresh pass).
-══════════════════════════════════════════ */
-function makePhotoAvatarFast(name, grade, wrapClass, extraStyle='', studentId=''){
-  const initials=(name||'?').split(' ').map(w=>w[0]||'').join('').toUpperCase().slice(0,2)||'?';
-  const normName=(name||'').toLowerCase().trim();
-  let src = '';
-  if (_dbPhotoReady) {
-    src = (studentId && _dbPhotoMapById[studentId]) || (normName && _dbPhotoMap[normName]) || '';
-  }
-  // Always use an <img> — DB photo if available, otherwise the hosted
-  // default avatar. The browser caches the default after the first
-  // request, so every subsequent avatar paints instantly from cache.
-  if (!src) src = _DEFAULT_AVATAR_URL;
-  return `<div class="stu-av-wrap ${wrapClass}" data-photo-name="${normName}" data-student-id="${studentId||''}" style="${extraStyle}"><img src="${src}" alt="${initials}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.src='${_DEFAULT_AVATAR_URL}';this.onerror=null;"></div>`;
-}
-
-
 
 /* ══════════════════════════════════════════
    SCHOOL LOGO — UI + PDF
@@ -3199,22 +3305,140 @@ window.toggleTheme=toggleTheme;
    FIREBASE WAIT
 ══════════════════════════════════════════ */
 let auth;
+
+/* ══════════════════════════════════════════
+   SETUP PROGRESS CONTROLLER
+   Controls the staged loading screen that
+   shows between splash and the main app.
+══════════════════════════════════════════ */
+const SetupProgress = (() => {
+  const STEPS = [
+    { id: 0, pct: 10, name: 'Firebase SDK',        detail: 'Loading Firebase modules…'         },
+    { id: 1, pct: 30, name: 'Authentication',       detail: 'Checking session state…'           },
+    { id: 2, pct: 55, name: 'Database Connection',  detail: 'Connecting to Realtime Database…'  },
+    { id: 3, pct: 78, name: 'Loading Student Data', detail: 'Fetching records from Firebase…'   },
+    { id: 4, pct: 95, name: 'Building Interface',   detail: 'Rendering charts and tables…'      },
+  ];
+
+  let _splashShown = false;
+  let _progressVisible = false;
+
+  function _setStep(idx, state, detailOverride, badge) {
+    const el = document.getElementById('ldp-s' + idx);
+    const detailEl = document.getElementById('ldp-d' + idx);
+    const badgeEl  = document.getElementById('ldp-b' + idx);
+    if (!el) return;
+    el.classList.remove('ldp-active', 'ldp-done', 'ldp-error');
+    if (state) el.classList.add('ldp-' + state);
+    if (detailOverride && detailEl) detailEl.textContent = detailOverride;
+    if (badge && badgeEl) badgeEl.textContent = badge;
+  }
+
+  function _setProgress(pct, label) {
+    const fill    = document.getElementById('ldp-fill');
+    const pctEl   = document.getElementById('ldp-pct');
+    const labelEl = document.getElementById('ldp-current-label');
+    if (fill)    fill.style.width = pct + '%';
+    if (pctEl)   pctEl.textContent = pct + '%';
+    if (labelEl && label) labelEl.textContent = label;
+  }
+
+  function _showProgress() {
+    if (_progressVisible) return;
+    _progressVisible = true;
+    const splash = document.getElementById('ld-splash');
+    const prog   = document.getElementById('ld-progress');
+    if (splash) splash.classList.add('hide');
+    setTimeout(() => {
+      if (prog) prog.classList.add('visible');
+    }, 380);
+  }
+
+  // ── PUBLIC API ────────────────────────────────────────────
+  return {
+    // Call once after DOMContentLoaded to start splash → progress transition
+    start() {
+      if (_splashShown) return;
+      _splashShown = true;
+      // Show splash for 600 ms then switch to progress view
+      setTimeout(_showProgress, 600);
+      // Pre-mark step 0 as active immediately
+      setTimeout(() => {
+        _setStep(0, 'active', 'Loading Firebase modules…', 'Loading');
+        _setProgress(5, 'Initializing Firebase SDK…');
+      }, 650);
+    },
+
+    // step index 0–4; state = 'active'|'done'|'error'
+    step(idx, state, detail, badge) {
+      if (!_progressVisible) _showProgress();
+      const pct = STEPS[idx] ? STEPS[idx].pct : 100;
+      _setStep(idx, state, detail, badge);
+      if (state === 'active') {
+        _setProgress(pct, STEPS[idx] ? STEPS[idx].name + '…' : '');
+      } else if (state === 'done') {
+        // Mark all previous steps done too (safety net)
+        for (let i = 0; i < idx; i++) {
+          const el = document.getElementById('ldp-s' + i);
+          if (el && !el.classList.contains('ldp-done')) _setStep(i, 'done', null, '✓');
+        }
+      }
+    },
+
+    // Call when everything is fully rendered; hides the loader
+    done(recordCount) {
+      _setStep(4, 'done', recordCount ? recordCount + ' records ready' : 'Done', '✓');
+      _setProgress(100, 'Ready!');
+      setTimeout(() => {
+        const loader = document.getElementById('loader');
+        if (loader) {
+          loader.style.transition = 'opacity .45s ease';
+          loader.style.opacity = '0';
+          loader.style.pointerEvents = 'none';
+          setTimeout(() => { if (loader) loader.style.display = 'none'; }, 480);
+        }
+      }, 350);
+    },
+
+    // Force-hide (e.g. on auth fail or when showing login screen)
+    hide() {
+      const loader = document.getElementById('loader');
+      if (loader) loader.style.display = 'none';
+    }
+  };
+})();
+
+// Kick off on DOMContentLoaded
+window.addEventListener('DOMContentLoaded', () => SetupProgress.start());
+
 function waitFB(cb,n){
   n=n||0;
-  if(window._fb){cb();}
-  else if(n>80){document.getElementById('loader').style.display='none';notify('Firebase failed to load.','error');}
-  else{setTimeout(()=>waitFB(cb,n+1),100);}
+  if(window._fb){
+    SetupProgress.step(0,'done','Firebase SDK ready','✓');
+    cb();
+  }
+  else if(n>80){
+    SetupProgress.step(0,'error','Firebase SDK failed to load','✗');
+    SetupProgress.hide();
+    notify('Firebase failed to load.','error');
+  }
+  else{
+    if(n===0) SetupProgress.step(0,'active','Loading Firebase modules…','…');
+    setTimeout(()=>waitFB(cb,n+1),100);
+  }
 }
 
 window.addEventListener('load',()=>{
   tryLoadLogo();
   waitFB(()=>{
     try{
+      SetupProgress.step(1,'active','Initializing Firebase app…','…');
       const{initializeApp,getApps,getDatabase,getAuth,onAuthStateChanged,getFirestore}=window._fb;
       const app=getApps().length===0?initializeApp(FB_CONFIG):getApps()[0];
       db=getDatabase(app);
       auth=getAuth(app);
       firestoreDb=getFirestore(app);
+      SetupProgress.step(2,'active','Connecting to Realtime Database…','…');
       // ── Subscribe to birthv3 student photos from artifacts DB ──────────
       // birthv3 stores photos at artifacts/${sanitizedAppId}/students/{id}.photoURL
       // We subscribe here so photos are available across the whole portal.
@@ -3241,8 +3465,9 @@ window.addEventListener('load',()=>{
       // Auth state is now handled by the passkey layer (_pkInit) below.
       // We only hide the loader here; the passkey onAuthStateChanged does the rest.
       onAuthStateChanged(auth, async user=>{
-        document.getElementById('loader').style.display='none';
-        // Passkey layer takes over from here — do not call _checkDisabledAndLogin directly.
+        SetupProgress.step(1,'done','Auth session verified','✓');
+        SetupProgress.step(2,'done','Database connected','✓');
+        // Passkey layer takes over — loader dismissed after data loads
       });
     }catch(e){
       notify('Firebase init error: '+e.message,'error');
@@ -3517,8 +3742,12 @@ window.addEventListener('load', () => {
     const {onAuthStateChanged: _osc} = window._fb;
     _osc(auth, user => {
       // Hide loader regardless
-      const loaderEl = document.getElementById('loader');
-      if (loaderEl) loaderEl.style.display = 'none';
+      // Loader is dismissed by SetupProgress.done() after data renders
+      // (only hide immediately if user not signed in — no data to wait for)
+      if (!user) {
+        SetupProgress.step(1,'done','Not signed in','—');
+        SetupProgress.hide();
+      }
 
       const loginScreen = document.getElementById('login-screen');
       const appShell = document.getElementById('app-shell');
@@ -5177,6 +5406,7 @@ function loadAllData(){
   _firstLoad = true;
 
   try{
+    SetupProgress.step(3,'active','Fetching records from Firebase…','…');
     const{ref,onValue}=window._fb;
     const dbRef = ref(db, DB_PATH);
 
@@ -5184,7 +5414,10 @@ function loadAllData(){
     _realtimeUnsubscribe = onValue(dbRef, (snap) => {
       const data = snap.val();
       if(!data){
-        if(_firstLoad) notify('No data found in database.','warn');
+        if(_firstLoad){
+          notify('No data found in database.','warn');
+          SetupProgress.step(3,'done','No records found','0');
+        }
         allData = [];
         renderAll();
         _firstLoad = false;
@@ -5192,6 +5425,8 @@ function loadAllData(){
       }
       allData = Object.entries(data).map(([key,val])=>({id:key,...val}));
       if(_firstLoad){
+        SetupProgress.step(3,'done', allData.length + ' records loaded','✓');
+        SetupProgress.step(4,'active','Rendering charts and tables…','…');
         // notify(`✅ Loaded <strong>${allData.length}</strong> records from Firebase.`,'success');
         _firstLoad = false;
       } else {
@@ -5264,6 +5499,10 @@ function renderAll(){
   });
   // ── Bridge: sync allData into the Report Card JS system ──
   _bridgeReportCardSystem();
+  // ── Dismiss setup progress after first full render ──
+  if (typeof SetupProgress !== 'undefined') {
+    SetupProgress.done(allData ? allData.length : 0);
+  }
 }
 
 /* ── Helper: return allData scoped to the teacher's assigned grades ── */
@@ -5511,7 +5750,7 @@ function renderTopStudents(){
     const color=barColor(st.avg);
     const numClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-rest';
     const termInfo=term==='all'?`<span style="font-size:9px;color:var(--text3);margin-left:4px">(${getRecordTerm(r)})</span>`:'';
-    const _rkAv=makePhotoAvatarFast(r['Official Student Name']||'', r['Grade']||'', 'stu-av-rank', '', r.id||'');
+    const _rkAv=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-rank', '', r.id||'');
     return `<div class="rank-item" onclick="openRecordsModal('${r.id}')" title="Click to view student records">
       <div class="rank-num ${numClass}">${i+1}</div>
       ${_rkAv}
@@ -6151,7 +6390,7 @@ function renderStudentsTable(){
     const color=barColor(st.avg);
     const allRecs=r._allRecords||[r];
     const recCount=allRecs.length;
-    const _avHtml=makePhotoAvatarFast(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm', '', r.id||'');
+    const _avHtml=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm', '', r.id||'');
     return `<tr class="student-hover-row" onclick="openRecordsModal('${r.id}')" title="Click to view all records">
       <td>${start+i+1}</td>
       <td>
@@ -6560,7 +6799,7 @@ function renderResultsTable(){
     const st=calcStats(r);
     const subjects=getSubjects(r);
     const color=barColor(st.avg);
-    const _rtAv=makePhotoAvatarFast(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm', '', r.id||'');
+    const _rtAv=makePhotoAvatar(r['Official Student Name']||'', r['Grade']||'', 'stu-av-sm', '', r.id||'');
     return `<tr>
       <td>${start+i+1}</td>
       <td><div style="display:flex;align-items:center;gap:9px">${_rtAv}<span style="font-weight:700;color:var(--text)">${r['Official Student Name']||'—'}</span></div></td>
@@ -8019,7 +8258,7 @@ function runSmartSearch(q){
 
   box.innerHTML=results.map(({best,all},i)=>{
     const st=calcStats(best);const color=barColor(st.avg);
-    const _srAv=makePhotoAvatarFast(best['Official Student Name']||'', best['Grade']||'', 'stu-av-sm', '', best.id||'');
+    const _srAv=makePhotoAvatar(best['Official Student Name']||'', best['Grade']||'', 'stu-av-sm', '', best.id||'');
     return `<div class="search-result-item" tabindex="0" data-idx="${i}" data-id="${best.id}"
       onclick="selectSearchResult('${best.id}')"
       onkeydown="if(event.key==='Enter')selectSearchResult('${best.id}')"
@@ -9749,8 +9988,10 @@ async function loadStudentImage(studentName, grade, studentId) {
         const r = await loadImg(path);
         if (r.loaded) return r;
     }
-    // 3. Default avatar — hosted URL
-    return loadImg(_DEFAULT_AVATAR_URL);
+    // 3. Default avatar
+    let def = await loadImg('./Report-Cards/student_images/default.jpg');
+    if (def.loaded) return def;
+    return loadImg('./student_images/default.jpg');
 }
 
 function addQrCode(doc, student, x, y, size) {
@@ -11281,7 +11522,7 @@ function renderCurrentPage() {
         // Student Name (with avatar)
         const nameCell = row.insertCell(1);
         const avatarHtml = typeof makePhotoAvatar === 'function'
-            ? makePhotoAvatarFast(student['Official Student Name'] || '', student['Grade'] || '', 'stu-av-sm', '', student.id||'')
+            ? makePhotoAvatar(student['Official Student Name'] || '', student['Grade'] || '', 'stu-av-sm', '', student.id||'')
             : '';
         nameCell.innerHTML = `<div style="display:flex;align-items:center;gap:8px">${avatarHtml}<span style="font-weight:700;color:var(--text)">${student['Official Student Name'] || '—'}</span></div>`;
 
