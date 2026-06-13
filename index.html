@@ -2767,14 +2767,39 @@ function _loadImg(src){
   });
 }
 
+// Cache the default avatar result so it's only fetched once (not 500x)
+let _defaultAvatarPromise = null;
+function _getDefaultAvatar(){
+  if(!_defaultAvatarPromise) _defaultAvatarPromise = _loadImg('./Report-Cards/student_images/default.jpg');
+  return _defaultAvatarPromise;
+}
+
 async function loadStudentPhoto(name, grade, studentId){
-  // 1. DB photo (uploaded via birthv3) — instant if ready
   const normName = (name||'').toLowerCase().trim();
+
+  // 1. DB photo (uploaded via birthv3) — instant, in-memory lookup.
+  //    If the DB map is ready, use it EXCLUSIVELY and skip slow file probing —
+  //    this is the only photo source that scales to hundreds of students.
   if (_dbPhotoReady) {
     if (studentId && _dbPhotoMapById[studentId]) return _dbPhotoMapById[studentId];
     if (normName && _dbPhotoMap[normName])       return _dbPhotoMap[normName];
+    // Not found in DB — go straight to the (cached, single-fetch) default avatar.
+    return await _getDefaultAvatar();
   }
-  // 2. Local file paths (existing behaviour)
+
+  // 2. DB not ready yet — wait briefly (max ~1s) for it rather than firing
+  //    a slow cascade of local file-path probes for every student.
+  for(let i=0;i<5 && !_dbPhotoReady;i++){
+    await new Promise(res => setTimeout(res, 200));
+  }
+  if (_dbPhotoReady) {
+    if (studentId && _dbPhotoMapById[studentId]) return _dbPhotoMapById[studentId];
+    if (normName && _dbPhotoMap[normName])       return _dbPhotoMap[normName];
+    return await _getDefaultAvatar();
+  }
+
+  // 3. DB still not ready (e.g. offline/Firebase failed) — fall back to
+  //    local file-path probing as a last resort.
   const g=(grade||'').match(/Grade\s*\d+/i)?.[0]||grade||'';
   const cleanName=(name||'').trim();
   const encGrade=encodeURIComponent(g);
@@ -2790,13 +2815,7 @@ async function loadStudentPhoto(name, grade, studentId){
     const src=await _loadImg(p);
     if(src) return src;
   }
-  // 3. Fallback: if DB not ready yet, wait up to 3s then retry
-  if (!_dbPhotoReady) {
-    await new Promise(res => setTimeout(res, 300));
-    if (studentId && _dbPhotoMapById[studentId]) return _dbPhotoMapById[studentId];
-    if (normName && _dbPhotoMap[normName])       return _dbPhotoMap[normName];
-  }
-  return await _loadImg('./Report-Cards/student_images/default.jpg');
+  return await _getDefaultAvatar();
 }
 
 // Build a photo avatar element and async-load the image
