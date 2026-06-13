@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kanyadet School — Results portal</title>
+<link rel="preload" as="image" href="https://kanyadetschool.github.io/ranking/Report-Cards/student_images/default.jpg">
+<link rel="dns-prefetch" href="https://kanyadetschool.github.io">
+<link rel="preconnect" href="https://kanyadetschool.github.io" crossorigin>
 <script src="./image-popup.js"></script>
 <link rel="icon" type="image/x-icon" href="./images/logo.png">
 
@@ -2714,6 +2717,16 @@ const _imgCache={};
 const _dbPhotoMap = {};   // { "john doe": "data:image/..." }
 const _dbPhotoMapById = {}; // { firebaseKey: "data:image/..." }
 let   _dbPhotoReady = false;
+const _dbPhotoPreloaded = new Set(); // URLs already kicked off for preload
+
+// Preload a photo URL into the browser's HTTP cache so any later
+// <img src="..."> referencing it paints instantly from cache.
+function _preloadPhoto(url){
+  if(!url || url.startsWith('data:') || _dbPhotoPreloaded.has(url)) return;
+  _dbPhotoPreloaded.add(url);
+  const img = new Image();
+  img.src = url;
+}
 
 // Called once Firebase is ready — subscribes to artifacts student photos
 function _subscribeDbPhotos(db, sanitizedAppId, refFn, onValueFn){
@@ -2730,6 +2743,9 @@ function _subscribeDbPhotos(db, sanitizedAppId, refFn, onValueFn){
                 _dbPhotoMapById[key] = val.photoURL;
                 // Also index by assessment no for quick lookup
                 if (val['Assessment No']) _dbPhotoMapById['adm_' + val['Assessment No']] = val.photoURL;
+                // Kick off preload immediately so the URL is in HTTP cache
+                // long before any <img> tag for this student is rendered.
+                _preloadPhoto(val.photoURL);
             }
         }
         _dbPhotoReady = true;
@@ -2768,20 +2784,21 @@ function _loadImg(src){
   });
 }
 
-// Default avatar — a tiny inline gray-silhouette SVG as a data URI.
-// Avoids any network request for the hundreds of students with no photo.
-const _DEFAULT_AVATAR_DATAURI = 'data:image/svg+xml;utf8,' + encodeURIComponent(
-  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'
-  + '<rect width="100" height="100" fill="#cbd5e1"/>'
-  + '<circle cx="50" cy="38" r="18" fill="#94a3b8"/>'
-  + '<path d="M50 60c-22 0-38 12-38 28v12h76V88c0-16-16-28-38-28z" fill="#94a3b8"/>'
-  + '</svg>'
-);
+// Default avatar — hosted image, cached after first load.
+// Single shared promise so 500 students with no photo only trigger one fetch.
+const _DEFAULT_AVATAR_URL = 'https://kanyadetschool.github.io/ranking/Report-Cards/student_images/default.jpg';
+
+// Preload immediately so the browser cache is warm before any avatar renders —
+// every <img src="${_DEFAULT_AVATAR_URL}"> on the page then paints instantly from cache.
+(function _preloadDefaultAvatar(){
+  const img = new Image();
+  img.src = _DEFAULT_AVATAR_URL;
+})();
 
 // Cache the default avatar result so it's only fetched once (not 500x)
 let _defaultAvatarPromise = null;
 function _getDefaultAvatar(){
-  if(!_defaultAvatarPromise) _defaultAvatarPromise = Promise.resolve(_DEFAULT_AVATAR_DATAURI);
+  if(!_defaultAvatarPromise) _defaultAvatarPromise = Promise.resolve(_DEFAULT_AVATAR_URL);
   return _defaultAvatarPromise;
 }
 
@@ -2864,12 +2881,11 @@ function makePhotoAvatarFast(name, grade, wrapClass, extraStyle='', studentId=''
   if (_dbPhotoReady) {
     src = (studentId && _dbPhotoMapById[studentId]) || (normName && _dbPhotoMap[normName]) || '';
   }
-  if (src) {
-    return `<div class="stu-av-wrap ${wrapClass}" data-photo-name="${normName}" data-student-id="${studentId||''}" style="${extraStyle}"><img src="${src}" alt="${initials}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit"></div>`;
-  }
-  // No photo available — show initials immediately. data-photo-name lets
-  // the live DB subscription patch a photo in later without a full re-render.
-  return `<div class="stu-av-wrap ${wrapClass}" data-photo-name="${normName}" data-student-id="${studentId||''}" style="${extraStyle}">${initials}</div>`;
+  // Always use an <img> — DB photo if available, otherwise the hosted
+  // default avatar. The browser caches the default after the first
+  // request, so every subsequent avatar paints instantly from cache.
+  if (!src) src = _DEFAULT_AVATAR_URL;
+  return `<div class="stu-av-wrap ${wrapClass}" data-photo-name="${normName}" data-student-id="${studentId||''}" style="${extraStyle}"><img src="${src}" alt="${initials}" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.src='${_DEFAULT_AVATAR_URL}';this.onerror=null;"></div>`;
 }
 
 
@@ -9733,10 +9749,8 @@ async function loadStudentImage(studentName, grade, studentId) {
         const r = await loadImg(path);
         if (r.loaded) return r;
     }
-    // 3. Default avatar
-    let def = await loadImg('./Report-Cards/student_images/default.jpg');
-    if (def.loaded) return def;
-    return loadImg('./student_images/default.jpg');
+    // 3. Default avatar — hosted URL
+    return loadImg(_DEFAULT_AVATAR_URL);
 }
 
 function addQrCode(doc, student, x, y, size) {
